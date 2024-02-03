@@ -1,5 +1,5 @@
 
-# **Fairlight CMI2x (MAME)** #
+# **Fairlight CMI IIx (MAME)** #
 
 This repository was created to publish a working implementation of the famous Fairlight CMI IIx (Computer Music Instrument) machine emulated by the MAME software. In the beginning, we did a lot of research on the Internet to find out a publicly available working implementation, but without success. The only references we found were some YouTube channels presenting basic guides and showing some preset examples. In particular the ones of:
 
