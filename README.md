@@ -19,10 +19,11 @@ In this section, we want to list all the known features that are missing from th
 ## Execute the CMI
 
 This section will walk through the steps to get the CMI machine running on the MAME emulator:
-1. Get the needed ROMs (cmi2x.zip, cmi_ankbd.zip, cmi_mkbd.zip) from the Internet (i.e. https://gist.github.com/vmartins/c8c3aebce8936402bdf99a30ce1a43e9) and put them inside the "roms" folder;
-2. Get a working System Disk (i.e. SYSV19.IMD) and one or more presets disks (i.e. VOICES.IMD, STRINGS4.IMD, etc..) from the Internet (i.e. https://dbwbp.com/synthbin/Fairlight%20CMI%20IIx%20Disks%20Image.zip) and put them inside a folder with read/write permissions like the Windows Public folder (i.e. C:\Users\Public), this will allow MAME to read them and you to change presets at any time;
-3. Launch the emulator with the command: `` .\cmi.exe cmi2x -mouse -flop1 "<path-to-SYSV19.IMD>" -flop2 "<path-to-your-PRESET.IMD>" -midiin1 "<name of MIDI device>" `` (refer to the next section to know how to retrieve MIDI device name).
-4. Enjoy :)
+1. Get the last compiled version for Windows from https://github.com/davide-ciraolo/mame-cmi2x-fairlight/releases/tag/v1 or compile the source code following the steps from MAME documentation (https://www.mamedev.org/tools/). To compile the code for our first release we used the following command: `` make SUBTARGET=cmi SOURCES=src\mame\fairlight\cmi.cpp ARCHOPTS="-fuse-ld=lld" -jX `` where X is the number of CPU cores you want to use. This command will compile only the files required to run the CMI, instead of all the MAME drivers;
+2. Get the needed ROMs (cmi2x.zip, cmi_ankbd.zip, cmi_mkbd.zip) from the Internet (i.e. https://gist.github.com/vmartins/c8c3aebce8936402bdf99a30ce1a43e9) and put them inside the "roms" folder;
+3. Get a working System Disk (i.e. SYSV19.IMD) and one or more presets disks (i.e. VOICES.IMD, STRINGS4.IMD, etc..) from the Internet (i.e. https://dbwbp.com/synthbin/Fairlight%20CMI%20IIx%20Disks%20Image.zip) and put them inside a folder with read/write permissions like the Windows Public folder (i.e. C:\Users\Public), this will allow MAME to read them and you to change presets at any time;
+4. Launch the emulator with the command: `` .\cmi.exe cmi2x -mouse -flop1 "<path-to-SYSV19.IMD>" -flop2 "<path-to-your-PRESET.IMD>" -midiin1 "<name of MIDI device>" `` (refer to the next section to know how to retrieve MIDI device name).
+5. Enjoy :)
 
 ## MIDI Setup
 
