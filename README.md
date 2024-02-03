@@ -1,5 +1,44 @@
 
-# **MAME** #
+# **Fairlight CMI2x (MAME)** #
+
+This repository was created to publish a working implementation of the famous Fairlight CMI IIx (Computer Music Instrument) machine emulated by the MAME software. In the beginning, we did a lot of research on the Internet to find out a publicly available working implementation, but without success. The only references we found were some YouTube channels presenting basic guides and showing some preset examples. In particular the ones of:
+
+- __SergioFrias__ (https://www.youtube.com/@SergioFrias);
+- __Mog's Emulation Station__ (https://www.youtube.com/@mogemulation);
+- __B. ART__ (https://www.youtube.com/@B.ART-electro)
+
+Although they haven't published their working MAME setup, their suggestions in the comments section under their videos were useful in building up this work. So definitely we thank them for all their suggestions. We hope this work will be useful for everyone who wants to try/work with this beautiful CMI IIx and at the same time that it could be a starting point to improve its performance and implement missing features.
+
+## Missing Features
+In this section, we want to list all the known features that are missing from the original Fairlight CMI IIx machine.
+
+- Emulation of the Curtis SSM2045 filter is completely missing so the samples are pretty rough around the edges (Mog's Emulation Station).
+- The second MIDI keyboard is not implemented (Mog's Emulation Station).
+- The Analog Card used for sampling is not implemented (Mog's Emulation Station).
+
+## Execute the CMI
+
+This section will walk through the steps to get the CMI machine running on the MAME emulator:
+1. Get the needed ROMs (cmi2x.zip, cmi_ankbd.zip, cmi_mkbd.zip) from the Internet (i.e. https://gist.github.com/vmartins/c8c3aebce8936402bdf99a30ce1a43e9) and put them inside the "roms" folder;
+2. Get a working System Disk (i.e. SYSV19.IMD) and one or more presets disks (i.e. VOICES.IMD, STRINGS4.IMD, etc..) from the Internet (i.e. https://dbwbp.com/synthbin/Fairlight%20CMI%20IIx%20Disks%20Image.zip) and put them inside a folder with read/write permissions like the Windows Public folder (i.e. C:\Users\Public), this will allow MAME to read them and you to change presets at any time;
+3. Launch the emulator with the command: `` .\cmi.exe cmi2x -mouse -flop1 "<path-to-SYSV19.IMD>" -flop2 "<path-to-your-PRESET.IMD>" -midiin1 "<name of MIDI device>" `` (refer to the next section to know how to retrieve MIDI device name).
+4. Enjoy :)
+
+## MIDI Setup
+
+1. Connect your MIDI device to your computer.
+2. Command to list MIDI devices:
+  - Windows: `` .\cmi.exe --listmidi `` This will show the list of MIDI devices connected to the computer.
+3. To start the CMI with a specific MIDI device you have to add the flag `` --midiin1 "<name of MIDI device>" `` To the execution command of the CMI.
+
+## For any questions
+
+For questions about the MAME emulator, how to compile the source code, and how to adjust the settings refer to the MAME documentation (https://docs.mamedev.org/whatis.html).
+
+Feel free to contact us for any other questions.
+
+**MAME**
+=============
 
 [![Join the chat at https://gitter.im/mamedev/mame](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mamedev/mame?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
