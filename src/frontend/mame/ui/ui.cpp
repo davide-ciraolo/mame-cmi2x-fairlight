@@ -43,6 +43,7 @@
 #include "uiinput.h"
 
 #include "../osd/modules/lib/osdobj_common.h"
+#include "config.h"
 
 #include <chrono>
 #include <functional>
@@ -227,6 +228,9 @@ void mame_ui_manager::init()
 			configuration_manager::load_delegate(&mame_ui_manager::config_load, this),
 			configuration_manager::save_delegate(&mame_ui_manager::config_save, this));
 
+	// register callbacks
+	machine().configuration().config_register("sliders", configuration_manager::load_delegate(&mame_ui_manager::sliders_load, this), configuration_manager::save_delegate(&mame_ui_manager::sliders_save, this));
+
 	// create mouse bitmap
 	uint32_t *dst = &m_mouse_bitmap.pix(0);
 	memcpy(dst,mouse_bitmap,32*32*sizeof(uint32_t));
@@ -405,15 +409,15 @@ static void output_joined_collection(const TColl &collection, TEmitMemberFunc em
 void mame_ui_manager::display_startup_screens(bool first_time)
 {
 	const int maxstate = 3;
-	int str = machine().options().seconds_to_run();
+	//int str = machine().options().seconds_to_run();
 	bool show_gameinfo = !machine().options().skip_gameinfo();
 	bool show_warnings = true, show_mandatory_fileman = true;
-	bool video_none = strcmp(downcast<osd_options &>(machine().options()).video(), OSDOPTVAL_NONE) == 0;
+	//bool video_none = strcmp(downcast<osd_options &>(machine().options()).video(), OSDOPTVAL_NONE) == 0;
 
 	// disable everything if we are using -str for 300 or fewer seconds, or if we're the empty driver,
 	// or if we are debugging, or if there's no mame window to send inputs to
-	if (!first_time || (str > 0 && str < 60*5) || &machine().system() == &GAME_NAME(___empty) || (machine().debug_flags & DEBUG_FLAG_ENABLED) != 0 || video_none)
-		show_gameinfo = show_warnings = show_mandatory_fileman = false;
+	//if (!first_time || (str > 0 && str < 60*5) || &machine().system() == &GAME_NAME(___empty) || (machine().debug_flags & DEBUG_FLAG_ENABLED) != 0 || video_none)
+	show_gameinfo = show_warnings = show_mandatory_fileman = false;
 
 #if defined(__EMSCRIPTEN__)
 	// also disable for the JavaScript port since the startup screens do not run asynchronously
@@ -1457,13 +1461,21 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 	m_sliders.clear();
 
 	// add overall volume
-	slider_alloc(_("Master Volume"), -32, 0, 0, 1, std::bind(&mame_ui_manager::slider_volume, this, _1, _2));
+	slider_alloc(_("Master Volume"), -32, 0, 9, 1, std::bind(&mame_ui_manager::slider_volume, this, _1, _2));
+
+	// add frame delay
+	//slider_alloc(_("Frame Delay"), 0, machine.options().frame_delay(), 9, 1, std::bind(&mame_ui_manager::slider_framedelay, this, _1, _2));
+
+#ifdef _WIN32
+	// add vsync offset
+	//slider_alloc(_("V-Sync Offset"), 0, machine.options().vsync_offset(), 1024, 1, std::bind(&mame_ui_manager::slider_vsync_offset, this, _1, _2));
+#endif
 
 	// add per-channel volume
 	mixer_input info;
 	for (int item = 0; machine.sound().indexed_mixer_input(item, info); item++)
 	{
-		int32_t maxval = 2000;
+		int32_t maxval = 4000;
 		int32_t defval = 1000;
 
 		std::string str = string_format(_("%1$s Volume"), info.stream->input(info.inputnum).name());
@@ -1484,8 +1496,8 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 	}
 
 	// add CPU overclocking (cheat only)
-	if (machine.options().cheat())
-	{
+	//if (machine.options().cheat())
+	//{
 		for (device_execute_interface &exec : execute_interface_enumerator(machine.root_device()))
 		{
 			std::string str = string_format(_("Overclock CPU %1$s"), exec.device().tag());
@@ -1500,7 +1512,7 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 				slider_alloc(std::move(str), 100, 1000, 4000, 10, std::bind(&mame_ui_manager::slider_overclock, this, std::ref(snd.device()), _1, _2));
 			}
 		}
-	}
+	//}
 
 	// add screen parameters
 	screen_device_enumerator scriter(machine.root_device());
@@ -1577,6 +1589,11 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 		}
 	}
 
+	// add geometry sliders
+	//slider_alloc(_("CRT H size"), 500, floor(downcast<osd_options &>(machine.options()).h_size() * 1000.0 + 0.5), 1500, 10, std::bind(&mame_ui_manager::slider_h_size, this, _1, _2));
+	//slider_alloc(_("CRT H shift"), -64, downcast<osd_options &>(machine.options()).h_shift(), 64, 1, std::bind(&mame_ui_manager::slider_h_shift, this, _1, _2));
+	//slider_alloc(_("CRT V shift"), -64, downcast<osd_options &>(machine.options()).h_shift(), 64, 1, std::bind(&mame_ui_manager::slider_v_shift, this, _1, _2));
+
 #ifdef MAME_DEBUG
 	// add crosshair adjusters
 	for (auto &port : machine.ioport().ports())
@@ -1593,6 +1610,8 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 		}
 	}
 #endif
+
+	sliders_apply();
 
 	std::vector<ui::menu_item> items;
 	for (auto &slider : m_sliders)
@@ -1619,6 +1638,81 @@ int32_t mame_ui_manager::slider_volume(std::string *str, int32_t newval)
 	return machine().sound().attenuation();
 }
 
+
+//-------------------------------------------------
+//  slider_framedelay - global frame delay slider
+//  callback
+//-------------------------------------------------
+
+/*int32_t mame_ui_manager::slider_framedelay(std::string *str, int32_t newval)
+{
+	if (newval != SLIDER_NOCHANGE)
+		machine().video().set_framedelay(newval);
+	if (str)
+		*str = string_format(_("%1$3d"), machine().video().framedelay());
+	return machine().video().framedelay();
+}*/
+
+
+//--------------------------------------------------
+//  slider_vsync_offset - global vsync_offset slider
+//  callback
+//--------------------------------------------------
+
+/*int32_t mame_ui_manager::slider_vsync_offset(std::string *str, int32_t newval)
+{
+	if (newval != SLIDER_NOCHANGE)
+		machine().video().set_vsync_offset(newval);
+	if (str)
+		*str = string_format(_("%1$3d"), machine().video().vsync_offset());
+	return machine().video().vsync_offset();
+}*/
+
+//--------------------------------------------------
+//  slider_h_size - global h_size slider
+//  callback
+//--------------------------------------------------
+
+/*int32_t mame_ui_manager::slider_h_size(std::string *str, int32_t newval)
+{
+	if (newval != SLIDER_NOCHANGE)
+	{
+		float fval = (float)newval * 0.001f;
+		machine().options().set_value(OSDOPTION_H_SIZE, fval, OPTION_PRIORITY_CMDLINE);
+	}
+
+	if (str)
+		*str = string_format(_("%1.2f"), downcast<osd_options &>(machine().options()).h_size());
+	return floor(downcast<osd_options &>(machine().options()).h_size() * 1000.0 + 0.5);
+}*/
+
+//--------------------------------------------------
+//  slider_h_shift - global h_shift slider
+//  callback
+//--------------------------------------------------
+
+/*int32_t mame_ui_manager::slider_h_shift(std::string *str, int32_t newval)
+{
+	if (newval != SLIDER_NOCHANGE)
+		machine().options().set_value(OSDOPTION_H_SHIFT, newval, OPTION_PRIORITY_CMDLINE);
+	if (str)
+		*str = string_format(_("%1$3d"), downcast<osd_options &>(machine().options()).h_shift());
+	return downcast<osd_options &>(machine().options()).h_shift();
+}*/
+
+//--------------------------------------------------
+//  slider_v_shift - global v_shift slider
+//  callback
+//--------------------------------------------------
+
+/*int32_t mame_ui_manager::slider_v_shift(std::string *str, int32_t newval)
+{
+	if (newval != SLIDER_NOCHANGE)
+		machine().options().set_value(OSDOPTION_V_SHIFT, newval, OPTION_PRIORITY_CMDLINE);
+	if (str)
+		*str = string_format(_("%1$3d"), downcast<osd_options &>(machine().options()).v_shift());
+	return downcast<osd_options &>(machine().options()).v_shift();
+}*/
 
 //-------------------------------------------------
 //  slider_mixervol - single channel volume
@@ -1673,7 +1767,7 @@ int32_t mame_ui_manager::slider_overclock(device_t &device, std::string *str, in
 	if (newval != SLIDER_NOCHANGE)
 		device.set_clock_scale((float)newval * 0.001f);
 	if (str)
-		*str = string_format(_("%1$3.0f%%"), floor(device.clock_scale() * 100.0 + 0.5));
+		*str = string_format(_("%1$3.1f%%"), device.clock_scale() * 100.0);
 	return floor(device.clock_scale() * 1000.0 + 0.5);
 }
 
@@ -2225,4 +2319,84 @@ void ui_colors::refresh(const ui_options &options)
 	m_mousedown_bg_color = options.mousedown_bg_color();
 	m_dipsw_color = options.dipsw_color();
 	m_slider_color = options.slider_color();
+}
+
+//-------------------------------------------------
+//  sliders_load - read data from the
+//  configuration file
+//-------------------------------------------------
+
+void mame_ui_manager::sliders_load(config_type cfg_type, config_level cfg_level, util::xml::data_node const *parentnode)
+{
+	// we only care about system files
+	if (cfg_type != config_type::SYSTEM)
+		return;
+
+	// might not have any data
+	if (parentnode == nullptr)
+		return;
+
+	// iterate over slider nodes
+	for (util::xml::data_node const *slider_node = parentnode->get_child("slider"); slider_node; slider_node = slider_node->get_next_sibling("slider"))
+	{
+		std::string desc = slider_node->get_attribute_string("desc", "");
+		int32_t saved_val = slider_node->get_attribute_int("value", 0);
+
+		// create a dummy slider to store the saved value
+		slider_saved_alloc(std::move(desc), 0, saved_val, 0, 0, nullptr);
+	}
+}
+
+
+//-------------------------------------------------
+//  sliders_appy - apply data from the conf. file
+//  This currently needs to be done on a separate
+//  step because sliders are not created yet when
+//  configuration file is loaded
+//-------------------------------------------------
+
+void mame_ui_manager::sliders_apply(void)
+{
+	// iterate over sliders and restore saved values
+	for (auto &slider : m_sliders)
+	{
+		for (auto &slider_saved : m_sliders_saved)
+		{
+			if (!strcmp(slider->description.c_str(), slider_saved->description.c_str()))
+			{
+				std::string tempstring;
+				slider->update(&tempstring, slider_saved->defval);
+				break;
+
+			}
+		}
+	}
+}
+
+
+//-------------------------------------------------
+//  sliders_save - save data to the configuration
+//  file
+//-------------------------------------------------
+
+void mame_ui_manager::sliders_save(config_type cfg_type, util::xml::data_node *parentnode)
+{
+	// we only care about system files
+	if (cfg_type != config_type::SYSTEM)
+		return;
+
+	std::string tempstring;
+	util::xml::data_node *slider_node;
+
+	// save UI sliders
+	for (auto &slider : m_sliders)
+	{
+		int32_t curval = slider->update(&tempstring, SLIDER_NOCHANGE);
+		if (curval != slider->defval)
+		{
+			slider_node = parentnode->add_child("slider", nullptr);
+			slider_node->set_attribute("desc", slider->description.c_str());
+			slider_node->set_attribute_int("value", curval);
+		}
+	}
 }
