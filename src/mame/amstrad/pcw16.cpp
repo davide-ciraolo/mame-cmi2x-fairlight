@@ -523,7 +523,7 @@ void pcw16_state::pcw16_keyboard_control_w(uint8_t data)
 }
 
 
-void pcw16_state::pcw16_keyboard_callback(int state)
+WRITE_LINE_MEMBER(pcw16_state::pcw16_keyboard_callback)
 {
 	if(!state)
 		return;
@@ -891,7 +891,7 @@ void pcw16_state::pcw16_system_control_w(uint8_t data)
 	}
 }
 
-void pcw16_state::fdc_interrupt(int state)
+WRITE_LINE_MEMBER( pcw16_state::fdc_interrupt )
 {
 	/* IRQ6 */
 	/* bit 6 of PCW16 system status indicates floppy ints */
@@ -904,7 +904,7 @@ void pcw16_state::fdc_interrupt(int state)
 }
 
 
-void pcw16_state::pcw16_com_interrupt_1(int state)
+WRITE_LINE_MEMBER(pcw16_state::pcw16_com_interrupt_1)
 {
 	m_system_status &= ~(1 << 4);
 
@@ -916,7 +916,7 @@ void pcw16_state::pcw16_com_interrupt_1(int state)
 }
 
 
-void pcw16_state::pcw16_com_interrupt_2(int state)
+WRITE_LINE_MEMBER(pcw16_state::pcw16_com_interrupt_2)
 {
 	m_system_status &= ~(1 << 3);
 

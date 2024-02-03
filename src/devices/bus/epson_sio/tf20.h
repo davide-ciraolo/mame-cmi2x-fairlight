@@ -48,12 +48,12 @@ protected:
 
 private:
 	IRQ_CALLBACK_MEMBER( irq_callback );
-	void txda_w(int state);
-	void dtra_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( txda_w );
+	DECLARE_WRITE_LINE_MEMBER( dtra_w );
 
 	// from sio output
-	void rxc_w(int state);
-	void pinc_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( rxc_w );
+	DECLARE_WRITE_LINE_MEMBER( pinc_w );
 
 	uint8_t rom_disable_r();
 	uint8_t upd765_tc_r();

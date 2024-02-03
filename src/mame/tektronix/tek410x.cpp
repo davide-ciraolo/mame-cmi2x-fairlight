@@ -18,8 +18,6 @@
 #include "screen.h"
 
 
-namespace {
-
 class tek4107a_state : public driver_device
 {
 public:
@@ -57,9 +55,9 @@ private:
 	u16 system_reset_r();
 
 	void ppi_pc_w(u8 data);
-	void kb_rdata_w(int state);
-	void kb_tdata_w(int state);
-	void kb_rclamp_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(kb_rdata_w);
+	DECLARE_WRITE_LINE_MEMBER(kb_tdata_w);
+	DECLARE_WRITE_LINE_MEMBER(kb_rclamp_w);
 
 	void xpos_w(u16 data);
 	void ypos_w(u16 data);
@@ -124,14 +122,14 @@ void tek4107a_state::ppi_pc_w(u8 data)
 	m_ppi_pc = data;
 }
 
-void tek4107a_state::kb_rdata_w(int state)
+WRITE_LINE_MEMBER(tek4107a_state::kb_rdata_w)
 {
 	m_kb_rdata = state;
 	if (!m_kb_rclamp)
 		m_duart[0]->rx_a_w(state);
 }
 
-void tek4107a_state::kb_rclamp_w(int state)
+WRITE_LINE_MEMBER(tek4107a_state::kb_rclamp_w)
 {
 	if (m_kb_rclamp != !state)
 	{
@@ -144,7 +142,7 @@ void tek4107a_state::kb_rclamp_w(int state)
 	}
 }
 
-void tek4107a_state::kb_tdata_w(int state)
+WRITE_LINE_MEMBER(tek4107a_state::kb_tdata_w)
 {
 	if (m_kb_tdata != state)
 	{
@@ -372,9 +370,6 @@ ROM_START( tek4109a )
 	ROM_REGION( 0x1000, "chargen", 0 )
 	ROM_LOAD( "160-3087 v1.0.u855", 0x0000, 0x1000, CRC(97479528) SHA1(e9e15f1f64b3b6bd139accd51950bae71fdc2193) )
 ROM_END
-
-} // anonymous namespace
-
 
 /* System Drivers */
 

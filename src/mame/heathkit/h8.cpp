@@ -57,7 +57,6 @@ Official test program from pages 4 to 8 of the operator's manual:
 #include "formats/h8_cas.h"
 #include "h8.lh"
 
-namespace {
 
 class h8_state : public driver_device
 {
@@ -89,7 +88,7 @@ private:
 	void portf0_w(u8 data);
 	void portf1_w(u8 data);
 	void h8_status_callback(u8 data);
-	void h8_inte_callback(int state);
+	DECLARE_WRITE_LINE_MEMBER(h8_inte_callback);
 	TIMER_DEVICE_CALLBACK_MEMBER(h8_irq_pulse);
 	TIMER_DEVICE_CALLBACK_MEMBER(kansas_r);
 	TIMER_DEVICE_CALLBACK_MEMBER(kansas_w);
@@ -105,11 +104,6 @@ private:
 	bool m_cassbit = 0;
 	bool m_cassold = 0;
 
-	// clocks
-	static constexpr XTAL H8_CLOCK = XTAL(12'288'000) / 6; // 2.048 MHz
-	static constexpr XTAL H8_BEEP_FRQ = H8_CLOCK / 2048;   // 1 kHz
-	static constexpr XTAL H8_IRQ_PULSE = H8_BEEP_FRQ / 2;
-
 	required_device<i8080_cpu_device> m_maincpu;
 	required_device<i8251_device> m_uart;
 	required_device<cassette_image_device> m_cass;
@@ -121,6 +115,11 @@ private:
 	output_finder<> m_ion_led;
 	output_finder<> m_run_led;
 };
+
+
+#define H8_CLOCK (XTAL(12'288'000) / 6)
+#define H8_BEEP_FRQ (H8_CLOCK / 1024)
+#define H8_IRQ_PULSE (H8_BEEP_FRQ / 2)
 
 
 TIMER_DEVICE_CALLBACK_MEMBER(h8_state::h8_irq_pulse)
@@ -282,7 +281,7 @@ void h8_state::machine_start()
 	save_item(NAME(m_cassold));
 }
 
-void h8_state::h8_inte_callback(int state)
+WRITE_LINE_MEMBER( h8_state::h8_inte_callback )
 {
 	// operate the ION LED
 	m_ion_led = !state;
@@ -407,9 +406,6 @@ ROM_START( h8 )
 	ROM_SYSTEM_BIOS(4, "bios4", "not working")
 	ROMX_LOAD( "2732_444-140_pam37.rom", 0x0000, 0x1000, CRC(53a540db) SHA1(90082d02ffb1d27e8172b11fff465bd24343486e), ROM_BIOS(4) )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

@@ -16,6 +16,7 @@ public:
 	void write(uint8_t data);
 
 protected:
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 
 private:

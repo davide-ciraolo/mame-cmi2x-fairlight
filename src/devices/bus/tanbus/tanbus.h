@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include <functional>
-#include <vector>
 
 
 //**************************************************************************
@@ -68,7 +66,7 @@ class tanbus_device : public device_t
 public:
 	// construction/destruction
 	tanbus_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
-	~tanbus_device();
+	~tanbus_device() { m_device_list.detach_all(); }
 
 	// inline configuration
 	auto out_irq_callback() { return m_out_irq_cb.bind(); }
@@ -83,9 +81,9 @@ public:
 
 	void set_inhibit_lines(offs_t offset);
 
-	void irq_w(int state) { m_out_irq_cb(state); }
-	void nmi_w(int state) { m_out_nmi_cb(state); }
-	void so_w(int state) { m_out_so_cb(state); }
+	DECLARE_WRITE_LINE_MEMBER(irq_w) { m_out_irq_cb(state); }
+	DECLARE_WRITE_LINE_MEMBER(nmi_w) { m_out_nmi_cb(state); }
+	DECLARE_WRITE_LINE_MEMBER(so_w) { m_out_so_cb(state); }
 
 	// pgm board has additional cable to fully decode the character generator
 	void pgm_w(offs_t offset, uint8_t data) { m_out_pgm_cb(offset, data); }
@@ -108,7 +106,7 @@ private:
 	int m_inhram;
 	int m_block_enable;
 
-	std::vector<std::reference_wrapper<device_tanbus_interface> > m_device_list;
+	simple_list<device_tanbus_interface> m_device_list;
 };
 
 
@@ -120,8 +118,11 @@ DECLARE_DEVICE_TYPE(TANBUS, tanbus_device)
 class device_tanbus_interface : public device_interface
 {
 	friend class tanbus_device;
+	template <class ElementType> friend class simple_list;
 
 public:
+	device_tanbus_interface *next() const { return m_next; }
+
 	// bus access
 	virtual uint8_t read(offs_t offset, int inhrom, int inhram, int be) { return 0xff; }
 	virtual void write(offs_t offset, uint8_t data, int inhrom, int inhram, int be) { }
@@ -132,6 +133,9 @@ protected:
 
 	tanbus_device *m_tanbus;
 	int m_page;
+
+private:
+	device_tanbus_interface *m_next;
 };
 
 

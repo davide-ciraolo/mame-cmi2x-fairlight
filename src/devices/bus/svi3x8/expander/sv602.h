@@ -44,9 +44,9 @@ protected:
 
 private:
 	// from slots
-	void int_w(int state);
-	void romdis_w(int state);
-	void ramdis_w(int state);
+	WRITE_LINE_MEMBER( int_w );
+	WRITE_LINE_MEMBER( romdis_w );
+	WRITE_LINE_MEMBER( ramdis_w );
 
 	required_device<svi_slot_bus_device> m_slotbus;
 };

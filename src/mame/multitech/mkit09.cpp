@@ -46,8 +46,6 @@ Test Paste:
 #include "mkit09.lh"
 
 
-namespace {
-
 class mkit09_state : public driver_device
 {
 public:
@@ -297,7 +295,7 @@ void mkit09_state::mkit09(machine_config &config)
 	SPEAKER(config, "mono").front_center();
 
 	/* Devices */
-	PIA6821(config, m_pia);
+	PIA6821(config, m_pia, 0);
 	m_pia->readpa_handler().set(FUNC(mkit09_state::pa_r));
 	m_pia->readpb_handler().set(FUNC(mkit09_state::pb_r));
 	m_pia->writepa_handler().set(FUNC(mkit09_state::pa_w));
@@ -325,7 +323,7 @@ void mkit09a_state::mkit09a(machine_config &config)
 	SPEAKER(config, "mono").front_center();
 
 	/* Devices */
-	PIA6821(config, m_pia);
+	PIA6821(config, m_pia, 0);
 	m_pia->readpa_handler().set(FUNC(mkit09a_state::pa_r));
 	m_pia->readpb_handler().set(FUNC(mkit09a_state::pb_r));
 	m_pia->writepa_handler().set(FUNC(mkit09a_state::pa_w));
@@ -352,9 +350,6 @@ ROM_START( mkit09a )
 	ROM_FILL(0x99b,1,0x06) // fix start address
 	ROM_FILL(0x99c,1,0x63) // ... so that MEM starts at 0000 instead of F908.
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

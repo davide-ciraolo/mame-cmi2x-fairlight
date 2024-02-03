@@ -17,19 +17,19 @@
 #include "formats/ti99_dsk.h"
 #include "machine/rescap.h"
 
-#define LOG_WARN        (1U << 1)    // Warnings
-#define LOG_CONFIG      (1U << 2)
-#define LOG_RW          (1U << 3)
-#define LOG_PORTS       (1U << 4)    // too noisy in RW
-#define LOG_CRU         (1U << 5)
-#define LOG_READY       (1U << 6)
-#define LOG_SIGNALS     (1U << 7)
-#define LOG_DRQ         (1U << 8)    // too noisy in SIGNALS
-#define LOG_DATA        (1U << 9)
-#define LOG_MOTOR       (1U << 10)
-#define LOG_ADDRESS     (1U << 11)
+#define LOG_WARN        (1U<<1)    // Warnings
+#define LOG_CONFIG      (1U<<2)
+#define LOG_RW          (1U<<3)
+#define LOG_PORTS       (1U<<4)    // too noisy in RW
+#define LOG_CRU         (1U<<5)
+#define LOG_READY       (1U<<6)
+#define LOG_SIGNALS     (1U<<7)
+#define LOG_DRQ         (1U<<8)    // too noisy in SIGNALS
+#define LOG_DATA        (1U<<9)
+#define LOG_MOTOR       (1U<<10)
+#define LOG_ADDRESS     (1U<<11)
 
-#define VERBOSE (LOG_CONFIG | LOG_WARN)
+#define VERBOSE ( LOG_CONFIG | LOG_WARN )
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(TI99_FDC, bus::ti99::peb::ti_fdc_device, "ti99_fdc", "TI-99 Standard DSSD Floppy Controller")
@@ -79,21 +79,21 @@ void ti_fdc_device::operate_ready_line()
 /*
  * Callbacks from the FD1771 chip
  */
-void ti_fdc_device::fdc_irq_w(int state)
+WRITE_LINE_MEMBER( ti_fdc_device::fdc_irq_w )
 {
 	m_IRQ = state? ASSERT_LINE : CLEAR_LINE;
 	LOGMASKED(LOG_SIGNALS, "INTRQ callback = %d\n", m_IRQ);
 	operate_ready_line();
 }
 
-void ti_fdc_device::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( ti_fdc_device::fdc_drq_w )
 {
 	m_DRQ = state? ASSERT_LINE : CLEAR_LINE;
 	LOGMASKED(LOG_DRQ, "DRQ callback = %d\n", m_DRQ);
 	operate_ready_line();
 }
 
-void ti_fdc_device::fdc_hld_w(int state)
+WRITE_LINE_MEMBER( ti_fdc_device::fdc_hld_w )
 {
 	m_HLD = state? ASSERT_LINE : CLEAR_LINE;
 	LOGMASKED(LOG_SIGNALS, "HLD callback = %d\n", m_HLD);
@@ -230,7 +230,7 @@ void ti_fdc_device::cruwrite(offs_t offset, uint8_t data)
 		m_crulatch->write_bit((offset >> 1) & 0x07, BIT(data, 0));
 }
 
-void ti_fdc_device::dskpgena_w(int state)
+WRITE_LINE_MEMBER(ti_fdc_device::dskpgena_w)
 {
 	// (De)select the card. Indicated by a LED on the board.
 	m_selected = state;
@@ -240,12 +240,12 @@ void ti_fdc_device::dskpgena_w(int state)
 /*
     Trigger the motor monoflop.
 */
-void ti_fdc_device::kaclk_w(int state)
+WRITE_LINE_MEMBER(ti_fdc_device::kaclk_w)
 {
 	m_motormf->b_w(state);
 }
 
-void ti_fdc_device::dvena_w(int state)
+WRITE_LINE_MEMBER(ti_fdc_device::dvena_w)
 {
 	m_DVENA = state;
 	LOGMASKED(LOG_MOTOR, "Motor %s\n", state? "on" : "off");
@@ -261,7 +261,7 @@ void ti_fdc_device::dvena_w(int state)
 	operate_ready_line();
 }
 
-void ti_fdc_device::waiten_w(int state)
+WRITE_LINE_MEMBER(ti_fdc_device::waiten_w)
 {
 	// Set disk ready/hold (bit 2)
 	// 0: ignore IRQ and DRQ
@@ -271,13 +271,13 @@ void ti_fdc_device::waiten_w(int state)
 	LOGMASKED(LOG_CRU, "Arm wait state logic (bit 2) = %d\n", state);
 }
 
-void ti_fdc_device::hlt_w(int state)
+WRITE_LINE_MEMBER(ti_fdc_device::hlt_w)
 {
 	// Load disk heads (HLT pin) (bit 3). Not implemented.
 	LOGMASKED(LOG_CRU, "Set head load (bit 3) = %d\n", state);
 }
 
-void ti_fdc_device::sidsel_w(int state)
+WRITE_LINE_MEMBER(ti_fdc_device::sidsel_w)
 {
 	// Select side of disk (bit 7)
 	LOGMASKED(LOG_CRU, "Set side (bit 7) = %d\n", state);
@@ -287,17 +287,17 @@ void ti_fdc_device::sidsel_w(int state)
 /*
     Drive selects
 */
-void ti_fdc_device::dsel1_w(int state)
+WRITE_LINE_MEMBER(ti_fdc_device::dsel1_w)
 {
 	select_drive(1, state);
 }
 
-void ti_fdc_device::dsel2_w(int state)
+WRITE_LINE_MEMBER(ti_fdc_device::dsel2_w)
 {
 	select_drive(2, state);
 }
 
-void ti_fdc_device::dsel3_w(int state)
+WRITE_LINE_MEMBER(ti_fdc_device::dsel3_w)
 {
 	select_drive(3, state);
 }

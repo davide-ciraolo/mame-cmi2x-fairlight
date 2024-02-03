@@ -79,7 +79,7 @@ void sv802_device::iorq_w(offs_t offset, uint8_t data)
 	}
 }
 
-void sv802_device::busy_w(int state)
+WRITE_LINE_MEMBER( sv802_device::busy_w )
 {
 	m_busy = state;
 }

@@ -2,7 +2,7 @@
 // copyright-holders:R. Belmont
 /*********************************************************************
 
-    a2estd80col.h
+    a2estd80col.c
 
     Apple IIe Standard 80 Column Card
 
@@ -33,15 +33,14 @@ protected:
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
-	virtual u8 read_auxram(uint16_t offset) override;
-	virtual void write_auxram(uint16_t offset, u8 data) override;
-	virtual u8 *get_vram_ptr() override;
-	virtual u8 *get_auxbank_ptr() override;
-	virtual u16 get_auxbank_mask() override;
+	virtual uint8_t read_auxram(uint16_t offset) override;
+	virtual void write_auxram(uint16_t offset, uint8_t data) override;
+	virtual uint8_t *get_vram_ptr() override;
+	virtual uint8_t *get_auxbank_ptr() override;
 	virtual bool allow_dhr() override { return false; }  // we don't allow DHR
 
 private:
-	u8 m_ram[0x400];
+	uint8_t m_ram[2*1024];
 };
 
 // device type definition

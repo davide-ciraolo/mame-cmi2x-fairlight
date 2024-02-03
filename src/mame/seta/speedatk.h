@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
-// copyright-holders:Angelo Salese, Pierpaolo Prazzoli, Takahiro Nogi
-#ifndef MAME_SETA_SPEEDATK_H
-#define MAME_SETA_SPEEDATK_H
+// copyright-holders:Angelo Salese, Pierpaolo Prazzoli
+#ifndef MAME_INCLUDES_SPEEDATK_H
+#define MAME_INCLUDES_SPEEDATK_H
 
 #pragma once
 
@@ -22,7 +22,6 @@ public:
 	{ }
 
 	void speedatk(machine_config &config);
-	void daifugo(machine_config &config);
 
 protected:
 	virtual void machine_start() override;
@@ -47,7 +46,6 @@ private:
 
 	uint8_t key_matrix_r();
 	void key_matrix_w(uint8_t data);
-	uint8_t daifugo_key_matrix_r();
 	uint8_t key_matrix_status_r();
 	void key_matrix_status_w(uint8_t data);
 	void m6845_w(offs_t offset, uint8_t data);
@@ -61,8 +59,6 @@ private:
 
 	void speedatk_io(address_map &map);
 	void speedatk_mem(address_map &map);
-	void daifugo_mem(address_map &map);
 };
 
-
-#endif // MAME_SETA_SPEEDATK_H
+#endif // MAME_INCLUDES_SPEEDATK_H

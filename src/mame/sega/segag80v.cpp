@@ -156,7 +156,7 @@ static constexpr int WAIT_STATES = 2;
  *
  *************************************/
 
-void segag80v_state::service_switch_w(int state)
+WRITE_LINE_MEMBER(segag80v_state::service_switch_w)
 {
 	// pressing the service switch sends an NMI
 	if (state)
@@ -322,7 +322,7 @@ u8 segag80v_state::spinner_input_r()
  *
  *************************************/
 
-int segag80v_state::elim4_joint_coin_r()
+READ_LINE_MEMBER(segag80v_state::elim4_joint_coin_r)
 {
 	return (m_coins->read() & 0xf) != 0xf;
 }
@@ -400,7 +400,7 @@ void segag80v_state::unknown_w(u8 data)
 		osd_printf_debug("%04X:unknown_w = %02X\n", m_maincpu->pc(), data);
 }
 
-int segag80v_state::draw_r()
+READ_LINE_MEMBER(segag80v_state::draw_r)
 {
 	return (machine().scheduler().time() < m_draw_end_time);
 }
@@ -444,7 +444,7 @@ void segag80v_state::update_int()
 	m_coin_ff_state &= ~0x04;
 }
 
-void segag80v_state::irq_ack_w(int state)
+WRITE_LINE_MEMBER(segag80v_state::irq_ack_w)
 {
 	if (state)
 	{

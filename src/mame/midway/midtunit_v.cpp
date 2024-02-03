@@ -14,6 +14,7 @@
 #include "midtview.ipp"
 
 #include "debug/debugcon.h"
+#include "debug/debugcmd.h"
 #include "debugger.h"
 
 #include "emuopts.h" // Used by PNG logging
@@ -76,7 +77,7 @@ void midtunit_video_device::debug_init()
 	}
 }
 
-void midtunit_video_device::debug_commands(const std::vector<std::string_view> &params)
+void midtunit_video_device::debug_commands(const std::vector<std::string> &params)
 {
 	if (params.size() < 1)
 		return;
@@ -87,7 +88,7 @@ void midtunit_video_device::debug_commands(const std::vector<std::string_view> &
 		debug_help_command(params);
 }
 
-void midtunit_video_device::debug_help_command(const std::vector<std::string_view> &params)
+void midtunit_video_device::debug_help_command(const std::vector<std::string> &params)
 {
 	debugger_console &con = machine().debugger().console();
 
@@ -96,7 +97,7 @@ void midtunit_video_device::debug_help_command(const std::vector<std::string_vie
 	con.printf("  midblit help -- this list\n");
 }
 
-void midtunit_video_device::debug_png_dma_command(const std::vector<std::string_view> &params)
+void midtunit_video_device::debug_png_dma_command(const std::vector<std::string> &params)
 {
 	debugger_console &con = machine().debugger().console();
 
@@ -114,7 +115,7 @@ void midtunit_video_device::debug_png_dma_command(const std::vector<std::string_
 
 	bool old_state = m_log_png;
 	bool new_state = false;
-	if (!con.validate_boolean_parameter(params[1], new_state))
+	if (!machine().debugger().commands().validate_boolean_parameter(params[1], new_state))
 		return;
 
 	if (!new_state)
@@ -140,11 +141,11 @@ void midtunit_video_device::debug_png_dma_command(const std::vector<std::string_
 		return;
 	}
 
-	m_log_path = params[2];
+	strncpy(m_log_path, params[2].c_str(), 2047);
 
 	if (params.size() == 4)
 	{
-		if (!con.validate_boolean_parameter(params[3], m_log_json))
+		if (!machine().debugger().commands().validate_boolean_parameter(params[3], m_log_json))
 			return;
 	}
 
@@ -711,7 +712,7 @@ void midtunit_video_device::midtunit_dma_w(offs_t offset, uint16_t data, uint16_
 	if (!(command & 0x8000))
 		return;
 
-	auto profile = g_profiler.start(PROFILER_USER1);
+	g_profiler.start(PROFILER_USER1);
 
 	/* determine bpp */
 	int bpp = (command >> 12) & 7;
@@ -828,6 +829,8 @@ void midtunit_video_device::midtunit_dma_w(offs_t offset, uint16_t data, uint16_
 	/* signal we're done */
 skipdma:
 	m_dma_timer->adjust(attotime::from_nsec(41 * pixels));
+
+	g_profiler.stop();
 }
 
 
@@ -1013,6 +1016,7 @@ void midtunit_video_device::log_bitmap(int command, int bpp, bool Skip)
 
 	if (m_log_json)
 	{
+		char hex_buf[11];
 		rapidjson::StringBuffer s;
 		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(s);
 		emu_file json(m_log_path, OPEN_FLAG_WRITE | OPEN_FLAG_CREATE | OPEN_FLAG_CREATE_PATHS);
@@ -1028,13 +1032,13 @@ void midtunit_video_device::log_bitmap(int command, int bpp, bool Skip)
 		writer.Key("DMAState");
 		writer.StartObject();
 
-		auto hex_buf = util::string_format("0x%08x", raw_offset);
+		sprintf(hex_buf, "0x%08x", raw_offset);
 		writer.Key("MemoryAddress");
-		writer.String(hex_buf.c_str());
+		writer.String(hex_buf);
 
-		hex_buf = util::string_format("0x%08x", m_dma_state.offset >> 3);
+		sprintf(hex_buf, "0x%08x", m_dma_state.offset >> 3);
 		writer.Key("ROMSourceOffsetByte");
-		writer.String(hex_buf.c_str());
+		writer.String(hex_buf);
 
 		writer.Key("ROMSourceOffsetBit");
 		writer.Int(m_dma_state.offset & 7);

@@ -37,9 +37,6 @@
 #include "formats/os9_dsk.h"
 #include "softlist_dev.h"
 
-
-namespace {
-
 #define DMA_DRQ         (m_dma_status & 0x80)
 #define DMA_INTRQ       (m_dma_status & 0x40)
 #define DMA_MOTOR_DELAY (m_dma_status & 0x20)
@@ -72,7 +69,10 @@ public:
 		, m_maincpu(*this, "maincpu")
 		, m_irqs(*this, "irqs")
 		, m_fdc(*this, "fdc")
-		, m_floppy(*this, "fdc:%u", 0U)
+		, m_floppy0(*this, "fdc:0")
+		, m_floppy1(*this, "fdc:1")
+		, m_floppy2(*this, "fdc:2")
+		, m_floppy3(*this, "fdc:3")
 		, m_ram(*this, RAM_TAG)
 		, m_rom(*this, "roms")
 		, m_acia1(*this, "acia1")
@@ -92,8 +92,8 @@ public:
 
 private:
 	void system_w(offs_t offset, uint8_t data);
-	void fdc_irq_w(int state);
-	void fdc_drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(fdc_irq_w);
+	DECLARE_WRITE_LINE_MEMBER(fdc_drq_w);
 	uint8_t dma_r(offs_t offset);
 	void dma_w(offs_t offset, uint8_t data);
 	uint8_t fdc_r(offs_t offset);
@@ -122,7 +122,10 @@ private:
 	uint8_t m_task;
 	uint8_t m_task_banks[16][16];
 	uint8_t m_selected_drive;
-	bool m_floppy_ready[4];
+	bool m_floppy0_ready;
+	bool m_floppy1_ready;
+	bool m_floppy2_ready;
+	bool m_floppy3_ready;
 
 	uint8_t m_pia1_pa;
 	uint8_t m_pia1_pb;
@@ -136,7 +139,10 @@ private:
 	required_device<cpu_device> m_maincpu;
 	required_device<input_merger_device> m_irqs;
 	required_device<fd1797_device> m_fdc;
-	required_device_array<floppy_connector, 4> m_floppy;
+	required_device<floppy_connector> m_floppy0;
+	required_device<floppy_connector> m_floppy1;
+	required_device<floppy_connector> m_floppy2;
+	required_device<floppy_connector> m_floppy3;
 	required_device<ram_device> m_ram;
 	required_memory_region m_rom;
 	required_device<acia6850_device> m_acia1;
@@ -277,22 +283,22 @@ void gimix_state::dma_w(offs_t offset, uint8_t data)
 		if(data & 0x01)
 		{
 			m_selected_drive = 1;
-			m_fdc->set_floppy(m_floppy[0]->get_device());
+			m_fdc->set_floppy(m_floppy0->get_device());
 		}
 		else if(data & 0x02)
 		{
 			m_selected_drive = 2;
-			m_fdc->set_floppy(m_floppy[1]->get_device());
+			m_fdc->set_floppy(m_floppy1->get_device());
 		}
 		else if(data & 0x04)
 		{
 			m_selected_drive = 3;
-			m_fdc->set_floppy(m_floppy[2]->get_device());
+			m_fdc->set_floppy(m_floppy2->get_device());
 		}
 		else if(data & 0x08)
 		{
 			m_selected_drive = 4;
-			m_fdc->set_floppy(m_floppy[3]->get_device());
+			m_fdc->set_floppy(m_floppy3->get_device());
 		}
 		else
 		{
@@ -300,14 +306,29 @@ void gimix_state::dma_w(offs_t offset, uint8_t data)
 			m_fdc->set_floppy(nullptr);
 		}
 
-		for(int n = 0; n < 4; n++)
+		if(m_selected_drive != 1)
 		{
-			if(m_selected_drive != n + 1)
-			{
-				m_floppy[n]->get_device()->mon_w(1);
-				m_floppy_ready[n] = false;
-				logerror("FDC: Floppy drive %d motor off\n", n);
-			}
+			m_floppy0->get_device()->mon_w(1);
+			m_floppy0_ready = false;
+			logerror("FDC: Floppy drive 0 motor off\n");
+		}
+		if(m_selected_drive != 2)
+		{
+			m_floppy1->get_device()->mon_w(1);
+			m_floppy1_ready = false;
+			logerror("FDC: Floppy drive 1 motor off\n");
+		}
+		if(m_selected_drive != 3)
+		{
+			m_floppy2->get_device()->mon_w(1);
+			m_floppy2_ready = false;
+			logerror("FDC: Floppy drive 2 motor off\n");
+		}
+		if(m_selected_drive != 4)
+		{
+			m_floppy3->get_device()->mon_w(1);
+			m_floppy3_ready = false;
+			logerror("FDC: Floppy drive 3 motor off\n");
 		}
 		break;
 	case 1:
@@ -317,8 +338,28 @@ void gimix_state::dma_w(offs_t offset, uint8_t data)
 			m_dma_status |= 0x12;
 		else
 			m_dma_status &= ~0x12;
-		if(m_selected_drive != 0)
-			m_floppy[m_selected_drive - 1]->get_device()->ss_w(BIT(data, 6));
+		if(data & 0x40)
+		{
+			if(m_selected_drive == 1)
+				m_floppy0->get_device()->ss_w(1);
+			if(m_selected_drive == 2)
+				m_floppy1->get_device()->ss_w(1);
+			if(m_selected_drive == 3)
+				m_floppy2->get_device()->ss_w(1);
+			if(m_selected_drive == 4)
+				m_floppy3->get_device()->ss_w(1);
+		}
+		else
+		{
+			if(m_selected_drive == 1)
+				m_floppy0->get_device()->ss_w(0);
+			if(m_selected_drive == 2)
+				m_floppy1->get_device()->ss_w(0);
+			if(m_selected_drive == 3)
+				m_floppy2->get_device()->ss_w(0);
+			if(m_selected_drive == 4)
+				m_floppy3->get_device()->ss_w(0);
+		}
 		if((data & 0x80) == 0)
 			m_irqs->in_w<6>(0);
 		break;
@@ -340,11 +381,29 @@ void gimix_state::dma_w(offs_t offset, uint8_t data)
 uint8_t gimix_state::fdc_r(offs_t offset)
 {
 	// motors are switched on on FDC access
-	if(m_selected_drive != 0 && !m_floppy_ready[m_selected_drive - 1] && !machine().side_effects_disabled())
+	if(m_selected_drive == 1 && m_floppy0_ready == false)
 	{
-		m_floppy[m_selected_drive - 1]->get_device()->mon_w(0);
-		m_floppy_ready[m_selected_drive - 1] = true;
-		logerror("FDC: Floppy drive %d motor on\n", m_selected_drive - 1);
+		m_floppy0->get_device()->mon_w(0);
+		m_floppy0_ready = true;
+		logerror("FDC: Floppy drive 0 motor on\n");
+	}
+	if(m_selected_drive == 2 && m_floppy1_ready == false)
+	{
+		m_floppy1->get_device()->mon_w(0);
+		m_floppy1_ready = true;
+		logerror("FDC: Floppy drive 1 motor on\n");
+	}
+	if(m_selected_drive == 3 && m_floppy2_ready == false)
+	{
+		m_floppy2->get_device()->mon_w(0);
+		m_floppy2_ready = true;
+		logerror("FDC: Floppy drive 2 motor on\n");
+	}
+	if(m_selected_drive == 4 && m_floppy3_ready == false)
+	{
+		m_floppy3->get_device()->mon_w(0);
+		m_floppy3_ready = true;
+		logerror("FDC: Floppy drive 3 motor on\n");
 	}
 	return m_fdc->read(offset);
 }
@@ -352,12 +411,14 @@ uint8_t gimix_state::fdc_r(offs_t offset)
 void gimix_state::fdc_w(offs_t offset, uint8_t data)
 {
 	// motors are switched on on FDC access
-	if(m_selected_drive != 0 && !m_floppy_ready[m_selected_drive - 1])
-	{
-		m_floppy[m_selected_drive - 1]->get_device()->mon_w(0);
-		m_floppy_ready[m_selected_drive - 1] = true;
-		logerror("FDC: Floppy drive %d motor on\n", m_selected_drive - 1);
-	}
+	if(m_selected_drive == 1)
+		m_floppy0->get_device()->mon_w(0);
+	if(m_selected_drive == 2)
+		m_floppy1->get_device()->mon_w(0);
+	if(m_selected_drive == 3)
+		m_floppy2->get_device()->mon_w(0);
+	if(m_selected_drive == 4)
+		m_floppy3->get_device()->mon_w(0);
 	m_fdc->write(offset,data);
 }
 
@@ -384,7 +445,7 @@ void gimix_state::pia_pb_w(uint8_t data)
 }
 
 
-void gimix_state::fdc_irq_w(int state)
+WRITE_LINE_MEMBER(gimix_state::fdc_irq_w)
 {
 	if(state)
 		m_dma_status |= 0x40;
@@ -397,7 +458,7 @@ void gimix_state::fdc_irq_w(int state)
 		m_irqs->in_w<6>(0);
 }
 
-void gimix_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER(gimix_state::fdc_drq_w)
 {
 	if(state && DMA_ENABLED)
 	{
@@ -433,7 +494,10 @@ void gimix_state::machine_reset()
 	m_irqs->in_w<6>(0);
 	m_task = 0x00;
 	m_selected_drive = 0;
-	std::fill(std::begin(m_floppy_ready), std::end(m_floppy_ready), false);
+	m_floppy0_ready = false;
+	m_floppy1_ready = false;
+	m_floppy2_ready = false;
+	m_floppy3_ready = false;
 	m_lowerram->set_base(m_ram->pointer());
 	if(m_ram->size() > 65536)
 		m_upperram->set_base(m_ram->pointer()+0x10000);
@@ -463,8 +527,8 @@ void gimix_state::machine_start()
 			m_bank[bank]->space(AS_PROGRAM).install_readwrite_bank(0x10000,m_ram->size()-1,m_upperram);
 		}
 	}
-	m_floppy[0]->get_device()->set_rpm(300);
-	m_floppy[1]->get_device()->set_rpm(300);
+	m_floppy0->get_device()->set_rpm(300);
+	m_floppy1->get_device()->set_rpm(300);
 }
 
 void gimix_state::driver_start()
@@ -786,8 +850,5 @@ ROM_START( gimix )
 	ROM_REGION( 0x10000, "xebec", 0)
 	ROM_LOAD( "gimixhd.h11",  0x000000, 0x001000, CRC(35c12201) SHA1(51ac9052f9757d79c7f5bd3aa5d8421e98cfcc37) )
 ROM_END
-
-} // anonymous namespace
-
 
 COMP( 1980, gimix, 0, 0, gimix, gimix, gimix_state, empty_init, "Gimix", "Gimix 6809 System", MACHINE_NO_SOUND_HW )

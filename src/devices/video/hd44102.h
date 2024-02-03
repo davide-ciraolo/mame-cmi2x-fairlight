@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /**********************************************************************
 
-    HD44102 Dot Matrix Liquid Crystal Graphic Display Column Driver
+    HD44102 Dot Matrix Liquid Crystal Graphic Display Column Driver emulation
 
 **********************************************************************/
 
@@ -18,20 +18,30 @@
 
 // ======================> hd44102_device
 
-class hd44102_device : public device_t
+class hd44102_device :  public device_t,
+						public device_video_interface
 {
 public:
 	// construction/destruction
-	hd44102_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock = 0);
+	template <typename T>
+	hd44102_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock, T &&screen_tag, int sx, int sy)
+		:hd44102_device(mconfig, tag, owner, clock)
+	{
+		set_screen(std::forward<T>(screen_tag));
+		set_offsets(sx, sy);
+	}
+
+	hd44102_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
 	// inline configuration helpers
-	void set_screen_offsets(int sx, int sy) { m_sx = sx; m_sy = sy; } // when using screen_update
+	void set_offsets(int sx, int sy) { m_sx = sx; m_sy = sy; }
 
-	u8 read(offs_t offset);
-	void write(offs_t offset, u8 data);
+	uint8_t read(offs_t offset);
+	void write(offs_t offset, uint8_t data);
 
-	const u8 *render();
-	u32 screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
+	void cs2_w(int state);
+
+	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
 protected:
 	// device-level overrides
@@ -39,22 +49,23 @@ protected:
 	virtual void device_reset() override;
 
 private:
-	u8 status_r();
-	void control_w(u8 data);
+	uint8_t status_r();
+	void control_w(uint8_t data);
 
-	void count_up_or_down();
-	u8 data_r();
-	void data_w(u8 data);
+	uint8_t data_r();
+	void data_w(uint8_t data);
 
-	u8 m_ram[4][50];            // display memory
-	u8 m_render_buf[32 * 50];   // intermediate pixel buffer
+	inline void count_up_or_down();
 
-	u8 m_status;                // status register
-	u8 m_output;                // output register
+	uint8_t m_ram[4][50];             // display memory
 
-	u8 m_page;                  // display start page
-	int m_x;                    // X address
-	int m_y;                    // Y address
+	uint8_t m_status;                 // status register
+	uint8_t m_output;                 // output register
+
+	int m_cs2;                      // chip select
+	int m_page;                     // display start page
+	int m_x;                        // X address
+	int m_y;                        // Y address
 
 	int m_sx;
 	int m_sy;

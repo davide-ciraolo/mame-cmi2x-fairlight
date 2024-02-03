@@ -1,7 +1,7 @@
 // PpmdEncoder.h
 
-#ifndef ZIP7_INC_COMPRESS_PPMD_ENCODER_H
-#define ZIP7_INC_COMPRESS_PPMD_ENCODER_H
+#ifndef __COMPRESS_PPMD_ENCODER_H
+#define __COMPRESS_PPMD_ENCODER_H
 
 #include "../../../C/Ppmd7.h"
 
@@ -29,17 +29,26 @@ struct CEncProps
   void Normalize(int level);
 };
 
-Z7_CLASS_IMP_COM_3(
-  CEncoder
-  , ICompressCoder
-  , ICompressSetCoderProperties
-  , ICompressWriteCoderProperties
-)
+class CEncoder :
+  public ICompressCoder,
+  public ICompressSetCoderProperties,
+  public ICompressWriteCoderProperties,
+  public CMyUnknownImp
+{
   Byte *_inBuf;
   CByteOutBufWrap _outStream;
+  CPpmd7z_RangeEnc _rangeEnc;
   CPpmd7 _ppmd;
   CEncProps _props;
 public:
+  MY_UNKNOWN_IMP3(
+      ICompressCoder,
+      ICompressSetCoderProperties,
+      ICompressWriteCoderProperties)
+  STDMETHOD(Code)(ISequentialInStream *inStream, ISequentialOutStream *outStream,
+      const UInt64 *inSize, const UInt64 *outSize, ICompressProgressInfo *progress);
+  STDMETHOD(SetCoderProperties)(const PROPID *propIDs, const PROPVARIANT *props, UInt32 numProps);
+  STDMETHOD(WriteCoderProperties)(ISequentialOutStream *outStream);
   CEncoder();
   ~CEncoder();
 };

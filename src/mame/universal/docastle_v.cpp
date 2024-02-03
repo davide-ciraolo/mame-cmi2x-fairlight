@@ -78,18 +78,13 @@ void docastle_state::docastle_colorram_w(offs_t offset, uint8_t data)
 
 uint8_t docastle_state::inputs_flipscreen_r(offs_t offset)
 {
-	uint8_t buf = 0xff;
+	// inputs pass through LS244 non-inverting buffer
+	uint8_t buf = (m_inp[1]->read_h() << 4) | m_inp[0]->read_h();
 
-	if (!machine().side_effects_disabled())
-	{
-		// inputs pass through LS244 non-inverting buffer
-		buf = (m_inp[1]->read_h() << 4) | m_inp[0]->read_h();
-
-		// LS273 latches address bits on rising edge of address decode
-		flip_screen_set(BIT(offset, 7));
-		m_inp[0]->write_s(offset & 7);
-		m_inp[1]->write_s(offset & 7);
-	}
+	// LS273 latches address bits on rising edge of address decode
+	flip_screen_set(BIT(offset, 7));
+	m_inp[0]->write_s(offset & 7);
+	m_inp[1]->write_s(offset & 7);
 
 	return buf;
 }
@@ -126,9 +121,11 @@ VIDEO_START_MEMBER(docastle_state,dorunrun)
 
 void docastle_state::draw_sprites( screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect )
 {
+	int offs;
+
 	screen.priority().fill(1);
 
-	for (int offs = m_spriteram.bytes() - 4; offs >= 0; offs -= 4)
+	for (offs = m_spriteram.bytes() - 4; offs >= 0; offs -= 4)
 	{
 		int sx, sy, flipx, flipy, code, color;
 

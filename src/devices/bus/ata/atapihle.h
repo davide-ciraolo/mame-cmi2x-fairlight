@@ -13,10 +13,10 @@
 
 #pragma once
 
-#include "machine/atahle.h"
+#include "atahle.h"
 #include "machine/t10spc.h"
 
-class atapi_hle_device : public ata_hle_device_base, public virtual t10spc
+class atapi_hle_device : public ata_hle_device, public virtual t10spc
 {
 public:
 	enum atapi_features_flag_t
@@ -46,8 +46,6 @@ public:
 		PACKET_COMMAND_RESPONSE_DRQ_50US
 	};
 
-	void set_is_ready(bool state);
-
 protected:
 	atapi_hle_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
 
@@ -57,7 +55,7 @@ protected:
 	virtual int sector_length() override { return ATAPI_BUFFER_LENGTH; }
 	virtual void process_buffer() override;
 	virtual void fill_buffer() override;
-	virtual bool is_ready() override { return m_is_ready; }
+	virtual bool is_ready() override { return false; }
 	virtual void signature() override;
 	virtual void process_command() override;
 	virtual void finished_command() override;
@@ -72,7 +70,6 @@ private:
 
 	int m_packet;
 	int m_data_size;
-	bool m_is_ready;
 
 	static constexpr int ATAPI_BUFFER_LENGTH = 0xf800;
 };

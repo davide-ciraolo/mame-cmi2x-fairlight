@@ -34,8 +34,6 @@
 #include "tilemap.h"
 
 
-namespace {
-
 class skyarmy_state : public driver_device
 {
 public:
@@ -69,12 +67,12 @@ private:
 	tilemap_t* m_tilemap = nullptr;
 	int m_nmi = 0;
 
-	void flip_screen_x_w(int state);
-	void flip_screen_y_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(flip_screen_x_w);
+	DECLARE_WRITE_LINE_MEMBER(flip_screen_y_w);
 	void videoram_w(offs_t offset, uint8_t data);
 	void colorram_w(offs_t offset, uint8_t data);
-	void coin_counter_w(int state);
-	void nmi_enable_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(coin_counter_w);
+	DECLARE_WRITE_LINE_MEMBER(nmi_enable_w);
 
 	TILE_GET_INFO_MEMBER(get_tile_info);
 
@@ -92,12 +90,12 @@ void skyarmy_state::machine_start()
 	save_item(NAME(m_nmi));
 }
 
-void skyarmy_state::flip_screen_x_w(int state)
+WRITE_LINE_MEMBER(skyarmy_state::flip_screen_x_w)
 {
 	flip_screen_x_set(state);
 }
 
-void skyarmy_state::flip_screen_y_w(int state)
+WRITE_LINE_MEMBER(skyarmy_state::flip_screen_y_w)
 {
 	flip_screen_y_set(state);
 }
@@ -199,13 +197,13 @@ INTERRUPT_GEN_MEMBER(skyarmy_state::nmi_source)
 }
 
 
-void skyarmy_state::coin_counter_w(int state)
+WRITE_LINE_MEMBER(skyarmy_state::coin_counter_w)
 {
 	machine().bookkeeping().coin_counter_w(0, state);
 }
 
 
-void skyarmy_state::nmi_enable_w(int state)
+WRITE_LINE_MEMBER(skyarmy_state::nmi_enable_w)
 {
 	m_nmi = state;
 	if (!m_nmi)
@@ -375,8 +373,5 @@ ROM_START( skyarmy )
 	ROM_REGION( 0x0020, "proms", 0 )
 	ROM_LOAD( "a6.bin",  0x0000, 0x0020, CRC(c721220b) SHA1(61b3320fb616c0600d56840cb6438616c7e0c6eb) )
 ROM_END
-
-} // anonymous namespace
-
 
 GAME( 1982, skyarmy, 0, skyarmy, skyarmy, skyarmy_state, empty_init, ROT90, "Shoei", "Sky Army", MACHINE_SUPPORTS_SAVE )

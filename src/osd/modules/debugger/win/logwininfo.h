@@ -15,8 +15,6 @@
 #include "debugwininfo.h"
 
 
-namespace osd::debugger::win {
-
 class logwin_info : public debugwin_info
 {
 public:
@@ -25,9 +23,6 @@ public:
 
 protected:
 	virtual bool handle_command(WPARAM wparam, LPARAM lparam) override;
-	virtual void save_configuration_to_node(util::xml::data_node &node) override;
 };
 
-} // namespace osd::debugger::win
-
-#endif // MAME_DEBUGGER_WIN_LOGWININFO_H
+#endif

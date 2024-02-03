@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/comx35_dsk.cpp
+    formats/comx35_dsk.c
 
     COMX-35 disk image format
 
@@ -42,17 +42,17 @@ comx35_format::comx35_format() : wd177x_format(formats)
 {
 }
 
-const char *comx35_format::name() const noexcept
+const char *comx35_format::name() const
 {
 	return "comx35";
 }
 
-const char *comx35_format::description() const noexcept
+const char *comx35_format::description() const
 {
 	return "COMX-35 disk image";
 }
 
-const char *comx35_format::extensions() const noexcept
+const char *comx35_format::extensions() const
 {
 	return "img";
 }

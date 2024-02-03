@@ -40,21 +40,23 @@ protected:
 	virtual void device_reset() override;
 	virtual void device_add_mconfig(machine_config &config) override;
 
-private:
-	void reset_peripherals(int state);
+	virtual void m68k_reset_peripherals() override;
 
+private:
 	void set_ipl(int level);
-	void timer0_interrupt(int state);
-	void timer1_interrupt(int state);
-	void mbus_interrupt(int state);
+	DECLARE_WRITE_LINE_MEMBER(timer0_interrupt);
+	DECLARE_WRITE_LINE_MEMBER(timer1_interrupt);
+	DECLARE_WRITE_LINE_MEMBER(mbus_interrupt);
 
 	uint8_t int_ack(offs_t offset);
 
-	void m68307_duart_irq_handler(int state);
-	void m68307_duart_txa(int state) { m_write_a_tx(state); }
-	void m68307_duart_txb(int state) { m_write_b_tx(state);  }
+	DECLARE_WRITE_LINE_MEMBER(m68307_duart_irq_handler);
+	DECLARE_WRITE_LINE_MEMBER(m68307_duart_txa) { m_write_a_tx(state); }
+	DECLARE_WRITE_LINE_MEMBER(m68307_duart_txb) { m_write_b_tx(state);  }
 	uint8_t m68307_duart_input_r() { return m_read_inport();  }
 	void m68307_duart_output_w(uint8_t data) { m_write_outport(data);  }
+
+	void init16_m68307(address_space &space);
 
 	int calc_cs(offs_t address) const;
 

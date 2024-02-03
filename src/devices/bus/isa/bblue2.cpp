@@ -244,7 +244,7 @@ void isa8_babyblue2_device::z80_control_w(offs_t offset, uint8_t data)
 	}
 }
 
-void isa8_babyblue2_device::lpt_irq(int state)
+WRITE_LINE_MEMBER(isa8_babyblue2_device::lpt_irq)
 {
 	if(m_h2->read() & 0x01)
 		m_isa->irq5_w(state);

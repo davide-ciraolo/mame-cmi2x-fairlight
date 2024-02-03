@@ -17,11 +17,9 @@
 #include "emu.h"
 #include "dai.h"
 
-#define LOG_LINES (1U << 1)
+#define DEBUG_DAI_VIDEO 0
 
-#define VERBOSE (0)
-#include "logmacro.h"
-
+#define LOG_DAI_VIDEO_LINE(_mode, _unit, _resolution, _repeat, _scan) do { if (DEBUG_DAI_VIDEO) logerror ("Mode: %02x, Unit: %02x, Resolution: %02x, Repeat: %d, Current line: %d\n", _mode, _unit, _resolution, _repeat, _scan); } while (0)
 
 const rgb_t dai_state::s_palette[16] =
 {
@@ -745,7 +743,7 @@ uint32_t dai_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap, c
 			break;
 		}
 		current_scan_line += line_repeat_count*2+2;
-		LOGMASKED(LOG_LINES, "Mode: %02x, Unit: %02x, Resolution: %02x, Repeat: %d, Current line: %d\n", display_mode, unit_mode, horizontal_resolution, line_repeat_count, current_scan_line);
+		LOG_DAI_VIDEO_LINE(display_mode, unit_mode, horizontal_resolution, line_repeat_count, current_scan_line);
 	}
 	return 0;
 }

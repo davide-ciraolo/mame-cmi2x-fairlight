@@ -1,11 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Olivier Galibert
-
 #include "emu.h"
 #include "h8_intc.h"
-
-#include "h8.h"
-
 
 DEFINE_DEVICE_TYPE(H8_INTC,    h8_intc_device,    "h8_intc",    "H8 interrupt controller")
 DEFINE_DEVICE_TYPE(H8H_INTC,   h8h_intc_device,   "h8h_intc",   "H8H interrupt controller")
@@ -15,53 +11,52 @@ DEFINE_DEVICE_TYPE(GT913_INTC, gt913_intc_device, "gt913_intc", "Casio GT913F in
 h8_intc_device::h8_intc_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
 	h8_intc_device(mconfig, H8_INTC, tag, owner, clock)
 {
-	m_irq_vector_base = 4;
-	m_irq_vector_count = 8;
-	m_irq_vector_nmi = 3;
+	irq_vector_base = 4;
+	irq_vector_nmi = 3;
 }
 
 h8_intc_device::h8_intc_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock) :
-	device_t(mconfig, type, tag, owner, clock), m_irq_vector_base(0), m_irq_vector_count(0), m_irq_vector_nmi(0),
-	m_cpu(*this, finder_base::DUMMY_TAG), m_nmi_input(false), m_irq_input(0), m_ier(0), m_isr(0), m_iscr(0), m_icr_filter(0), m_ipr_filter(0)
+	device_t(mconfig, type, tag, owner, clock), irq_vector_base(0), irq_vector_nmi(0),
+	cpu(*this, DEVICE_SELF_OWNER), nmi_input(false), irq_input(0), ier(0), isr(0), iscr(0), icr_filter(0), ipr_filter(0)
 {
 }
 
 void h8_intc_device::device_start()
 {
-	memset(m_pending_irqs, 0, sizeof(m_pending_irqs));
-	save_item(NAME(m_pending_irqs));
-	save_item(NAME(m_irq_type));
-	save_item(NAME(m_nmi_input));
-	save_item(NAME(m_irq_input));
-	save_item(NAME(m_ier));
-	save_item(NAME(m_isr));
-	save_item(NAME(m_iscr));
-	save_item(NAME(m_icr_filter));
-	save_item(NAME(m_ipr_filter));
+	memset(pending_irqs, 0, sizeof(pending_irqs));
+	save_item(NAME(pending_irqs));
+	save_item(NAME(irq_type));
+	save_item(NAME(nmi_input));
+	save_item(NAME(irq_input));
+	save_item(NAME(ier));
+	save_item(NAME(isr));
+	save_item(NAME(iscr));
+	save_item(NAME(icr_filter));
+	save_item(NAME(ipr_filter));
 }
 
 void h8_intc_device::device_reset()
 {
-	memset(m_irq_type, 0, sizeof(m_irq_type));
-	memset(m_pending_irqs, 0, sizeof(m_pending_irqs));
-	m_ier = m_isr = m_irq_input = 0x00;
-	m_iscr = 0x0000;
+	memset(irq_type, 0, sizeof(irq_type));
+	memset(pending_irqs, 0, sizeof(pending_irqs));
+	ier = isr = irq_input = 0x00;
+	iscr = 0x0000;
 }
 
 int h8_intc_device::interrupt_taken(int vector)
 {
 	if(0)
 		logerror("taking internal interrupt %d\n", vector);
-	m_pending_irqs[vector >> 5] &= ~(1 << (vector & 31));
-	if(vector >= m_irq_vector_base && vector < m_irq_vector_base + m_irq_vector_count) {
-		int irq = vector - m_irq_vector_base;
-		if(m_irq_type[irq] != IRQ_LEVEL || !(m_irq_input & (1 << irq)))
-			m_isr &= ~(1 << irq);
+	pending_irqs[vector >> 5] &= ~(1 << (vector & 31));
+	if(irq_vector_base >= 0 && vector >= irq_vector_base && vector < irq_vector_base + 8) {
+		int irq = vector - irq_vector_base;
+		if(irq_type[irq] != IRQ_LEVEL || !(irq_input & (1 << irq)))
+			isr &= ~(1 << irq);
 		update_irq_state();
 		return irq;
 	}
 	update_irq_state();
-	if(vector == m_irq_vector_nmi)
+	if(vector == irq_vector_nmi)
 		return INPUT_LINE_NMI;
 	return 8;
 }
@@ -70,8 +65,8 @@ void h8_intc_device::internal_interrupt(int vector)
 {
 	if(0)
 		logerror("internal interrupt %d\n", vector);
-	if(!m_cpu->trigger_dma(vector)) {
-		m_pending_irqs[vector >> 5] |= 1 << (vector & 31);
+	if(!cpu->trigger_dma(vector)) {
+		pending_irqs[vector >> 5] |= 1 << (vector & 31);
 		update_irq_state();
 	}
 }
@@ -79,56 +74,56 @@ void h8_intc_device::internal_interrupt(int vector)
 void h8_intc_device::set_input(int inputnum, int state)
 {
 	if(inputnum == INPUT_LINE_NMI) {
-		if(state == ASSERT_LINE && !m_nmi_input)
-			m_pending_irqs[0] |= 1 << m_irq_vector_nmi;
-		m_nmi_input = state == ASSERT_LINE;
+		if(state == ASSERT_LINE && !nmi_input)
+			pending_irqs[0] |= 1 << irq_vector_nmi;
+		nmi_input = state == ASSERT_LINE;
 		update_irq_state();
 	} else {
 		bool set = false;
-		bool cur = m_irq_input & (1 << inputnum);
-		switch(m_irq_type[inputnum]) {
+		bool cur = irq_input & (1 << inputnum);
+		switch(irq_type[inputnum]) {
 		case IRQ_LEVEL: set = state == ASSERT_LINE; break;
 		case IRQ_EDGE: set = state == ASSERT_LINE && !cur; break;
 		case IRQ_DUAL_EDGE: set = (state == ASSERT_LINE && !cur) || (state == CLEAR_LINE && cur); break;
 		}
 		if(state == ASSERT_LINE)
-			m_irq_input |= 1 << inputnum;
+			irq_input |= 1 << inputnum;
 		else
-			m_irq_input &= ~(1 << inputnum);
+			irq_input &= ~(1 << inputnum);
 		if(set) {
-			m_isr |= 1 << inputnum;
+			isr |= 1 << inputnum;
 			update_irq_state();
 		}
 	}
 }
 
-void h8_intc_device::set_filter(int icr_filter, int ipr_filter)
+void h8_intc_device::set_filter(int _icr_filter, int _ipr_filter)
 {
-	m_icr_filter = icr_filter;
-	m_ipr_filter = ipr_filter;
+	icr_filter = _icr_filter;
+	ipr_filter = _ipr_filter;
 	update_irq_state();
 }
 
 uint8_t h8_intc_device::ier_r()
 {
-	return m_ier;
+	return ier;
 }
 
 void h8_intc_device::ier_w(uint8_t data)
 {
-	m_ier = data;
-	//  logerror("ier = %02x\n", data);
+	ier = data;
+	logerror("ier = %02x\n", data);
 	update_irq_state();
 }
 
 void h8_intc_device::check_level_irqs(bool force_update)
 {
-	logerror("irq_input=%02x\n", m_irq_input);
+	logerror("irq_input=%02x\n", irq_input);
 	bool update = force_update;
 	for(int i=0; i<8; i++) {
 		unsigned char mask = 1 << i;
-		if(m_irq_type[i] == IRQ_LEVEL && (m_irq_input & mask) && !(m_isr & mask)) {
-			m_isr |= mask;
+		if(irq_type[i] == IRQ_LEVEL && (irq_input & mask) && !(isr & mask)) {
+			isr |= mask;
 			update = true;
 		}
 	}
@@ -139,25 +134,25 @@ void h8_intc_device::check_level_irqs(bool force_update)
 
 uint8_t h8_intc_device::iscr_r()
 {
-	return m_iscr;
+	return iscr;
 }
 
 void h8_intc_device::iscr_w(uint8_t data)
 {
-	m_iscr = data;
-	logerror("iscr = %02x\n", m_iscr);
+	iscr = data;
+	logerror("iscr = %02x\n", iscr);
 	update_irq_types();
 }
 
 void h8_intc_device::update_irq_types()
 {
 	for(int i=0; i<8; i++)
-		switch((m_iscr >> (i)) & 1) {
+		switch((iscr >> (i)) & 1) {
 		case 0:
-			m_irq_type[i] = IRQ_LEVEL;
+			irq_type[i] = IRQ_LEVEL;
 			break;
 		case 1:
-			m_irq_type[i] = IRQ_EDGE;
+			irq_type[i] = IRQ_EDGE;
 			break;
 		}
 	check_level_irqs();
@@ -165,26 +160,25 @@ void h8_intc_device::update_irq_types()
 
 void h8_intc_device::update_irq_state()
 {
-	if(m_irq_vector_count > 0) {
-		const unsigned mask = (1 << m_irq_vector_count) - 1;
-
-		m_pending_irqs[0] &= ~(mask << m_irq_vector_base);
-		m_pending_irqs[0] |= (m_isr & m_ier & mask) << m_irq_vector_base;
+	if (irq_vector_base >= 0)
+	{
+		pending_irqs[0] &= ~(255 << irq_vector_base);
+		pending_irqs[0] |= (isr & ier) << irq_vector_base;
 	}
 
 	int cur_vector = 0;
 	int cur_level = -1;
 
 	for(int i=0; i<MAX_VECTORS/32; i++) {
-		unsigned int pending = m_pending_irqs[i];
+		unsigned int pending = pending_irqs[i];
 		if(pending)
 			for(int j=0; j<32; j++)
 				if(pending & (1 << j)) {
 					int vect = i*32+j;
 					int icr_pri, ipr_pri;
 					get_priority(vect, icr_pri, ipr_pri);
-					if(icr_pri >= m_icr_filter && ipr_pri > m_ipr_filter) {
-						int level = m_ipr_filter == -1 ? icr_pri : ipr_pri;
+					if(icr_pri >= icr_filter && ipr_pri > ipr_filter) {
+						int level = ipr_filter == -1 ? icr_pri : ipr_pri;
 						if(level > cur_level) {
 							cur_vector = vect;
 							cur_level = level;
@@ -192,7 +186,7 @@ void h8_intc_device::update_irq_state()
 					}
 				}
 	}
-	m_cpu->set_irq(cur_vector, cur_level, cur_vector == m_irq_vector_nmi);
+	cpu->set_irq(cur_vector, cur_level, cur_vector == irq_vector_nmi);
 }
 
 void h8_intc_device::get_priority(int vect, int &icr_pri, int &ipr_pri) const
@@ -203,33 +197,23 @@ void h8_intc_device::get_priority(int vect, int &icr_pri, int &ipr_pri) const
 
 
 gt913_intc_device::gt913_intc_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
-	h8_intc_device(mconfig, GT913_INTC, tag, owner, clock)
+	gt913_intc_device(mconfig, GT913_INTC, tag, owner, clock)
 {
-	m_irq_vector_base = 4;
-	m_irq_vector_count = 1;
-	m_irq_vector_nmi = 3;
+	irq_vector_base = -1; // no external IRQs
+	irq_vector_nmi = 3;
 }
 
-void gt913_intc_device::device_reset()
+gt913_intc_device::gt913_intc_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock) :
+	h8_intc_device(mconfig, type, tag, owner, clock)
 {
-	h8_intc_device::device_reset();
-
-	m_ier = 0x01;
-}
-
-void gt913_intc_device::clear_interrupt(int vector)
-{
-	m_pending_irqs[vector >> 5] &= ~(1 << (vector & 31));
-	update_irq_state();
 }
 
 
 h8h_intc_device::h8h_intc_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
 	h8h_intc_device(mconfig, H8H_INTC, tag, owner, clock)
 {
-	m_irq_vector_base = 12;
-	m_irq_vector_count = 8;
-	m_irq_vector_nmi = 7;
+	irq_vector_base = 12;
+	irq_vector_nmi = 7;
 }
 
 h8h_intc_device::h8h_intc_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock) :
@@ -240,35 +224,35 @@ h8h_intc_device::h8h_intc_device(const machine_config &mconfig, device_type type
 void h8h_intc_device::device_start()
 {
 	h8_intc_device::device_start();
-	save_item(NAME(m_icr));
+	save_item(NAME(icr));
 }
 
 void h8h_intc_device::device_reset()
 {
 	h8_intc_device::device_reset();
-	m_icr = 0x000000;
+	icr = 0x000000;
 }
 
 uint8_t h8h_intc_device::isr_r()
 {
-	return m_isr;
+	return isr;
 }
 
 void h8h_intc_device::isr_w(uint8_t data)
 {
-	m_isr &= data; // edge/level
-	logerror("isr = %02x / %02x\n", data, m_isr);
+	isr &= data; // edge/level
+	logerror("isr = %02x / %02x\n", data, isr);
 	check_level_irqs(true);
 }
 
 uint8_t h8h_intc_device::icr_r(offs_t offset)
 {
-	return m_icr >> (8*offset);
+	return icr >> (8*offset);
 }
 
 void h8h_intc_device::icr_w(offs_t offset, uint8_t data)
 {
-	m_icr = (m_icr & (0xff << (8*offset))) | (data << (8*offset));
+	icr = (icr & (0xff << (8*offset))) | (data << (8*offset));
 	logerror("icr %d = %02x\n", offset, data);
 }
 
@@ -284,40 +268,40 @@ void h8h_intc_device::icrc_w(uint8_t data)
 
 uint8_t h8h_intc_device::iscrh_r()
 {
-	return m_iscr >> 8;
+	return iscr >> 8;
 }
 
 void h8h_intc_device::iscrh_w(uint8_t data)
 {
-	m_iscr = (m_iscr & 0x00ff) | (data << 8);
-	logerror("iscr = %04x\n", m_iscr);
+	iscr = (iscr & 0x00ff) | (data << 8);
+	logerror("iscr = %04x\n", iscr);
 	update_irq_types();
 }
 
 uint8_t h8h_intc_device::iscrl_r()
 {
-	return m_iscr;
+	return iscr;
 }
 
 void h8h_intc_device::iscrl_w(uint8_t data)
 {
-	m_iscr = (m_iscr & 0xff00) | data;
-	logerror("iscr = %04x\n", m_iscr);
+	iscr = (iscr & 0xff00) | data;
+	logerror("iscr = %04x\n", iscr);
 	update_irq_types();
 }
 
 void h8h_intc_device::update_irq_types()
 {
 	for(int i=0; i<8; i++)
-		switch((m_iscr >> (2*i)) & 3) {
+		switch((iscr >> (2*i)) & 3) {
 		case 0:
-			m_irq_type[i] = IRQ_LEVEL;
+			irq_type[i] = IRQ_LEVEL;
 			break;
 		case 1: case 2:
-			m_irq_type[i] = IRQ_EDGE;
+			irq_type[i] = IRQ_EDGE;
 			break;
 		case 3:
-			m_irq_type[i] = IRQ_DUAL_EDGE;
+			irq_type[i] = IRQ_DUAL_EDGE;
 			break;
 		}
 	check_level_irqs();
@@ -348,31 +332,30 @@ void h8h_intc_device::get_priority(int vect, int &icr_pri, int &ipr_pri) const
 		return;
 	}
 
-	icr_pri = (m_icr >> (slot ^ 7)) & 1;
+	icr_pri = (icr >> (slot ^ 7)) & 1;
 }
 
 h8s_intc_device::h8s_intc_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
 	h8h_intc_device(mconfig, H8S_INTC, tag, owner, clock)
 {
-	m_irq_vector_base = 16;
-	m_irq_vector_count = 8;
-	m_irq_vector_nmi = 7;
+	irq_vector_base = 16;
+	irq_vector_nmi = 7;
 }
 
 void h8s_intc_device::device_reset()
 {
 	h8h_intc_device::device_reset();
-	memset(m_ipr, 0x77, sizeof(m_ipr));
+	memset(ipr, 0x77, sizeof(ipr));
 }
 
 uint8_t h8s_intc_device::ipr_r(offs_t offset)
 {
-	return m_ipr[offset];
+	return ipr[offset];
 }
 
 void h8s_intc_device::ipr_w(offs_t offset, uint8_t data)
 {
-	m_ipr[offset] = data;
+	ipr[offset] = data;
 	logerror("ipr %d = %02x\n", offset, data);
 }
 
@@ -415,6 +398,6 @@ void h8s_intc_device::get_priority(int vect, int &icr_pri, int &ipr_pri) const
 		return;
 	}
 
-	icr_pri = (m_icr >> (slot ^ 7)) & 1;
-	ipr_pri = (m_ipr[slot >> 1] >> (slot & 1 ? 0 : 4)) & 7;
+	icr_pri = (icr >> (slot ^ 7)) & 1;
+	ipr_pri = (ipr[slot >> 1] >> (slot & 1 ? 0 : 4)) & 7;
 }

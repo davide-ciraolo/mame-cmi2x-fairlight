@@ -1,18 +1,19 @@
 // ArchiveCommandLine.h
 
-#ifndef ZIP7_INC_ARCHIVE_COMMAND_LINE_H
-#define ZIP7_INC_ARCHIVE_COMMAND_LINE_H
+#ifndef __ARCHIVE_COMMAND_LINE_H
+#define __ARCHIVE_COMMAND_LINE_H
 
 #include "../../../Common/CommandLineParser.h"
 #include "../../../Common/Wildcard.h"
-
-#include "EnumDirItems.h"
 
 #include "Extract.h"
 #include "HashCalc.h"
 #include "Update.h"
 
-typedef CMessagePathException CArcCmdLineException;
+struct CArcCmdLineException: public UString
+{
+  CArcCmdLineException(const char *a, const wchar_t *u = NULL);
+};
 
 namespace NCommandType { enum EEnum
 {
@@ -50,8 +51,8 @@ struct CArcCmdLineOptions
 {
   bool HelpMode;
 
-  // bool LargePages;
-  bool CaseSensitive_Change;
+  bool LargePages;
+  bool CaseSensitiveChange;
   bool CaseSensitive;
 
   bool IsInTerminal;
@@ -63,35 +64,22 @@ struct CArcCmdLineOptions
 
   bool YesToAll;
   bool ShowDialog;
-  bool TechMode;
-  bool ShowTime;
-
-  CBoolPair NtSecurity;
-  CBoolPair AltStreams;
-  CBoolPair HardLinks;
-  CBoolPair SymLinks;
-  
-  CBoolPair StoreOwnerId;
-  CBoolPair StoreOwnerName;
-
-  AString ListFields;
-
-  int ConsoleCodePage;
-
   NWildcard::CCensor Censor;
 
   CArcCommand Command;
   UString ArchiveName;
 
-  #ifndef Z7_NO_CRYPTO
+  #ifndef _NO_CRYPTO
   bool PasswordEnabled;
   UString Password;
   #endif
 
+  bool TechMode;
+  bool ShowTime;
+  
   UStringVector HashMethods;
-  // UString HashFilePath;
 
-  // bool AppendName;
+  bool AppendName;
   // UStringVector ArchivePathsSorted;
   // UStringVector ArchivePathsFullSorted;
   NWildcard::CCensor arcCensor;
@@ -100,6 +88,11 @@ struct CArcCmdLineOptions
   CObjectVector<CProperty> Properties;
 
   CExtractOptionsBase ExtractOptions;
+
+  CBoolPair NtSecurity;
+  CBoolPair AltStreams;
+  CBoolPair HardLinks;
+  CBoolPair SymLinks;
 
   CUpdateOptions UpdateOptions;
   CHashOptions HashOptions;
@@ -115,29 +108,14 @@ struct CArcCmdLineOptions
 
   // Benchmark
   UInt32 NumIterations;
-  bool NumIterations_Defined;
 
   CArcCmdLineOptions():
-      HelpMode(false),
-      // LargePages(false),
-      CaseSensitive_Change(false),
+      LargePages(false),
+      CaseSensitiveChange(false),
       CaseSensitive(false),
-
-      IsInTerminal(false),
-      IsStdOutTerminal(false),
-      IsStdErrTerminal(false),
 
       StdInMode(false),
       StdOutMode(false),
-
-      EnableHeaders(false),
-      
-      YesToAll(false),
-      ShowDialog(false),
-      TechMode(false),
-      ShowTime(false),
-
-      ConsoleCodePage(-1),
 
       Number_for_Out(k_OutStream_stdout),
       Number_for_Errors(k_OutStream_stderr),
@@ -145,16 +123,25 @@ struct CArcCmdLineOptions
 
       LogLevel(0)
   {
-  }
+  };
 };
 
 class CArcCmdLineParser
 {
   NCommandLineParser::CParser parser;
 public:
-  UString Parse1Log;
+  CArcCmdLineParser();
   void Parse1(const UStringVector &commandStrings, CArcCmdLineOptions &options);
   void Parse2(CArcCmdLineOptions &options);
 };
+
+HRESULT EnumerateDirItemsAndSort(
+    NWildcard::CCensor &censor,
+    NWildcard::ECensorPathMode pathMode,
+    const UString &addPathPrefix,
+    UStringVector &sortedPaths,
+    UStringVector &sortedFullPaths,
+    CDirItemsStat &st,
+    IDirItemsCallback *callback);
 
 #endif

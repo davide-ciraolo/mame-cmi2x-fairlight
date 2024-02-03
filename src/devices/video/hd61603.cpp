@@ -35,11 +35,8 @@ hd61603_device::hd61603_device(const machine_config &mconfig, const char *tag, d
 
 void hd61603_device::device_start()
 {
-	// zerofill
-	m_blank = 0;
-	m_count = 0;
-	m_data = 0;
-	m_ram = 0;
+	// resolve callbacks
+	m_write_segs.resolve_safe();
 
 	// register for savestates
 	save_item(NAME(m_blank));

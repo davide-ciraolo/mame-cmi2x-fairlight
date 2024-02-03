@@ -161,11 +161,9 @@
 
 	// calculate the optimal size for everything
 	NSSize const desired = [NSScrollView frameSizeForContentSize:NSMakeSize(480, 320)
-										 horizontalScrollerClass:[NSScroller class]
-										   verticalScrollerClass:[NSScroller class]
-													  borderType:[devicesScroll borderType]
-													 controlSize:NSControlSizeRegular
-												   scrollerStyle:NSScrollerStyleOverlay];
+										   hasHorizontalScroller:YES
+											 hasVerticalScroller:YES
+													  borderType:[devicesScroll borderType]];
 	[self cascadeWindowWithDesiredSize:desired forView:devicesScroll];
 
 	// don't forget the result
@@ -187,7 +185,7 @@
 
 - (void)saveConfigurationToNode:(util::xml::data_node *)node {
 	[super saveConfigurationToNode:node];
-	node->set_attribute_int(osd::debugger::ATTR_WINDOW_TYPE, osd::debugger::WINDOW_TYPE_DEVICES_VIEWER);
+	node->set_attribute_int("type", MAME_DEBUGGER_WINDOW_TYPE_DEVICES_VIEWER);
 }
 
 

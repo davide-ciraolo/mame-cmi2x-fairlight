@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/d81_dsk.cpp
+    formats/d81_dsk.c
 
     Commodore 1581 disk image format
 
@@ -79,17 +79,17 @@ d81_format::d81_format() : wd177x_format(formats)
 {
 }
 
-const char *d81_format::name() const noexcept
+const char *d81_format::name() const
 {
 	return "d81";
 }
 
-const char *d81_format::description() const noexcept
+const char *d81_format::description() const
 {
 	return "Commodore 1581 disk image";
 }
 
-const char *d81_format::extensions() const noexcept
+const char *d81_format::extensions() const
 {
 	return "d81";
 }

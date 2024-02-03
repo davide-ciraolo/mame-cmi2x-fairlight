@@ -265,7 +265,7 @@ zorba_keyboard_device::zorba_keyboard_device(
 }
 
 
-void zorba_keyboard_device::txd_w(int state)
+WRITE_LINE_MEMBER(zorba_keyboard_device::txd_w)
 {
 	m_txd_high = CLEAR_LINE != state;
 }
@@ -301,6 +301,7 @@ void zorba_keyboard_device::mcu_pc_w(u8 data)
 
 void zorba_keyboard_device::device_start()
 {
+	m_rxd_cb.resolve_safe();
 	m_led_key_caps_lock.resolve();
 	m_led_key_shift_lock.resolve();
 

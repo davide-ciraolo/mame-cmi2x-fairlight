@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
+license:CC0
 
 Undumped games:
 * Hyperdrome (Telegames 1999)
@@ -21,15 +21,18 @@ Undumped Self-Published Titles:
 Known undumped prototypes:
 * Cyber Virus (Beyond Games)
 * Dungeon Slayers (Atari)
+* GeoDuel (Atari)
 * Lode Runner
 * Mechtiles (Atari)
+* Pounce (Atari)
 * Relief Pitcher (Atari)
 * Ultra Vortex (Atari)
+* Vindicators (Atari)
 
 -->
 <softwarelist name="lynx" description="Atari Lynx cartridges">
 	<software name="apb">
-		<description>A.P.B. (Europe, USA)</description>
+		<description>A.P.B. (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2042" />
@@ -54,7 +57,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="awesomeg">
-		<description>Awesome Golf (Europe, USA)</description>
+		<description>Awesome Golf (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2049" />
@@ -67,7 +70,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="bbheroes">
-		<description>Baseball Heroes (Europe, USA)</description>
+		<description>Baseball Heroes (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2050" />
@@ -80,7 +83,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="bsktbrwl">
-		<description>Basketbrawl (Europe, USA)</description>
+		<description>Basketbrawl (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2034" />
@@ -93,7 +96,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="batmanrn">
-		<description>Batman Returns (Europe, USA)</description>
+		<description>Batman Returns (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2101" />
@@ -106,7 +109,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="bwheels">
-		<description>Battle Wheels (Europe, USA)</description>
+		<description>Battle Wheels (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Beyond Games</publisher>
 		<info name="serial" value="PT5006" />
@@ -119,7 +122,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="bzone2k">
-		<description>Battlezone 2000 (Europe, USA)</description>
+		<description>Battlezone 2000 (Euro, USA)</description>
 		<year>1995</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2088" />
@@ -132,7 +135,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="billted">
-		<description>Bill &amp; Ted's Excellent Adventure (Europe, USA)</description>
+		<description>Bill &amp; Ted's Excellent Adventure (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2068" />
@@ -145,7 +148,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="blockout">
-		<description>Block Out (Europe, USA)</description>
+		<description>Block Out (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2056" />
@@ -158,7 +161,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="bluelghtd" cloneof="bluelght">
-		<description>Blue Lightning (USA, demo)</description>
+		<description>Blue Lightning (USA, Demo)</description>
 		<year>1989</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2054" />
@@ -171,7 +174,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="bluelght">
-		<description>Blue Lightning (Europe, USA)</description>
+		<description>Blue Lightning (Euro, USA)</description>
 		<year>1989</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2020" />
@@ -184,7 +187,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="bubtroub">
-		<description>Bubble Trouble (Europe, USA)</description>
+		<description>Bubble Trouble (Euro, USA)</description>
 		<year>1994</year>
 		<publisher>Telegames</publisher>
 		<info name="serial" value="LX216" />
@@ -196,21 +199,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="cabal">
-		<description>Cabal (prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="cabal.bin" size="0x40000" crc="f8158766" sha1="e7acc3d4f69f31028c0df7b9da1a434baf60e8e8"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="calgames">
-		<description>California Games (Europe, USA)</description>
+		<description>California Games (Euro, USA)</description>
 		<year>1989</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2025" />
@@ -236,7 +226,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="chekflag">
-		<description>Checkered Flag (Europe, USA)</description>
+		<description>Checkered Flag (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2053" />
@@ -249,7 +239,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="chipchal">
-		<description>Chip's Challenge (Europe, USA)</description>
+		<description>Chip's Challenge (Euro, USA)</description>
 		<year>1989</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2028" />
@@ -262,7 +252,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="cmines2">
-		<description>Crystal Mines II (Europe, USA)</description>
+		<description>Crystal Mines II (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2105" />
@@ -275,7 +265,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="cmines2bt" cloneof="cmines2">
-		<description>Crystal Mines II - Buried Treasure (Europe, USA)</description>
+		<description>Crystal Mines II - Buried Treasure (Euro, USA)</description>
 		<year>2003</year>
 		<publisher>Songbird Productions</publisher>
 		<info name="serial" value="CF2008" />
@@ -299,21 +289,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="daemongta" cloneof="daemongt">
-		<description>Daemonsgate (USA, prototype, alt)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="daemon's gate.bin" size="0x40000" crc="ef529ed4" sha1="4bd08d8edd5f551782eedc4d32cf627b9fb16c8b"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="dstrike">
-		<description>Desert Strike - Return to the Gulf (Europe, USA)</description>
+		<description>Desert Strike - Return to the Gulf (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Telegames</publisher>
 		<info name="serial" value="L071" />
@@ -326,7 +303,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="dinolymp">
-		<description>Dinolympics (Europe, USA)</description>
+		<description>Dinolympics (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2089" />
@@ -339,7 +316,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="dirtylar">
-		<description>Dirty Larry - Renegade Cop (Europe, USA)</description>
+		<description>Dirty Larry - Renegade Cop (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2077" />
@@ -352,7 +329,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="ddragon">
-		<description>Double Dragon (Europe, USA)</description>
+		<description>Double Dragon (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Telegames</publisher>
 		<info name="serial" value="L070" />
@@ -365,7 +342,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="dracula">
-		<description>Dracula the Undead (Europe, USA)</description>
+		<description>Dracula the Undead (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2087" />
@@ -378,7 +355,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="electroc">
-		<description>Electrocop (Europe, USA)</description>
+		<description>Electrocop (Euro, USA)</description>
 		<year>1989</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2021" />
@@ -391,7 +368,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="eurosocc">
-		<description>European Soccer Challenge (Europe, USA)</description>
+		<description>European Soccer Challenge (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Telegames</publisher>
 		<info name="serial" value="LX106" />
@@ -403,21 +380,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
 	<software name="eyebehol">
 		<description>Eye of the Beholder (USA, prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="2048" />
-			<dataarea name="rom" size="0x80000">
-				<rom name="eye of the beholder.bin" size="0x80000" crc="ae8c70f0" sha1="c06fc630278f618b09388ebf05e4f131cb3b8794"/>
-			</dataarea>
-		</part>
-	</software>
-
-	<software name="eyebehola" cloneof="eyebehol">
-		<description>Eye of the Beholder (USA, prototype, early)</description>
 		<year>199?</year>
 		<publisher>NuFX</publisher>
 		<part name="cart" interface="lynx_cart">
@@ -429,7 +393,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="fatbobby">
-		<description>Fat Bobby (Europe, USA)</description>
+		<description>Fat Bobby (Euro, USA)</description>
 		<year>199?</year>
 		<publisher>Telegames</publisher>
 		<part name="cart" interface="lynx_cart">
@@ -441,7 +405,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="fidelity">
-		<description>The Fidelity Ultimate Chess Challenge (Europe, USA)</description>
+		<description>The Fidelity Ultimate Chess Challenge (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Telegames</publisher>
 		<info name="serial" value="LX101" />
@@ -453,34 +417,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="friendly">
-		<description>Friendly (prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="512" />
-			<dataarea name="rom" size="0x20000">
-				<rom name="friendly.bin" size="0x20000" crc="68b0a428" sha1="d792813ce2f752a2f583c54d056703506c5acedc"/>
-			</dataarea>
-		</part>
-	</software>
-
-	<!-- ROM found on a set of floppy disks -->
-	<software name="fullcp">
-		<description>Full Court Press (prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="full court press.bin" size="0x40000" crc="ff9e0126" sha1="6419332f565cf090313044c1815e540c72d8dd8a"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="gatezend">
-		<description>Gates of Zendocon (Europe, USA)</description>
+		<description>Gates of Zendocon (Euro, USA)</description>
 		<year>1989</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2023" />
@@ -493,7 +431,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="gauntlet">
-		<description>Gauntlet - The Third Encounter (Europe, USA)</description>
+		<description>Gauntlet - The Third Encounter (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2024" />
@@ -506,21 +444,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="geoduel">
-		<description>Geoduel (prototype)</description>
-		<year>1991</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="geoduel.bin" size="0x40000" crc="bd4bf2b0" sha1="0b304f14d0fdc1387e51b2c8a8546c88e5e12d11"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="gordo106">
-		<description>Gordo 106 - The Mutated Lab Monkey (Europe, USA)</description>
+		<description>Gordo 106 - The Mutated Lab Monkey (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2106" />
@@ -532,34 +457,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="gsod">
-		<description>Guardians Storm Over Doria (prototype)</description>
-		<year>1992</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="guardians storm over doria.bin" size="0x40000" crc="8f0e72c6" sha1="31cadc20427c6be236db6024bcd280fc1661c235"/>
-			</dataarea>
-		</part>
-	</software>
-
-	<!-- ROM found on a set of floppy disks -->
-	<software name="gsoda" cloneof="gsod">
-		<description>Guardians Storm Over Doria (prototype, alt)</description>
-		<year>1992</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="guardians storm over doria (alt).bin" size="0x40000" crc="0e335aa8" sha1="9f02145a5640c4c373f45dcb5566e5ac36f32851"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="harddriv">
-		<description>Hard Drivin' (Europe, USA)</description>
+		<description>Hard Drivin' (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2044" />
@@ -572,7 +471,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="hockey">
-		<description>Hockey (Europe, USA)</description>
+		<description>Hockey (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2052" />
@@ -585,7 +484,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="hydra">
-		<description>Hydra (Europe, USA)</description>
+		<description>Hydra (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2073" />
@@ -598,7 +497,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="ishido">
-		<description>Ishido - The Way of Stones (Europe, USA)</description>
+		<description>Ishido - The Way of Stones (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2065" />
@@ -611,7 +510,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="connors">
-		<description>Jimmy Connors' Tennis (Europe, USA)</description>
+		<description>Jimmy Connors' Tennis (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2085" />
@@ -624,7 +523,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="joust">
-		<description>Joust (Europe, USA)</description>
+		<description>Joust (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Williams Entertainment</publisher>
 		<info name="serial" value="PT5005" />
@@ -637,7 +536,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="klax">
-		<description>Klax (Europe, USA)</description>
+		<description>Klax (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2031" />
@@ -664,7 +563,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="krazyace">
-		<description>Krazy Ace - Miniature Golf (Europe, USA)</description>
+		<description>Krazy Ace - Miniature Golf (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Telegames</publisher>
 		<info name="serial" value="L204" />
@@ -677,7 +576,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="kungfood">
-		<description>Kung Food (Europe, USA)</description>
+		<description>Kung Food (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2076" />
@@ -690,7 +589,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="lemmings">
-		<description>Lemmings (Europe, USA)</description>
+		<description>Lemmings (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2080" />
@@ -703,7 +602,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="lexis">
-		<description>Lexis (Europe, USA)</description>
+		<description>Lexis (Euro, USA)</description>
 		<year>1999</year>
 		<publisher>Songbird Productions</publisher>
 		<info name="serial" value="CF2003" />
@@ -717,7 +616,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="loopz">
-		<description>Loopz (USA, prototype, 19921105)</description>
+		<description>Loopz (USA, prototype)</description>
 		<year>2004</year>
 		<publisher>Songbird Productions</publisher>
 		<info name="serial" value="CF2009" />
@@ -729,21 +628,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="loopza" cloneof="loopz">
-		<description>Loopz (USA, prototype, 19920916)</description>
-		<year>1992</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="loopz v0.04 evaluation.bin" size="0x40000" crc="d2b07d4d" sha1="f9e2ece48ed2eab61743836922fa8805c3332b89"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="lcasino">
-		<description>Lynx Casino (Europe, USA)</description>
+		<description>Lynx Casino (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2061" />
@@ -756,7 +642,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="malibu">
-		<description>Malibu Bikini Volleyball (Europe, USA)</description>
+		<description>Malibu Bikini Volleyball (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2086" />
@@ -769,7 +655,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="marlboro">
-		<description>Marlboro Go! (Europe, prototype)</description>
+		<description>Marlboro Go! (Euro, prototype)</description>
 		<year>1993</year>
 		<publisher>Digital Image</publisher>
 		<part name="cart" interface="lynx_cart">
@@ -780,21 +666,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="marlborog" cloneof="marlboro">
-		<description>Marlboro Go! (Germany, prototype)</description>
-		<year>1993</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="marlboro go.bin" size="0x40000" crc="b17a36ad" sha1="d3fc3ff1843c3ad431ad053ade9dbbe4a8f34822"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="megapak">
-		<description>MegaPak 1 (Europe, USA)</description>
+		<description>MegaPak 1 (Euro, USA)</description>
 		<year>2007</year>
 		<publisher>Songbird Productions</publisher>
 		<info name="serial" value="CF2010" />
@@ -807,7 +680,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="mspacman">
-		<description>Ms. Pac-Man (Europe, USA)</description>
+		<description>Ms. Pac-Man (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2057" />
@@ -820,7 +693,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="nflfoot">
-		<description>NFL Football (Europe, USA)</description>
+		<description>NFL Football (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2045" />
@@ -834,7 +707,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="ngaiden">
-		<description>Ninja Gaiden (Europe, USA)</description>
+		<description>Ninja Gaiden (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2039" />
@@ -847,7 +720,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="ngaiden3">
-		<description>Ninja Gaiden III - The Ancient Ship of Doom (Europe, USA)</description>
+		<description>Ninja Gaiden III - The Ancient Ship of Doom (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2092" />
@@ -859,21 +732,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="ninjanerd">
-		<description>Ninja Nerd (prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="ninja nerd.bin" size="0x40000" crc="f428008d" sha1="69f51159b6b4c1a454ddf78bd3cef94548f4db49"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="pacland">
-		<description>Pac-Land (Europe, USA)</description>
+		<description>Pac-Land (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2059" />
@@ -886,7 +746,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="paperboy">
-		<description>Paperboy (Europe, USA)</description>
+		<description>Paperboy (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2041" />
@@ -899,7 +759,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="pinballj">
-		<description>Pinball Jam (Europe, USA)</description>
+		<description>Pinball Jam (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2055" />
@@ -912,7 +772,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="pitfight">
-		<description>Pit-Fighter - The Ultimate Competition (Europe, USA)</description>
+		<description>Pit-Fighter - The Ultimate Competition (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2070" />
@@ -936,19 +796,6 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="poker">
-		<description>Poker (France, prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="512" />
-			<dataarea name="rom" size="0x20000">
-				<rom name="poker.bin" size="0x20000" crc="c45bcd62" sha1="2f15242d1d144ec8970b6700630932def0e4203a"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="ponx">
 		<description>Ponx</description>
 		<year>1999</year>
@@ -962,21 +809,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="pounce">
-		<description>Pounce! (prototype)</description>
-		<year>1992</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="pounce.bin" size="0x40000" crc="5d1abfe7" sha1="77649c82e5aad890676700025976bcba0c1eff09"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="powfactr">
-		<description>Power Factor (Europe, USA)</description>
+		<description>Power Factor (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2109" />
@@ -989,7 +823,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="qix">
-		<description>Qix (Europe, USA)</description>
+		<description>Qix (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Telegames</publisher>
 		<info name="serial" value="LX102" />
@@ -1014,21 +848,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="ramcart">
-		<description>Ram Cart (prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="512" />
-			<dataarea name="rom" size="0x20000">
-				<rom name="ram cart.bin" size="0x20000" crc="74ec2b2b" sha1="2beb2d2c8ea53ba299c0b10450a05e26276042da"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="rampage">
-		<description>Rampage (Europe, USA)</description>
+		<description>Rampage (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2022" />
@@ -1041,7 +862,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="rampart">
-		<description>Rampart (Europe, USA)</description>
+		<description>Rampart (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2102" />
@@ -1065,21 +886,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="roadriota" cloneof="roadriot">
-		<description>Road Riot 4WD (USA, prototype, alt)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="road riot.bin" size="0x40000" crc="bfecefc3" sha1="9a6b92eeca38c5333b1025730055190fe3be4b64"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="roadblst">
-		<description>RoadBlasters (Europe, USA)</description>
+		<description>RoadBlasters (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2036" />
@@ -1092,7 +900,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="robosqua">
-		<description>Robo-Squash (Europe, USA)</description>
+		<description>Robo-Squash (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2035" />
@@ -1105,7 +913,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="robotron">
-		<description>Robotron: 2084 (Europe, USA)</description>
+		<description>Robotron: 2084 (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Williams Entertainment</publisher>
 		<info name="serial" value="PT5003" />
@@ -1129,21 +937,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="rthunder">
-		<description>Rolling Thunder (prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="rolling thunder.bin" size="0x40000" crc="467f8fd9" sha1="3a9ce2f7ef7889a993c9a8690d66e651b2a118d4"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="rygar">
-		<description>Rygar - Legendary Warrior (Europe, USA)</description>
+		<description>Rygar - Legendary Warrior (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2043" />
@@ -1156,7 +951,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="stunrun">
-		<description>S.T.U.N. Runner (Europe, USA)</description>
+		<description>S.T.U.N. Runner (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2060" />
@@ -1169,7 +964,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="scrapdog">
-		<description>Scrapyard Dog (Europe, USA)</description>
+		<description>Scrapyard Dog (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2048" />
@@ -1182,7 +977,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="beast">
-		<description>Shadow of the Beast (Europe, USA)</description>
+		<description>Shadow of the Beast (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2081" />
@@ -1195,7 +990,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="shanghai">
-		<description>Shanghai (Europe, USA)</description>
+		<description>Shanghai (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2063" />
@@ -1207,21 +1002,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="spacewar">
-		<description>Spacewar (prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="512" />
-			<dataarea name="rom" size="0x20000">
-				<rom name="spacewar demo.bin" size="0x20000" crc="59510cb3" sha1="2aba7cc0506a040c97fb58e77b7f7393d60b9983"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="steeltal">
-		<description>Steel Talons (Europe, USA)</description>
+		<description>Steel Talons (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2104" />
@@ -1234,7 +1016,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="supaster">
-		<description>Super Asteroids - Missile Command (Europe, USA)</description>
+		<description>Super Asteroids - Missile Command (Euro, USA)</description>
 		<year>1995</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2093" />
@@ -1247,7 +1029,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="superoff">
-		<description>Super Off-Road (Europe, USA)</description>
+		<description>Super Off-Road (Euro, USA)</description>
 		<year>1993</year>
 		<publisher>Telegames</publisher>
 		<info name="serial" value="LX105" />
@@ -1260,7 +1042,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="supskwek">
-		<description>Super Skweek (Europe, USA)</description>
+		<description>Super Skweek (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2100" />
@@ -1273,7 +1055,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="switchb2">
-		<description>Switchblade II (Europe, USA)</description>
+		<description>Switchblade II (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2094" />
@@ -1286,7 +1068,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="slimew">
-		<description>Todd's Adventures in Slime World (Europe, USA)</description>
+		<description>Todd's Adventures in Slime World (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2029" />
@@ -1299,7 +1081,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="toki">
-		<description>Toki (Europe, USA)</description>
+		<description>Toki (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2066" />
@@ -1312,7 +1094,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="tcyberbl">
-		<description>Tournament Cyberball 2072 (Europe, USA)</description>
+		<description>Tournament Cyberball 2072 (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2038" />
@@ -1325,7 +1107,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="turbosub">
-		<description>Turbo Sub (Europe, USA)</description>
+		<description>Turbo Sub (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2047" />
@@ -1338,7 +1120,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="viking">
-		<description>Viking Child (Europe, USA)</description>
+		<description>Viking Child (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2064" />
@@ -1350,21 +1132,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="vindictr">
-		<description>Vindicators (prototype)</description>
-		<year>199?</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="512" />
-			<dataarea name="rom" size="0x20000">
-				<rom name="vindicators.bin" size="0x20000" crc="6e084b3a" sha1="750014090b3a74b1d65c7706097ed5268f6fa331"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="warbirds">
-		<description>Warbirds (Europe, USA)</description>
+		<description>Warbirds (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2032" />
@@ -1376,21 +1145,8 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<!-- ROM found on a set of floppy disks -->
-	<software name="wolfman">
-		<description>Wolfman Slideshow (prototype, 19920319)</description>
-		<year>1992</year>
-		<publisher>Atari</publisher>
-		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024" />
-			<dataarea name="rom" size="0x40000">
-				<rom name="wolfman slideshow.bin" size="0x40000" crc="c5ebd679" sha1="eaefa72c184c010aa32e1cdc60fae9acf543cda1"/>
-			</dataarea>
-		</part>
-	</software>
-
 	<software name="wcsoccer">
-		<description>World Class Soccer (Europe, USA)</description>
+		<description>World Class Soccer (Euro, USA)</description>
 		<year>1992</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2037" />
@@ -1403,7 +1159,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="xenophob">
-		<description>Xenophobe (Europe, USA)</description>
+		<description>Xenophobe (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2026" />
@@ -1416,7 +1172,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="xybots">
-		<description>Xybots (Europe, USA)</description>
+		<description>Xybots (Euro, USA)</description>
 		<year>1991</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2062" />
@@ -1428,32 +1184,30 @@ Known undumped prototypes:
 		</part>
 	</software>
 
-	<software name="yastuna1">
+	<software name="yastuna1" supported="no"> <!-- Stops with a 'INSERT GAME' screen -->
 		<description>Yastuna Vol.1 - The Alchemy of Cubes</description>
 		<year>2008</year>
 		<publisher>Fadest</publisher>
 		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024"/>
-			<dataarea name="rom" size="0x40000">
-				<rom name="yastuna1.bin" size="0x40000" crc="a6fe24af" sha1="78ab610f29e97b111cfe4c48b681a416d5e79d42" />
+			<dataarea name="rom" size="262208">
+				<rom name="yastuna1.lnx" size="262208" crc="a87ed55e" sha1="2c311788def1e4ec7d5adc64e2fbb44c851861e8" />
 			</dataarea>
 		</part>
 	</software>
 
-	<software name="yastuna2">
+	<software name="yastuna2" supported="no"> <!-- Stops with a 'INSERT GAME' screen -->
 		<description>Yastuna Vol.2 - The Space Incident</description>
 		<year>2008</year>
 		<publisher>Fadest</publisher>
 		<part name="cart" interface="lynx_cart">
-			<feature name="granularity" value="1024"/>
-			<dataarea name="rom" size="0x40000">
-				<rom name="yastuna2.bin" size="0x40000" crc="6b09d810" sha1="e38728654920868905e2a7b1e98985acaa9d21ae" />
+			<dataarea name="rom" size="262208">
+				<rom name="yastuna2.lnx" size="262208" crc="658929e1" sha1="4be4ba20a495c5b865e2512d0194d31185b016c5" />
 			</dataarea>
 		</part>
 	</software>
 
 	<software name="zarlor">
-		<description>Zarlor Mercenary (Europe, USA)</description>
+		<description>Zarlor Mercenary (Euro, USA)</description>
 		<year>1990</year>
 		<publisher>Atari</publisher>
 		<info name="serial" value="PA2030" />
@@ -1555,7 +1309,7 @@ Known undumped prototypes:
 	</software>
 
 	<software name="zakud" cloneof="zaku">
-		<description>Zaku (demo)</description>
+		<description>Zaku (Demo)</description>
 		<year>2009</year>
 		<publisher>Penguinet</publisher>
 		<part name="cart" interface="lynx_cart">

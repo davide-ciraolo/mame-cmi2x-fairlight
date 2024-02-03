@@ -111,7 +111,7 @@ void shangha3_state::blitter_go_w(uint16_t data)
 	int offs;
 
 
-	auto profile = g_profiler.start(PROFILER_VIDEO);
+	g_profiler.start(PROFILER_VIDEO);
 
 	for (offs = m_gfxlist_addr << 3; offs < m_ram.bytes()/2; offs += 16)
 	{
@@ -250,6 +250,8 @@ void shangha3_state::blitter_go_w(uint16_t data)
 			}
 		}
 	}
+
+	g_profiler.stop();
 }
 
 

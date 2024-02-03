@@ -223,7 +223,7 @@ void newbrain_eim_device::anio_w(uint8_t data)
 //  adc_eoc_w -
 //-------------------------------------------------
 
-void newbrain_eim_device::adc_eoc_w(int state)
+WRITE_LINE_MEMBER( newbrain_eim_device::adc_eoc_w )
 {
 	m_anint = state;
 }
@@ -233,7 +233,7 @@ void newbrain_eim_device::adc_eoc_w(int state)
 //  acia_interrupt -
 //-------------------------------------------------
 
-void newbrain_eim_device::acia_interrupt(int state)
+WRITE_LINE_MEMBER( newbrain_eim_device::acia_interrupt )
 {
 	m_aciaint = state;
 }
@@ -243,7 +243,7 @@ void newbrain_eim_device::acia_interrupt(int state)
 //  ctc_z2_w -
 //-------------------------------------------------
 
-void newbrain_eim_device::ctc_z2_w(int state)
+WRITE_LINE_MEMBER( newbrain_eim_device::ctc_z2_w )
 {
 	// connected to CTC channel 0/1 clock inputs
 	m_ctc->trg0(state);

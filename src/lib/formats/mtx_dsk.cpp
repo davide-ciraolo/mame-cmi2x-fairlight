@@ -14,17 +14,17 @@ mtx_format::mtx_format() : wd177x_format(formats)
 {
 }
 
-const char *mtx_format::name() const noexcept
+const char *mtx_format::name() const
 {
 	return "mtx";
 }
 
-const char *mtx_format::description() const noexcept
+const char *mtx_format::description() const
 {
 	return "Memotech MTX disk image";
 }
 
-const char *mtx_format::extensions() const noexcept
+const char *mtx_format::extensions() const
 {
 	return "mfloppy";
 }

@@ -119,7 +119,7 @@ void dmv_k803_device::io_write(int ifsel, offs_t offset, uint8_t data)
 	}
 }
 
-void dmv_k803_device::rtc_irq_w(int state)
+WRITE_LINE_MEMBER(dmv_k803_device::rtc_irq_w)
 {
 	m_rtc_int = state;
 	update_int();

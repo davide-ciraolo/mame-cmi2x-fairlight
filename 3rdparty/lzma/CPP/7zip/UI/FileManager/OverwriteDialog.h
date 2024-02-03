@@ -1,7 +1,7 @@
 // OverwriteDialog.h
 
-#ifndef ZIP7_INC_OVERWRITE_DIALOG_H
-#define ZIP7_INC_OVERWRITE_DIALOG_H
+#ifndef __OVERWRITE_DIALOG_H
+#define __OVERWRITE_DIALOG_H
 
 #include "../../../Windows/Control/Dialog.h"
 
@@ -20,7 +20,7 @@ namespace NOverwriteDialog
     
     void SetTime(const FILETIME *t)
     {
-      if (!t)
+      if (t == 0)
         TimeIsDefined = false;
       else
       {
@@ -28,19 +28,15 @@ namespace NOverwriteDialog
         Time = *t;
       }
     }
-
-    void SetSize(UInt64 size)
-    {
-      SizeIsDefined = true;
-      Size = size;
-    }
-
     void SetSize(const UInt64 *size)
     {
-      if (!size)
+      if (size == 0)
         SizeIsDefined = false;
       else
-        SetSize(*size);
+      {
+        SizeIsDefined = true;
+        Size = *size;
+      }
     }
   };
 }
@@ -49,19 +45,13 @@ class COverwriteDialog: public NWindows::NControl::CModalDialog
 {
   bool _isBig;
 
-  void SetFileInfoControl(unsigned textID, unsigned iconID, const NOverwriteDialog::CFileInfo &fileInfo);
-  virtual bool OnInit() Z7_override;
-  virtual bool OnButtonClicked(unsigned buttonID, HWND buttonHWND) Z7_override;
+  void SetFileInfoControl(int textID, int iconID, const NOverwriteDialog::CFileInfo &fileInfo);
+  virtual bool OnInit();
+  bool OnButtonClicked(int buttonID, HWND buttonHWND);
   void ReduceString(UString &s);
 
 public:
-  bool ShowExtraButtons;
-  bool DefaultButton_is_NO;
-
-
-  COverwriteDialog(): ShowExtraButtons(true), DefaultButton_is_NO(false) {}
-
-  INT_PTR Create(HWND parent = NULL)
+  INT_PTR Create(HWND parent = 0)
   {
     BIG_DIALOG_SIZE(280, 200);
     #ifdef UNDER_CE

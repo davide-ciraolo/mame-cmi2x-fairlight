@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/a5105_dsk.cpp
+    formats/a5105_dsk.c
 
     a5105 format
 
@@ -14,17 +14,17 @@ a5105_format::a5105_format() : upd765_format(formats)
 {
 }
 
-const char *a5105_format::name() const noexcept
+const char *a5105_format::name() const
 {
 	return "a5105";
 }
 
-const char *a5105_format::description() const noexcept
+const char *a5105_format::description() const
 {
 	return "A5105 disk image";
 }
 
-const char *a5105_format::extensions() const noexcept
+const char *a5105_format::extensions() const
 {
 	return "img";
 }

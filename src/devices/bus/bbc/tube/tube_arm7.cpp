@@ -132,7 +132,7 @@ void bbc_tube_arm7_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void bbc_tube_arm7_device::prst_w(int state)
+WRITE_LINE_MEMBER(bbc_tube_arm7_device::prst_w)
 {
 	device_reset();
 
@@ -159,13 +159,13 @@ void bbc_tube_arm7_device::update_interrupts()
 	m_maincpu->set_input_line(ARM7_IRQ_LINE, irq ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void bbc_tube_arm7_device::efiq_w(int state)
+WRITE_LINE_MEMBER(bbc_tube_arm7_device::efiq_w)
 {
 	m_efiq_state = state;
 	update_interrupts();
 }
 
-void bbc_tube_arm7_device::exint3_w(int state)
+WRITE_LINE_MEMBER(bbc_tube_arm7_device::exint3_w)
 {
 	m_exint3_state = state;
 	if (state)

@@ -4,23 +4,25 @@
  * netdev_module.h
  *
  */
-#ifndef MAME_OSD_NETDEV_NETDEV_MODULE_H
-#define MAME_OSD_NETDEV_NETDEV_MODULE_H
 
-#pragma once
+#ifndef NETDEV_MODULE_H_
+#define NETDEV_MODULE_H_
 
+#include "osdepend.h"
+#include "modules/osdmodule.h"
 
 //============================================================
 //  CONSTANTS
 //============================================================
 
-#define OSD_NETDEV_PROVIDER   "networkprovider"
+#define OSD_NETDEV_PROVIDER   "netdevprovider"
 
 class netdev_module
 {
 public:
-	virtual ~netdev_module() = default;
+	virtual ~netdev_module() { }
 	// no specific routines below ... may change
 };
 
-#endif // MAME_OSD_NETDEV_NETDEV_MODULE_H
+
+#endif /* NETDEV_MODULE_H_ */

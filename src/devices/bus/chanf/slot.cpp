@@ -44,11 +44,11 @@ device_channelf_cart_interface::~device_channelf_cart_interface()
 //  rom_alloc - alloc the space for the cart
 //-------------------------------------------------
 
-void device_channelf_cart_interface::rom_alloc(uint32_t size)
+void device_channelf_cart_interface::rom_alloc(uint32_t size, const char *tag)
 {
 	if (m_rom == nullptr)
 	{
-		m_rom = device().machine().memory().region_alloc(device().subtag("^cart:rom"), size, 1, ENDIANNESS_LITTLE)->base();
+		m_rom = device().machine().memory().region_alloc(std::string(tag).append(CHANFSLOT_ROM_REGION_TAG).c_str(), size, 1, ENDIANNESS_LITTLE)->base();
 		m_rom_size = size;
 	}
 }
@@ -146,12 +146,12 @@ static const char *chanf_get_slot(int type)
  call load
  -------------------------------------------------*/
 
-std::pair<std::error_condition, std::string> channelf_cart_slot_device::call_load()
+image_init_result channelf_cart_slot_device::call_load()
 {
 	if (m_cart)
 	{
-		uint32_t const len = !loaded_through_softlist() ? length() : get_software_region_length("rom");
-		m_cart->rom_alloc(len);
+		uint32_t len = !loaded_through_softlist() ? length() : get_software_region_length("rom");
+		m_cart->rom_alloc(len, tag());
 
 		if (!loaded_through_softlist())
 			fread(m_cart->get_rom_base(), len);
@@ -180,9 +180,11 @@ std::pair<std::error_condition, std::string> channelf_cart_slot_device::call_loa
 		}
 
 		//printf("Type: %s\n", chanf_get_slot(m_type));
+
+		return image_init_result::PASS;
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 

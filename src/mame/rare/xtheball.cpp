@@ -20,8 +20,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 class xtheball_state : public driver_device
 {
 public:
@@ -52,7 +50,7 @@ private:
 	required_ioport m_analog_x;
 	required_ioport m_analog_y;
 
-	void foreground_mode_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(foreground_mode_w);
 	uint16_t analogx_r();
 	uint16_t analogy_watchdog_r();
 
@@ -153,7 +151,7 @@ TMS340X0_FROM_SHIFTREG_CB_MEMBER(xtheball_state::from_shiftreg)
  *
  *************************************/
 
-void xtheball_state::foreground_mode_w(int state)
+WRITE_LINE_MEMBER(xtheball_state::foreground_mode_w)
 {
 	m_foreground_mode = state;
 }
@@ -175,9 +173,7 @@ uint16_t xtheball_state::analogx_r()
 uint16_t xtheball_state::analogy_watchdog_r()
 {
 	/* doubles as a watchdog address */
-	if (!machine().side_effects_disabled())
-		m_watchdog->watchdog_reset();
-
+	m_watchdog->watchdog_reset();
 	return (m_analog_y->read() << 8) | 0x00ff;
 }
 
@@ -358,7 +354,6 @@ ROM_START( xtheball )
 	ROM_LOAD16_BYTE( "xtb-2h.ic11", 0x200001, 0x80000, CRC(50c27558) SHA1(ecfb7d918868d35a8cde45f7d04fdfc3ffc06328) )
 ROM_END
 
-} // anonymous namespace
 
 
 /*************************************

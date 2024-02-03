@@ -104,9 +104,6 @@
 #include "sound/okim6376.h"
 #include "speaker.h"
 
-
-namespace {
-
 class maygayew_state : public driver_device
 {
 public:
@@ -457,9 +454,6 @@ ROM_START( mg_scl )
 	ROM_REGION( 0x100000, "snd", 0 )
 	ROM_LOAD( "snd.u3", 0x000000, 0x080000, NO_DUMP )
 ROM_END
-
-} // anonymous namespace
-
 
 // complete(?) dump
 GAME( 199?, mg_gbr      , 0         , maygayew, maygayew, maygayew_state, empty_init, ROT0, "Maygay", "Guinness Book Of Records (Maygay M2)", MACHINE_IS_SKELETON )

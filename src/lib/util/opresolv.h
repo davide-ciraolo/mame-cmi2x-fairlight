@@ -109,7 +109,7 @@ public:
 		}
 
 		// accessors
-		option_type type() const { return m_type; }
+		const option_type type() const { return m_type; }
 		int parameter() const { return m_parameter; }
 		const char *identifier() const { return m_identifier; }
 		const char *display_name() const { return m_display_name; }

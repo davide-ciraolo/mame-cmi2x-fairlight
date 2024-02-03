@@ -15,8 +15,6 @@ local data = exports
 
 local plugindir
 
-local reset_subscription
-
 function data.set_folder(path)
 	plugindir = path
 end
@@ -27,7 +25,7 @@ function data.startplugin()
 	local cur_set
 	local cur_list
 
-	reset_subscription = emu.add_machine_reset_notifier(
+	emu.register_start(
 			function ()
 				data_scr = {}
 				for file in lfs.dir(plugindir) do

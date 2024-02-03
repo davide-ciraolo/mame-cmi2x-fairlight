@@ -49,7 +49,7 @@
 																	  expressionFrame.size.width,
 																	  0)];
 	[subviewButton setAutoresizingMask:(NSViewWidthSizable | NSViewMinXMargin | NSViewMinYMargin)];
-	[subviewButton setBezelStyle:NSBezelStyleShadowlessSquare];
+	[subviewButton setBezelStyle:NSShadowlessSquareBezelStyle];
 	[subviewButton setFocusRingType:NSFocusRingTypeNone];
 	[subviewButton setFont:defaultFont];
 	[subviewButton setTarget:self];
@@ -120,11 +120,9 @@
 
 	// calculate the optimal size for everything
 	NSSize const desired = [NSScrollView frameSizeForContentSize:[dasmView maximumFrameSize]
-										 horizontalScrollerClass:[NSScroller class]
-										   verticalScrollerClass:[NSScroller class]
-													  borderType:[dasmScroll borderType]
-													 controlSize:NSControlSizeRegular
-												   scrollerStyle:NSScrollerStyleOverlay];
+										   hasHorizontalScroller:YES
+											 hasVerticalScroller:YES
+													  borderType:[dasmScroll borderType]];
 	[self cascadeWindowWithDesiredSize:desired forView:dasmScroll];
 
 	// don't forget the result
@@ -184,7 +182,7 @@
 		// if it doesn't exist, add a new one
 		if (bp == nullptr)
 		{
-			uint32_t const bpnum = device.debug()->breakpoint_set(address);
+			uint32_t const bpnum = device.debug()->breakpoint_set(address, nullptr, nullptr);
 			machine->debugger().console().printf("Breakpoint %X set\n", bpnum);
 		}
 		else
@@ -234,15 +232,15 @@
 
 - (void)saveConfigurationToNode:(util::xml::data_node *)node {
 	[super saveConfigurationToNode:node];
-	node->set_attribute_int(osd::debugger::ATTR_WINDOW_TYPE, osd::debugger::WINDOW_TYPE_DISASSEMBLY_VIEWER);
-	node->set_attribute_int(osd::debugger::ATTR_WINDOW_DISASSEMBLY_CPU, [dasmView selectedSubviewIndex]);
+	node->set_attribute_int("type", MAME_DEBUGGER_WINDOW_TYPE_DISASSEMBLY_VIEWER);
+	node->set_attribute_int("cpu", [dasmView selectedSubviewIndex]);
 	[dasmView saveConfigurationToNode:node];
 }
 
 
 - (void)restoreConfigurationFromNode:(util::xml::data_node const *)node {
 	[super restoreConfigurationFromNode:node];
-	int const region = node->get_attribute_int(osd::debugger::ATTR_WINDOW_DISASSEMBLY_CPU, [dasmView selectedSubviewIndex]);
+	int const region = node->get_attribute_int("cpu", [dasmView selectedSubviewIndex]);
 	[dasmView selectSubviewAtIndex:region];
 	[window setTitle:[NSString stringWithFormat:@"Disassembly: %@", [dasmView selectedSubviewName]]];
 	[subviewButton selectItemAtIndex:[subviewButton indexOfItemWithTag:[dasmView selectedSubviewIndex]]];

@@ -89,11 +89,8 @@ real_profiler_state::real_profiler_state()
 //  reset - initializes state
 //-------------------------------------------------
 
-void real_profiler_state::reset(bool enabled) noexcept
+void real_profiler_state::reset(bool enabled)
 {
-	// disabling the profiler from the UI happens while PROFILER_EXTRA is active
-	//assert(!m_filoptr || (m_filoptr == m_filo));
-
 	m_text_time = attotime::never;
 
 	if (enabled)
@@ -120,10 +117,10 @@ void real_profiler_state::reset(bool enabled) noexcept
 
 const char *real_profiler_state::text(running_machine &machine)
 {
-	auto profile = start(PROFILER_PROFILER);
+	start(PROFILER_PROFILER);
 
 	// get the current time
-	attotime const current_time = machine.scheduler().time();
+	attotime current_time = machine.scheduler().time();
 
 	// we only want to update the text periodically
 	if ((m_text_time == attotime::never) || ((current_time - m_text_time).as_double() >= TEXT_UPDATE_TIME))
@@ -132,6 +129,7 @@ const char *real_profiler_state::text(running_machine &machine)
 		m_text_time = current_time;
 	}
 
+	stop();
 	return m_text.c_str();
 }
 

@@ -28,10 +28,10 @@ public:
 	virtual ~menu_simple_game_options() override;
 
 protected:
-	virtual bool handle(event const *ev) override;
-	virtual void populate() override;
+	virtual void handle(event const *ev) override;
+	virtual void populate(float &customtop, float &custombottom) override;
 
-	bool handle_item_event(event const &menu_event);
+	void handle_item_event(event const &menu_event);
 
 private:
 	enum
@@ -62,10 +62,10 @@ public:
 	virtual ~menu_game_options() override;
 
 protected:
-	virtual bool handle(event const *ev) override;
-	virtual void populate() override;
+	virtual void handle(event const *ev) override;
+	virtual void populate(float &customtop, float &custombottom) override;
 
-	bool handle_item_event(event const &menu_event);
+	void handle_item_event(event const &menu_event);
 
 private:
 	enum

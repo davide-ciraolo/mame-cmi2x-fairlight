@@ -129,13 +129,13 @@
 #define SGCPU_TMS9901_TAG     "tms9901"
 
 // Debugging
-#define LOG_WARN        (1U << 1)   // Warnings
-#define LOG_ILLWRITE    (1U << 2)
-#define LOG_READY       (1U << 3)
-#define LOG_INTERRUPTS  (1U << 4)
-#define LOG_ADDRESS     (1U << 5)
-#define LOG_MEM         (1U << 6)
-#define LOG_MUX         (1U << 7)
+#define LOG_WARN        (1U<<1)   // Warnings
+#define LOG_ILLWRITE    (1U<<2)
+#define LOG_READY       (1U<<3)
+#define LOG_INTERRUPTS  (1U<<4)
+#define LOG_ADDRESS     (1U<<5)
+#define LOG_MEM         (1U<<6)
+#define LOG_MUX         (1U<<7)
 
 #define VERBOSE ( LOG_GENERAL | LOG_WARN )
 
@@ -166,9 +166,9 @@ public:
 	void driver_reset() override;
 
 private:
-	void ready_line(int state);
-	void extint(int state);
-	void notconnected(int state);
+	DECLARE_WRITE_LINE_MEMBER( ready_line );
+	DECLARE_WRITE_LINE_MEMBER( extint );
+	DECLARE_WRITE_LINE_MEMBER( notconnected );
 	uint8_t interrupt_level();
 
 	void setaddress(offs_t mode, uint16_t address);
@@ -176,22 +176,22 @@ private:
 	void memwrite(offs_t offset, uint16_t data);
 
 	void external_operation(offs_t offset, uint8_t data);
-	void clock_out(int state);
+	DECLARE_WRITE_LINE_MEMBER( clock_out );
 
 	// CRU (Communication Register Unit) handling
 	uint8_t cruread(offs_t offset);
 	void cruwrite(offs_t offset, uint8_t data);
 	uint8_t psi_input(offs_t offset);
-	void keyC0(int state);
-	void keyC1(int state);
-	void keyC2(int state);
-	void cs_motor(int state);
-	void audio_gate(int state);
-	void cassette_output(int state);
+	DECLARE_WRITE_LINE_MEMBER(keyC0);
+	DECLARE_WRITE_LINE_MEMBER(keyC1);
+	DECLARE_WRITE_LINE_MEMBER(keyC2);
+	DECLARE_WRITE_LINE_MEMBER(cs_motor);
+	DECLARE_WRITE_LINE_MEMBER(audio_gate);
+	DECLARE_WRITE_LINE_MEMBER(cassette_output);
 	void tms9901_interrupt(offs_t offset, uint8_t data);
-	void alphaW(int state);
+	DECLARE_WRITE_LINE_MEMBER(alphaW);
 
-	void video_interrupt_in(int state);
+	DECLARE_WRITE_LINE_MEMBER(video_interrupt_in);
 
 	void crumap(address_map &map);
 	void memmap(address_map &map);
@@ -623,7 +623,7 @@ void ti99_4p_state::debugger_write(offs_t offset, uint16_t data)
     The datamux is connected to the clock line in order to operate
     the wait state counter and to read/write the bytes.
 */
-void ti99_4p_state::datamux_clock_in(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::datamux_clock_in )
 {
 	// return immediately if the datamux is currently inactive
 	if (m_waitcount>0)
@@ -856,17 +856,17 @@ void ti99_4p_state::set_keyboard_column(int number, int data)
 	}
 }
 
-void ti99_4p_state::keyC0(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::keyC0 )
 {
 	set_keyboard_column(0, state);
 }
 
-void ti99_4p_state::keyC1(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::keyC1 )
 {
 	set_keyboard_column(1, state);
 }
 
-void ti99_4p_state::keyC2(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::keyC2 )
 {
 	set_keyboard_column(2, state);
 }
@@ -874,7 +874,7 @@ void ti99_4p_state::keyC2(int state)
 /*
     WRITE alpha lock line (P5)
 */
-void ti99_4p_state::alphaW(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::alphaW )
 {
 	m_check_alphalock = (state==0);
 }
@@ -882,7 +882,7 @@ void ti99_4p_state::alphaW(int state)
 /*
     command CS1 (only) tape unit motor (P6)
 */
-void ti99_4p_state::cs_motor(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::cs_motor )
 {
 	m_cassette->change_state((state!=0)? CASSETTE_MOTOR_ENABLED : CASSETTE_MOTOR_DISABLED,CASSETTE_MASK_MOTOR);
 }
@@ -896,14 +896,14 @@ void ti99_4p_state::cs_motor(int state)
     We do not really need to emulate this as the tape recorder generates sound
     on its own.
 */
-void ti99_4p_state::audio_gate(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::audio_gate )
 {
 }
 
 /*
     tape output (P9)
 */
-void ti99_4p_state::cassette_output(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::cassette_output )
 {
 	m_cassette->output((state!=0)? +1 : -1);
 }
@@ -928,7 +928,7 @@ void ti99_4p_state::ready_join()
 /*
     Incoming READY line from other cards in the Peripheral Expansion Box.
 */
-void ti99_4p_state::ready_line(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::ready_line )
 {
 	if (state != m_sysready) LOGMASKED(LOG_READY, "READY line from PBox = %d\n", state);
 	m_sysready = (line_state)state;
@@ -936,14 +936,14 @@ void ti99_4p_state::ready_line(int state)
 	ready_join();
 }
 
-void ti99_4p_state::extint(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::extint )
 {
 	LOGMASKED(LOG_INTERRUPTS, "EXTINT level = %02x\n", state);
 	m_int1 = (line_state)state;
 	m_tms9901->set_int_line(1, state);
 }
 
-void ti99_4p_state::notconnected(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::notconnected )
 {
 	LOGMASKED(LOG_INTERRUPTS, "Setting a not connected line ... ignored\n");
 }
@@ -951,7 +951,7 @@ void ti99_4p_state::notconnected(int state)
 /*
     Clock line from the CPU. Used to control wait state generation.
 */
-void ti99_4p_state::clock_out(int state)
+WRITE_LINE_MEMBER( ti99_4p_state::clock_out )
 {
 	m_tms9901->phi_line(state);
 	datamux_clock_in(state);
@@ -1017,7 +1017,7 @@ void ti99_4p_state::driver_start()
 /*
     set the state of int2 (called by the v9938)
 */
-void ti99_4p_state::video_interrupt_in(int state)
+WRITE_LINE_MEMBER(ti99_4p_state::video_interrupt_in)
 {
 	LOGMASKED(LOG_INTERRUPTS, "VDP INT2 from EVPC on tms9901, level=%d\n", state);
 	m_int2 = (line_state)state;

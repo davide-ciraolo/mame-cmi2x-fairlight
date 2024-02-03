@@ -2,7 +2,7 @@
 // copyright-holders:Nathan Woods
 /*********************************************************************
 
-    formats/pc_dsk.cpp
+    formats/pc_dsk.c
 
     PC disk images
 
@@ -19,17 +19,17 @@ pc_format::pc_format() : upd765_format(formats)
 {
 }
 
-const char *pc_format::name() const noexcept
+const char *pc_format::name() const
 {
 	return "pc";
 }
 
-const char *pc_format::description() const noexcept
+const char *pc_format::description() const
 {
 	return "PC floppy disk image";
 }
 
-const char *pc_format::extensions() const noexcept
+const char *pc_format::extensions() const
 {
 	return "dsk,ima,img,ufi,360";
 }

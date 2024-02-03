@@ -66,7 +66,7 @@ void sam_spi_device::device_start()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void sam_spi_device::centronics_busy_w(int state)
+WRITE_LINE_MEMBER( sam_spi_device::centronics_busy_w )
 {
 	m_busy = state;
 }

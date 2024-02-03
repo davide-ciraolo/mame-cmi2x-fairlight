@@ -42,7 +42,7 @@ void device_astrocade_ctrl_interface::interface_pre_start()
 		throw device_missing_dependencies();
 }
 
-void device_astrocade_ctrl_interface::write_ltpen(int state)
+WRITE_LINE_MEMBER( device_astrocade_ctrl_interface::write_ltpen )
 {
 	if (m_port->m_ltpen != state)
 	{
@@ -72,6 +72,8 @@ astrocade_ctrl_port_device::~astrocade_ctrl_port_device()
 void astrocade_ctrl_port_device::device_resolve_objects()
 {
 	m_device = get_card_device();
+
+	m_ltpen_handler.resolve_safe();
 }
 
 void astrocade_ctrl_port_device::device_start()

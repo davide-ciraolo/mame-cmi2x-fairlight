@@ -26,6 +26,7 @@ protected:
 
 	required_device<harddisk_image_device> image;
 	uint8_t block[512];
+	hard_disk_file *harddisk;
 	int lba, cur_lba, blocks;
 	int bytes_per_sector;
 

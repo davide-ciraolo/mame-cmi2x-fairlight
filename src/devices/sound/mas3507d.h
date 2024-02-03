@@ -5,7 +5,9 @@
 
 #pragma once
 
-#include "mp3_audio.h"
+#define MINIMP3_ONLY_MP3
+#define MINIMP3_NO_STDIO
+#include "minimp3/minimp3.h"
 
 class mas3507d_device : public device_t, public device_sound_interface
 {
@@ -70,10 +72,13 @@ private:
 	i2c_subdest_t i2c_subdest;
 	i2c_command_t i2c_command;
 
+	mp3dec_t mp3_dec;
+	mp3dec_frame_info_t mp3_info;
+
 	sound_stream *stream;
 
 	std::array<uint8_t, 0xe00> mp3data;
-	std::array<short, 1152*2> samples;
+	std::array<mp3d_sample_t, MINIMP3_MAX_SAMPLES_PER_FRAME> samples;
 
 	bool i2c_scli, i2c_sclo, i2c_sdai, i2c_sdao;
 	int i2c_bus_curbit;
@@ -82,17 +87,15 @@ private:
 	uint32_t i2c_io_bank, i2c_io_adr, i2c_io_count, i2c_io_val;
 	uint32_t i2c_sdao_data;
 
+	bool mp3_is_buffered;
 	uint32_t mp3data_count;
-	uint32_t decoded_frame_count;
+	uint32_t decoded_frame_count, decoded_samples;
 	int32_t sample_count, samples_idx;
-	int32_t frame_channels;
 
 	bool is_muted;
 	float gain_ll, gain_rr;
 
 	uint32_t playback_status;
-
-	std::unique_ptr<mp3_audio> mp3dec;
 };
 
 

@@ -465,14 +465,14 @@ void apollo_state::apollo_dma_write_word(offs_t offset, uint8_t data){
 	SLOG1(("dma write word at offset %x+%03x = %02x", page_offset, offset, data));
 }
 
-void apollo_state::apollo_dma8237_out_eop(int state) {
+WRITE_LINE_MEMBER(apollo_state::apollo_dma8237_out_eop ) {
 	CLOG1(("dma out eop state %02x", state));
 	m_cur_eop = state == ASSERT_LINE;
 	if(m_dma_channel != -1)
 		m_isa->eop_w(m_dma_channel, m_cur_eop ? ASSERT_LINE : CLEAR_LINE );
 }
 
-void apollo_state::apollo_dma_1_hrq_changed(int state) {
+WRITE_LINE_MEMBER(apollo_state::apollo_dma_1_hrq_changed ) {
 	CLOG2(("dma 1 hrq changed state %02x", state));
 	m_dma8237_1->dreq0_w(state);
 
@@ -483,7 +483,7 @@ void apollo_state::apollo_dma_1_hrq_changed(int state) {
 	// i8237_hlda_w(get_device_dma8237_2(device), state);
 }
 
-void apollo_state::apollo_dma_2_hrq_changed(int state) {
+WRITE_LINE_MEMBER(apollo_state::apollo_dma_2_hrq_changed ) {
 	CLOG2(("dma 2 hrq changed state %02x", state));
 	m_maincpu->set_input_line(INPUT_LINE_HALT, state ? ASSERT_LINE : CLEAR_LINE);
 
@@ -507,14 +507,14 @@ void apollo_state::pc_dma8237_5_dack_w(uint8_t data){ m_isa->dack_w(5, data); }
 void apollo_state::pc_dma8237_6_dack_w(uint8_t data){ m_isa->dack_w(6, data); }
 void apollo_state::pc_dma8237_7_dack_w(uint8_t data){ m_isa->dack_w(7, data); }
 
-void apollo_state::pc_dack0_w(int state) { select_dma_channel(0, state); }
-void apollo_state::pc_dack1_w(int state) { select_dma_channel(1, state); }
-void apollo_state::pc_dack2_w(int state) { select_dma_channel(2, state); }
-void apollo_state::pc_dack3_w(int state) { select_dma_channel(3, state); }
-void apollo_state::pc_dack4_w(int state) { m_dma8237_1->hack_w( state ? 0 : 1); } // it's inverted
-void apollo_state::pc_dack5_w(int state) { select_dma_channel(5, state); }
-void apollo_state::pc_dack6_w(int state) { select_dma_channel(6, state); }
-void apollo_state::pc_dack7_w(int state) { select_dma_channel(7, state); }
+WRITE_LINE_MEMBER( apollo_state::pc_dack0_w ) { select_dma_channel(0, state); }
+WRITE_LINE_MEMBER( apollo_state::pc_dack1_w ) { select_dma_channel(1, state); }
+WRITE_LINE_MEMBER( apollo_state::pc_dack2_w ) { select_dma_channel(2, state); }
+WRITE_LINE_MEMBER( apollo_state::pc_dack3_w ) { select_dma_channel(3, state); }
+WRITE_LINE_MEMBER( apollo_state::pc_dack4_w ) { m_dma8237_1->hack_w( state ? 0 : 1); } // it's inverted
+WRITE_LINE_MEMBER( apollo_state::pc_dack5_w ) { select_dma_channel(5, state); }
+WRITE_LINE_MEMBER( apollo_state::pc_dack6_w ) { select_dma_channel(6, state); }
+WRITE_LINE_MEMBER( apollo_state::pc_dack7_w ) { select_dma_channel(7, state); }
 
 void apollo_state::select_dma_channel(int channel, bool state)
 {
@@ -594,7 +594,7 @@ uint8_t apollo_state::apollo_pic8259_get_slave_ack(offs_t offset)
 		return offset == 3 ? m_pic8259_slave->acknowledge() : 0;
 }
 
-void apollo_state::apollo_pic8259_master_set_int_line(int state) {
+WRITE_LINE_MEMBER( apollo_state::apollo_pic8259_master_set_int_line ) {
 	static int interrupt_line = -1;
 	if (state != interrupt_line) {
 		device_t *device = m_pic8259_master;
@@ -613,7 +613,7 @@ void apollo_state::apollo_pic8259_master_set_int_line(int state) {
 	m_maincpu->set_input_line(M68K_IRQ_6,state ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void apollo_state::apollo_pic8259_slave_set_int_line(int state) {
+WRITE_LINE_MEMBER( apollo_state::apollo_pic8259_slave_set_int_line ) {
 	static int interrupt_line = -1;
 	if (state != interrupt_line) {
 		device_t *device = m_pic8259_slave;
@@ -630,7 +630,7 @@ void apollo_state::apollo_pic8259_slave_set_int_line(int state) {
 #undef VERBOSE
 #define VERBOSE 0
 
-void apollo_state::apollo_ptm_timer_tick(int state)
+WRITE_LINE_MEMBER(apollo_state::apollo_ptm_timer_tick)
 {
 	if ((state) && (m_ptm->started()))
 	{
@@ -646,7 +646,7 @@ void apollo_state::apollo_ptm_timer_tick(int state)
 	}
 }
 
-void apollo_state::apollo_ptm_irq_function(int state)
+WRITE_LINE_MEMBER(apollo_state::apollo_ptm_irq_function)
 {
 	apollo_pic_set_irq_line(APOLLO_IRQ_PTM, state);
 }
@@ -688,7 +688,7 @@ uint8_t apollo_state::apollo_rtc_r(offs_t offset)
 	return data;
 }
 
-void apollo_state::apollo_rtc_irq_function(int state)
+WRITE_LINE_MEMBER(apollo_state::apollo_rtc_irq_function)
 {
 	apollo_pic_set_irq_line(APOLLO_IRQ_RTC, state);
 }
@@ -790,7 +790,7 @@ void apollo_sio::write(offs_t offset, uint8_t data)
 // device type definition
 DEFINE_DEVICE_TYPE(APOLLO_SIO, apollo_sio, "apollo_sio", "DN3000/DS3500 SIO (MC2681)")
 
-void apollo_state::sio_irq_handler(int state)
+WRITE_LINE_MEMBER(apollo_state::sio_irq_handler)
 {
 	apollo_pic_set_irq_line(APOLLO_IRQ_SIO1, state);
 }
@@ -820,7 +820,7 @@ void apollo_state::sio_output(uint8_t data)
 // machine/apollo_sio2.c - APOLLO DS3500 SIO2
 //##########################################################################
 
-void apollo_state::sio2_irq_handler(int state)
+WRITE_LINE_MEMBER(apollo_state::sio2_irq_handler)
 {
 	apollo_pic_set_irq_line(APOLLO_IRQ_SIO2, state);
 }
@@ -929,7 +929,7 @@ uint16_t apollo_ni::read(offs_t offset, uint16_t mem_mask)
 /*-------------------------------------------------
  DEVICE_IMAGE_LOAD( rom )
  -------------------------------------------------*/
-std::pair<std::error_condition, std::string> apollo_ni::call_load()
+image_init_result apollo_ni::call_load()
 {
 	CLOG1(("apollo_ni::call_load: %s", filename()));
 
@@ -952,17 +952,17 @@ std::pair<std::error_condition, std::string> apollo_ni::call_load()
 		{
 			m_node_id = (((data[2] << 8) | data[4]) << 8) | (data[6]);
 			CLOG1(("apollo_ni::call_load: node ID is %x", m_node_id));
-			return std::make_pair(std::error_condition(), std::string());
+			return image_init_result::PASS;
 		}
 	}
-	return std::make_pair(image_error::UNSPECIFIED, std::string());
+	return image_init_result::FAIL;
 }
 
 /*-------------------------------------------------
  DEVICE_IMAGE_CREATE( rom )
  -------------------------------------------------*/
 
-std::pair<std::error_condition, std::string> apollo_ni::call_create(int format_type, util::option_resolution *format_options)
+image_init_result apollo_ni::call_create(int format_type, util::option_resolution *format_options)
 {
 	CLOG1(("apollo_ni::call_create:"));
 
@@ -989,10 +989,10 @@ std::pair<std::error_condition, std::string> apollo_ni::call_create(int format_t
 			fwrite(data, sizeof(data));
 			CLOG(("apollo_ni::call_create: created %s with node ID %x", filename(), node_id));
 			set_node_id(node_id);
-			return std::make_pair(std::error_condition(), std::string());
+			return image_init_result::PASS;
 		}
 	}
-	return std::make_pair(image_error::UNSPECIFIED, std::string());
+	return image_init_result::FAIL;
 }
 
 /*-------------------------------------------------
@@ -1274,7 +1274,7 @@ void apollo_stdio_device::device_start()
 {
 	CLOG1(("device_start"));
 
-	m_tx_w.resolve();
+	m_tx_w.resolve_safe();
 
 	m_poll_timer = timer_alloc(FUNC(apollo_stdio_device::poll_timer), this);
 }

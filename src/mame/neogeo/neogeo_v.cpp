@@ -74,14 +74,14 @@ void neogeo_base_state::set_pens()
 }
 
 
-void neogeo_base_state::set_screen_shadow(int state)
+WRITE_LINE_MEMBER(neogeo_base_state::set_screen_shadow)
 {
 	m_screen_shadow = state;
 	set_pens();
 }
 
 
-void neogeo_base_state::set_palette_bank(int state)
+WRITE_LINE_MEMBER(neogeo_base_state::set_palette_bank)
 {
 	m_palette_bank = state ? 0x1000 : 0;
 	set_pens();
@@ -94,10 +94,10 @@ uint16_t neogeo_base_state::paletteram_r(offs_t offset)
 }
 
 
-void neogeo_base_state::paletteram_w(offs_t offset, uint16_t data)
+void neogeo_base_state::paletteram_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 {
 	offset += m_palette_bank;
-	m_paletteram[offset] = data;
+	data = COMBINE_DATA(&m_paletteram[offset]);
 
 	int dark = data >> 15;
 	int r = ((data >> 14) & 0x1) | ((data >> 7) & 0x1e);
@@ -177,6 +177,9 @@ uint32_t neogeo_base_state::screen_update(screen_device &screen, bitmap_rgb32 &b
 
 uint16_t neogeo_base_state::get_video_control()
 {
+	uint16_t ret;
+	uint16_t v_counter;
+
 	/*
 	    The format of this very important location is:  AAAA AAAA A??? BCCC
 
@@ -198,13 +201,13 @@ uint16_t neogeo_base_state::get_video_control()
 	    C animation counter lower 3 bits
 	*/
 
-	// the vertical counter chain goes from 0xf8 - 0x1ff
-	uint16_t v_counter = m_screen->vpos() + 0x100;
+	/* the vertical counter chain goes from 0xf8 - 0x1ff */
+	v_counter = m_screen->vpos() + 0x100;
 
 	if (v_counter >= 0x200)
 		v_counter = v_counter - NEOGEO_VTOTAL;
 
-	uint16_t ret = (v_counter << 7) | (m_sprgen->neogeo_get_auto_animation_counter() & 0x0007);
+	ret = (v_counter << 7) | (m_sprgen->neogeo_get_auto_animation_counter() & 0x0007);
 
 	if (VERBOSE) logerror("%s: video_control read (%04x)\n", machine().describe_context(), ret);
 
@@ -227,7 +230,7 @@ uint16_t neogeo_base_state::video_register_r(address_space &space, offs_t offset
 {
 	uint16_t ret;
 
-	// accessing the LSB only is not mapped
+	/* accessing the LSB only is not mapped */
 	if (mem_mask == 0x00ff)
 		ret = unmapped_r(space) & 0x00ff;
 	else
@@ -248,10 +251,10 @@ uint16_t neogeo_base_state::video_register_r(address_space &space, offs_t offset
 
 void neogeo_base_state::video_register_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 {
-	// accessing the LSB only is not mapped
+	/* accessing the LSB only is not mapped */
 	if (mem_mask != 0x00ff)
 	{
-		// accessing the MSB only stores same data in MSB and LSB
+		/* accessing the MSB only stores same data in MSB and LSB */
 		if (mem_mask == 0xff00)
 			data = (data & 0xff00) | (data >> 8);
 

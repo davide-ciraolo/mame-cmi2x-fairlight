@@ -56,7 +56,7 @@ protected:
 	virtual void write_c0nx(uint8_t offset, uint8_t data) override;
 
 private:
-	void tms_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( tms_irq_w );
 
 	required_device<tms9918a_device> m_tms;
 	required_device<ay8910_device> m_ay;
@@ -157,7 +157,7 @@ void a2bus_arcboard_device::write_c0nx(uint8_t offset, uint8_t data)
 	}
 }
 
-void a2bus_arcboard_device::tms_irq_w(int state)
+WRITE_LINE_MEMBER( a2bus_arcboard_device::tms_irq_w )
 {
 	if (state)
 	{

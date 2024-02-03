@@ -36,6 +36,35 @@
 
 
 
+namespace {
+
+template <typename T>
+inline std::string_view::size_type find_delimiter(std::string_view str, T &&is_delim)
+{
+	unsigned parens = 0;
+	for (std::string_view::size_type i = 0; str.length() > i; ++i)
+	{
+		if (str[i] == '(')
+		{
+			++parens;
+		}
+		else if (parens)
+		{
+			if (str[i] == ')')
+				--parens;
+		}
+		else if (is_delim(str[i]))
+		{
+			return i;
+		}
+	}
+	return std::string_view::npos;
+}
+
+} // anonymous namespace
+
+
+
 /***************************************************************************
     CONSTANTS
 ***************************************************************************/
@@ -53,8 +82,7 @@ const size_t debugger_commands::MAX_GLOBALS = 1000;
 
 bool debugger_commands::cheat_address_is_valid(address_space &space, offs_t address)
 {
-	address_space *tspace;
-	return space.device().memory().translate(space.spacenum(), device_memory_interface::TR_READ, address, tspace) && (tspace->get_write_ptr(address) != nullptr);
+	return space.device().memory().translate(space.spacenum(), TRANSLATE_READ, address) && (space.get_write_ptr(address) != nullptr);
 }
 
 
@@ -105,15 +133,14 @@ u64 debugger_commands::cheat_system::read_extended(offs_t address) const
 {
 	address &= space->logaddrmask();
 	u64 value = space->unmap();
-	address_space *tspace;
-	if (space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, address, tspace))
+	if (space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, address))
 	{
 		switch (width)
 		{
-		case 1: value = tspace->read_byte(address);              break;
-		case 2: value = tspace->read_word_unaligned(address);    break;
-		case 4: value = tspace->read_dword_unaligned(address);   break;
-		case 8: value = tspace->read_qword_unaligned(address);   break;
+		case 1: value = space->read_byte(address);              break;
+		case 2: value = space->read_word_unaligned(address);    break;
+		case 4: value = space->read_dword_unaligned(address);   break;
+		case 8: value = space->read_qword_unaligned(address);   break;
 		}
 	}
 	return sign_extend(byte_swap(value));
@@ -170,7 +197,7 @@ debugger_commands::debugger_commands(running_machine& machine, debugger_cpu& cpu
 		if ((valcount == 1) && (blockcount == 1) && strstr(name, "/globals/"))
 		{
 			char symname[100];
-			snprintf(symname, 100, ".%s", strrchr(name, '/') + 1);
+			sprintf(symname, ".%s", strrchr(name, '/') + 1);
 			m_global_array[itemnum].base = base;
 			m_global_array[itemnum].size = valsize;
 			symtable.add(
@@ -254,13 +281,6 @@ debugger_commands::debugger_commands(running_machine& machine, debugger_cpu& cpu
 	m_console.register_command("rpdisable", CMDFLAG_NONE, 0, MAX_COMMAND_PARAMS, std::bind(&debugger_commands::execute_rpdisenable, this, false, _1));
 	m_console.register_command("rpenable",  CMDFLAG_NONE, 0, MAX_COMMAND_PARAMS, std::bind(&debugger_commands::execute_rpdisenable, this, true, _1));
 	m_console.register_command("rplist",    CMDFLAG_NONE, 0, 1, std::bind(&debugger_commands::execute_rplist, this, _1));
-
-	m_console.register_command("epset",     CMDFLAG_NONE, 1, 3, std::bind(&debugger_commands::execute_epset, this, _1));
-	m_console.register_command("ep",        CMDFLAG_NONE, 1, 3, std::bind(&debugger_commands::execute_epset, this, _1));
-	m_console.register_command("epclear",   CMDFLAG_NONE, 0, MAX_COMMAND_PARAMS, std::bind(&debugger_commands::execute_epclear, this, _1));
-	m_console.register_command("epdisable", CMDFLAG_NONE, 0, MAX_COMMAND_PARAMS, std::bind(&debugger_commands::execute_epdisenable, this, false, _1));
-	m_console.register_command("epenable",  CMDFLAG_NONE, 0, MAX_COMMAND_PARAMS, std::bind(&debugger_commands::execute_epdisenable, this, true, _1));
-	m_console.register_command("eplist",    CMDFLAG_NONE, 0, 1, std::bind(&debugger_commands::execute_eplist, this, _1));
 
 	m_console.register_command("statesave", CMDFLAG_NONE, 1, 1, std::bind(&debugger_commands::execute_statesave, this, _1));
 	m_console.register_command("ss",        CMDFLAG_NONE, 1, 1, std::bind(&debugger_commands::execute_statesave, this, _1));
@@ -429,15 +449,475 @@ void debugger_commands::global_set(global_entry *global, u64 value)
 
 
 
-//**************************************************************************
-//  COMMAND IMPLEMENTATIONS
-//**************************************************************************
+/***************************************************************************
+    PARAMETER VALIDATION HELPERS
+***************************************************************************/
+
+/// \brief Validate parameter as a Boolean value
+///
+/// Validates a parameter as a Boolean value.  Fixed strings and
+/// expressions evaluating to numeric values are recognised.  The result
+/// is unchanged for an empty string.
+/// \param [in] param The parameter string.
+/// \param [in,out] result The default value on entry, and the value of
+///   the parameter interpreted as a Boolean on success.  Unchanged if
+///   the parameter is an empty string.
+/// \return true if the parameter is a valid Boolean value or an empty
+///   string, or false otherwise.
+bool debugger_commands::validate_boolean_parameter(const std::string &param, bool &result)
+{
+	// nullptr parameter does nothing and returns no error
+	if (param.empty())
+		return true;
+
+	// evaluate the expression; success if no error
+	bool const is_true = !core_stricmp(param.c_str(), "true");
+	bool const is_false = !core_stricmp(param.c_str(), "false");
+
+	if (is_true || is_false)
+	{
+		result = is_true;
+		return true;
+	}
+
+	// try to evaluate as a number
+	u64 val;
+	if (!validate_number_parameter(param, val))
+		return false;
+
+	result = val != 0;
+	return true;
+}
+
+
+/// \brief Validate parameter as a numeric value
+///
+/// Parses the parameter as an expression and evaluates it as a number.
+/// \param [in] param The parameter string.
+/// \param [out] result The numeric value of the expression on success.
+///   Unchanged on failure.
+/// \return true if the parameter is a valid expression that evaluates
+///   to a numeric value, or false otherwise.
+bool debugger_commands::validate_number_parameter(std::string_view param, u64 &result)
+{
+	// evaluate the expression; success if no error
+	try
+	{
+		result = parsed_expression(m_console.visible_symtable(), param).execute();
+		return true;
+	}
+	catch (expression_error const &error)
+	{
+		// print an error pointing to the character that caused it
+		m_console.printf("Error in expression: %s\n", param);
+		m_console.printf("                     %*s^", error.offset(), "");
+		m_console.printf("%s\n", error.code_string());
+		return false;
+	}
+}
+
+
+/// \brief Validate parameter as a device
+///
+/// Validates a parameter as a device identifier and retrieves the
+/// device on success.  A string corresponding to the tag of a device
+/// refers to that device; an empty string refers to the current CPU
+/// with debugger focus; any other string is parsed as an expression
+/// and treated as an index of a device implementing
+/// #device_execute_interface and #device_state_interface, and exposing
+/// a generic PC base value.
+/// \param [in] param The parameter string.
+/// \param [out] result A pointer to the device on success, or unchanged
+///   on failure.
+/// \return true if the parameter refers to a device in the current
+///   system, or false otherwise.
+bool debugger_commands::validate_device_parameter(std::string_view param, device_t *&result)
+{
+	// if no parameter, use the visible CPU
+	if (param.empty())
+	{
+		device_t *const current = m_console.get_visible_cpu();
+		if (current)
+		{
+			result = current;
+			return true;
+		}
+		else
+		{
+			m_console.printf("No valid CPU is currently selected\n");
+			return false;
+		}
+	}
+
+	// next look for a tag match
+	std::string_view relative = param;
+	device_t &base = get_device_search_base(relative);
+	device_t *device = base.subdevice(strmakelower(relative));
+	if (device)
+	{
+		result = device;
+		return true;
+	}
+
+	// then evaluate as an expression; on an error assume it was a tag
+	u64 cpunum;
+	try
+	{
+		cpunum = parsed_expression(m_console.visible_symtable(), param).execute();
+	}
+	catch (expression_error &)
+	{
+		m_console.printf("Unable to find device '%s'\n", param);
+		return false;
+	}
+
+	// attempt to find by numerical index
+	device = get_cpu_by_index(cpunum);
+	if (device)
+	{
+		result = device;
+		return true;
+	}
+	else
+	{
+		// if out of range, complain
+		m_console.printf("Invalid CPU index %u\n", cpunum);
+		return false;
+	}
+}
+
+
+/// \brief Validate a parameter as a CPU
+///
+/// Validates a parameter as a CPU identifier.  Uses the same rules as
+/// #validate_device_parameter to identify devices, but additionally
+/// checks that the device is a "CPU" for the debugger's purposes.
+/// \param [in] The parameter string.
+/// \param [out] result The device on success, or unchanged on failure.
+/// \return true if the parameter refers to a CPU-like device in the
+///   current system, or false otherwise.
+bool debugger_commands::validate_cpu_parameter(std::string_view param, device_t *&result)
+{
+	// first do the standard device thing
+	device_t *device;
+	if (!validate_device_parameter(param, device))
+		return false;
+
+	// check that it's a "CPU" for the debugger's purposes
+	device_execute_interface const *execute;
+	if (device->interface(execute))
+	{
+		result = device;
+		return true;
+	}
+
+	m_console.printf("Device %s is not a CPU\n", device->name());
+	return false;
+}
+
+
+/// \brief Validate a parameter as an address space identifier
+///
+/// Validates a parameter as an address space identifier.  Uses the same
+/// rules as #validate_device_parameter to identify devices.  If the
+/// default address space number is negative, the first address space
+/// exposed by the device will be used as the default.
+/// \param [in] The parameter string.
+/// \param [in] spacenum The default address space index.  If negative,
+///   the first address space exposed by the device (i.e. the address
+///   space with the lowest index) will be used as the default.
+/// \param [out] result The address space on success, or unchanged on
+///   failure.
+/// \return true if the parameter refers to an address space in the
+///   current system, or false otherwise.
+bool debugger_commands::validate_device_space_parameter(std::string_view param, int spacenum, address_space *&result)
+{
+	device_t *device;
+	std::string spacename;
+	if (param.empty())
+	{
+		// if no parameter, use the visible CPU
+		device = m_console.get_visible_cpu();
+		if (!device)
+		{
+			m_console.printf("No valid CPU is currently selected\n");
+			return false;
+		}
+	}
+	else
+	{
+		// look for a tag match on the whole parameter value
+		std::string_view relative = param;
+		device_t &base = get_device_search_base(relative);
+		device = base.subdevice(strmakelower(relative));
+
+		// if that failed, treat the last component as an address space
+		if (!device)
+		{
+			auto const delimiter = relative.find_last_of(":^");
+			bool const found = std::string_view::npos != delimiter;
+			if (!found || (':' == relative[delimiter]))
+			{
+				spacename = strmakelower(relative.substr(found ? (delimiter + 1) : 0));
+				relative = relative.substr(0, !found ? 0 : !delimiter ? 1 : delimiter);
+				if (!relative.empty())
+					device = base.subdevice(strmakelower(relative));
+				else if (m_console.get_visible_cpu())
+					device = m_console.get_visible_cpu();
+				else
+					device = &m_machine.root_device();
+			}
+		}
+	}
+
+	// if still no device found, evaluate as an expression
+	if (!device)
+	{
+		u64 cpunum;
+		try
+		{
+			cpunum = parsed_expression(m_console.visible_symtable(), param).execute();
+		}
+		catch (expression_error const &)
+		{
+			// parsing failed - assume it was a tag
+			m_console.printf("Unable to find device '%s'\n", param);
+			return false;
+		}
+
+		// attempt to find by numerical index
+		device = get_cpu_by_index(cpunum);
+		if (!device)
+		{
+			// if out of range, complain
+			m_console.printf("Invalid CPU index %u\n", cpunum);
+			return false;
+		}
+	}
+
+	// ensure the device implements the memory interface
+	device_memory_interface *memory;
+	if (!device->interface(memory))
+	{
+		m_console.printf("No memory interface found for device %s\n", device->name());
+		return false;
+	}
+
+	// fall back to supplied default space if appropriate
+	if (spacename.empty() && (0 <= spacenum))
+	{
+		if (memory->has_space(spacenum))
+		{
+			result = &memory->space(spacenum);
+			return true;
+		}
+		else
+		{
+			m_console.printf("No matching memory space found for device '%s'\n", device->tag());
+			return false;
+		}
+	}
+
+	// otherwise find the specified space or fall back to the first populated space
+	for (int i = 0; memory->max_space_count() > i; ++i)
+	{
+		if (memory->has_space(i) && (spacename.empty() || (memory->space(i).name() == spacename)))
+		{
+			result = &memory->space(i);
+			return true;
+		}
+	}
+
+	// report appropriate error message
+	if (spacename.empty())
+		m_console.printf("No memory spaces found for device '%s'\n", device->tag());
+	else
+		m_console.printf("Memory space '%s' not found found for device '%s'\n", spacename, device->tag());
+	return false;
+}
+
+
+/// \brief Validate a parameter as a target address
+///
+/// Validates a parameter as an numeric expression to use as an address
+/// optionally followed by a colon and a device identifier.  If the
+/// device identifier is not presnt, the current CPU with debugger focus
+/// is assumed.  See #validate_device_parameter for information on how
+/// device parametersare interpreted.
+/// \param [in] The parameter string.
+/// \param [in] spacenum The default address space index.  If negative,
+///   the first address space exposed by the device (i.e. the address
+///   space with the lowest index) will be used as the default.
+/// \param [out] space The address space on success, or unchanged on
+///   failure.
+/// \param [out] addr The address on success, or unchanged on failure.
+/// \return true if the address is a valid expression evaluating to a
+///   number and the address space is found, or false otherwise.
+bool debugger_commands::validate_target_address_parameter(std::string_view param, int spacenum, address_space *&space, u64 &addr)
+{
+	// check for the device delimiter
+	std::string_view::size_type const devdelim = find_delimiter(param, [] (char ch) { return ':' == ch; });
+	std::string_view device;
+	if (devdelim != std::string::npos)
+		device = param.substr(devdelim + 1);
+
+	// parse the address first
+	u64 addrval;
+	if (!validate_number_parameter(param.substr(0, devdelim), addrval))
+		return false;
+
+	// find the address space
+	if (!validate_device_space_parameter(device, spacenum, space))
+		return false;
+
+	// set the address now that we have the space
+	addr = addrval;
+	return true;
+}
+
+
+/// \brief Validate a parameter as a memory region
+///
+/// Validates a parameter as a memory region tag and retrieves the
+/// specified memory region.
+/// \param [in] The parameter string.
+/// \param [out] result The memory region on success, or unchanged on
+///   failure.
+/// \return true if the parameter refers to a memory region in the
+///   current system, or false otherwise.
+bool debugger_commands::validate_memory_region_parameter(std::string_view param, memory_region *&result)
+{
+	auto const &regions = m_machine.memory().regions();
+	std::string_view relative = param;
+	device_t &base = get_device_search_base(relative);
+	auto const iter = regions.find(base.subtag(strmakelower(relative)));
+	if (regions.end() != iter)
+	{
+		result = iter->second.get();
+		return true;
+	}
+	else
+	{
+		m_console.printf("No matching memory region found for '%s'\n", param);
+		return false;
+	}
+}
+
+
+/// \brief Get search base for device or address space parameter
+///
+/// Handles prefix prefixes used to indicate that a device tag should be
+/// interpreted relative to the selected CPU.  Removes the recognised
+/// prefixes from the parameter value.
+/// \param [in,out] param The parameter string.  Recognised prefixes
+///   affecting the search base are removed, leaving a tag relative to
+///   the base device.
+/// \return A reference to the base device that the tag should be
+///   interpreted relative to.
+device_t &debugger_commands::get_device_search_base(std::string_view &param)
+{
+	if (!param.empty())
+	{
+		// handle ".:" or ".^" prefix for tag relative to current CPU if any
+		if (('.' == param[0]) && ((param.size() == 1) || (':' == param[1]) || ('^' == param[1])))
+		{
+			param.remove_prefix(((param.size() > 1) && (':' == param[1])) ? 2 : 1);
+			device_t *const current = m_console.get_visible_cpu();
+			return current ? *current : m_machine.root_device();
+		}
+
+		// a sibling path makes most sense relative to current CPU
+		if ('^' == param[0])
+		{
+			device_t *const current = m_console.get_visible_cpu();
+			return current ? *current : m_machine.root_device();
+		}
+	}
+
+
+	// default to root device
+	return m_machine.root_device();
+}
+
+
+/// \brief Get CPU by index
+///
+/// Looks up a CPU by the number the debugger assigns it based on its
+/// position in the device tree relative to other CPUs.
+/// \param [in] cpunum Zero-based index of the CPU to find.
+/// \return A pointer to the CPU if found, or \c nullptr if no CPU has
+///   the specified index.
+device_t *debugger_commands::get_cpu_by_index(u64 cpunum)
+{
+	unsigned index = 0;
+	for (device_execute_interface &exec : execute_interface_enumerator(m_machine.root_device()))
+	{
+		// real CPUs should have pcbase
+		device_state_interface const *state;
+		if (exec.device().interface(state) && state->state_find_entry(STATE_GENPCBASE))
+		{
+			if (index++ == cpunum)
+			{
+				return &exec.device();
+			}
+		}
+	}
+	return nullptr;
+}
+
+
+/*-------------------------------------------------
+    debug_command_parameter_expression - validates
+    an expression parameter
+-------------------------------------------------*/
+
+bool debugger_commands::debug_command_parameter_expression(std::string_view param, parsed_expression &result)
+{
+	try
+	{
+		// parse the expression; success if no error
+		result.parse(param);
+		return true;
+	}
+	catch (expression_error const &err)
+	{
+		// output an error
+		m_console.printf("Error in expression: %s\n", param);
+		m_console.printf("                     %*s^", err.offset(), "");
+		m_console.printf("%s\n", err.code_string());
+		return false;
+	}
+}
+
+
+/*-------------------------------------------------
+    debug_command_parameter_command - validates a
+    command parameter
+-------------------------------------------------*/
+
+bool debugger_commands::debug_command_parameter_command(const char *param)
+{
+	/* nullptr parameter does nothing and returns no error */
+	if (param == nullptr)
+		return true;
+
+	/* validate the comment; success if no error */
+	CMDERR err = m_console.validate_command(param);
+	if (err.error_class() == CMDERR::NONE)
+		return true;
+
+	/* output an error */
+	m_console.printf("Error in command: %s\n", param);
+	m_console.printf("                  %*s^", err.error_offset(), "");
+	m_console.printf("%s\n", debugger_console::cmderr_to_string(err));
+	return 0;
+}
 
 /*-------------------------------------------------
     execute_help - execute the help command
 -------------------------------------------------*/
 
-void debugger_commands::execute_help(const std::vector<std::string_view> &params)
+void debugger_commands::execute_help(const std::vector<std::string> &params)
 {
 	if (params.size() == 0)
 		m_console.printf_wrap(80, "%s\n", debug_get_help(std::string_view()));
@@ -450,12 +930,12 @@ void debugger_commands::execute_help(const std::vector<std::string_view> &params
     execute_print - execute the print command
 -------------------------------------------------*/
 
-void debugger_commands::execute_print(const std::vector<std::string_view> &params)
+void debugger_commands::execute_print(const std::vector<std::string> &params)
 {
 	/* validate the other parameters */
 	u64 values[MAX_COMMAND_PARAMS];
 	for (int i = 0; i < params.size(); i++)
-		if (!m_console.validate_number_parameter(params[i], values[i]))
+		if (!validate_number_parameter(params[i], values[i]))
 			return;
 
 	/* then print each one */
@@ -599,12 +1079,12 @@ bool debugger_commands::mini_printf(std::ostream &stream, std::string_view forma
 -------------------------------------------------*/
 
 template <typename T>
-void debugger_commands::execute_index_command(std::vector<std::string_view> const &params, T &&apply, char const *unused_message)
+void debugger_commands::execute_index_command(std::vector<std::string> const &params, T &&apply, char const *unused_message)
 {
 	std::vector<u64> index(params.size());
 	for (int paramnum = 0; paramnum < params.size(); paramnum++)
 	{
-		if (!m_console.validate_number_parameter(params[paramnum], index[paramnum]))
+		if (!validate_number_parameter(params[paramnum], index[paramnum]))
 			return;
 	}
 
@@ -628,12 +1108,12 @@ void debugger_commands::execute_index_command(std::vector<std::string_view> cons
     execute_printf - execute the printf command
 -------------------------------------------------*/
 
-void debugger_commands::execute_printf(const std::vector<std::string_view> &params)
+void debugger_commands::execute_printf(const std::vector<std::string> &params)
 {
 	/* validate the other parameters */
 	u64 values[MAX_COMMAND_PARAMS];
 	for (int i = 1; i < params.size(); i++)
-		if (!m_console.validate_number_parameter(params[i], values[i]))
+		if (!validate_number_parameter(params[i], values[i]))
 			return;
 
 	/* then do a printf */
@@ -647,12 +1127,12 @@ void debugger_commands::execute_printf(const std::vector<std::string_view> &para
     execute_logerror - execute the logerror command
 -------------------------------------------------*/
 
-void debugger_commands::execute_logerror(const std::vector<std::string_view> &params)
+void debugger_commands::execute_logerror(const std::vector<std::string> &params)
 {
 	/* validate the other parameters */
 	u64 values[MAX_COMMAND_PARAMS];
 	for (int i = 1; i < params.size(); i++)
-		if (!m_console.validate_number_parameter(params[i], values[i]))
+		if (!validate_number_parameter(params[i], values[i]))
 			return;
 
 	/* then do a printf */
@@ -666,18 +1146,18 @@ void debugger_commands::execute_logerror(const std::vector<std::string_view> &pa
     execute_tracelog - execute the tracelog command
 -------------------------------------------------*/
 
-void debugger_commands::execute_tracelog(const std::vector<std::string_view> &params)
+void debugger_commands::execute_tracelog(const std::vector<std::string> &params)
 {
 	/* validate the other parameters */
 	u64 values[MAX_COMMAND_PARAMS];
 	for (int i = 1; i < params.size(); i++)
-		if (!m_console.validate_number_parameter(params[i], values[i]))
+		if (!validate_number_parameter(params[i], values[i]))
 			return;
 
 	/* then do a printf */
 	std::ostringstream buffer;
 	if (mini_printf(buffer, params[0], params.size() - 1, &values[1]))
-		m_console.get_visible_cpu()->debug()->trace_printf("%s", std::move(buffer).str());
+		m_console.get_visible_cpu()->debug()->trace_printf("%s", std::move(buffer).str().c_str());
 }
 
 
@@ -685,7 +1165,7 @@ void debugger_commands::execute_tracelog(const std::vector<std::string_view> &pa
     execute_tracesym - execute the tracesym command
 -------------------------------------------------*/
 
-void debugger_commands::execute_tracesym(const std::vector<std::string_view> &params)
+void debugger_commands::execute_tracesym(const std::vector<std::string> &params)
 {
 	// build a format string appropriate for the parameters and validate them
 	std::stringstream format;
@@ -706,14 +1186,14 @@ void debugger_commands::execute_tracesym(const std::vector<std::string_view> &pa
 			sym->format().empty() ? "%16X" : sym->format());
 
 		// validate the parameter
-		if (!m_console.validate_number_parameter(params[i], values[i]))
+		if (!validate_number_parameter(params[i], values[i]))
 			return;
 	}
 
 	// then do a printf
 	std::ostringstream buffer;
 	if (mini_printf(buffer, format.str(), params.size(), values))
-		m_console.get_visible_cpu()->debug()->trace_printf("%s", std::move(buffer).str());
+		m_console.get_visible_cpu()->debug()->trace_printf("%s", std::move(buffer).str().c_str());
 }
 
 
@@ -721,7 +1201,7 @@ void debugger_commands::execute_tracesym(const std::vector<std::string_view> &pa
     execute_cls - execute the cls command
 -------------------------------------------------*/
 
-void debugger_commands::execute_cls(const std::vector<std::string_view> &params)
+void debugger_commands::execute_cls(const std::vector<std::string> &params)
 {
 	text_buffer_clear(m_console.get_console_textbuf());
 }
@@ -731,7 +1211,7 @@ void debugger_commands::execute_cls(const std::vector<std::string_view> &params)
     execute_quit - execute the quit command
 -------------------------------------------------*/
 
-void debugger_commands::execute_quit(const std::vector<std::string_view> &params)
+void debugger_commands::execute_quit(const std::vector<std::string> &params)
 {
 	osd_printf_warning("Exited via the debugger\n");
 	m_machine.schedule_exit();
@@ -742,10 +1222,10 @@ void debugger_commands::execute_quit(const std::vector<std::string_view> &params
     execute_do - execute the do command
 -------------------------------------------------*/
 
-void debugger_commands::execute_do(const std::vector<std::string_view> &params)
+void debugger_commands::execute_do(const std::vector<std::string> &params)
 {
 	u64 dummy;
-	m_console.validate_number_parameter(params[0], dummy);
+	validate_number_parameter(params[0], dummy);
 }
 
 
@@ -753,11 +1233,11 @@ void debugger_commands::execute_do(const std::vector<std::string_view> &params)
     execute_step - execute the step command
 -------------------------------------------------*/
 
-void debugger_commands::execute_step(const std::vector<std::string_view> &params)
+void debugger_commands::execute_step(const std::vector<std::string> &params)
 {
 	/* if we have a parameter, use it */
 	u64 steps = 1;
-	if (params.size() > 0 && !m_console.validate_number_parameter(params[0], steps))
+	if (params.size() > 0 && !validate_number_parameter(params[0], steps))
 		return;
 
 	m_console.get_visible_cpu()->debug()->single_step(steps);
@@ -768,11 +1248,11 @@ void debugger_commands::execute_step(const std::vector<std::string_view> &params
     execute_over - execute the over command
 -------------------------------------------------*/
 
-void debugger_commands::execute_over(const std::vector<std::string_view> &params)
+void debugger_commands::execute_over(const std::vector<std::string> &params)
 {
 	/* if we have a parameter, use it */
 	u64 steps = 1;
-	if (params.size() > 0 && !m_console.validate_number_parameter(params[0], steps))
+	if (params.size() > 0 && !validate_number_parameter(params[0], steps))
 		return;
 
 	m_console.get_visible_cpu()->debug()->single_step_over(steps);
@@ -783,7 +1263,7 @@ void debugger_commands::execute_over(const std::vector<std::string_view> &params
     execute_out - execute the out command
 -------------------------------------------------*/
 
-void debugger_commands::execute_out(const std::vector<std::string_view> &params)
+void debugger_commands::execute_out(const std::vector<std::string> &params)
 {
 	m_console.get_visible_cpu()->debug()->single_step_out();
 }
@@ -793,12 +1273,12 @@ void debugger_commands::execute_out(const std::vector<std::string_view> &params)
     execute_go - execute the go command
 -------------------------------------------------*/
 
-void debugger_commands::execute_go(const std::vector<std::string_view> &params)
+void debugger_commands::execute_go(const std::vector<std::string> &params)
 {
 	u64 addr = ~0;
 
 	/* if we have a parameter, use it instead */
-	if (params.size() > 0 && !m_console.validate_number_parameter(params[0], addr))
+	if (params.size() > 0 && !validate_number_parameter(params[0], addr))
 		return;
 
 	m_console.get_visible_cpu()->debug()->go(addr);
@@ -810,7 +1290,7 @@ void debugger_commands::execute_go(const std::vector<std::string_view> &params)
     command
 -------------------------------------------------*/
 
-void debugger_commands::execute_go_vblank(const std::vector<std::string_view> &params)
+void debugger_commands::execute_go_vblank(const std::vector<std::string> &params)
 {
 	m_console.get_visible_cpu()->debug()->go_vblank();
 }
@@ -820,12 +1300,12 @@ void debugger_commands::execute_go_vblank(const std::vector<std::string_view> &p
     execute_go_interrupt - execute the goint command
 -------------------------------------------------*/
 
-void debugger_commands::execute_go_interrupt(const std::vector<std::string_view> &params)
+void debugger_commands::execute_go_interrupt(const std::vector<std::string> &params)
 {
 	u64 irqline = -1;
 
 	/* if we have a parameter, use it instead */
-	if (params.size() > 0 && !m_console.validate_number_parameter(params[0], irqline))
+	if (params.size() > 0 && !validate_number_parameter(params[0], irqline))
 		return;
 
 	m_console.get_visible_cpu()->debug()->go_interrupt(irqline);
@@ -835,16 +1315,16 @@ void debugger_commands::execute_go_interrupt(const std::vector<std::string_view>
     execute_go_exception - execute the goex command
 -------------------------------------------------*/
 
-void debugger_commands::execute_go_exception(const std::vector<std::string_view> &params)
+void debugger_commands::execute_go_exception(const std::vector<std::string> &params)
 {
 	u64 exception = -1;
 
 	/* if we have a parameter, use it instead */
-	if (params.size() > 0 && !m_console.validate_number_parameter(params[0], exception))
+	if (params.size() > 0 && !validate_number_parameter(params[0], exception))
 		return;
 
 	parsed_expression condition(m_console.visible_symtable());
-	if (params.size() > 1 && !m_console.validate_expression_parameter(params[1], condition))
+	if (params.size() > 1 && !debug_command_parameter_expression(params[1], condition))
 		return;
 
 	m_console.get_visible_cpu()->debug()->go_exception(exception, condition.is_empty() ? "1" : condition.original_string());
@@ -855,12 +1335,12 @@ void debugger_commands::execute_go_exception(const std::vector<std::string_view>
     execute_go_time - execute the gtime command
 -------------------------------------------------*/
 
-void debugger_commands::execute_go_time(const std::vector<std::string_view> &params)
+void debugger_commands::execute_go_time(const std::vector<std::string> &params)
 {
 	u64 milliseconds = -1;
 
 	/* if we have a parameter, use it instead */
-	if (params.size() > 0 && !m_console.validate_number_parameter(params[0], milliseconds))
+	if (params.size() > 0 && !validate_number_parameter(params[0], milliseconds))
 		return;
 
 	m_console.get_visible_cpu()->debug()->go_milliseconds(milliseconds);
@@ -871,10 +1351,10 @@ void debugger_commands::execute_go_time(const std::vector<std::string_view> &par
 /*-------------------------------------------------
     execute_go_privilege - execute the gp command
 -------------------------------------------------*/
-void debugger_commands::execute_go_privilege(const std::vector<std::string_view> &params)
+void debugger_commands::execute_go_privilege(const std::vector<std::string> &params)
 {
 	parsed_expression condition(m_console.visible_symtable());
-	if (params.size() > 0 && !m_console.validate_expression_parameter(params[0], condition))
+	if (params.size() > 0 && !debug_command_parameter_expression(params[0], condition))
 		return;
 
 	m_console.get_visible_cpu()->debug()->go_privilege((condition.is_empty()) ? "1" : condition.original_string());
@@ -885,10 +1365,10 @@ void debugger_commands::execute_go_privilege(const std::vector<std::string_view>
     execute_go_branch - execute gbt or gbf command
 -------------------------------------------------*/
 
-void debugger_commands::execute_go_branch(bool sense, const std::vector<std::string_view> &params)
+void debugger_commands::execute_go_branch(bool sense, const std::vector<std::string> &params)
 {
 	parsed_expression condition(m_console.visible_symtable());
-	if (params.size() > 0 && !m_console.validate_expression_parameter(params[0], condition))
+	if (params.size() > 0 && !debug_command_parameter_expression(params[0], condition))
 		return;
 
 	m_console.get_visible_cpu()->debug()->go_branch(sense, (condition.is_empty()) ? "1" : condition.original_string());
@@ -899,13 +1379,13 @@ void debugger_commands::execute_go_branch(bool sense, const std::vector<std::str
     execute_go_next_instruction - execute gni command
 -------------------------------------------------*/
 
-void debugger_commands::execute_go_next_instruction(const std::vector<std::string_view> &params)
+void debugger_commands::execute_go_next_instruction(const std::vector<std::string> &params)
 {
 	u64 count = 1;
 	static constexpr u64 MAX_COUNT = 512;
 
 	// if we have a parameter, use it instead */
-	if (params.size() > 0 && !m_console.validate_number_parameter(params[0], count))
+	if (params.size() > 0 && !validate_number_parameter(params[0], count))
 		return;
 	if (count == 0)
 		return;
@@ -916,7 +1396,7 @@ void debugger_commands::execute_go_next_instruction(const std::vector<std::strin
 	}
 
 	device_state_interface *stateintf;
-	device_t *cpu = m_console.get_visible_cpu();
+	device_t *cpu = m_machine.debugger().console().get_visible_cpu();
 	if (!cpu->interface(stateintf))
 	{
 		m_console.printf("No state interface available for %s\n", cpu->name());
@@ -940,7 +1420,7 @@ void debugger_commands::execute_go_next_instruction(const std::vector<std::strin
     execute_next - execute the next command
 -------------------------------------------------*/
 
-void debugger_commands::execute_next(const std::vector<std::string_view> &params)
+void debugger_commands::execute_next(const std::vector<std::string> &params)
 {
 	m_console.get_visible_cpu()->debug()->go_next_device();
 }
@@ -950,11 +1430,11 @@ void debugger_commands::execute_next(const std::vector<std::string_view> &params
     execute_focus - execute the focus command
 -------------------------------------------------*/
 
-void debugger_commands::execute_focus(const std::vector<std::string_view> &params)
+void debugger_commands::execute_focus(const std::vector<std::string> &params)
 {
 	// validate params
 	device_t *cpu;
-	if (!m_console.validate_cpu_parameter(params[0], cpu))
+	if (!validate_cpu_parameter(params[0], cpu))
 		return;
 
 	// first clear the ignore flag on the focused CPU
@@ -972,7 +1452,7 @@ void debugger_commands::execute_focus(const std::vector<std::string_view> &param
     execute_ignore - execute the ignore command
 -------------------------------------------------*/
 
-void debugger_commands::execute_ignore(const std::vector<std::string_view> &params)
+void debugger_commands::execute_ignore(const std::vector<std::string> &params)
 {
 	if (params.empty())
 	{
@@ -1004,7 +1484,7 @@ void debugger_commands::execute_ignore(const std::vector<std::string_view> &para
 
 		// validate parameters
 		for (int paramnum = 0; paramnum < params.size(); paramnum++)
-			if (!m_console.validate_cpu_parameter(params[paramnum], devicelist[paramnum]))
+			if (!validate_cpu_parameter(params[paramnum], devicelist[paramnum]))
 				return;
 
 		// set the ignore flags
@@ -1035,7 +1515,7 @@ void debugger_commands::execute_ignore(const std::vector<std::string_view> &para
     execute_observe - execute the observe command
 -------------------------------------------------*/
 
-void debugger_commands::execute_observe(const std::vector<std::string_view> &params)
+void debugger_commands::execute_observe(const std::vector<std::string> &params)
 {
 	if (params.empty())
 	{
@@ -1067,7 +1547,7 @@ void debugger_commands::execute_observe(const std::vector<std::string_view> &par
 
 		// validate parameters
 		for (int paramnum = 0; paramnum < params.size(); paramnum++)
-			if (!m_console.validate_cpu_parameter(params[paramnum], devicelist[paramnum]))
+			if (!validate_cpu_parameter(params[paramnum], devicelist[paramnum]))
 				return;
 
 		// clear the ignore flags
@@ -1083,7 +1563,7 @@ void debugger_commands::execute_observe(const std::vector<std::string_view> &par
     execute_suspend - suspend execution on cpu
 -------------------------------------------------*/
 
-void debugger_commands::execute_suspend(const std::vector<std::string_view> &params)
+void debugger_commands::execute_suspend(const std::vector<std::string> &params)
 {
 	// if there are no parameters, dump the ignore list
 	if (params.empty())
@@ -1113,7 +1593,7 @@ void debugger_commands::execute_suspend(const std::vector<std::string_view> &par
 
 		// validate parameters
 		for (int paramnum = 0; paramnum < params.size(); paramnum++)
-			if (!m_console.validate_cpu_parameter(params[paramnum], devicelist[paramnum]))
+			if (!validate_cpu_parameter(params[paramnum], devicelist[paramnum]))
 				return;
 
 		for (int paramnum = 0; paramnum < params.size(); paramnum++)
@@ -1142,7 +1622,7 @@ void debugger_commands::execute_suspend(const std::vector<std::string_view> &par
     execute_resume - Resume execution on CPU
 -------------------------------------------------*/
 
-void debugger_commands::execute_resume(const std::vector<std::string_view> &params)
+void debugger_commands::execute_resume(const std::vector<std::string> &params)
 {
 	// if there are no parameters, dump the ignore list
 	if (params.empty())
@@ -1172,7 +1652,7 @@ void debugger_commands::execute_resume(const std::vector<std::string_view> &para
 
 		// validate parameters
 		for (int paramnum = 0; paramnum < params.size(); paramnum++)
-			if (!m_console.validate_cpu_parameter(params[paramnum], devicelist[paramnum]))
+			if (!validate_cpu_parameter(params[paramnum], devicelist[paramnum]))
 				return;
 
 		for (int paramnum = 0; paramnum < params.size(); paramnum++)
@@ -1187,7 +1667,7 @@ void debugger_commands::execute_resume(const std::vector<std::string_view> &para
 //  execute_cpulist - list all CPUs
 //-------------------------------------------------
 
-void debugger_commands::execute_cpulist(const std::vector<std::string_view> &params)
+void debugger_commands::execute_cpulist(const std::vector<std::string> &params)
 {
 	int index = 0;
 	for (device_execute_interface &exec : execute_interface_enumerator(m_machine.root_device()))
@@ -1202,7 +1682,7 @@ void debugger_commands::execute_cpulist(const std::vector<std::string_view> &par
 //  execute_time - execute the time command
 //-------------------------------------------------
 
-void debugger_commands::execute_time(const std::vector<std::string_view> &params)
+void debugger_commands::execute_time(const std::vector<std::string> &params)
 {
 	m_console.printf("%s\n", m_machine.time().as_string());
 }
@@ -1211,16 +1691,16 @@ void debugger_commands::execute_time(const std::vector<std::string_view> &params
     execute_comment - add a comment to a line
 -------------------------------------------------*/
 
-void debugger_commands::execute_comment_add(const std::vector<std::string_view> &params)
+void debugger_commands::execute_comment_add(const std::vector<std::string> &params)
 {
 	// param 1 is the address for the comment
 	u64 address;
-	if (!m_console.validate_number_parameter(params[0], address))
+	if (!validate_number_parameter(params[0], address))
 		return;
 
 	// CPU parameter is implicit
 	device_t *cpu;
-	if (!m_console.validate_cpu_parameter(std::string_view(), cpu))
+	if (!validate_cpu_parameter(std::string_view(), cpu))
 		return;
 
 	// make sure param 2 exists
@@ -1231,8 +1711,7 @@ void debugger_commands::execute_comment_add(const std::vector<std::string_view> 
 	}
 
 	// Now try adding the comment
-	std::string const text(params[1]);
-	cpu->debug()->comment_add(address, text.c_str(), 0x00ff0000);
+	cpu->debug()->comment_add(address, params[1].c_str(), 0x00ff0000);
 	cpu->machine().debug_view().update_all(DVT_DISASSEMBLY);
 }
 
@@ -1241,16 +1720,16 @@ void debugger_commands::execute_comment_add(const std::vector<std::string_view> 
     execute_comment_del - remove a comment from an addr
 --------------------------------------------------------*/
 
-void debugger_commands::execute_comment_del(const std::vector<std::string_view> &params)
+void debugger_commands::execute_comment_del(const std::vector<std::string> &params)
 {
 	// param 1 can either be a command or the address for the comment
 	u64 address;
-	if (!m_console.validate_number_parameter(params[0], address))
+	if (!validate_number_parameter(params[0], address))
 		return;
 
 	// CPU parameter is implicit
 	device_t *cpu;
-	if (!m_console.validate_cpu_parameter(std::string_view(), cpu))
+	if (!validate_cpu_parameter(std::string_view(), cpu))
 		return;
 
 	// If it's a number, it must be an address
@@ -1260,25 +1739,25 @@ void debugger_commands::execute_comment_del(const std::vector<std::string_view> 
 }
 
 /**
- * @fn void execute_comment_list(const std::vector<std::string_view> &params)
+ * @fn void execute_comment_list(const std::vector<std::string> &params)
  * @brief Print current list of comments in debugger
  *
  *
  */
 
-void debugger_commands::execute_comment_list(const std::vector<std::string_view> &params)
+void debugger_commands::execute_comment_list(const std::vector<std::string> &params)
 {
 	if (!m_machine.debugger().cpu().comment_load(false))
 		m_console.printf("Error while parsing XML file\n");
 }
 
 /**
- * @fn void execute_comment_commit(const std::vector<std::string_view> &params)
+ * @fn void execute_comment_commit(const std::vector<std::string> &params)
  * @brief Add and Save current list of comments in debugger
  *
  */
 
-void debugger_commands::execute_comment_commit(const std::vector<std::string_view> &params)
+void debugger_commands::execute_comment_commit(const std::vector<std::string> &params)
 {
 	execute_comment_add(params);
 	execute_comment_save(params);
@@ -1288,7 +1767,7 @@ void debugger_commands::execute_comment_commit(const std::vector<std::string_vie
     execute_comment - add a comment to a line
 -------------------------------------------------*/
 
-void debugger_commands::execute_comment_save(const std::vector<std::string_view> &params)
+void debugger_commands::execute_comment_save(const std::vector<std::string> &params)
 {
 	if (m_machine.debugger().cpu().comment_save())
 		m_console.printf("Comment successfully saved\n");
@@ -1298,7 +1777,7 @@ void debugger_commands::execute_comment_save(const std::vector<std::string_view>
 
 // TODO: add color hex editing capabilities for comments, see below for more info
 /**
- * @fn void execute_comment_color(const std::vector<std::string_view> &params)
+ * @fn void execute_comment_color(const std::vector<std::string> &params)
  * @brief Modifies comment given at address $xx with given color
  * Useful for marking comment with a different color scheme (for example by marking start and end of a given function visually).
  * @param[in] "address,color" First is the comment address in the current context, color can be hexadecimal or shorthanded to common 1bpp RGB names.
@@ -1315,12 +1794,12 @@ void debugger_commands::execute_comment_save(const std::vector<std::string_view>
     command
 -------------------------------------------------*/
 
-void debugger_commands::execute_bpset(const std::vector<std::string_view> &params)
+void debugger_commands::execute_bpset(const std::vector<std::string> &params)
 {
 	// param 1 is the address/CPU
 	u64 address;
 	address_space *space;
-	if (!m_console.validate_target_address_parameter(params[0], AS_PROGRAM, space, address))
+	if (!validate_target_address_parameter(params[0], AS_PROGRAM, space, address))
 		return;
 
 	device_execute_interface const *execute;
@@ -1339,12 +1818,12 @@ void debugger_commands::execute_bpset(const std::vector<std::string_view> &param
 
 	// param 2 is the condition
 	parsed_expression condition(debug->symtable());
-	if (params.size() > 1 && !m_console.validate_expression_parameter(params[1], condition))
+	if (params.size() > 1 && !debug_command_parameter_expression(params[1], condition))
 		return;
 
 	// param 3 is the action
-	std::string_view action;
-	if (params.size() > 2 && !m_console.validate_command_parameter(action = params[2]))
+	const char *action = nullptr;
+	if (params.size() > 2 && !debug_command_parameter_command(action = params[2].c_str()))
 		return;
 
 	// set the breakpoint
@@ -1358,7 +1837,7 @@ void debugger_commands::execute_bpset(const std::vector<std::string_view> &param
     clear command
 -------------------------------------------------*/
 
-void debugger_commands::execute_bpclear(const std::vector<std::string_view> &params)
+void debugger_commands::execute_bpclear(const std::vector<std::string> &params)
 {
 	if (params.empty()) // if no parameters, clear all
 	{
@@ -1387,7 +1866,7 @@ void debugger_commands::execute_bpclear(const std::vector<std::string_view> &par
     disable/enable commands
 -------------------------------------------------*/
 
-void debugger_commands::execute_bpdisenable(bool enable, const std::vector<std::string_view> &params)
+void debugger_commands::execute_bpdisenable(bool enable, const std::vector<std::string> &params)
 {
 	if (params.empty()) // if no parameters, disable/enable all
 	{
@@ -1416,7 +1895,7 @@ void debugger_commands::execute_bpdisenable(bool enable, const std::vector<std::
     command
 -------------------------------------------------*/
 
-void debugger_commands::execute_bplist(const std::vector<std::string_view> &params)
+void debugger_commands::execute_bplist(const std::vector<std::string> &params)
 {
 	int printed = 0;
 	std::string buffer;
@@ -1445,7 +1924,7 @@ void debugger_commands::execute_bplist(const std::vector<std::string_view> &para
 	if (!params.empty())
 	{
 		device_t *cpu;
-		if (!m_console.validate_cpu_parameter(params[0], cpu))
+		if (!validate_cpu_parameter(params[0], cpu))
 			return;
 		apply(*cpu);
 		if (!printed)
@@ -1467,13 +1946,13 @@ void debugger_commands::execute_bplist(const std::vector<std::string_view> &para
     command
 -------------------------------------------------*/
 
-void debugger_commands::execute_wpset(int spacenum, const std::vector<std::string_view> &params)
+void debugger_commands::execute_wpset(int spacenum, const std::vector<std::string> &params)
 {
 	u64 address, length;
 	address_space *space;
 
 	// param 1 is the address/CPU
-	if (!m_console.validate_target_address_parameter(params[0], spacenum, space, address))
+	if (!validate_target_address_parameter(params[0], spacenum, space, address))
 		return;
 
 	device_execute_interface const *execute;
@@ -1485,35 +1964,31 @@ void debugger_commands::execute_wpset(int spacenum, const std::vector<std::strin
 	device_debug *const debug = space->device().debug();
 
 	// param 2 is the length
-	if (!m_console.validate_number_parameter(params[1], length))
+	if (!validate_number_parameter(params[1], length))
 		return;
 
 	// param 3 is the type
 	read_or_write type;
+	if (!core_stricmp(params[2].c_str(), "r"))
+		type = read_or_write::READ;
+	else if (!core_stricmp(params[2].c_str(), "w"))
+		type = read_or_write::WRITE;
+	else if (!core_stricmp(params[2].c_str(), "rw") || !core_stricmp(params[2].c_str(), "wr"))
+		type = read_or_write::READWRITE;
+	else
 	{
-		using util::streqlower;
-		using namespace std::literals;
-		if (streqlower(params[2], "r"sv))
-			type = read_or_write::READ;
-		else if (streqlower(params[2], "w"sv))
-			type = read_or_write::WRITE;
-		else if (streqlower(params[2], "rw"sv) || streqlower(params[2], "wr"sv))
-			type = read_or_write::READWRITE;
-		else
-		{
-			m_console.printf("Invalid watchpoint type: expected r, w, or rw\n");
-			return;
-		}
+		m_console.printf("Invalid watchpoint type: expected r, w, or rw\n");
+		return;
 	}
 
 	// param 4 is the condition
 	parsed_expression condition(debug->symtable());
-	if (params.size() > 3 && !m_console.validate_expression_parameter(params[3], condition))
+	if (params.size() > 3 && !debug_command_parameter_expression(params[3], condition))
 		return;
 
 	// param 5 is the action
-	std::string_view action;
-	if (params.size() > 4 && !m_console.validate_command_parameter(action = params[4]))
+	const char *action = nullptr;
+	if (params.size() > 4 && !debug_command_parameter_command(action = params[4].c_str()))
 		return;
 
 	// set the watchpoint
@@ -1527,7 +2002,7 @@ void debugger_commands::execute_wpset(int spacenum, const std::vector<std::strin
     clear command
 -------------------------------------------------*/
 
-void debugger_commands::execute_wpclear(const std::vector<std::string_view> &params)
+void debugger_commands::execute_wpclear(const std::vector<std::string> &params)
 {
 	if (params.empty()) // if no parameters, clear all
 	{
@@ -1556,7 +2031,7 @@ void debugger_commands::execute_wpclear(const std::vector<std::string_view> &par
     disable/enable commands
 -------------------------------------------------*/
 
-void debugger_commands::execute_wpdisenable(bool enable, const std::vector<std::string_view> &params)
+void debugger_commands::execute_wpdisenable(bool enable, const std::vector<std::string> &params)
 {
 	if (params.empty()) // if no parameters, disable/enable all
 	{
@@ -1585,7 +2060,7 @@ void debugger_commands::execute_wpdisenable(bool enable, const std::vector<std::
     command
 -------------------------------------------------*/
 
-void debugger_commands::execute_wplist(const std::vector<std::string_view> &params)
+void debugger_commands::execute_wplist(const std::vector<std::string> &params)
 {
 	int printed = 0;
 	std::string buffer;
@@ -1626,7 +2101,7 @@ void debugger_commands::execute_wplist(const std::vector<std::string_view> &para
 	if (!params.empty())
 	{
 		device_t *cpu;
-		if (!m_console.validate_cpu_parameter(params[0], cpu))
+		if (!validate_cpu_parameter(params[0], cpu))
 			return;
 		apply(*cpu);
 		if (!printed)
@@ -1648,21 +2123,21 @@ void debugger_commands::execute_wplist(const std::vector<std::string_view> &para
     command
 -------------------------------------------------*/
 
-void debugger_commands::execute_rpset(const std::vector<std::string_view> &params)
+void debugger_commands::execute_rpset(const std::vector<std::string> &params)
 {
 	// CPU is implicit
 	device_t *cpu;
-	if (!m_console.validate_cpu_parameter(std::string_view(), cpu))
+	if (!validate_cpu_parameter(std::string_view(), cpu))
 		return;
 
 	// param 1 is the condition
 	parsed_expression condition(cpu->debug()->symtable());
-	if (params.size() > 0 && !m_console.validate_expression_parameter(params[0], condition))
+	if (params.size() > 0 && !debug_command_parameter_expression(params[0], condition))
 		return;
 
 	// param 2 is the action
-	std::string_view action;
-	if (params.size() > 1 && !m_console.validate_command_parameter(action = params[1]))
+	const char *action = nullptr;
+	if (params.size() > 1 && !debug_command_parameter_command(action = params[1].c_str()))
 		return;
 
 	// set the registerpoint
@@ -1676,7 +2151,7 @@ void debugger_commands::execute_rpset(const std::vector<std::string_view> &param
     clear command
 -------------------------------------------------*/
 
-void debugger_commands::execute_rpclear(const std::vector<std::string_view> &params)
+void debugger_commands::execute_rpclear(const std::vector<std::string> &params)
 {
 	if (params.empty()) // if no parameters, clear all
 	{
@@ -1705,7 +2180,7 @@ void debugger_commands::execute_rpclear(const std::vector<std::string_view> &par
     disable/enable commands
 -------------------------------------------------*/
 
-void debugger_commands::execute_rpdisenable(bool enable, const std::vector<std::string_view> &params)
+void debugger_commands::execute_rpdisenable(bool enable, const std::vector<std::string> &params)
 {
 	if (params.empty()) // if no parameters, disable/enable all
 	{
@@ -1729,154 +2204,12 @@ void debugger_commands::execute_rpdisenable(bool enable, const std::vector<std::
 }
 
 
-//-------------------------------------------------
-//  execute_epset - execute the exception point
-//  set command
-//-------------------------------------------------
-
-void debugger_commands::execute_epset(const std::vector<std::string_view> &params)
-{
-	// CPU is implicit
-	device_t *cpu;
-	if (!m_console.validate_cpu_parameter(std::string_view(), cpu))
-		return;
-
-	// param 1 is the exception type
-	u64 type;
-	if (!m_console.validate_number_parameter(params[0], type))
-		return;
-
-	// param 2 is the condition
-	parsed_expression condition(cpu->debug()->symtable());
-	if (params.size() > 1 && !m_console.validate_expression_parameter(params[1], condition))
-		return;
-
-	// param 3 is the action
-	std::string_view action;
-	if (params.size() > 2 && !m_console.validate_command_parameter(action = params[2]))
-		return;
-
-	// set the exception point
-	int epnum = cpu->debug()->exceptionpoint_set(type, (condition.is_empty()) ? nullptr : condition.original_string(), action);
-	m_console.printf("Exception point %X set\n", epnum);
-}
-
-
-//-------------------------------------------------
-//  execute_epclear - execute the exception point
-//  clear command
-//-------------------------------------------------
-
-void debugger_commands::execute_epclear(const std::vector<std::string_view> &params)
-{
-	if (params.empty()) // if no parameters, clear all
-	{
-		for (device_t &device : device_enumerator(m_machine.root_device()))
-			device.debug()->exceptionpoint_clear_all();
-		m_console.printf("Cleared all exception points\n");
-	}
-	else // otherwise, clear the specific ones
-	{
-		execute_index_command(
-				params,
-				[this] (device_t &device, u64 param) -> bool
-				{
-					if (!device.debug()->exceptionpoint_clear(param))
-						return false;
-					m_console.printf("Exception point %X cleared\n", param);
-					return true;
-				},
-				"Invalid exception point number %X\n");
-	}
-}
-
-
-//-------------------------------------------------
-//  execute_epdisenable - execute the exception
-//  point disable/enable commands
-//-------------------------------------------------
-
-void debugger_commands::execute_epdisenable(bool enable, const std::vector<std::string_view> &params)
-{
-	if (params.empty()) // if no parameters, disable/enable all
-	{
-		for (device_t &device : device_enumerator(m_machine.root_device()))
-			device.debug()->exceptionpoint_enable_all(enable);
-		m_console.printf(enable ? "Enabled all exception points\n" : "Disabled all exception points\n");
-	}
-	else // otherwise, disable/enable the specific ones
-	{
-		execute_index_command(
-				params,
-				[this, enable] (device_t &device, u64 param) -> bool
-				{
-					if (!device.debug()->exceptionpoint_enable(param, enable))
-						return false;
-					m_console.printf(enable ? "Exception point %X enabled\n" : "Exception point %X disabled\n", param);
-					return true;
-				},
-				"Invalid exception point number %X\n");
-	}
-}
-
-
-//-------------------------------------------------
-//  execute_eplist - execute the exception point
-//  list command
-//-------------------------------------------------
-
-void debugger_commands::execute_eplist(const std::vector<std::string_view> &params)
-{
-	int printed = 0;
-	std::string buffer;
-	auto const apply =
-			[this, &printed, &buffer] (device_t &device)
-			{
-				if (!device.debug()->exceptionpoint_list().empty())
-				{
-					m_console.printf("Device '%s' exception points:\n", device.tag());
-
-					// loop over the exception points
-					for (const auto &epp : device.debug()->exceptionpoint_list())
-					{
-						debug_exceptionpoint &ep = *epp.second;
-						buffer = string_format("%c%4X : %X", ep.enabled() ? ' ' : 'D', ep.index(), ep.type());
-						if (std::string(ep.condition()).compare("1") != 0)
-							buffer.append(string_format(" if %s", ep.condition()));
-						if (!ep.action().empty())
-							buffer.append(string_format(" do %s", ep.action()));
-						m_console.printf("%s\n", buffer);
-						printed++;
-					}
-				}
-			};
-
-	if (!params.empty())
-	{
-		device_t *cpu;
-		if (!m_console.validate_cpu_parameter(params[0], cpu))
-			return;
-		apply(*cpu);
-		if (!printed)
-			m_console.printf("No exception points currently installed for CPU %s\n", cpu->tag());
-	}
-	else
-	{
-		// loop over all CPUs
-		for (device_t &device : device_enumerator(m_machine.root_device()))
-			apply(device);
-		if (!printed)
-			m_console.printf("No exception points currently installed\n");
-	}
-}
-
-
 /*-------------------------------------------------
     execute_rplist - execute the registerpoint list
     command
 -------------------------------------------------*/
 
-void debugger_commands::execute_rplist(const std::vector<std::string_view> &params)
+void debugger_commands::execute_rplist(const std::vector<std::string> &params)
 {
 	int printed = 0;
 	std::string buffer;
@@ -1891,7 +2224,7 @@ void debugger_commands::execute_rplist(const std::vector<std::string_view> &para
 					for (const auto &rp : device.debug()->registerpoint_list())
 					{
 						buffer = string_format("%c%4X if %s", rp.enabled() ? ' ' : 'D', rp.index(), rp.condition());
-						if (!rp.action().empty())
+						if (rp.action() && *rp.action())
 							buffer.append(string_format(" do %s", rp.action()));
 						m_console.printf("%s\n", buffer);
 						printed++;
@@ -1902,7 +2235,7 @@ void debugger_commands::execute_rplist(const std::vector<std::string_view> &para
 	if (!params.empty())
 	{
 		device_t *cpu;
-		if (!m_console.validate_cpu_parameter(params[0], cpu))
+		if (!validate_cpu_parameter(params[0], cpu))
 			return;
 		apply(*cpu);
 		if (!printed)
@@ -1923,7 +2256,7 @@ void debugger_commands::execute_rplist(const std::vector<std::string_view> &para
     execute_statesave - execute the statesave command
 -------------------------------------------------*/
 
-void debugger_commands::execute_statesave(const std::vector<std::string_view> &params)
+void debugger_commands::execute_statesave(const std::vector<std::string> &params)
 {
 	m_machine.immediate_save(params[0]);
 	m_console.printf("State save attempted.  Please refer to window message popup for results.\n");
@@ -1934,7 +2267,7 @@ void debugger_commands::execute_statesave(const std::vector<std::string_view> &p
     execute_stateload - execute the stateload command
 -------------------------------------------------*/
 
-void debugger_commands::execute_stateload(const std::vector<std::string_view> &params)
+void debugger_commands::execute_stateload(const std::vector<std::string> &params)
 {
 	m_machine.immediate_load(params[0]);
 
@@ -1952,7 +2285,7 @@ void debugger_commands::execute_stateload(const std::vector<std::string_view> &p
     execute_rewind - execute the rewind command
 -------------------------------------------------*/
 
-void debugger_commands::execute_rewind(const std::vector<std::string_view> &params)
+void debugger_commands::execute_rewind(const std::vector<std::string> &params)
 {
 	bool success = m_machine.rewind_step();
 	if (success)
@@ -1971,15 +2304,15 @@ void debugger_commands::execute_rewind(const std::vector<std::string_view> &para
     execute_save - execute the save command
 -------------------------------------------------*/
 
-void debugger_commands::execute_save(int spacenum, const std::vector<std::string_view> &params)
+void debugger_commands::execute_save(int spacenum, const std::vector<std::string> &params)
 {
 	u64 offset, endoffset, length;
 	address_space *space;
 
 	// validate parameters
-	if (!m_console.validate_target_address_parameter(params[1], spacenum, space, offset))
+	if (!validate_target_address_parameter(params[1], spacenum, space, offset))
 		return;
-	if (!m_console.validate_number_parameter(params[2], length))
+	if (!validate_number_parameter(params[2], length))
 		return;
 
 	// determine the addresses to write
@@ -1988,8 +2321,7 @@ void debugger_commands::execute_save(int spacenum, const std::vector<std::string
 	endoffset++;
 
 	// open the file
-	std::string const filename(params[0]);
-	FILE *const f = fopen(filename.c_str(), "wb");
+	FILE *const f = fopen(params[0].c_str(), "wb");
 	if (!f)
 	{
 		m_console.printf("Error opening file '%s'\n", params[0]);
@@ -2004,9 +2336,8 @@ void debugger_commands::execute_save(int spacenum, const std::vector<std::string
 		for (u64 i = offset; i != endoffset; i++)
 		{
 			offs_t curaddr = i;
-			address_space *tspace;
-			u64 data = space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, curaddr, tspace) ?
-				tspace->read_qword(curaddr) : space->unmap();
+			u64 data = space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, curaddr) ?
+				space->read_qword(curaddr) : space->unmap();
 			fwrite(&data, 8, 1, f);
 		}
 		break;
@@ -2014,9 +2345,8 @@ void debugger_commands::execute_save(int spacenum, const std::vector<std::string
 		for (u64 i = offset; i != endoffset; i++)
 		{
 			offs_t curaddr = i;
-			address_space *tspace;
-			u32 data = space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, curaddr, tspace) ?
-				tspace->read_dword(curaddr) : space->unmap();
+			u32 data = space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, curaddr) ?
+				space->read_dword(curaddr) : space->unmap();
 			fwrite(&data, 4, 1, f);
 		}
 		break;
@@ -2024,9 +2354,8 @@ void debugger_commands::execute_save(int spacenum, const std::vector<std::string
 		for (u64 i = offset; i != endoffset; i++)
 		{
 			offs_t curaddr = i;
-			address_space *tspace;
-			u16 data = space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, curaddr, tspace) ?
-				tspace->read_word(curaddr) : space->unmap();
+			u16 data = space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, curaddr) ?
+				space->read_word(curaddr) : space->unmap();
 			fwrite(&data, 2, 1, f);
 		}
 		break;
@@ -2034,9 +2363,8 @@ void debugger_commands::execute_save(int spacenum, const std::vector<std::string
 		for (u64 i = offset; i != endoffset; i++)
 		{
 			offs_t curaddr = i;
-			address_space *tspace;
-			u8 data = space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, curaddr, tspace) ?
-				tspace->read_byte(curaddr) : space->unmap();
+			u8 data = space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, curaddr) ?
+				space->read_byte(curaddr) : space->unmap();
 			fwrite(&data, 1, 1, f);
 		}
 		break;
@@ -2046,9 +2374,8 @@ void debugger_commands::execute_save(int spacenum, const std::vector<std::string
 		for (u64 i = offset; i != endoffset; i+=16)
 		{
 			offs_t curaddr = i;
-			address_space *tspace;
-			u16 data = space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, curaddr, tspace) ?
-				tspace->read_word(curaddr) : space->unmap();
+			u16 data = space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, curaddr) ?
+				space->read_word(curaddr) : space->unmap();
 			fwrite(&data, 2, 1, f);
 		}
 		break;
@@ -2064,17 +2391,17 @@ void debugger_commands::execute_save(int spacenum, const std::vector<std::string
     execute_saveregion - execute the save command on region memory
 -------------------------------------------------*/
 
-void debugger_commands::execute_saveregion(const std::vector<std::string_view> &params)
+void debugger_commands::execute_saveregion(const std::vector<std::string> &params)
 {
 	u64 offset, length;
 	memory_region *region;
 
 	// validate parameters
-	if (!m_console.validate_number_parameter(params[1], offset))
+	if (!validate_number_parameter(params[1], offset))
 		return;
-	if (!m_console.validate_number_parameter(params[2], length))
+	if (!validate_number_parameter(params[2], length))
 		return;
-	if (!m_console.validate_memory_region_parameter(params[3], region))
+	if (!validate_memory_region_parameter(params[3], region))
 		return;
 
 	if (offset >= region->bytes())
@@ -2086,8 +2413,7 @@ void debugger_commands::execute_saveregion(const std::vector<std::string_view> &
 		length = region->bytes() - offset;
 
 	/* open the file */
-	std::string const filename(params[0]);
-	FILE *f = fopen(filename.c_str(), "wb");
+	FILE *f = fopen(params[0].c_str(), "wb");
 	if (!f)
 	{
 		m_console.printf("Error opening file '%s'\n", params[0]);
@@ -2104,21 +2430,20 @@ void debugger_commands::execute_saveregion(const std::vector<std::string_view> &
     execute_load - execute the load command
 -------------------------------------------------*/
 
-void debugger_commands::execute_load(int spacenum, const std::vector<std::string_view> &params)
+void debugger_commands::execute_load(int spacenum, const std::vector<std::string> &params)
 {
 	u64 offset, endoffset, length = 0;
 	address_space *space;
 
 	// validate parameters
-	if (!m_console.validate_target_address_parameter(params[1], spacenum, space, offset))
+	if (!validate_target_address_parameter(params[1], spacenum, space, offset))
 		return;
-	if (params.size() > 2 && !m_console.validate_number_parameter(params[2], length))
+	if (params.size() > 2 && !validate_number_parameter(params[2], length))
 		return;
 
 	// open the file
 	std::ifstream f;
-	std::string const fname(params[0]);
-	f.open(fname, std::ifstream::in | std::ifstream::binary);
+	f.open(params[0], std::ifstream::in | std::ifstream::binary);
 	if (f.fail())
 	{
 		m_console.printf("Error opening file '%s'\n", params[0]);
@@ -2152,9 +2477,8 @@ void debugger_commands::execute_load(int spacenum, const std::vector<std::string
 			offs_t curaddr = i;
 			u64 data;
 			f.read((char *)&data, 8);
-			address_space *tspace;
-			if (f && space->device().memory().translate(space->spacenum(), device_memory_interface::TR_WRITE, curaddr, tspace))
-				tspace->write_qword(curaddr, data);
+			if (f && space->device().memory().translate(space->spacenum(), TRANSLATE_WRITE_DEBUG, curaddr))
+				space->write_qword(curaddr, data);
 		}
 		break;
 	case -2:
@@ -2163,9 +2487,8 @@ void debugger_commands::execute_load(int spacenum, const std::vector<std::string
 			offs_t curaddr = i;
 			u32 data;
 			f.read((char *)&data, 4);
-			address_space *tspace;
-			if (f && space->device().memory().translate(space->spacenum(), device_memory_interface::TR_WRITE, curaddr, tspace))
-				tspace->write_dword(curaddr, data);
+			if (f && space->device().memory().translate(space->spacenum(), TRANSLATE_WRITE_DEBUG, curaddr))
+				space->write_dword(curaddr, data);
 		}
 		break;
 	case -1:
@@ -2174,9 +2497,8 @@ void debugger_commands::execute_load(int spacenum, const std::vector<std::string
 			offs_t curaddr = i;
 			u16 data;
 			f.read((char *)&data, 2);
-			address_space *tspace;
-			if (f && space->device().memory().translate(space->spacenum(), device_memory_interface::TR_WRITE, curaddr, tspace))
-				tspace->write_word(curaddr, data);
+			if (f && space->device().memory().translate(space->spacenum(), TRANSLATE_WRITE_DEBUG, curaddr))
+				space->write_word(curaddr, data);
 		}
 		break;
 	case  0:
@@ -2185,9 +2507,8 @@ void debugger_commands::execute_load(int spacenum, const std::vector<std::string
 			offs_t curaddr = i;
 			u8 data;
 			f.read((char *)&data, 1);
-			address_space *tspace;
-			if (f && space->device().memory().translate(space->spacenum(), device_memory_interface::TR_WRITE, curaddr, tspace))
-				tspace->write_byte(curaddr, data);
+			if (f && space->device().memory().translate(space->spacenum(), TRANSLATE_WRITE_DEBUG, curaddr))
+				space->write_byte(curaddr, data);
 		}
 		break;
 	case  3:
@@ -2198,9 +2519,8 @@ void debugger_commands::execute_load(int spacenum, const std::vector<std::string
 			offs_t curaddr = i;
 			u16 data;
 			f.read((char *)&data, 2);
-			address_space *tspace;
-			if (f && space->device().memory().translate(space->spacenum(), device_memory_interface::TR_WRITE, curaddr, tspace))
-				tspace->write_word(curaddr, data);
+			if (f && space->device().memory().translate(space->spacenum(), TRANSLATE_WRITE_DEBUG, curaddr))
+				space->write_word(curaddr, data);
 		}
 		break;
 	}
@@ -2218,17 +2538,17 @@ void debugger_commands::execute_load(int spacenum, const std::vector<std::string
     execute_loadregion - execute the load command on region memory
 -------------------------------------------------*/
 
-void debugger_commands::execute_loadregion(const std::vector<std::string_view> &params)
+void debugger_commands::execute_loadregion(const std::vector<std::string> &params)
 {
 	u64 offset, length;
 	memory_region *region;
 
 	// validate parameters
-	if (!m_console.validate_number_parameter(params[1], offset))
+	if (!validate_number_parameter(params[1], offset))
 		return;
-	if (!m_console.validate_number_parameter(params[2], length))
+	if (!validate_number_parameter(params[2], length))
 		return;
-	if (!m_console.validate_memory_region_parameter(params[3], region))
+	if (!validate_memory_region_parameter(params[3], region))
 		return;
 
 	if (offset >= region->bytes())
@@ -2240,8 +2560,7 @@ void debugger_commands::execute_loadregion(const std::vector<std::string_view> &
 		length = region->bytes() - offset;
 
 	// open the file
-	std::string filename(params[0]);
-	FILE *const f = fopen(filename.c_str(), "rb");
+	FILE *const f = fopen(params[0].c_str(), "rb");
 	if (!f)
 	{
 		m_console.printf("Error opening file '%s'\n", params[0]);
@@ -2267,28 +2586,28 @@ void debugger_commands::execute_loadregion(const std::vector<std::string_view> &
     execute_dump - execute the dump command
 -------------------------------------------------*/
 
-void debugger_commands::execute_dump(int spacenum, const std::vector<std::string_view> &params)
+void debugger_commands::execute_dump(int spacenum, const std::vector<std::string> &params)
 {
 	// validate parameters
 	address_space *space;
 	u64 offset;
-	if (!m_console.validate_target_address_parameter(params[1], spacenum, space, offset))
+	if (!validate_target_address_parameter(params[1], spacenum, space, offset))
 		return;
 
 	u64 length;
-	if (!m_console.validate_number_parameter(params[2], length))
+	if (!validate_number_parameter(params[2], length))
 		return;
 
 	u64 width = 0;
-	if (params.size() > 3 && !m_console.validate_number_parameter(params[3], width))
+	if (params.size() > 3 && !validate_number_parameter(params[3], width))
 		return;
 
 	bool ascii = true;
-	if (params.size() > 4 && !m_console.validate_boolean_parameter(params[4], ascii))
+	if (params.size() > 4 && !validate_boolean_parameter(params[4], ascii))
 		return;
 
 	u64 rowsize = space->byte_to_address(16);
-	if (params.size() > 5 && !m_console.validate_number_parameter(params[5], rowsize))
+	if (params.size() > 5 && !validate_number_parameter(params[5], rowsize))
 		return;
 
 	int shift = space->addr_shift();
@@ -2319,8 +2638,7 @@ void debugger_commands::execute_dump(int spacenum, const std::vector<std::string
 	offset = offset & space->addrmask();
 
 	// open the file
-	std::string filename(params[0]);
-	FILE *const f = fopen(filename.c_str(), "w");
+	FILE *const f = fopen(params[0].c_str(), "w");
 	if (!f)
 	{
 		m_console.printf("Error opening file '%s'\n", params[0]);
@@ -2350,22 +2668,21 @@ void debugger_commands::execute_dump(int spacenum, const std::vector<std::string
 			if (i + j <= endoffset)
 			{
 				offs_t curaddr = i + j;
-				address_space *tspace;
-				if (space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, curaddr, tspace))
+				if (space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, curaddr))
 				{
 					switch (width)
 					{
 					case 8:
-						util::stream_format(output, " %016X", tspace->read_qword_unaligned(i+j));
+						util::stream_format(output, " %016X", space->read_qword_unaligned(i+j));
 						break;
 					case 4:
-						util::stream_format(output, " %08X", tspace->read_dword_unaligned(i+j));
+						util::stream_format(output, " %08X", space->read_dword_unaligned(i+j));
 						break;
 					case 2:
-						util::stream_format(output, " %04X", tspace->read_word_unaligned(i+j));
+						util::stream_format(output, " %04X", space->read_word_unaligned(i+j));
 						break;
 					case 1:
-						util::stream_format(output, " %02X", tspace->read_byte(i+j));
+						util::stream_format(output, " %02X", space->read_byte(i+j));
 						break;
 					}
 				}
@@ -2385,23 +2702,22 @@ void debugger_commands::execute_dump(int spacenum, const std::vector<std::string
 			for (u64 j = 0; j < rowsize && (i + j) <= endoffset; j += delta)
 			{
 				offs_t curaddr = i + j;
-				address_space *tspace;
-				if (space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, curaddr, tspace))
+				if (space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, curaddr))
 				{
 					u64 data = 0;
 					switch (width)
 					{
 					case 8:
-						data = tspace->read_qword_unaligned(i+j);
+						data = space->read_qword_unaligned(i+j);
 						break;
 					case 4:
-						data = tspace->read_dword_unaligned(i+j);
+						data = space->read_dword_unaligned(i+j);
 						break;
 					case 2:
-						data = tspace->read_word_unaligned(i+j);
+						data = space->read_word_unaligned(i+j);
 						break;
 					case 1:
-						data = tspace->read_byte(i+j);
+						data = space->read_byte(i+j);
 						break;
 					}
 					for (unsigned int b = 0; b != width; b++) {
@@ -2431,23 +2747,23 @@ void debugger_commands::execute_dump(int spacenum, const std::vector<std::string
 //  execute_strdump - execute the strdump command
 //-------------------------------------------------
 
-void debugger_commands::execute_strdump(int spacenum, const std::vector<std::string_view> &params)
+void debugger_commands::execute_strdump(int spacenum, const std::vector<std::string> &params)
 {
 	// validate parameters
 	u64 offset;
-	if (!m_console.validate_number_parameter(params[1], offset))
+	if (!validate_number_parameter(params[1], offset))
 		return;
 
 	u64 length;
-	if (!m_console.validate_number_parameter(params[2], length))
+	if (!validate_number_parameter(params[2], length))
 		return;
 
 	u64 term = 0;
-	if (params.size() > 3 && !m_console.validate_number_parameter(params[3], term))
+	if (params.size() > 3 && !validate_number_parameter(params[3], term))
 		return;
 
 	address_space *space;
-	if (!m_console.validate_device_space_parameter((params.size() > 4) ? params[4] : std::string_view(), spacenum, space))
+	if (!validate_device_space_parameter((params.size() > 4) ? params[4] : std::string_view(), spacenum, space))
 		return;
 
 	// further validation
@@ -2458,8 +2774,7 @@ void debugger_commands::execute_strdump(int spacenum, const std::vector<std::str
 	}
 
 	// open the file
-	std::string filename(params[0]);
-	FILE *f = fopen(filename.c_str(), "w");
+	FILE *f = fopen(params[0].c_str(), "w");
 	if (!f)
 	{
 		m_console.printf("Error opening file '%s'\n", params[0]);
@@ -2497,29 +2812,28 @@ void debugger_commands::execute_strdump(int spacenum, const std::vector<std::str
 		// get the character data
 		u64 data = 0;
 		offs_t curaddr = offset;
-		address_space *tspace;
-		if (space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, curaddr, tspace))
+		if (space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, curaddr))
 		{
 			switch (width)
 			{
 			case 1:
-				data = tspace->read_byte(curaddr);
+				data = space->read_byte(curaddr);
 				break;
 
 			case 2:
-				data = tspace->read_word(curaddr);
+				data = space->read_word(curaddr);
 				if (be)
 					data = swapendian_int16(data);
 				break;
 
 			case 4:
-				data = tspace->read_dword(curaddr);
+				data = space->read_dword(curaddr);
 				if (be)
 					data = swapendian_int32(data);
 				break;
 
 			case 8:
-				data = tspace->read_qword(curaddr);
+				data = space->read_qword(curaddr);
 				if (be)
 					data = swapendian_int64(data);
 				break;
@@ -2609,7 +2923,7 @@ void debugger_commands::execute_strdump(int spacenum, const std::vector<std::str
    cheats
 -------------------------------------------------*/
 
-void debugger_commands::execute_cheatrange(bool init, const std::vector<std::string_view> &params)
+void debugger_commands::execute_cheatrange(bool init, const std::vector<std::string> &params)
 {
 	address_space *space = m_cheat.space;
 	if (!space && !init)
@@ -2626,7 +2940,7 @@ void debugger_commands::execute_cheatrange(bool init, const std::vector<std::str
 		// first argument is sign/size/swap flags
 		if (!params.empty())
 		{
-			std::string_view const &srtpnt = params[0];
+			std::string const &srtpnt = params[0];
 			if (!srtpnt.empty())
 			{
 				width = 1;
@@ -2679,7 +2993,7 @@ void debugger_commands::execute_cheatrange(bool init, const std::vector<std::str
 		}
 
 		// fourth argument is device/space
-		if (!m_console.validate_device_space_parameter((params.size() > 3) ? params[3] : std::string_view(), -1, space))
+		if (!validate_device_space_parameter((params.size() > 3) ? params[3] : std::string_view(), -1, space))
 			return;
 	}
 
@@ -2689,9 +3003,9 @@ void debugger_commands::execute_cheatrange(bool init, const std::vector<std::str
 	{
 		// validate parameters
 		u64 offset, length;
-		if (!m_console.validate_number_parameter(params[init ? 1 : 0], offset))
+		if (!validate_number_parameter(params[init ? 1 : 0], offset))
 			return;
-		if (!m_console.validate_number_parameter(params[init ? 2 : 1], length))
+		if (!validate_number_parameter(params[init ? 2 : 1], length))
 			return;
 
 		// force region to the specified range
@@ -2778,7 +3092,7 @@ void debugger_commands::execute_cheatrange(bool init, const std::vector<std::str
     execute_cheatnext - execute the search
 -------------------------------------------------*/
 
-void debugger_commands::execute_cheatnext(bool initial, const std::vector<std::string_view> &params)
+void debugger_commands::execute_cheatnext(bool initial, const std::vector<std::string> &params)
 {
 	enum
 	{
@@ -2806,40 +3120,36 @@ void debugger_commands::execute_cheatnext(bool initial, const std::vector<std::s
 	}
 
 	u64 comp_value = 0;
-	if (params.size() > 1 && !m_console.validate_number_parameter(params[1], comp_value))
+	if (params.size() > 1 && !validate_number_parameter(params[1], comp_value))
 		return;
 	comp_value = m_cheat.sign_extend(comp_value);
 
 	// decode condition
 	u8 condition;
+	if (!core_stricmp(params[0].c_str(), "all"))
+		condition = CHEAT_ALL;
+	else if (!core_stricmp(params[0].c_str(), "equal") || !core_stricmp(params[0].c_str(), "eq"))
+		condition = (params.size() > 1) ? CHEAT_EQUALTO : CHEAT_EQUAL;
+	else if (!core_stricmp(params[0].c_str(), "notequal") || !core_stricmp(params[0].c_str(), "ne"))
+		condition = (params.size() > 1) ? CHEAT_NOTEQUALTO : CHEAT_NOTEQUAL;
+	else if (!core_stricmp(params[0].c_str(), "decrease") || !core_stricmp(params[0].c_str(), "de") || params[0] == "-")
+		condition = (params.size() > 1) ? CHEAT_DECREASEOF : CHEAT_DECREASE;
+	else if (!core_stricmp(params[0].c_str(), "increase") || !core_stricmp(params[0].c_str(), "in") || params[0] == "+")
+		condition = (params.size() > 1) ? CHEAT_INCREASEOF : CHEAT_INCREASE;
+	else if (!core_stricmp(params[0].c_str(), "decreaseorequal") || !core_stricmp(params[0].c_str(), "deeq"))
+		condition = CHEAT_DECREASE_OR_EQUAL;
+	else if (!core_stricmp(params[0].c_str(), "increaseorequal") || !core_stricmp(params[0].c_str(), "ineq"))
+		condition = CHEAT_INCREASE_OR_EQUAL;
+	else if (!core_stricmp(params[0].c_str(), "smallerof") || !core_stricmp(params[0].c_str(), "lt") || params[0] == "<")
+		condition = CHEAT_SMALLEROF;
+	else if (!core_stricmp(params[0].c_str(), "greaterof") || !core_stricmp(params[0].c_str(), "gt") || params[0] == ">")
+		condition = CHEAT_GREATEROF;
+	else if (!core_stricmp(params[0].c_str(), "changedby") || !core_stricmp(params[0].c_str(), "ch") || params[0] == "~")
+		condition = CHEAT_CHANGEDBY;
+	else
 	{
-		using util::streqlower;
-		using namespace std::literals;
-		if (streqlower(params[0], "all"sv))
-			condition = CHEAT_ALL;
-		else if (streqlower(params[0], "equal"sv) || streqlower(params[0], "eq"sv))
-			condition = (params.size() > 1) ? CHEAT_EQUALTO : CHEAT_EQUAL;
-		else if (streqlower(params[0], "notequal"sv) || streqlower(params[0], "ne"sv))
-			condition = (params.size() > 1) ? CHEAT_NOTEQUALTO : CHEAT_NOTEQUAL;
-		else if (streqlower(params[0], "decrease"sv) || streqlower(params[0], "de"sv) || params[0] == "-"sv)
-			condition = (params.size() > 1) ? CHEAT_DECREASEOF : CHEAT_DECREASE;
-		else if (streqlower(params[0], "increase"sv) || streqlower(params[0], "in"sv) || params[0] == "+"sv)
-			condition = (params.size() > 1) ? CHEAT_INCREASEOF : CHEAT_INCREASE;
-		else if (streqlower(params[0], "decreaseorequal"sv) || streqlower(params[0], "deeq"sv))
-			condition = CHEAT_DECREASE_OR_EQUAL;
-		else if (streqlower(params[0], "increaseorequal"sv) || streqlower(params[0], "ineq"sv))
-			condition = CHEAT_INCREASE_OR_EQUAL;
-		else if (streqlower(params[0], "smallerof"sv) || streqlower(params[0], "lt"sv) || params[0] == "<"sv)
-			condition = CHEAT_SMALLEROF;
-		else if (streqlower(params[0], "greaterof"sv) || streqlower(params[0], "gt"sv) || params[0] == ">"sv)
-			condition = CHEAT_GREATEROF;
-		else if (streqlower(params[0], "changedby"sv) || streqlower(params[0], "ch"sv) || params[0] == "~"sv)
-			condition = CHEAT_CHANGEDBY;
-		else
-		{
-			m_console.printf("Invalid condition type\n");
-			return;
-		}
+		m_console.printf("Invalid condition type\n");
+		return;
 	}
 
 	m_cheat.undo++;
@@ -2946,7 +3256,7 @@ void debugger_commands::execute_cheatnext(bool initial, const std::vector<std::s
 		}
 
 	if (active_cheat <= 5)
-		execute_cheatlist(std::vector<std::string_view>());
+		execute_cheatlist(std::vector<std::string>());
 
 	m_console.printf("%u cheats found\n", active_cheat);
 }
@@ -2956,7 +3266,7 @@ void debugger_commands::execute_cheatnext(bool initial, const std::vector<std::s
     execute_cheatlist - show a list of active cheat
 -------------------------------------------------*/
 
-void debugger_commands::execute_cheatlist(const std::vector<std::string_view> &params)
+void debugger_commands::execute_cheatlist(const std::vector<std::string> &params)
 {
 	address_space *const space = m_cheat.space;
 	if (!space)
@@ -2968,8 +3278,7 @@ void debugger_commands::execute_cheatlist(const std::vector<std::string_view> &p
 	FILE *f = nullptr;
 	if (params.size() > 0)
 	{
-		std::string filename(params[0]);
-		f = fopen(filename.c_str(), "w");
+		f = fopen(params[0].c_str(), "w");
 		if (!f)
 		{
 			m_console.printf("Error opening file '%s'\n", params[0]);
@@ -3074,7 +3383,7 @@ void debugger_commands::execute_cheatlist(const std::vector<std::string_view> &p
     execute_cheatundo - undo the last search
 -------------------------------------------------*/
 
-void debugger_commands::execute_cheatundo(const std::vector<std::string_view> &params)
+void debugger_commands::execute_cheatundo(const std::vector<std::string> &params)
 {
 	if (m_cheat.undo > 0)
 	{
@@ -3103,15 +3412,15 @@ void debugger_commands::execute_cheatundo(const std::vector<std::string_view> &p
     execute_find - execute the find command
 -------------------------------------------------*/
 
-void debugger_commands::execute_find(int spacenum, const std::vector<std::string_view> &params)
+void debugger_commands::execute_find(int spacenum, const std::vector<std::string> &params)
 {
 	u64 offset, length;
 	address_space *space;
 
 	// validate parameters
-	if (!m_console.validate_target_address_parameter(params[0], spacenum, space, offset))
+	if (!validate_target_address_parameter(params[0], spacenum, space, offset))
 		return;
-	if (!m_console.validate_number_parameter(params[1], length))
+	if (!validate_number_parameter(params[1], length))
 		return;
 
 	// further validation
@@ -3127,11 +3436,11 @@ void debugger_commands::execute_find(int spacenum, const std::vector<std::string
 	int data_count = 0;
 	for (int i = 2; i < params.size(); i++)
 	{
-		std::string_view pdata = params[i];
+		char const *pdata = params[i].c_str();
+		auto const pdatalen = params[i].length() - 1;
 
-		if (!pdata.empty() && pdata.front() == '"' && pdata.back() == '"') // check for a string
+		if (pdata[0] == '"' && pdata[pdatalen] == '"') // check for a string
 		{
-			auto const pdatalen = params[i].length() - 1;
 			for (int j = 1; j < pdatalen; j++)
 			{
 				data_to_find[data_count] = pdata[j];
@@ -3142,20 +3451,17 @@ void debugger_commands::execute_find(int spacenum, const std::vector<std::string
 		{
 			// check for a 'b','w','d',or 'q' prefix
 			data_size[data_count] = cur_data_size;
-			if (pdata.length() >= 2)
-			{
-				if (tolower(u8(pdata[0])) == 'b' && pdata[1] == '.') { data_size[data_count] = cur_data_size = 1; pdata.remove_prefix(2); }
-				if (tolower(u8(pdata[0])) == 'w' && pdata[1] == '.') { data_size[data_count] = cur_data_size = 2; pdata.remove_prefix(2); }
-				if (tolower(u8(pdata[0])) == 'd' && pdata[1] == '.') { data_size[data_count] = cur_data_size = 4; pdata.remove_prefix(2); }
-				if (tolower(u8(pdata[0])) == 'q' && pdata[1] == '.') { data_size[data_count] = cur_data_size = 8; pdata.remove_prefix(2); }
-			}
+			if (tolower(u8(pdata[0])) == 'b' && pdata[1] == '.') { data_size[data_count] = cur_data_size = 1; pdata += 2; }
+			if (tolower(u8(pdata[0])) == 'w' && pdata[1] == '.') { data_size[data_count] = cur_data_size = 2; pdata += 2; }
+			if (tolower(u8(pdata[0])) == 'd' && pdata[1] == '.') { data_size[data_count] = cur_data_size = 4; pdata += 2; }
+			if (tolower(u8(pdata[0])) == 'q' && pdata[1] == '.') { data_size[data_count] = cur_data_size = 8; pdata += 2; }
 
 			// look for a wildcard
-			if (pdata == "?")
+			if (!strcmp(pdata, "?"))
 				data_size[data_count++] |= 0x10;
 
 			// otherwise, validate as a number
-			else if (!m_console.validate_number_parameter(pdata, data_to_find[data_count++]))
+			else if (!validate_number_parameter(pdata, data_to_find[data_count++]))
 				return;
 		}
 	}
@@ -3173,37 +3479,36 @@ void debugger_commands::execute_find(int spacenum, const std::vector<std::string
 		for (int j = 0; j < data_count && match; j++)
 		{
 			offs_t address = space->byte_to_address(i + suboffset);
-			address_space *tspace;
 			switch (data_size[j])
 			{
 			case 1:
 				address &= space->logaddrmask();
-				if (memory.translate(space->spacenum(), device_memory_interface::TR_READ, address, tspace))
-					match = tspace->read_byte(address) == u8(data_to_find[j]);
+				if (memory.translate(space->spacenum(), TRANSLATE_READ_DEBUG, address))
+					match = space->read_byte(address) == u8(data_to_find[j]);
 				else
 					match = false;
 				break;
 
 			case 2:
 				address &= space->logaddrmask();
-				if (memory.translate(space->spacenum(), device_memory_interface::TR_READ, address, tspace))
-					match = tspace->read_word_unaligned(address) == u16(data_to_find[j]);
+				if (memory.translate(space->spacenum(), TRANSLATE_READ_DEBUG, address))
+					match = space->read_word_unaligned(address) == u16(data_to_find[j]);
 				else
 					match = false;
 				break;
 
 			case 4:
 				address &= space->logaddrmask();
-				if (memory.translate(space->spacenum(), device_memory_interface::TR_READ, address, tspace))
-					match = tspace->read_dword_unaligned(address) == u32(data_to_find[j]);
+				if (memory.translate(space->spacenum(), TRANSLATE_READ_DEBUG, address))
+					match = space->read_dword_unaligned(address) == u32(data_to_find[j]);
 				else
 					match = false;
 				break;
 
 			case 8:
 				address &= space->logaddrmask();
-				if (memory.translate(space->spacenum(), device_memory_interface::TR_READ, address, tspace))
-					match = tspace->read_qword_unaligned(address) == u64(data_to_find[j]);
+				if (memory.translate(space->spacenum(), TRANSLATE_READ_DEBUG, address))
+					match = space->read_qword_unaligned(address) == u64(data_to_find[j]);
 				else
 					match = false;
 				break;
@@ -3233,15 +3538,15 @@ void debugger_commands::execute_find(int spacenum, const std::vector<std::string
 //  execute_fill - execute the fill command
 //-------------------------------------------------
 
-void debugger_commands::execute_fill(int spacenum, const std::vector<std::string_view> &params)
+void debugger_commands::execute_fill(int spacenum, const std::vector<std::string> &params)
 {
 	u64 offset, length;
 	address_space *space;
 
 	// validate parameters
-	if (!m_console.validate_target_address_parameter(params[0], spacenum, space, offset))
+	if (!validate_target_address_parameter(params[0], spacenum, space, offset))
 		return;
-	if (!m_console.validate_number_parameter(params[1], length))
+	if (!validate_number_parameter(params[1], length))
 		return;
 
 	// further validation
@@ -3256,12 +3561,12 @@ void debugger_commands::execute_fill(int spacenum, const std::vector<std::string
 	int data_count = 0;
 	for (int i = 2; i < params.size(); i++)
 	{
-		std::string_view pdata = params[i];
+		const char *pdata = params[i].c_str();
+		size_t pdatalen = strlen(pdata) - 1;
 
 		// check for a string
-		if (!pdata.empty() && pdata.front() == '"' && pdata.back() == '"')
+		if (pdata[0] == '"' && pdata[pdatalen] == '"')
 		{
-			auto const pdatalen = pdata.length() - 1;
 			for (int j = 1; j < pdatalen; j++)
 			{
 				fill_data[data_count] = pdata[j];
@@ -3274,16 +3579,13 @@ void debugger_commands::execute_fill(int spacenum, const std::vector<std::string
 		{
 			// check for a 'b','w','d',or 'q' prefix
 			fill_data_size[data_count] = cur_data_size;
-			if (pdata.length() >= 2)
-			{
-				if (tolower(u8(pdata[0])) == 'b' && pdata[1] == '.') { fill_data_size[data_count] = cur_data_size = 1; pdata.remove_prefix(2); }
-				if (tolower(u8(pdata[0])) == 'w' && pdata[1] == '.') { fill_data_size[data_count] = cur_data_size = 2; pdata.remove_prefix(2); }
-				if (tolower(u8(pdata[0])) == 'd' && pdata[1] == '.') { fill_data_size[data_count] = cur_data_size = 4; pdata.remove_prefix(2); }
-				if (tolower(u8(pdata[0])) == 'q' && pdata[1] == '.') { fill_data_size[data_count] = cur_data_size = 8; pdata.remove_prefix(2); }
-			}
+			if (tolower(u8(pdata[0])) == 'b' && pdata[1] == '.') { fill_data_size[data_count] = cur_data_size = 1; pdata += 2; }
+			if (tolower(u8(pdata[0])) == 'w' && pdata[1] == '.') { fill_data_size[data_count] = cur_data_size = 2; pdata += 2; }
+			if (tolower(u8(pdata[0])) == 'd' && pdata[1] == '.') { fill_data_size[data_count] = cur_data_size = 4; pdata += 2; }
+			if (tolower(u8(pdata[0])) == 'q' && pdata[1] == '.') { fill_data_size[data_count] = cur_data_size = 8; pdata += 2; }
 
 			// validate as a number
-			if (!m_console.validate_number_parameter(pdata, fill_data[data_count++]))
+			if (!validate_number_parameter(pdata, fill_data[data_count++]))
 				return;
 		}
 	}
@@ -3300,8 +3602,7 @@ void debugger_commands::execute_fill(int spacenum, const std::vector<std::string
 		for (int j = 0; j < data_count; j++)
 		{
 			offs_t address = space->byte_to_address(offset) & space->logaddrmask();
-			address_space *tspace;
-			if (!memory.translate(space->spacenum(), device_memory_interface::TR_WRITE, address, tspace))
+			if (!memory.translate(space->spacenum(), TRANSLATE_WRITE_DEBUG, address))
 			{
 				m_console.printf("Fill aborted due to page fault at %0*X\n", space->logaddrchars(), space->byte_to_address(offset) & space->logaddrmask());
 				length = 0;
@@ -3310,19 +3611,19 @@ void debugger_commands::execute_fill(int spacenum, const std::vector<std::string
 			switch (fill_data_size[j])
 			{
 			case 1:
-				tspace->write_byte(address, fill_data[j]);
+				space->write_byte(address, fill_data[j]);
 				break;
 
 			case 2:
-				tspace->write_word_unaligned(address, fill_data[j]);
+				space->write_word_unaligned(address, fill_data[j]);
 				break;
 
 			case 4:
-				tspace->write_dword_unaligned(address, fill_data[j]);
+				space->write_dword_unaligned(address, fill_data[j]);
 				break;
 
 			case 8:
-				tspace->read_qword_unaligned(address, fill_data[j]);
+				space->read_qword_unaligned(address, fill_data[j]);
 				break;
 			}
 			offset += fill_data_size[j];
@@ -3342,20 +3643,20 @@ void debugger_commands::execute_fill(int spacenum, const std::vector<std::string
     execute_dasm - execute the dasm command
 -------------------------------------------------*/
 
-void debugger_commands::execute_dasm(const std::vector<std::string_view> &params)
+void debugger_commands::execute_dasm(const std::vector<std::string> &params)
 {
 	u64 offset, length;
 	bool bytes = true;
 	address_space *space;
 
 	// validate parameters
-	if (!m_console.validate_number_parameter(params[1], offset))
+	if (!validate_number_parameter(params[1], offset))
 		return;
-	if (!m_console.validate_number_parameter(params[2], length))
+	if (!validate_number_parameter(params[2], length))
 		return;
-	if (params.size() > 3 && !m_console.validate_boolean_parameter(params[3], bytes))
+	if (params.size() > 3 && !validate_boolean_parameter(params[3], bytes))
 		return;
-	if (!m_console.validate_device_space_parameter(params.size() > 4 ? params[4] : std::string_view(), AS_PROGRAM, space))
+	if (!validate_device_space_parameter(params.size() > 4 ? params[4] : std::string_view(), AS_PROGRAM, space))
 		return;
 
 	// determine the width of the bytes
@@ -3401,8 +3702,7 @@ void debugger_commands::execute_dasm(const std::vector<std::string_view> &params
 	}
 
 	/* write the data */
-	std::string fname(params[0]);
-	std::ofstream f(fname);
+	std::ofstream f(params[0]);
 	if (!f.good())
 	{
 		m_console.printf("Error opening file '%s'\n", params[0]);
@@ -3441,32 +3741,32 @@ void debugger_commands::execute_dasm(const std::vector<std::string_view> &params
     trace over and trace info
 -------------------------------------------------*/
 
-void debugger_commands::execute_trace(const std::vector<std::string_view> &params, bool trace_over)
+void debugger_commands::execute_trace(const std::vector<std::string> &params, bool trace_over)
 {
-	std::string_view action;
+	const char *action = nullptr;
 	bool detect_loops = true;
 	bool logerror = false;
-	std::string filename(params[0]);
+	device_t *cpu;
+	const char *mode;
+	std::string filename = params[0];
 
 	// replace macros
 	strreplace(filename, "{game}", m_machine.basename());
 
 	// validate parameters
-	device_t *cpu;
-	if (!m_console.validate_cpu_parameter(params.size() > 1 ? params[1] : std::string_view(), cpu))
+	if (!validate_cpu_parameter(params.size() > 1 ? params[1] : std::string_view(), cpu))
 		return;
 	if (params.size() > 2)
 	{
 		std::stringstream stream;
-		stream.str(std::string(params[2]));
+		stream.str(params[2]);
 
 		std::string flag;
 		while (std::getline(stream, flag, '|'))
 		{
-			using namespace std::literals;
-			if (util::streqlower(flag, "noloop"sv))
+			if (!core_stricmp(flag.c_str(), "noloop"))
 				detect_loops = false;
-			else if (util::streqlower(flag, "logerror"sv))
+			else if (!core_stricmp(flag.c_str(), "logerror"))
 				logerror = true;
 			else
 			{
@@ -3475,27 +3775,24 @@ void debugger_commands::execute_trace(const std::vector<std::string_view> &param
 			}
 		}
 	}
-	if (params.size() > 3 && !m_console.validate_command_parameter(action = params[3]))
+	if (!debug_command_parameter_command(action = (params.size() > 3) ? params[3].c_str() : nullptr))
 		return;
 
 	// open the file
-	std::unique_ptr<std::ofstream> f;
-	using namespace std::literals;
-	if (!util::streqlower(filename, "off"sv))
+	FILE *f = nullptr;
+	if (core_stricmp(filename.c_str(), "off") != 0)
 	{
-		std::ios_base::openmode mode = std::ios_base::out;
+		mode = "w";
 
 		// opening for append?
 		if ((filename[0] == '>') && (filename[1] == '>'))
 		{
-			mode |= std::ios_base::ate;
+			mode = "a";
 			filename = filename.substr(2);
 		}
-		else
-			mode |= std::ios_base::trunc;
 
-		f = std::make_unique<std::ofstream>(filename.c_str(), mode);
-		if (f->fail())
+		f = fopen(filename.c_str(), mode);
+		if (!f)
 		{
 			m_console.printf("Error opening file '%s'\n", params[0]);
 			return;
@@ -3503,9 +3800,8 @@ void debugger_commands::execute_trace(const std::vector<std::string_view> &param
 	}
 
 	// do it
-	bool const on(f);
-	cpu->debug()->trace(std::move(f), trace_over, detect_loops, logerror, action);
-	if (on)
+	cpu->debug()->trace(f, trace_over, detect_loops, logerror, action);
+	if (f)
 		m_console.printf("Tracing CPU '%s' to file %s\n", cpu->tag(), filename);
 	else
 		m_console.printf("Stopped tracing on CPU '%s'\n", cpu->tag());
@@ -3516,7 +3812,7 @@ void debugger_commands::execute_trace(const std::vector<std::string_view> &param
     execute_traceflush - execute the trace flush command
 -------------------------------------------------*/
 
-void debugger_commands::execute_traceflush(const std::vector<std::string_view> &params)
+void debugger_commands::execute_traceflush(const std::vector<std::string> &params)
 {
 	m_machine.debugger().cpu().flush_traces();
 }
@@ -3526,15 +3822,15 @@ void debugger_commands::execute_traceflush(const std::vector<std::string_view> &
     execute_history - execute the history command
 -------------------------------------------------*/
 
-void debugger_commands::execute_history(const std::vector<std::string_view> &params)
+void debugger_commands::execute_history(const std::vector<std::string> &params)
 {
 	// validate parameters
 	device_t *device;
-	if (!m_console.validate_cpu_parameter(!params.empty() ? params[0] : std::string_view(), device))
+	if (!validate_cpu_parameter(!params.empty() ? params[0] : std::string_view(), device))
 		return;
 
 	u64 count = device_debug::HISTORY_SIZE;
-	if (params.size() > 1 && !m_console.validate_number_parameter(params[1], count))
+	if (params.size() > 1 && !validate_number_parameter(params[1], count))
 		return;
 
 	// further validation
@@ -3551,13 +3847,13 @@ void debugger_commands::execute_history(const std::vector<std::string_view> &par
 	}
 
 	// loop over lines
+	debug_disasm_buffer buffer(*device);
 	std::string instruction;
 	for (int index = int(unsigned(count)); index > 0; index--)
 	{
 		auto const pc = debug->history_pc(1 - index);
 		if (pc.second)
 		{
-			debug_disasm_buffer buffer(*device);
 			offs_t next_offset;
 			offs_t size;
 			u32 info;
@@ -3574,16 +3870,16 @@ void debugger_commands::execute_history(const std::vector<std::string_view> &par
     execute_trackpc - execute the trackpc command
 -------------------------------------------------*/
 
-void debugger_commands::execute_trackpc(const std::vector<std::string_view> &params)
+void debugger_commands::execute_trackpc(const std::vector<std::string> &params)
 {
 	// Gather the on/off switch (if present)
 	bool turnOn = true;
-	if (params.size() > 0 && !m_console.validate_boolean_parameter(params[0], turnOn))
+	if (params.size() > 0 && !validate_boolean_parameter(params[0], turnOn))
 		return;
 
 	// Gather the cpu id (if present)
 	device_t *cpu = nullptr;
-	if (!m_console.validate_cpu_parameter((params.size() > 1) ? params[1] : std::string_view(), cpu))
+	if (!validate_cpu_parameter((params.size() > 1) ? params[1] : std::string_view(), cpu))
 		return;
 
 	const device_state_interface *state;
@@ -3595,7 +3891,7 @@ void debugger_commands::execute_trackpc(const std::vector<std::string_view> &par
 
 	// Should we clear the existing data?
 	bool clear = false;
-	if (params.size() > 2 && !m_console.validate_boolean_parameter(params[2], clear))
+	if (params.size() > 2 && !validate_boolean_parameter(params[2], clear))
 		return;
 
 	cpu->debug()->set_track_pc((bool)turnOn);
@@ -3623,11 +3919,11 @@ void debugger_commands::execute_trackpc(const std::vector<std::string_view> &par
     execute_trackmem - execute the trackmem command
 -------------------------------------------------*/
 
-void debugger_commands::execute_trackmem(const std::vector<std::string_view> &params)
+void debugger_commands::execute_trackmem(const std::vector<std::string> &params)
 {
 	// Gather the on/off switch (if present)
 	bool turnOn = true;
-	if (params.size() > 0 && !m_console.validate_boolean_parameter(params[0], turnOn))
+	if (params.size() > 0 && !validate_boolean_parameter(params[0], turnOn))
 		return;
 
 	// Gather the cpu id (if present)
@@ -3635,17 +3931,17 @@ void debugger_commands::execute_trackmem(const std::vector<std::string_view> &pa
 	if (params.size() > 1)
 		cpuparam = params[1];
 	device_t *cpu = nullptr;
-	if (!m_console.validate_cpu_parameter(cpuparam, cpu))
+	if (!validate_cpu_parameter(cpuparam, cpu))
 		return;
 
 	// Should we clear the existing data?
 	bool clear = false;
-	if (params.size() > 2 && !m_console.validate_boolean_parameter(params[2], clear))
+	if (params.size() > 2 && !validate_boolean_parameter(params[2], clear))
 		return;
 
 	// Get the address space for the given cpu
 	address_space *space;
-	if (!m_console.validate_device_space_parameter(cpuparam, AS_PROGRAM, space))
+	if (!validate_device_space_parameter(cpuparam, AS_PROGRAM, space))
 		return;
 
 	// Inform the CPU it's time to start tracking memory writes
@@ -3661,18 +3957,17 @@ void debugger_commands::execute_trackmem(const std::vector<std::string_view> &pa
     execute_pcatmem - execute the pcatmem command
 -------------------------------------------------*/
 
-void debugger_commands::execute_pcatmem(int spacenum, const std::vector<std::string_view> &params)
+void debugger_commands::execute_pcatmem(int spacenum, const std::vector<std::string> &params)
 {
 	// Gather the required target address/space parameter
 	u64 address;
 	address_space *space;
-	if (!m_console.validate_target_address_parameter(params[0], spacenum, space, address))
+	if (!validate_target_address_parameter(params[0], spacenum, space, address))
 		return;
 
 	// Translate the address
 	offs_t a = address & space->logaddrmask();
-	address_space *tspace;
-	if (!space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, a, tspace))
+	if (!space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, a))
 	{
 		m_console.printf("Address translation failed\n");
 		return;
@@ -3684,19 +3979,19 @@ void debugger_commands::execute_pcatmem(int spacenum, const std::vector<std::str
 	switch (space->data_width())
 	{
 	case 8:
-		data = tspace->read_byte(a);
+		data = space->read_byte(a);
 		break;
 
 	case 16:
-		data = tspace->read_word_unaligned(a);
+		data = space->read_word_unaligned(a);
 		break;
 
 	case 32:
-		data = tspace->read_dword_unaligned(a);
+		data = space->read_dword_unaligned(a);
 		break;
 
 	case 64:
-		data = tspace->read_qword_unaligned(a);
+		data = space->read_qword_unaligned(a);
 		break;
 	}
 
@@ -3713,7 +4008,7 @@ void debugger_commands::execute_pcatmem(int spacenum, const std::vector<std::str
     execute_snap - execute the snapshot command
 -------------------------------------------------*/
 
-void debugger_commands::execute_snap(const std::vector<std::string_view> &params)
+void debugger_commands::execute_snap(const std::vector<std::string> &params)
 {
 	/* if no params, use the default behavior */
 	if (params.empty())
@@ -3725,9 +4020,8 @@ void debugger_commands::execute_snap(const std::vector<std::string_view> &params
 	/* otherwise, we have to open the file ourselves */
 	else
 	{
-		u64 scrnum = 0;
-		if (params.size() > 1 && !m_console.validate_number_parameter(params[1], scrnum))
-			return;
+		const char *filename = params[0].c_str();
+		int scrnum = (params.size() > 1) ? atoi(params[1].c_str()) : 0;
 
 		screen_device_enumerator iter(m_machine.root_device());
 		screen_device *screen = iter.byindex(scrnum);
@@ -3738,7 +4032,7 @@ void debugger_commands::execute_snap(const std::vector<std::string_view> &params
 			return;
 		}
 
-		std::string fname(params[0]);
+		std::string fname(filename);
 		if (fname.find(".png") == -1)
 			fname.append(".png");
 		emu_file file(m_machine.options().snapshot_directory(), OPEN_FLAG_WRITE | OPEN_FLAG_CREATE | OPEN_FLAG_CREATE_PATHS);
@@ -3746,12 +4040,12 @@ void debugger_commands::execute_snap(const std::vector<std::string_view> &params
 
 		if (filerr)
 		{
-			m_console.printf("Error creating file '%s' (%s:%d %s)\n", params[0], filerr.category().name(), filerr.value(), filerr.message());
+			m_console.printf("Error creating file '%s' (%s:%d %s)\n", filename, filerr.category().name(), filerr.value(), filerr.message());
 			return;
 		}
 
 		screen->machine().video().save_snapshot(screen, file);
-		m_console.printf("Saved screen #%d snapshot as '%s'\n", scrnum, params[0]);
+		m_console.printf("Saved screen #%d snapshot as '%s'\n", scrnum, filename);
 	}
 }
 
@@ -3760,10 +4054,9 @@ void debugger_commands::execute_snap(const std::vector<std::string_view> &params
     execute_source - execute the source command
 -------------------------------------------------*/
 
-void debugger_commands::execute_source(const std::vector<std::string_view> &params)
+void debugger_commands::execute_source(const std::vector<std::string> &params)
 {
-	std::string filename(params[0]);
-	m_console.source_script(filename.c_str());
+	m_console.source_script(params[0].c_str());
 }
 
 
@@ -3771,29 +4064,27 @@ void debugger_commands::execute_source(const std::vector<std::string_view> &para
     execute_map - execute the map command
 -------------------------------------------------*/
 
-void debugger_commands::execute_map(int spacenum, const std::vector<std::string_view> &params)
+void debugger_commands::execute_map(int spacenum, const std::vector<std::string> &params)
 {
 	// validate parameters
 	u64 address;
 	address_space *space;
-	if (!m_console.validate_target_address_parameter(params[0], spacenum, space, address))
+	if (!validate_target_address_parameter(params[0], spacenum, space, address))
 		return;
-	address &= space->logaddrmask();
 
 	// do the translation first
-	for (int intention = device_memory_interface::TR_READ; intention <= device_memory_interface::TR_FETCH; intention++)
+	for (int intention = TRANSLATE_READ_DEBUG; intention <= TRANSLATE_FETCH_DEBUG; intention++)
 	{
 		static const char *const intnames[] = { "Read", "Write", "Fetch" };
-		offs_t taddress = address;
-		address_space *tspace;
-		if (space->device().memory().translate(space->spacenum(), intention, taddress, tspace))
+		offs_t taddress = address & space->addrmask();
+		if (space->device().memory().translate(space->spacenum(), intention, taddress))
 		{
-			std::string mapname = tspace->get_handler_string((intention == device_memory_interface::TR_WRITE) ? read_or_write::WRITE : read_or_write::READ, taddress);
+			std::string mapname = space->get_handler_string((intention == TRANSLATE_WRITE_DEBUG) ? read_or_write::WRITE : read_or_write::READ, taddress);
 			m_console.printf(
-					"%7s: %0*X logical %s == %0*X physical %s -> %s\n",
+					"%7s: %0*X logical == %0*X physical -> %s\n",
 					intnames[intention & 3],
-					space->logaddrchars(), address, space->name(),
-					tspace->addrchars(), taddress, tspace->name(),
+					space->logaddrchars(), address,
+					space->addrchars(), taddress,
 					mapname);
 		}
 		else
@@ -3806,15 +4097,14 @@ void debugger_commands::execute_map(int spacenum, const std::vector<std::string_
     execute_memdump - execute the memdump command
 -------------------------------------------------*/
 
-void debugger_commands::execute_memdump(const std::vector<std::string_view> &params)
+void debugger_commands::execute_memdump(const std::vector<std::string> &params)
 {
 	device_t *root = &m_machine.root_device();
-	if ((params.size() >= 2) && !m_console.validate_device_parameter(params[1], root))
+	if ((params.size() >= 2) && !validate_device_parameter(params[1], root))
 		return;
 
-	using namespace std::literals;
-	std::string filename = params.empty() ? "memdump.log"s : std::string(params[0]);
-	FILE *const file = fopen(filename.c_str(), "w");
+	char const *const filename = params.empty() ? "memdump.log" : params[0].c_str();
+	FILE *const file = fopen(filename, "w");
 	if (!file)
 	{
 		m_console.printf("Error opening file %s\n", filename);
@@ -3873,7 +4163,7 @@ void debugger_commands::execute_memdump(const std::vector<std::string_view> &par
     execute_symlist - execute the symlist command
 -------------------------------------------------*/
 
-void debugger_commands::execute_symlist(const std::vector<std::string_view> &params)
+void debugger_commands::execute_symlist(const std::vector<std::string> &params)
 {
 	const char *namelist[1000];
 	symbol_table *symtable;
@@ -3883,7 +4173,7 @@ void debugger_commands::execute_symlist(const std::vector<std::string_view> &par
 	{
 		// validate parameters
 		device_t *cpu;
-		if (!m_console.validate_cpu_parameter(params[0], cpu))
+		if (!validate_cpu_parameter(params[0], cpu))
 			return;
 		symtable = &cpu->debug()->symtable();
 		m_console.printf("CPU '%s' symbols:\n", cpu->tag());
@@ -3935,7 +4225,7 @@ void debugger_commands::execute_symlist(const std::vector<std::string_view> &par
     execute_softreset - execute the softreset command
 -------------------------------------------------*/
 
-void debugger_commands::execute_softreset(const std::vector<std::string_view> &params)
+void debugger_commands::execute_softreset(const std::vector<std::string> &params)
 {
 	m_machine.schedule_soft_reset();
 }
@@ -3945,7 +4235,7 @@ void debugger_commands::execute_softreset(const std::vector<std::string_view> &p
     execute_hardreset - execute the hardreset command
 -------------------------------------------------*/
 
-void debugger_commands::execute_hardreset(const std::vector<std::string_view> &params)
+void debugger_commands::execute_hardreset(const std::vector<std::string> &params)
 {
 	m_machine.schedule_hard_reset();
 }
@@ -3955,7 +4245,7 @@ void debugger_commands::execute_hardreset(const std::vector<std::string_view> &p
     mounted files
 -------------------------------------------------*/
 
-void debugger_commands::execute_images(const std::vector<std::string_view> &params)
+void debugger_commands::execute_images(const std::vector<std::string> &params)
 {
 	image_interface_enumerator iter(m_machine.root_device());
 	for (device_image_interface &img : iter)
@@ -3985,25 +4275,16 @@ void debugger_commands::execute_images(const std::vector<std::string_view> &para
     execute_mount - execute the image mount command
 -------------------------------------------------*/
 
-void debugger_commands::execute_mount(const std::vector<std::string_view> &params)
+void debugger_commands::execute_mount(const std::vector<std::string> &params)
 {
 	for (device_image_interface &img : image_interface_enumerator(m_machine.root_device()))
 	{
 		if ((img.instance_name() == params[0]) || (img.brief_instance_name() == params[0]))
 		{
-			auto [err, msg] = img.load(params[1]);
-			if (!err)
-			{
-				m_console.printf("File %s mounted on %s\n", params[1], params[0]);
-			}
+			if (img.load(params[1]) != image_init_result::PASS)
+				m_console.printf("Unable to mount file %s on %s\n", params[1], params[0]);
 			else
-			{
-				m_console.printf(
-						"Unable to mount file %s on %s: %s\n",
-						params[1],
-						params[0],
-						!msg.empty() ? msg : err.message());
-			}
+				m_console.printf("File %s mounted on %s\n", params[1], params[0]);
 			return;
 		}
 	}
@@ -4014,7 +4295,7 @@ void debugger_commands::execute_mount(const std::vector<std::string_view> &param
     execute_unmount - execute the image unmount command
 -------------------------------------------------*/
 
-void debugger_commands::execute_unmount(const std::vector<std::string_view> &params)
+void debugger_commands::execute_unmount(const std::vector<std::string> &params)
 {
 	for (device_image_interface &img : image_interface_enumerator(m_machine.root_device()))
 	{
@@ -4041,7 +4322,7 @@ void debugger_commands::execute_unmount(const std::vector<std::string_view> &par
     natural keyboard input
 -------------------------------------------------*/
 
-void debugger_commands::execute_input(const std::vector<std::string_view> &params)
+void debugger_commands::execute_input(const std::vector<std::string> &params)
 {
 	m_machine.natkeyboard().post_coded(params[0]);
 }
@@ -4052,15 +4333,15 @@ void debugger_commands::execute_input(const std::vector<std::string_view> &param
     keyboard codes
 -------------------------------------------------*/
 
-void debugger_commands::execute_dumpkbd(const std::vector<std::string_view> &params)
+void debugger_commands::execute_dumpkbd(const std::vector<std::string> &params)
 {
 	// was there a file specified?
-	std::string filename = !params.empty() ? std::string(params[0]) : std::string();
+	const char *filename = !params.empty() ? params[0].c_str() : nullptr;
 	FILE *file = nullptr;
-	if (!filename.empty())
+	if (filename != nullptr)
 	{
 		// if so, open it
-		file = fopen(filename.c_str(), "w");
+		file = fopen(filename, "w");
 		if (file == nullptr)
 		{
 			m_console.printf("Cannot open \"%s\"\n", filename);

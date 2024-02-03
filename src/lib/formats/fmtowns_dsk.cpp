@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Barry Rodewald
 /*
- * fmtowns_dsk.cpp
+ * fmtowns_dsk.c
  *
  *  FM Towns floppy image format
  *
@@ -14,17 +14,17 @@ fmtowns_format::fmtowns_format() : wd177x_format(formats)
 {
 }
 
-const char *fmtowns_format::name() const noexcept
+const char *fmtowns_format::name() const
 {
 	return "fmtowns";
 }
 
-const char *fmtowns_format::description() const noexcept
+const char *fmtowns_format::description() const
 {
 	return "FM Towns disk image";
 }
 
-const char *fmtowns_format::extensions() const noexcept
+const char *fmtowns_format::extensions() const
 {
 	return "bin";
 }

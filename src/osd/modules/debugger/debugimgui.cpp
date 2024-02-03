@@ -3,11 +3,9 @@
 // ImGui based debugger
 
 #include "emu.h"
-#include "debug_module.h"
-
 #include "imgui/imgui.h"
-
-#include "imagedev/floppy.h"
+#include "render.h"
+#include "uiinput.h"
 
 #include "debug/debugvw.h"
 #include "debug/dvdisasm.h"
@@ -16,20 +14,14 @@
 #include "debug/dvwpoints.h"
 #include "debug/debugcon.h"
 #include "debug/debugcpu.h"
-#include "debugger.h"
-#include "render.h"
-#include "uiinput.h"
-
-#include "formats/flopimg.h"
 
 #include "config.h"
+#include "debugger.h"
 #include "modules/lib/osdobj_common.h"
+#include "debug_module.h"
 #include "modules/osdmodule.h"
 #include "zippath.h"
-
-namespace osd {
-
-namespace {
+#include "imagedev/floppy.h"
 
 class debug_area
 {
@@ -126,7 +118,7 @@ public:
 
 	virtual ~debug_imgui() { }
 
-	virtual int init(osd_interface &osd, const osd_options &options) override { return 0; }
+	virtual int init(const osd_options &options) override { return 0; }
 	virtual void exit() override {};
 
 	virtual void init_debugger(running_machine &machine) override;
@@ -207,7 +199,6 @@ private:
 	file_entry*      m_selected_file;
 	int              m_format_sel;
 	char             m_path[1024];  // path text field buffer
-	std::unordered_map<input_item_id,ImGuiKey> m_mapping;
 };
 
 // globals
@@ -355,11 +346,10 @@ void debug_imgui::handle_keys()
 
 	for(input_item_id id = ITEM_ID_A; id <= ITEM_ID_CANCEL; ++id)
 	{
-		if(m_machine->input().code_pressed(input_code(DEVICE_CLASS_KEYBOARD, 0, ITEM_CLASS_SWITCH, ITEM_MODIFIER_NONE, id))) {
-			if (m_mapping.count(id)) io.AddKeyEvent(m_mapping[id], true);
-		} else {
-			if (m_mapping.count(id)) io.AddKeyEvent(m_mapping[id], false);
-		}
+		if(m_machine->input().code_pressed(input_code(DEVICE_CLASS_KEYBOARD, 0, ITEM_CLASS_SWITCH, ITEM_MODIFIER_NONE, id)))
+			io.KeysDown[id] = true;
+		else
+			io.KeysDown[id] = false;
 	}
 
 	m_key_char = 0;
@@ -378,9 +368,9 @@ void debug_imgui::handle_keys()
 	}
 
 	// global keys
-	if(ImGui::IsKeyPressed(ImGuiKey_F3,false))
+	if(ImGui::IsKeyPressed(ITEM_ID_F3,false))
 	{
-		if(ImGui::IsKeyDown(ImGuiKey_LeftShift))
+		if(ImGui::IsKeyDown(ITEM_ID_LSHIFT))
 			m_machine->schedule_hard_reset();
 		else
 		{
@@ -389,44 +379,44 @@ void debug_imgui::handle_keys()
 		}
 	}
 
-	if(ImGui::IsKeyPressed(ImGuiKey_F5,false))
+	if(ImGui::IsKeyPressed(ITEM_ID_F5,false))
 	{
 		m_machine->debugger().console().get_visible_cpu()->debug()->go();
 		m_running = true;
 	}
-	if(ImGui::IsKeyPressed(ImGuiKey_F6,false))
+	if(ImGui::IsKeyPressed(ITEM_ID_F6,false))
 	{
 		m_machine->debugger().console().get_visible_cpu()->debug()->go_next_device();
 		m_running = true;
 	}
-	if(ImGui::IsKeyPressed(ImGuiKey_F7,false))
+	if(ImGui::IsKeyPressed(ITEM_ID_F7,false))
 	{
 		m_machine->debugger().console().get_visible_cpu()->debug()->go_interrupt();
 		m_running = true;
 	}
-	if(ImGui::IsKeyPressed(ImGuiKey_F8,false))
+	if(ImGui::IsKeyPressed(ITEM_ID_F8,false))
 		m_machine->debugger().console().get_visible_cpu()->debug()->go_vblank();
-	if(ImGui::IsKeyPressed(ImGuiKey_F9,false))
+	if(ImGui::IsKeyPressed(ITEM_ID_F9,false))
 		m_machine->debugger().console().get_visible_cpu()->debug()->single_step_out();
-	if(ImGui::IsKeyPressed(ImGuiKey_F10,false))
+	if(ImGui::IsKeyPressed(ITEM_ID_F10,false))
 		m_machine->debugger().console().get_visible_cpu()->debug()->single_step_over();
-	if(ImGui::IsKeyPressed(ImGuiKey_F11,false))
+	if(ImGui::IsKeyPressed(ITEM_ID_F11,false))
 		m_machine->debugger().console().get_visible_cpu()->debug()->single_step();
-	if(ImGui::IsKeyPressed(ImGuiKey_F12,false))
+	if(ImGui::IsKeyPressed(ITEM_ID_F12,false))
 	{
 		m_machine->debugger().console().get_visible_cpu()->debug()->go();
 		m_hide = true;
 	}
 
-	if(ImGui::IsKeyPressed(ImGuiKey_D,false) && ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+	if(ImGui::IsKeyPressed(ITEM_ID_D,false) && ImGui::IsKeyDown(ITEM_ID_LCONTROL))
 		add_disasm(++m_win_count);
-	if(ImGui::IsKeyPressed(ImGuiKey_M,false) && ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+	if(ImGui::IsKeyPressed(ITEM_ID_M,false) && ImGui::IsKeyDown(ITEM_ID_LCONTROL))
 		add_memory(++m_win_count);
-	if(ImGui::IsKeyPressed(ImGuiKey_B,false) && ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+	if(ImGui::IsKeyPressed(ITEM_ID_B,false) && ImGui::IsKeyDown(ITEM_ID_LCONTROL))
 		add_bpoints(++m_win_count);
-	if(ImGui::IsKeyPressed(ImGuiKey_W,false) && ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+	if(ImGui::IsKeyPressed(ITEM_ID_W,false) && ImGui::IsKeyDown(ITEM_ID_LCONTROL))
 		add_wpoints(++m_win_count);
-	if(ImGui::IsKeyPressed(ImGuiKey_L,false) && ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+	if(ImGui::IsKeyPressed(ITEM_ID_L,false) && ImGui::IsKeyDown(ITEM_ID_LCONTROL))
 		add_log(++m_win_count);
 
 }
@@ -449,38 +439,38 @@ void debug_imgui::handle_keys_views()
 		return;
 
 	// pass keypresses to debug view with focus
-	if(ImGui::IsKeyPressed(ImGuiKey_UpArrow))
+	if(ImGui::IsKeyPressed(ITEM_ID_UP))
 		focus_view->view->process_char(DCH_UP);
-	if(ImGui::IsKeyPressed(ImGuiKey_DownArrow))
+	if(ImGui::IsKeyPressed(ITEM_ID_DOWN))
 		focus_view->view->process_char(DCH_DOWN);
-	if(ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+	if(ImGui::IsKeyPressed(ITEM_ID_LEFT))
 	{
-		if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+		if(ImGui::IsKeyDown(ITEM_ID_LCONTROL))
 			focus_view->view->process_char(DCH_CTRLLEFT);
 		else
 			focus_view->view->process_char(DCH_LEFT);
 	}
-	if(ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+	if(ImGui::IsKeyPressed(ITEM_ID_RIGHT))
 	{
-		if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+		if(ImGui::IsKeyDown(ITEM_ID_LCONTROL))
 			focus_view->view->process_char(DCH_CTRLRIGHT);
 		else
 			focus_view->view->process_char(DCH_RIGHT);
 	}
-	if(ImGui::IsKeyPressed(ImGuiKey_PageUp))
+	if(ImGui::IsKeyPressed(ITEM_ID_PGUP))
 		focus_view->view->process_char(DCH_PUP);
-	if(ImGui::IsKeyPressed(ImGuiKey_PageDown))
+	if(ImGui::IsKeyPressed(ITEM_ID_PGDN))
 		focus_view->view->process_char(DCH_PDOWN);
-	if(ImGui::IsKeyPressed(ImGuiKey_Home))
+	if(ImGui::IsKeyPressed(ITEM_ID_HOME))
 	{
-		if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+		if(ImGui::IsKeyDown(ITEM_ID_LCONTROL))
 			focus_view->view->process_char(DCH_CTRLHOME);
 		else
 			focus_view->view->process_char(DCH_HOME);
 	}
-	if(ImGui::IsKeyPressed(ImGuiKey_End))
+	if(ImGui::IsKeyPressed(ITEM_ID_END))
 	{
-		if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+		if(ImGui::IsKeyDown(ITEM_ID_LCONTROL))
 			focus_view->view->process_char(DCH_CTRLEND);
 		else
 			focus_view->view->process_char(DCH_END);
@@ -556,8 +546,6 @@ int debug_imgui::history_set(ImGuiInputTextCallbackData* data)
 		case ImGuiKey_DownArrow:
 			if(history_pos < view_main_console->console_history.size())
 				history_pos++;
-			break;
-		default:
 			break;
 	}
 
@@ -997,18 +985,18 @@ void debug_imgui::mount_image()
 
 void debug_imgui::create_image()
 {
-	std::pair<std::error_condition, std::string> res;
+	image_init_result res;
 
 	auto *fd = dynamic_cast<floppy_image_device *>(m_dialog_image);
 	if(fd != nullptr)
 	{
 		res = fd->create(m_path,nullptr,nullptr);
-		if(!res.first)
+		if(res == image_init_result::PASS)
 			fd->setup_write(m_typelist.at(m_format_sel).format);
 	}
 	else
 		res = m_dialog_image->create(m_path,nullptr,nullptr);
-	if(!res.first)
+	if(res == image_init_result::PASS)
 		ImGui::CloseCurrentPopup();
 	// TODO: add a messagebox to display on an error
 }
@@ -1025,6 +1013,7 @@ void debug_imgui::refresh_filelist()
 	std::error_condition const err = util::zippath_directory::open(m_path,dir);
 	if(!err)
 	{
+		int x = 0;
 		// add drives
 		for(std::string const &volume_name : osd_get_volume_names())
 		{
@@ -1033,18 +1022,19 @@ void debug_imgui::refresh_filelist()
 			temp.basename = volume_name;
 			temp.fullpath = volume_name;
 			m_filelist.emplace_back(std::move(temp));
+			x++;
 		}
 		first = m_filelist.size();
-		const directory::entry *dirent;
+		const osd::directory::entry *dirent;
 		while((dirent = dir->readdir()) != nullptr)
 		{
 			file_entry temp;
 			switch(dirent->type)
 			{
-				case directory::entry::entry_type::FILE:
+				case osd::directory::entry::entry_type::FILE:
 					temp.type = file_entry_type::FILE;
 					break;
-				case directory::entry::entry_type::DIR:
+				case osd::directory::entry::entry_type::DIR:
 					temp.type = file_entry_type::DIRECTORY;
 					break;
 				default:
@@ -1200,10 +1190,10 @@ void debug_imgui::draw_create_dialog(const char* label)
 		if(ImGui::InputText("##createfilename",m_path,1024,ImGuiInputTextFlags_EnterReturnsTrue))
 		{
 			auto entry = osd_stat(m_path);
-			auto file_type = (entry != nullptr) ? entry->type : directory::entry::entry_type::NONE;
-			if(file_type == directory::entry::entry_type::NONE)
+			auto file_type = (entry != nullptr) ? entry->type : osd::directory::entry::entry_type::NONE;
+			if(file_type == osd::directory::entry::entry_type::NONE)
 				create_image();
-			if(file_type == directory::entry::entry_type::FILE)
+			if(file_type == osd::directory::entry::entry_type::FILE)
 				m_create_confirm_wait = true;
 			// cannot overwrite a directory, so nothing will be none in that case.
 		}
@@ -1250,10 +1240,10 @@ void debug_imgui::draw_create_dialog(const char* label)
 			if(ImGui::Button("OK##mount"))
 			{
 				auto entry = osd_stat(m_path);
-				auto file_type = (entry != nullptr) ? entry->type : directory::entry::entry_type::NONE;
-				if(file_type == directory::entry::entry_type::NONE)
+				auto file_type = (entry != nullptr) ? entry->type : osd::directory::entry::entry_type::NONE;
+				if(file_type == osd::directory::entry::entry_type::NONE)
 					create_image();
-				if(file_type == directory::entry::entry_type::FILE)
+				if(file_type == osd::directory::entry::entry_type::FILE)
 					m_create_confirm_wait = true;
 				// cannot overwrite a directory, so nothing will be none in that case.
 				m_create_open = false;
@@ -1403,6 +1393,7 @@ void debug_imgui::update()
 	//debug_area* view_ptr = view_list;
 	std::vector<debug_area*>::iterator view_ptr;
 	bool opened;
+	int count = 0;
 	ImGui::PushStyleColor(ImGuiCol_WindowBg,ImVec4(1.0f,1.0f,1.0f,0.9f));
 	ImGui::PushStyleColor(ImGuiCol_Text,ImVec4(0.0f,0.0f,0.0f,1.0f));
 	ImGui::PushStyleColor(ImGuiCol_TextDisabled,ImVec4(0.0f,0.0f,1.0f,1.0f));
@@ -1447,6 +1438,7 @@ void debug_imgui::update()
 			break;
 		}
 		++view_ptr;
+		count++;
 	}
 	// check for a closed window
 	if(to_delete != nullptr)
@@ -1472,39 +1464,26 @@ void debug_imgui::init_debugger(running_machine &machine)
 		m_has_images = true;
 
 	// map keys to ImGui inputs
-	m_mapping[ITEM_ID_A] = ImGuiKey_A;
-	m_mapping[ITEM_ID_C] = ImGuiKey_C;
-	m_mapping[ITEM_ID_V] = ImGuiKey_V;
-	m_mapping[ITEM_ID_X] = ImGuiKey_X;
-	m_mapping[ITEM_ID_Y] = ImGuiKey_Y;
-	m_mapping[ITEM_ID_Z] = ImGuiKey_Z;
-	m_mapping[ITEM_ID_D] = ImGuiKey_D;
-	m_mapping[ITEM_ID_M] = ImGuiKey_M;
-	m_mapping[ITEM_ID_B] = ImGuiKey_B;
-	m_mapping[ITEM_ID_W] = ImGuiKey_W;
-	m_mapping[ITEM_ID_L] = ImGuiKey_L;
-	m_mapping[ITEM_ID_BACKSPACE] = ImGuiKey_Backspace;
-	m_mapping[ITEM_ID_DEL] = ImGuiKey_Delete;
-	m_mapping[ITEM_ID_TAB] = ImGuiKey_Tab;
-	m_mapping[ITEM_ID_PGUP] = ImGuiKey_PageUp;
-	m_mapping[ITEM_ID_PGDN] = ImGuiKey_PageDown;
-	m_mapping[ITEM_ID_HOME] = ImGuiKey_Home;
-	m_mapping[ITEM_ID_END] = ImGuiKey_End;
-	m_mapping[ITEM_ID_ESC] = ImGuiKey_Escape;
-	m_mapping[ITEM_ID_ENTER] = ImGuiKey_Enter;
-	m_mapping[ITEM_ID_LEFT] = ImGuiKey_LeftArrow;
-	m_mapping[ITEM_ID_RIGHT] = ImGuiKey_RightArrow;
-	m_mapping[ITEM_ID_UP] = ImGuiKey_UpArrow;
-	m_mapping[ITEM_ID_DOWN] = ImGuiKey_DownArrow;
-	m_mapping[ITEM_ID_F3] = ImGuiKey_F3;
-	m_mapping[ITEM_ID_F5] = ImGuiKey_F5;
-	m_mapping[ITEM_ID_F6] = ImGuiKey_F6;
-	m_mapping[ITEM_ID_F7] = ImGuiKey_F7;
-	m_mapping[ITEM_ID_F8] = ImGuiKey_F8;
-	m_mapping[ITEM_ID_F9] = ImGuiKey_F9;
-	m_mapping[ITEM_ID_F10] = ImGuiKey_F10;
-	m_mapping[ITEM_ID_F11] = ImGuiKey_F11;
-	m_mapping[ITEM_ID_F12] = ImGuiKey_F12;
+	io.KeyMap[ImGuiKey_A] = ITEM_ID_A;
+	io.KeyMap[ImGuiKey_C] = ITEM_ID_C;
+	io.KeyMap[ImGuiKey_V] = ITEM_ID_V;
+	io.KeyMap[ImGuiKey_X] = ITEM_ID_X;
+	io.KeyMap[ImGuiKey_C] = ITEM_ID_C;
+	io.KeyMap[ImGuiKey_Y] = ITEM_ID_Y;
+	io.KeyMap[ImGuiKey_Z] = ITEM_ID_Z;
+	io.KeyMap[ImGuiKey_Backspace] = ITEM_ID_BACKSPACE;
+	io.KeyMap[ImGuiKey_Delete] = ITEM_ID_DEL;
+	io.KeyMap[ImGuiKey_Tab] = ITEM_ID_TAB;
+	io.KeyMap[ImGuiKey_PageUp] = ITEM_ID_PGUP;
+	io.KeyMap[ImGuiKey_PageDown] = ITEM_ID_PGDN;
+	io.KeyMap[ImGuiKey_Home] = ITEM_ID_HOME;
+	io.KeyMap[ImGuiKey_End] = ITEM_ID_END;
+	io.KeyMap[ImGuiKey_Escape] = ITEM_ID_ESC;
+	io.KeyMap[ImGuiKey_Enter] = ITEM_ID_ENTER;
+	io.KeyMap[ImGuiKey_LeftArrow] = ITEM_ID_LEFT;
+	io.KeyMap[ImGuiKey_RightArrow] = ITEM_ID_RIGHT;
+	io.KeyMap[ImGuiKey_UpArrow] = ITEM_ID_UP;
+	io.KeyMap[ImGuiKey_DownArrow] = ITEM_ID_DOWN;
 
 	// set key delay and repeat rates
 	io.KeyRepeatDelay = 0.400f;
@@ -1588,8 +1567,4 @@ void debug_imgui::debugger_update()
 	}
 }
 
-} // anonymous namespace
-
-} // namespace osd
-
-MODULE_DEFINITION(DEBUG_IMGUI, osd::debug_imgui)
+MODULE_DEFINITION(DEBUG_IMGUI, debug_imgui)

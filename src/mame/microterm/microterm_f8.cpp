@@ -17,9 +17,6 @@
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
-
 class microterm_f8_state : public driver_device
 {
 public:
@@ -50,7 +47,7 @@ private:
 
 	u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
-	void vblank_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank_w);
 
 	u8 bell_r();
 	void scroll_w(u8 data);
@@ -185,7 +182,7 @@ u32 microterm_f8_state::screen_update(screen_device &screen, bitmap_rgb32 &bitma
 	return 0;
 }
 
-void microterm_f8_state::vblank_w(int state)
+WRITE_LINE_MEMBER(microterm_f8_state::vblank_w)
 {
 	if (state)
 		m_bell->set_state(0);
@@ -572,9 +569,6 @@ ROM_START(act5a)
 	ROM_REGION(0x2000, "chargen", 0)
 	ROM_LOAD("act5a_9316.u55", 0x0000, 0x2000, CRC(8f96b7c8) SHA1(652d420ab5be9412cae322cd1799f8a9e3959c44))
 ROM_END
-
-} // anonymous namespace
-
 
 //COMP(1976, act4, 0, 0, act5a, act5a, microterm_f8_state, empty_init, "Micro-Term", "ACT-IV", MACHINE_NOT_WORKING)
 //COMP(1978, act5, 0, 0, act5a, act5a, microterm_f8_state, empty_init, "Micro-Term", "ACT-V", MACHINE_NOT_WORKING)

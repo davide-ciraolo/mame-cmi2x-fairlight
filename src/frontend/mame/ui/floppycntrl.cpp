@@ -12,12 +12,7 @@
 #include "ui/filecreate.h"
 #include "ui/floppycntrl.h"
 
-#include "formats/flopimg.h"
-#include "formats/fsmgr.h"
-
 #include "zippath.h"
-
-#include <tuple>
 
 
 namespace ui {
@@ -43,28 +38,26 @@ menu_control_floppy_image::~menu_control_floppy_image()
 
 void menu_control_floppy_image::do_load_create()
 {
-	if(input_filename.empty()) {
-		auto [err, message] = fd.create(output_filename, nullptr, nullptr);
-		if (err) {
-			machine().popmessage(_("Error creating floppy image: %1$s"), !message.empty() ? message : err.message());
+	if(input_filename.compare("")==0) {
+		image_init_result err = fd.create(output_filename, nullptr, nullptr);
+		if (err != image_init_result::PASS) {
+			machine().popmessage("Error: %s", fd.error());
 			return;
 		}
 		if (create_fs) {
 			// HACK: ensure the floppy_image structure is created since device_image_interface may not otherwise do so during "init phase"
-			err = fd.finish_load().first;
-			if (!err) {
+			err = fd.finish_load();
+			if (err == image_init_result::PASS) {
 				fs::meta_data meta;
 				fd.init_fs(create_fs, meta);
 			}
 		}
 	} else {
-		auto [err, message] = fd.load(input_filename);
-		if (!err && !output_filename.empty()) {
-			message.clear();
-			err = fd.reopen_for_write(output_filename);
-		}
-		if (err) {
-			machine().popmessage(_("Error opening floppy image: %1$s"), !message.empty() ? message : err.message());
+		image_init_result err = fd.load(input_filename);
+		if ((err == image_init_result::PASS) && (output_filename.compare("") != 0))
+			err = fd.reopen_for_write(output_filename) ? image_init_result::FAIL : image_init_result::PASS;
+		if (err != image_init_result::PASS) {
+			machine().popmessage("Error: %s", fd.error());
 			return;
 		}
 	}
@@ -74,13 +67,12 @@ void menu_control_floppy_image::do_load_create()
 
 void menu_control_floppy_image::hook_load(const std::string &filename)
 {
-	std::error_condition err;
 	input_filename = filename;
-	std::tie(err, input_format) = static_cast<floppy_image_device &>(m_image).identify(filename);
+	input_format = static_cast<floppy_image_device &>(m_image).identify(filename);
 
 	if (!input_format)
 	{
-		machine().popmessage("Error: %s", err.message());
+		machine().popmessage("Error: %s\n", m_image.error());
 		stack_pop();
 	}
 	else

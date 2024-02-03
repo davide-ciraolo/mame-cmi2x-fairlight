@@ -15,6 +15,7 @@
 
 #include "a2bus.h"
 #include "imagedev/floppy.h"
+#include "formats/flopimg.h"
 #include "machine/iwm.h"
 
 //**************************************************************************

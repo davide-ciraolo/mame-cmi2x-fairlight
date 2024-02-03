@@ -20,23 +20,19 @@
 **************************************************************************************/
 
 #include "emu.h"
-
 #include "cpu/z80/z80.h"
 #include "imagedev/floppy.h"
-#include "imagedev/snapquik.h"
 #include "machine/timer.h"
 #include "machine/wd_fdc.h"
-#include "softlist_dev.h"
 #include "sound/beep.h"
 #include "sound/sn76496.h"
 #include "video/mc6845.h"
-
 #include "emupal.h"
 #include "screen.h"
+#include "softlist_dev.h"
+#include "imagedev/snapquik.h"
 #include "speaker.h"
 
-
-namespace {
 
 #define MASTER_CLOCK 4.028_MHz_XTAL
 
@@ -66,7 +62,8 @@ public:
 		, m_screen(*this, "screen")
 		, m_crtc(*this, "crtc")
 		, m_fdc(*this, "fdc")
-		, m_floppy(*this, "fdc:%u", 0U)
+		, m_floppy0(*this, "fdc:0")
+		, m_floppy1(*this, "fdc:1")
 		, m_beeper(*this, "beeper")
 		, m_gfxdecode(*this, "gfxdecode")
 		, m_palette(*this, "palette")
@@ -105,15 +102,15 @@ private:
 	void vsync_irq_enable_w(uint8_t data);
 	void smc777_palette(palette_device &palette) const;
 	uint32_t screen_update_smc777(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void vsync_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(vsync_w);
 	TIMER_DEVICE_CALLBACK_MEMBER(keyboard_callback);
 
 	uint8_t fdc_r(offs_t offset);
 	void fdc_w(offs_t offset, uint8_t data);
 	uint8_t fdc1_fast_status_r();
 	void fdc1_select_w(uint8_t data);
-	void fdc_intrq_w(int state);
-	void fdc_drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(fdc_intrq_w);
+	DECLARE_WRITE_LINE_MEMBER(fdc_drq_w);
 
 	DECLARE_QUICKLOAD_LOAD_MEMBER(quickload_cb);
 
@@ -124,7 +121,8 @@ private:
 	required_device<screen_device> m_screen;
 	required_device<mc6845_device> m_crtc;
 	required_device<mb8876_device> m_fdc;
-	required_device_array<floppy_connector, 2> m_floppy;
+	required_device<floppy_connector> m_floppy0;
+	required_device<floppy_connector> m_floppy1;
 	required_device<beep_device> m_beeper;
 	required_device<gfxdecode_device> m_gfxdecode;
 	required_device<palette_device> m_palette;
@@ -411,7 +409,7 @@ QUICKLOAD_LOAD_MEMBER(smc777_state::quickload_cb)
 	address_space& prog_space = m_maincpu->space(AS_PROGRAM);
 
 	if (image.length() >= 0xfd00)
-		return std::make_pair(image_error::INVALIDLENGTH, std::string());
+		return image_init_result::FAIL;
 
 	/* The right RAM bank must be active */
 
@@ -419,7 +417,7 @@ QUICKLOAD_LOAD_MEMBER(smc777_state::quickload_cb)
 	if ((prog_space.read_byte(0) != 0xc3) || (prog_space.read_byte(5) != 0xc3))
 	{
 		machine_reset();
-		return std::make_pair(image_error::UNSUPPORTED, std::string());
+		return image_init_result::FAIL;
 	}
 
 	/* Load image to the TPA (Transient Program Area) */
@@ -428,7 +426,7 @@ QUICKLOAD_LOAD_MEMBER(smc777_state::quickload_cb)
 	{
 		uint8_t data;
 		if (image.fread( &data, 1) != 1)
-			return std::make_pair(image_error::UNSPECIFIED, std::string());
+			return image_init_result::FAIL;
 		prog_space.write_byte(i+0x100, data);
 	}
 
@@ -439,7 +437,7 @@ QUICKLOAD_LOAD_MEMBER(smc777_state::quickload_cb)
 	m_maincpu->set_state_int(Z80_SP, 256 * prog_space.read_byte(7) - 300);
 	m_maincpu->set_pc(0x100);       // start program
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 uint8_t smc777_state::fdc_r(offs_t offset)
@@ -470,7 +468,7 @@ void smc777_state::fdc1_select_w(uint8_t data)
 	// x--- ---- SIDE1: [SMC-70] side select
 	// ---- --x- EXDS: [SMC-70] external drive select (0=internal, 1=external)
 	// ---- ---x DS01: select floppy drive
-	floppy = m_floppy[data & 1]->get_device();
+	floppy = (data & 1 ? m_floppy1 : m_floppy0)->get_device();
 
 	m_fdc->set_floppy(floppy);
 
@@ -482,12 +480,12 @@ void smc777_state::fdc1_select_w(uint8_t data)
 		printf("floppy access %02x\n", data);
 }
 
-void smc777_state::fdc_intrq_w(int state)
+WRITE_LINE_MEMBER( smc777_state::fdc_intrq_w )
 {
 	m_fdc_irq_flag = state;
 }
 
-void smc777_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( smc777_state::fdc_drq_w )
 {
 	m_fdc_drq_flag = state;
 }
@@ -1086,7 +1084,7 @@ void smc777_state::smc777_palette(palette_device &palette) const
 }
 
 
-void smc777_state::vsync_w(int state)
+WRITE_LINE_MEMBER(smc777_state::vsync_w)
 {
 	if (state && m_vsync_ief)
 	{
@@ -1134,8 +1132,8 @@ void smc777_state::smc777(machine_config &config)
 	m_fdc->drq_wr_callback().set(FUNC(smc777_state::fdc_drq_w));
 
 	// does it really support 16 of them?
-	FLOPPY_CONNECTOR(config, m_floppy[0], smc777_floppies, "ssdd", floppy_image_device::default_mfm_floppy_formats);
-	FLOPPY_CONNECTOR(config, m_floppy[1], smc777_floppies, "ssdd", floppy_image_device::default_mfm_floppy_formats);
+	FLOPPY_CONNECTOR(config, "fdc:0", smc777_floppies, "ssdd", floppy_image_device::default_mfm_floppy_formats);
+	FLOPPY_CONNECTOR(config, "fdc:1", smc777_floppies, "ssdd", floppy_image_device::default_mfm_floppy_formats);
 
 	SOFTWARE_LIST(config, "flop_list").set_original("smc777");
 	QUICKLOAD(config, "quickload", "com,cpm", attotime::from_seconds(3)).set_load_callback(FUNC(smc777_state::quickload_cb));
@@ -1163,9 +1161,6 @@ ROM_START( smc777 )
 	ROM_REGION( 0x400, "mcu", ROMREGION_ERASEFF )
 	ROM_LOAD( "m5l8041a-077p.bin", 0x000, 0x400, NO_DUMP ) // 8041 keyboard mcu, needs decapping
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

@@ -98,9 +98,6 @@ ToDo:
 #include "softlist_dev.h"
 #include "speaker.h"
 
-
-namespace {
-
 class pencil2_state : public driver_device
 {
 public:
@@ -114,8 +111,8 @@ public:
 
 	void pencil2(machine_config &config);
 
-	int printer_ready_r();
-	int printer_ack_r();
+	DECLARE_READ_LINE_MEMBER(printer_ready_r);
+	DECLARE_READ_LINE_MEMBER(printer_ack_r);
 
 private:
 	void port10_w(u8 data);
@@ -123,8 +120,8 @@ private:
 	void port80_w(u8 data);
 	void portc0_w(u8 data);
 	u8 porte2_r();
-	void write_centronics_ack(int state);
-	void write_centronics_busy(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_ack);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_busy);
 	void io_map(address_map &map);
 	void mem_map(address_map &map);
 
@@ -194,22 +191,22 @@ void pencil2_state::portc0_w(u8 data)
 {
 }
 
-void pencil2_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER( pencil2_state::write_centronics_busy )
 {
 	m_centronics_busy = state;
 }
 
-int pencil2_state::printer_ready_r()
+READ_LINE_MEMBER( pencil2_state::printer_ready_r )
 {
 	return m_centronics_busy;
 }
 
-void pencil2_state::write_centronics_ack(int state)
+WRITE_LINE_MEMBER( pencil2_state::write_centronics_ack )
 {
 	m_centronics_ack = state;
 }
 
-int pencil2_state::printer_ack_r()
+READ_LINE_MEMBER( pencil2_state::printer_ack_r )
 {
 	return m_centronics_ack;
 }
@@ -364,9 +361,6 @@ ROM_START( pencil2 )
 	ROM_REGION(0x2000, "maincpu", 0)
 	ROM_LOAD( "mt.u4", 0x0000, 0x2000, CRC(338d7b59) SHA1(2f89985ac06971e00210ff992bf1e30a296d10e7) )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

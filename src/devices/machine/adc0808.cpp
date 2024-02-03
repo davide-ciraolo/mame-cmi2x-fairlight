@@ -42,7 +42,7 @@ ALLOW_SAVE_TYPE(adc0808_device::state);
 adc0808_device::adc0808_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock) :
 	device_t(mconfig, type, tag, owner, clock),
 	m_eoc_cb(*this), m_eoc_ff_cb(*this),
-	m_in_cb(*this, 0xff),
+	m_in_cb(*this),
 	m_state(STATE_IDLE),
 	m_cycle_timer(nullptr),
 	m_start(0), m_address(0), m_sar(0xff), m_eoc(1)
@@ -78,6 +78,11 @@ m58990_device::m58990_device(const machine_config &mconfig, const char *tag, dev
 
 void adc0808_device::device_start()
 {
+	// resolve callbacks
+	m_eoc_cb.resolve_safe();
+	m_eoc_ff_cb.resolve_safe();
+	m_in_cb.resolve_all_safe(0xff);
+
 	// allocate timers
 	m_cycle_timer = timer_alloc(FUNC(adc0808_device::update_state), this);
 	m_cycle_timer->adjust(attotime::zero, 0, attotime::from_hz(clock()));
@@ -135,7 +140,7 @@ TIMER_CALLBACK_MEMBER(adc0808_device::update_state)
 				logerror("Conversion finished, result %02x\n", m_sar);
 
 			if (m_sar != start_sar)
-				logerror("Conversion finished, should fail - starting value %02x, ending value %02x\n", start_sar, m_sar);
+				logerror("Conversion finished, should fail - starting value %02x, ending value %02x", start_sar, m_sar);
 
 			// eoc is delayed by one cycle
 			m_cycle_timer->adjust(attotime::never);
@@ -168,7 +173,7 @@ void adc0808_device::address_w(u8 data)
 	m_address = data & 7;
 }
 
-void adc0808_device::start_w(int state)
+WRITE_LINE_MEMBER( adc0808_device::start_w )
 {
 	if (m_start == state)
 		return;
@@ -186,7 +191,7 @@ void adc0808_device::start_w(int state)
 	m_start = state;
 }
 
-int adc0808_device::eoc_r()
+READ_LINE_MEMBER( adc0808_device::eoc_r )
 {
 	return m_eoc;
 }

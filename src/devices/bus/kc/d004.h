@@ -57,7 +57,7 @@ protected:
 private:
 	static void floppy_formats(format_registration &fr);
 
-	void fdc_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER( fdc_irq );
 
 	void kc_d004_io(address_map &map);
 	void kc_d004_mem(address_map &map);

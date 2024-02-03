@@ -34,21 +34,24 @@ void hp9845_optrom_device::device_start()
 {
 }
 
-std::pair<std::error_condition, std::string> hp9845_optrom_device::call_load()
+image_init_result hp9845_optrom_device::call_load()
 {
 	logerror("hp9845_optrom: call_load\n");
 	if (!loaded_through_softlist()) {
-		return std::make_pair(image_error::UNSUPPORTED, "Option ROMs must be loaded from software list");
+		logerror("hp9845_optrom: must be loaded from sw list\n");
+		return image_init_result::FAIL;
 	}
 
 	const char *base_feature = get_feature("base");
 	if (base_feature == nullptr) {
-		return std::make_pair(image_error::BADSOFTWARE, "Software item is missing 'base' feature");
+		logerror("hp9845_optrom: no 'base' feature\n");
+		return image_init_result::FAIL;
 	}
 
 	offs_t base_addr;
 	if (base_feature[ 0 ] != '0' || base_feature[ 1 ] != 'x' || sscanf(&base_feature[ 2 ] , "%x" , &base_addr) != 1) {
-		return std::make_pair(image_error::BADSOFTWARE, "Can't parse software item 'base' feature");
+		logerror("hp9845_optrom: can't parse 'base' feature\n");
+		return image_init_result::FAIL;
 	}
 
 	// Valid BSC values for ROMs on LPU drawer: 0x07 0x0b .... 0x3b
@@ -57,17 +60,15 @@ std::pair<std::error_condition, std::string> hp9845_optrom_device::call_load()
 	// Bit 15 of base address must be 0
 	// Base address must be multiple of 0x1000
 	if ((base_addr & ~0x3f7000UL) != 0 || ((base_addr & 0x30000) != 0x10000 && (base_addr & 0x30000) != 0x30000) || base_addr < 0x70000) {
-		return std::make_pair(
-				image_error::BADSOFTWARE,
-				util::string_format("Illegal base address (%x)", base_addr));
+		logerror("hp9845_optrom: illegal base address (%x)\n" , base_addr);
+		return image_init_result::FAIL;
 	}
 
 	auto length = get_software_region_length("rom") / 2;
 
 	if (length < 0x1000 || length > 0x8000 || (length & 0xfff) != 0 || ((base_addr & 0x7000) + length) > 0x8000) {
-		return std::make_pair(
-				image_error::INVALIDLENGTH,
-				util::string_format("Illegal 'rom' data area size (%u)", length));
+		logerror("hp9845_optrom: illegal region length (%x)\n" , length);
+		return image_init_result::FAIL;
 	}
 
 	offs_t end_addr = base_addr + length - 1;
@@ -82,7 +83,7 @@ std::pair<std::error_condition, std::string> hp9845_optrom_device::call_load()
 	m_base_addr = base_addr;
 	m_end_addr = end_addr;
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void hp9845_optrom_device::call_unload()

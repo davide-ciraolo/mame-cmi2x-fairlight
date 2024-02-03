@@ -37,38 +37,29 @@
 #ifndef __LINENOISE_H
 #define __LINENOISE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef NO_COMPLETION
 typedef struct linenoiseCompletions {
   size_t len;
   char **cvec;
+  int pos;
 } linenoiseCompletions;
 
 /*
  * The callback type for tab completion handlers.
  */
-typedef void(linenoiseCompletionCallback)(const char *prefix, linenoiseCompletions *comp, void *userdata);
+typedef void(linenoiseCompletionCallback)(const char *prefix, linenoiseCompletions *comp, int pos);
 
 /*
  * Sets the current tab completion handler and returns the previous one, or NULL
  * if no prior one has been set.
  */
-linenoiseCompletionCallback * linenoiseSetCompletionCallback(linenoiseCompletionCallback *comp, void *userdata);
+linenoiseCompletionCallback * linenoiseSetCompletionCallback(linenoiseCompletionCallback *comp);
 
 /*
  * Adds a copy of the given string to the given completion list. The copy is owned
  * by the linenoiseCompletions object.
  */
-void linenoiseAddCompletion(linenoiseCompletions *comp, const char *str);
-
-typedef char*(linenoiseHintsCallback)(const char *, int *color, int *bold, void *userdata);
-typedef void(linenoiseFreeHintsCallback)(void *hint, void *userdata);
-void linenoiseSetHintsCallback(linenoiseHintsCallback *callback, void *userdata);
-void linenoiseSetFreeHintsCallback(linenoiseFreeHintsCallback *callback);
-
+void linenoiseAddCompletion(linenoiseCompletions *comp, const char *str, int pos);
 #endif
 
 /*
@@ -79,11 +70,6 @@ void linenoiseSetFreeHintsCallback(linenoiseFreeHintsCallback *callback);
  * caller owns the returned string and must eventually free() it.
  */
 char *linenoise(const char *prompt);
-
-/**
- * Like linenoise() but starts with an initial buffer.
- */
-char *linenoiseWithInitial(const char *prompt, const char *initial);
 
 /**
  * Clear the screen.
@@ -137,13 +123,8 @@ char **linenoiseHistory(int *len);
  */
 int linenoiseColumns(void);
 
-/**
- * Enable or disable multiline mode (disabled by default)
- */
-void linenoiseSetMultiLine(int enableml);
+void linenoisePreloadBuffer(const char* preloadText);
 
-#ifdef __cplusplus
-}
-#endif
+void linenoiseRefresh(void);
 
 #endif /* __LINENOISE_H */

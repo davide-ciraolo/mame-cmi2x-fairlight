@@ -2,7 +2,7 @@
 // copyright-holders:R. Belmont
 /*********************************************************************
 
-    a2eramworks3.cpp
+    a2eramworks3.c
 
     Applied Engineering RamWorks III
 
@@ -67,29 +67,24 @@ void a2eaux_ramworks3_device::device_reset()
 	m_bank = 0;
 }
 
-u8 a2eaux_ramworks3_device::read_auxram(uint16_t offset)
+uint8_t a2eaux_ramworks3_device::read_auxram(uint16_t offset)
 {
 	return m_ram[offset+m_bank];
 }
 
-void a2eaux_ramworks3_device::write_auxram(uint16_t offset, u8 data)
+void a2eaux_ramworks3_device::write_auxram(uint16_t offset, uint8_t data)
 {
 	m_ram[offset+m_bank] = data;
 }
 
-u8 *a2eaux_ramworks3_device::get_vram_ptr()
+uint8_t *a2eaux_ramworks3_device::get_vram_ptr()
 {
 	return &m_ram[0];
 }
 
-u8 *a2eaux_ramworks3_device::get_auxbank_ptr()
+uint8_t *a2eaux_ramworks3_device::get_auxbank_ptr()
 {
 	return &m_ram[m_bank];
-}
-
-u16 a2eaux_ramworks3_device::get_auxbank_mask()
-{
-	return 0xffff;
 }
 
 /*
@@ -105,7 +100,7 @@ u16 a2eaux_ramworks3_device::get_auxbank_mask()
     However, the software will recognize and correctly use a configuration in which
     all of banks 00-7F are populated for a total of 8 megabytes.  So that's what we do.
 */
-void a2eaux_ramworks3_device::write_c07x(u8 offset, u8 data)
+void a2eaux_ramworks3_device::write_c07x(uint8_t offset, uint8_t data)
 {
 	// write to C071/3/5/7?
 	if ((offset & 0x9) == 1)
@@ -114,7 +109,7 @@ void a2eaux_ramworks3_device::write_c07x(u8 offset, u8 data)
 	}
 }
 
-void a2eaux_franklin384_device::write_c07x(u8 offset, u8 data)
+void a2eaux_franklin384_device::write_c07x(uint8_t offset, uint8_t data)
 {
 	if ((offset & 0x9) == 1)
 	{
@@ -128,7 +123,7 @@ void a2eaux_franklin384_device::write_c07x(u8 offset, u8 data)
 	}
 }
 
-void a2eaux_franklin512_device::write_c07x(u8 offset, u8 data)
+void a2eaux_franklin512_device::write_c07x(uint8_t offset, uint8_t data)
 {
    if ((offset & 0x9) == 1)
    {

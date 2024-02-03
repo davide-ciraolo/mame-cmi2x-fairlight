@@ -29,6 +29,12 @@ cmi_alphanumeric_keyboard_device::cmi_alphanumeric_keyboard_device(const machine
 {
 }
 
+void cmi_alphanumeric_keyboard_device::device_resolve_objects()
+{
+	m_txd_handler.resolve_safe();
+	m_rts_handler.resolve_safe();
+}
+
 void cmi_alphanumeric_keyboard_device::device_start()
 {
 }
@@ -51,22 +57,22 @@ u8 cmi_alphanumeric_keyboard_device::col_r()
 	}
 }
 
-void cmi_alphanumeric_keyboard_device::rxd_w(int state)
+WRITE_LINE_MEMBER( cmi_alphanumeric_keyboard_device::rxd_w )
 {
 	m_pia->cb2_w(state);
 }
 
-void cmi_alphanumeric_keyboard_device::cts_w(int state)
+WRITE_LINE_MEMBER( cmi_alphanumeric_keyboard_device::cts_w )
 {
 	m_pia->ca1_w(state);
 }
 
-void cmi_alphanumeric_keyboard_device::txd_w(int state)
+WRITE_LINE_MEMBER( cmi_alphanumeric_keyboard_device::txd_w )
 {
 	m_txd_handler(state);
 }
 
-void cmi_alphanumeric_keyboard_device::rts_w(int state)
+WRITE_LINE_MEMBER( cmi_alphanumeric_keyboard_device::rts_w )
 {
 	m_rts_handler(state);
 }

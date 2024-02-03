@@ -67,15 +67,11 @@ tanbus_device::tanbus_device(const machine_config &mconfig, const char *tag, dev
 {
 }
 
-tanbus_device::~tanbus_device()
-{
-}
-
 void tanbus_device::add_card(device_tanbus_interface *card, int num)
 {
 	card->m_tanbus = this;
 	card->m_page = num;
-	m_device_list.emplace_back(*card);
+	m_device_list.append(*card);
 }
 
 //-------------------------------------------------
@@ -84,6 +80,12 @@ void tanbus_device::add_card(device_tanbus_interface *card, int num)
 
 void tanbus_device::device_start()
 {
+	// resolve callbacks
+	m_out_irq_cb.resolve_safe();
+	m_out_nmi_cb.resolve_safe();
+	m_out_so_cb.resolve_safe();
+	m_out_pgm_cb.resolve_safe();
+
 	save_item(NAME(m_block_register));
 }
 
@@ -102,11 +104,19 @@ void tanbus_device::device_reset()
 
 void tanbus_device::set_inhibit_lines(offs_t offset)
 {
+	// prevent debugger from changing inhibit lines
+	if (machine().side_effects_disabled()) return;
+
 	// reset inhibit lines
 	m_inhram = m_inhrom = 0;
 
-	for (device_tanbus_interface &card : m_device_list)
-		card.set_inhibit_lines(offset, m_inhram, m_inhrom);
+	device_tanbus_interface *card = m_device_list.first();
+
+	while (card)
+	{
+		card->set_inhibit_lines(offset, m_inhram, m_inhrom);
+		card = card->next();
+	}
 }
 
 //-------------------------------------------------
@@ -119,15 +129,19 @@ uint8_t tanbus_device::read(offs_t offset)
 
 	set_inhibit_lines(offset);
 
-	for (device_tanbus_interface &card : m_device_list)
+	device_tanbus_interface *card = m_device_list.first();
+
+	while (card)
 	{
 		// set block enable line for current card
-		if (BIT(m_block_register, 4, 3) == card.m_page)
+		if ((card->m_page == 0) || ((m_block_register >> 4) & 7) == card->m_page)
 			m_block_enable = 1;
 		else
 			m_block_enable = 0;
 
-		data &= card.read(offset, m_inhrom, m_inhram, m_block_enable);
+		data &= card->read(offset, m_inhrom, m_inhram, m_block_enable);
+		card = card->next();
+
 	}
 
 	return data;
@@ -141,7 +155,7 @@ void tanbus_device::write(offs_t offset, uint8_t data)
 {
 	if (offset == 0xffff)
 	{
-		logerror("write: Memory management control %02x (read %d, write %d)\n", data, BIT(data, 4, 3), BIT(data, 0, 3));
+		logerror("write: Memory management control (read %d, write %d)\n", (data >> 4) & 7, data & 7);
 		m_block_register = data;
 	}
 	else if (offset >= 0xf800)
@@ -151,15 +165,18 @@ void tanbus_device::write(offs_t offset, uint8_t data)
 
 	set_inhibit_lines(offset);
 
-	for (device_tanbus_interface &card : m_device_list)
+	device_tanbus_interface *card = m_device_list.first();
+
+	while (card)
 	{
 		// set block enable line for current card
-		if (BIT(m_block_register, 0,3) == card.m_page)
+		if ((card->m_page == 0) || (m_block_register & 7) == card->m_page)
 			m_block_enable = 1;
 		else
 			m_block_enable = 0;
 
-		card.write(offset, data, m_inhrom, m_inhram, m_block_enable);
+		card->write(offset, data, m_inhrom, m_inhram, m_block_enable);
+		card = card->next();
 	}
 }
 
@@ -175,6 +192,7 @@ device_tanbus_interface::device_tanbus_interface(const machine_config &mconfig, 
 	: device_interface(device, "tanbus")
 	, m_tanbus(nullptr)
 	, m_page(0)
+	, m_next(nullptr)
 {
 }
 
@@ -186,20 +204,16 @@ device_tanbus_interface::device_tanbus_interface(const machine_config &mconfig, 
 
 // slot devices
 #include "bullsnd.h"
-#include "etirtc.h"
-#include "etisnd.h"
 #include "mpvdu.h"
 #include "ra32k.h"
 #include "radisc.h"
 #include "ravdu.h"
 #include "tanram.h"
-#include "tanrtc.h"
 #include "tandos.h"
 #include "tanex.h"
 #include "tanhrg.h"
 #include "tug64k.h"
 #include "tug8082.h"
-#include "tugcombo.h"
 #include "tugpgm.h"
 
 void tanex_devices(device_slot_interface &device)
@@ -210,29 +224,19 @@ void tanex_devices(device_slot_interface &device)
 void tanbus_devices(device_slot_interface &device)
 {
 	device.option_add("bullsnd", TANBUS_BULLSND);
-	device.option_add("etirtc", TANBUS_ETIRTC);
-	device.option_add("etisnd", TANBUS_ETISND);
-	//device.option_add("intelgraph", TANBUS_INTELGRAPH);
 	device.option_add("mpvdu", TANBUS_MPVDU);
 	device.option_add("tanram", TANBUS_TANRAM);
-	device.option_add("tanrtc", TANBUS_TANRTC);
 	device.option_add("tandos", TANBUS_TANDOS);
 	device.option_add("tanhrg", TANBUS_TANHRG);
 	device.option_add("tanhrgc", TANBUS_TANHRGC);
 	device.option_add("tug64k", TANBUS_TUG64K);
 	device.option_add("tug8082", TANBUS_TUG8082);
-	device.option_add("tugesc2716", TANBUS_TUGESC2716);
-	device.option_add("tugesc2732", TANBUS_TUGESC2732);
-	device.option_add("tugcombo2716", TANBUS_TUGCOMBO2716);
-	device.option_add("tugcombo2732", TANBUS_TUGCOMBO2732);
-	device.option_add("tugcombo6116", TANBUS_TUGCOMBO6116);
 	device.option_add("tugpgm", TANBUS_TUGPGM);
 }
 
 void tanbus6809_devices(device_slot_interface &device)
 {
-	device.option_add("ra32kram", TANBUS_RA32KRAM);
-	device.option_add("ra32krom", TANBUS_RA32KROM);
+	device.option_add("ra32k", TANBUS_RA32K);
 	device.option_add("radisc", TANBUS_RADISC);
 	device.option_add("ravdu", TANBUS_RAVDU);
 	device.option_add("tanram", TANBUS_TANRAM);

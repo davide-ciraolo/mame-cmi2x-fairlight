@@ -119,6 +119,8 @@ void wpcsnd_device::device_add_mconfig(machine_config &config)
 
 void wpcsnd_device::device_start()
 {
+	// resolve callback
+	m_reply_cb.resolve_safe();
 	// save states
 	save_item(NAME(m_latch));
 	save_item(NAME(m_reply));
@@ -139,7 +141,7 @@ void wpcsnd_device::device_reset()
 	m_reply_available = false;
 }
 
-void wpcsnd_device::ym2151_irq_w(int state)
+WRITE_LINE_MEMBER( wpcsnd_device::ym2151_irq_w)
 {
 	m_cpu->set_input_line(M6809_FIRQ_LINE,state ? ASSERT_LINE : CLEAR_LINE);
 }

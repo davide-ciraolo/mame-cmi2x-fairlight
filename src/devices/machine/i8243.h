@@ -47,8 +47,8 @@ public:
 	uint8_t p2_r();
 	void p2_w(uint8_t data);
 
-	void prog_w(int state);
-	void cs_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(prog_w);
+	DECLARE_WRITE_LINE_MEMBER(cs_w);
 
 protected:
 	// device-level overrides

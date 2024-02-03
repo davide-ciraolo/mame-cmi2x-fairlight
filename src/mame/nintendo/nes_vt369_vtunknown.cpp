@@ -26,9 +26,6 @@
 #include "nes_vt369_vtunknown_soc.h"
 #include "nes_vt32_soc.h"
 
-
-namespace {
-
 class nes_vt369_vtunknown_base_state : public driver_device
 {
 public:
@@ -70,7 +67,7 @@ protected:
 	required_region_ptr<uint8_t> m_prgrom;
 
 	uint8_t vt_rom_r(offs_t offset);
-	[[maybe_unused]] void vtspace_w(offs_t offset, uint8_t data);
+	void vtspace_w(offs_t offset, uint8_t data);
 
 	void configure_soc(nes_vt02_vt03_soc_device* soc);
 
@@ -98,9 +95,9 @@ public:
 	void vt_external_space_map_16mbyte(address_map& map);
 	void vt_external_space_map_8mbyte(address_map& map);
 	void vt_external_space_map_4mbyte(address_map& map);
-	[[maybe_unused]] void vt_external_space_map_2mbyte(address_map& map);
+	void vt_external_space_map_2mbyte(address_map& map);
 	void vt_external_space_map_1mbyte(address_map& map);
-	[[maybe_unused]] void vt_external_space_map_512kbyte(address_map& map);
+	void vt_external_space_map_512kbyte(address_map& map);
 
 	void init_lxcmcypp();
 
@@ -177,7 +174,7 @@ public:
 
 private:
 	uint8_t vt_rom_banked_r(offs_t offset);
-	[[maybe_unused]] void vt_external_space_map_fp_2x32mbyte(address_map& map);
+	void vt_external_space_map_fp_2x32mbyte(address_map& map);
 };
 
 uint8_t nes_vt369_vtunknown_base_state::vt_rom_r(offs_t offset)
@@ -892,9 +889,6 @@ void nes_vt369_vtunknown_state::init_lxcmcypp()
 		ROM[i] = bitswap<16>(ROM[i], 4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
 	}
 }
-
-} // anonymous namespace
-
 
 // Runs well, only issues in SMB3 which crashes
 CONS( 2017, bittboy,    0,        0,  nes_vt369_vtunknown_bt_2x16mb, nes_vt369_vtunknown, nes_vt369_vtunknown_cy_state, empty_init, "BittBoy",   "BittBoy Mini FC 300 in 1", MACHINE_IMPERFECT_GRAPHICS ) // has external banking (2x 16mbyte banks)

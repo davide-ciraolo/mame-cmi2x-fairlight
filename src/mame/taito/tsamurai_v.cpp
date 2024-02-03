@@ -112,13 +112,13 @@ void tsamurai_state::bgcolor_w(uint8_t data)
 	m_bgcolor = data;
 }
 
-void tsamurai_state::textbank1_w(int state)
+WRITE_LINE_MEMBER(tsamurai_state::textbank1_w)
 {
 	m_textbank1 = state;
 	m_foreground->mark_all_dirty();
 }
 
-void m660_state::textbank2_w(int state)
+WRITE_LINE_MEMBER(m660_state::textbank2_w)
 {
 	m_textbank2 = state;
 	m_foreground->mark_all_dirty();

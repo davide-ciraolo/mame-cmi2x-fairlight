@@ -94,7 +94,7 @@ void sv603_device::device_reset()
 //**************************************************************************
 
 template<int N>
-void sv603_device::joy_irq_w(int state)
+WRITE_LINE_MEMBER( sv603_device::joy_irq_w )
 {
 	m_expander->int_w(state);
 }

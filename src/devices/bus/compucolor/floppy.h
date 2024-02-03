@@ -12,6 +12,7 @@
 #pragma once
 
 #include "bus/rs232/rs232.h"
+#include "formats/ccvf_dsk.h"
 #include "imagedev/floppy.h"
 
 
@@ -49,9 +50,9 @@ public:
 	}
 	compucolor_floppy_port_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
-	void rw_w(int state) { if (m_dev) m_dev->rw_w(state); }
+	DECLARE_WRITE_LINE_MEMBER( rw_w ) { if (m_dev) m_dev->rw_w(state); }
 	void stepper_w(uint8_t data) { if (m_dev) m_dev->stepper_w(data); }
-	void select_w(int state) { if (m_dev) m_dev->select_w(state); }
+	DECLARE_WRITE_LINE_MEMBER( select_w ) { if (m_dev) m_dev->select_w(state); }
 
 protected:
 	// device-level overrides

@@ -4,7 +4,7 @@
 #include "emu.h"
 #include "pin64.h"
 
-static const char CAP_NAME[] = "pin64_%d.cap";
+#define CAP_NAME "pin64_%d.cap"
 
 // pin64_fileutil_t members
 
@@ -245,10 +245,11 @@ void pin64_t::start(int frames)
 	if (m_capture_file)
 		fatalerror("PIN64: Call to start() while already capturing\n");
 
-	auto filename = util::string_format(CAP_NAME, m_capture_index);
+	char name_buf[256];
+	sprintf(name_buf, CAP_NAME, m_capture_index);
 	m_capture_index++;
 
-	m_capture_file = fopen(filename.c_str(), "wb");
+	m_capture_file = fopen(name_buf, "wb");
 
 	m_capture_frames = frames;
 
@@ -487,17 +488,20 @@ void pin64_t::clear() {
 
 void pin64_t::init_capture_index()
 {
+	char name_buf[256];
+	bool found = true;
+
 	m_capture_index = 0;
 
-	while (true) {
-		auto filename = util::string_format(CAP_NAME, m_capture_index);
-		auto file = fopen(filename.c_str(), "rb");
+	do {
+		sprintf(name_buf, CAP_NAME, m_capture_index);
 
-		if (file == nullptr) {
+		FILE* temp = fopen(name_buf, "rb");
+		if (temp == nullptr) {
 			break;
 		} else {
-			fclose(file);
+			fclose(temp);
 			m_capture_index++;
 		}
-	}
+	} while(found);
 }

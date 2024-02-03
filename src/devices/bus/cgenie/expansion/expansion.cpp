@@ -53,6 +53,10 @@ cg_exp_slot_device::~cg_exp_slot_device()
 
 void cg_exp_slot_device::device_start()
 {
+	// resolve callbacks
+	m_int_handler.resolve_safe();
+	m_nmi_handler.resolve_safe();
+	m_reset_handler.resolve_safe();
 }
 
 

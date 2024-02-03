@@ -85,7 +85,7 @@ void a2052_device::autoconfig_base_address(offs_t address)
 	m_slot->cfgout_w(0);
 }
 
-void a2052_device::cfgin_w(int state)
+WRITE_LINE_MEMBER( a2052_device::cfgin_w )
 {
 	LOG("%s: configin_w (%d)\n", shortname(), state);
 

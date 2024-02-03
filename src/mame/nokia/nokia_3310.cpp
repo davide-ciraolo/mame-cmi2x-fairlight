@@ -22,14 +22,10 @@
 #include "emupal.h"
 #include "screen.h"
 
-#define LOG_MAD2_REGISTER_ACCESS    (1U << 1)
-#define LOG_CCONT_REGISTER_ACCESS   (1U << 2)
 
-#define VERBOSE (0)
-#include "logmacro.h"
+#define LOG_MAD2_REGISTER_ACCESS    (0)
+#define LOG_CCONT_REGISTER_ACCESS   (0)
 
-
-namespace {
 
 class noki3310_state : public driver_device
 {
@@ -114,6 +110,7 @@ private:
 };
 
 
+#if LOG_MAD2_REGISTER_ACCESS
 static const char * nokia_mad2_reg_desc(uint8_t offset)
 {
 	switch(offset)
@@ -201,7 +198,9 @@ static const char * nokia_mad2_reg_desc(uint8_t offset)
 	default:    return "<Unknown>";
 	}
 }
+#endif
 
+#if LOG_CCONT_REGISTER_ACCESS
 static const char * nokia_ccont_reg_desc(uint8_t offset)
 {
 	switch(offset)
@@ -225,6 +224,7 @@ static const char * nokia_ccont_reg_desc(uint8_t offset)
 	default:    return "<Unknown>";
 	}
 }
+#endif
 
 void noki3310_state::machine_start()
 {
@@ -330,7 +330,9 @@ void noki3310_state::nokia_ccont_w(uint8_t data)
 {
 	if (m_ccont.dc == false)
 	{
-		LOGMASKED(LOG_CCONT_REGISTER_ACCESS, "CCONT command %s %x\n", data & 4 ? "R" : "W", data>>3);
+#if LOG_CCONT_REGISTER_ACCESS
+		logerror("CCONT command %s %x\n", data & 4 ? "R" : "W", data>>3);
+#endif
 		m_ccont.cmd  = data;
 	}
 	else
@@ -376,7 +378,9 @@ void noki3310_state::nokia_ccont_w(uint8_t data)
 				break;
 		}
 
-		LOGMASKED(LOG_CCONT_REGISTER_ACCESS, "CCONT W %02x = %02x %s\n", addr, data, nokia_ccont_reg_desc(addr));
+#if LOG_CCONT_REGISTER_ACCESS
+		logerror("CCONT W %02x = %02x %s\n", addr, data, nokia_ccont_reg_desc(addr));
+#endif
 	}
 
 	m_ccont.dc = !m_ccont.dc;
@@ -402,7 +406,9 @@ uint8_t noki3310_state::nokia_ccont_r()
 
 	m_ccont.dc = !m_ccont.dc;
 
-	LOGMASKED(LOG_CCONT_REGISTER_ACCESS, "CCONT R %02x = %02x %s\n", addr, data, nokia_ccont_reg_desc(addr));
+#if LOG_CCONT_REGISTER_ACCESS
+	logerror("CCONT R %02x = %02x %s\n", addr, data, nokia_ccont_reg_desc(addr));
+#endif
 	return data;
 }
 
@@ -547,7 +553,9 @@ uint8_t noki3310_state::mad2_io_r(offs_t offset)
 			break;
 	}
 
-	LOGMASKED(LOG_MAD2_REGISTER_ACCESS, "MAD2 R %02x = %02x %s\n", offset, data, nokia_mad2_reg_desc(offset));
+#if LOG_MAD2_REGISTER_ACCESS
+	logerror("MAD2 R %02x = %02x %s\n", offset, data, nokia_mad2_reg_desc(offset));
+#endif
 	return data;
 }
 
@@ -592,29 +600,39 @@ void noki3310_state::mad2_io_w(offs_t offset, uint8_t data)
 			break;
 	}
 
-	LOGMASKED(LOG_MAD2_REGISTER_ACCESS, "MAD2 W %02x = %02x %s\n", offset, data, nokia_mad2_reg_desc(offset));
+#if LOG_MAD2_REGISTER_ACCESS
+	logerror("MAD2 W %02x = %02x %s\n", offset, data, nokia_mad2_reg_desc(offset));
+#endif
 }
 
 uint8_t noki3310_state::mad2_dspif_r(offs_t offset)
 {
-	LOGMASKED(LOG_MAD2_REGISTER_ACCESS, "MAD2 R %02x DSPIF\n", offset);
+#if LOG_MAD2_REGISTER_ACCESS
+	logerror("MAD2 R %02x DSPIF\n", offset);
+#endif
 	return 0;
 }
 
 void noki3310_state::mad2_dspif_w(offs_t offset, uint8_t data)
 {
-	LOGMASKED(LOG_MAD2_REGISTER_ACCESS, "MAD2 W %02x = %02x DSPIF\n", offset, data);
+#if LOG_MAD2_REGISTER_ACCESS
+	logerror("MAD2 W %02x = %02x DSPIF\n", offset, data);
+#endif
 }
 
 uint8_t noki3310_state::mad2_mcuif_r(offs_t offset)
 {
-	LOGMASKED(LOG_MAD2_REGISTER_ACCESS, "MAD2 R %02x MCUIF\n", offset);
+#if LOG_MAD2_REGISTER_ACCESS
+	logerror("MAD2 R %02x MCUIF\n", offset);
+#endif
 	return 0;
 }
 
 void noki3310_state::mad2_mcuif_w(offs_t offset, uint8_t data)
 {
-	LOGMASKED(LOG_MAD2_REGISTER_ACCESS, "MAD2 W %02x = %02x MCUIF\n", offset, data);
+#if LOG_MAD2_REGISTER_ACCESS
+	logerror("MAD2 W %02x = %02x MCUIF\n", offset, data);
+#endif
 }
 
 
@@ -864,8 +882,6 @@ ROM_START( noki8890 )
 	ROMX_LOAD("8890_12.20_ppmc.fls", 0x000000, 0x1d0000, CRC(77206f78) SHA1(a214a0d69760ecd8eeca0b9d82f95c94bdfe70ed), ROM_BIOS(0))
 	ROM_LOAD("8890 virgin eeprom 003d0000.fls", 0x1d0000, 0x030000, CRC(1d8ef3b5) SHA1(cc0924cfd4c0ce796fca157c640fc3183c2b5f2c))
 ROM_END
-
-} // anonymous namespace
 
 
 //    YEAR  NAME      PARENT  COMPAT  MACHINE   INPUT     CLASS           INIT        COMPANY  FULLNAME      FLAGS

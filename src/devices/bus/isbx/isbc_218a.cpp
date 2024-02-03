@@ -9,8 +9,6 @@
 #include "emu.h"
 #include "isbc_218a.h"
 
-#include "formats/flopimg.h"
-
 
 //**************************************************************************
 //  MACROS / CONSTANTS
@@ -26,12 +24,12 @@
 
 DEFINE_DEVICE_TYPE(ISBC_218A, isbc_218a_device, "isbc_218a", "ISBX 218a for ISBC")
 
-void isbc_218a_device::fdc_irq(int state)
+WRITE_LINE_MEMBER( isbc_218a_device::fdc_irq )
 {
 	m_slot->mintr1_w(state);
 }
 
-void isbc_218a_device::fdc_drq(int state)
+WRITE_LINE_MEMBER( isbc_218a_device::fdc_drq )
 {
 	m_slot->mdrqt_w(state);
 }

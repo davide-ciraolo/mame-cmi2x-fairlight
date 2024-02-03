@@ -732,7 +732,7 @@ TIMER_DEVICE_CALLBACK_MEMBER(bullet_state::ctc_tick)
 	m_ctc->trg2(0);
 }
 
-void bullet_state::dart_rxtxca_w(int state)
+WRITE_LINE_MEMBER( bullet_state::dart_rxtxca_w )
 {
 	m_dart->txca_w(state);
 	m_dart->rxca_w(state);
@@ -742,13 +742,13 @@ void bullet_state::dart_rxtxca_w(int state)
 //  Z80DART
 //-------------------------------------------------
 
-void bullet_state::dartardy_w(int state)
+WRITE_LINE_MEMBER( bullet_state::dartardy_w )
 {
 	m_dartardy = state;
 	update_dma_rdy();
 }
 
-void bullet_state::dartbrdy_w(int state)
+WRITE_LINE_MEMBER( bullet_state::dartbrdy_w )
 {
 	m_dartbrdy = state;
 	update_dma_rdy();
@@ -858,22 +858,22 @@ void bulletf_state::dma_mreq_w(offs_t offset, uint8_t data)
 //  Z80PIO
 //-------------------------------------------------
 
-void bullet_state::write_centronics_busy(int state)
+DECLARE_WRITE_LINE_MEMBER( bullet_state::write_centronics_busy )
 {
 	m_centronics_busy = state;
 }
 
-void bullet_state::write_centronics_perror(int state)
+DECLARE_WRITE_LINE_MEMBER( bullet_state::write_centronics_perror )
 {
 	m_centronics_perror = state;
 }
 
-void bullet_state::write_centronics_select(int state)
+DECLARE_WRITE_LINE_MEMBER( bullet_state::write_centronics_select )
 {
 	m_centronics_select = state;
 }
 
-void bullet_state::write_centronics_fault(int state)
+DECLARE_WRITE_LINE_MEMBER( bullet_state::write_centronics_fault )
 {
 	m_centronics_fault = state;
 }
@@ -929,7 +929,7 @@ void bulletf_state::pio_pa_w(uint8_t data)
 	m_scsibus->write_sel(BIT(data, 2));
 }
 
-void bulletf_state::cstrb_w(int state)
+WRITE_LINE_MEMBER( bulletf_state::cstrb_w )
 {
 	m_centronics->write_strobe(!state);
 }
@@ -952,13 +952,13 @@ static void bullet_35_floppies(device_slot_interface &device)
 	device.option_add("35dd", FLOPPY_35_DD);
 }
 
-void bullet_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( bullet_state::fdc_drq_w )
 {
 	m_fdrdy = !state;
 	update_dma_rdy();
 }
 
-void bulletf_state::req_w(int state)
+WRITE_LINE_MEMBER( bulletf_state::req_w )
 {
 	if (!state)
 	{

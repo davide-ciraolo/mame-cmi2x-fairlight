@@ -19,11 +19,12 @@
 
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -92,7 +93,7 @@ void nes_2a03pur_device::pcb_reset()
 
 void nes_2a03pur_device::write_l(offs_t offset, u8 data)
 {
-	LOG("2a03 puritans write_l, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("2a03 puritans write_l, offset: %04x, data: %02x\n", offset, data));
 	offset += 0x100;
 	if (offset >= 0x1000)
 		m_reg[offset & 7] = data;
@@ -100,7 +101,7 @@ void nes_2a03pur_device::write_l(offs_t offset, u8 data)
 
 u8 nes_2a03pur_device::read_h(offs_t offset)
 {
-	LOG("2a03 puritans read_h, offset: %04x\n", offset);
+	LOG_MMC(("2a03 puritans read_h, offset: %04x\n", offset));
 
 	return m_prg[((m_reg[BIT(offset, 12, 3)] * 0x1000) + (offset & 0x0fff)) & (m_prg_size - 1)];
 }

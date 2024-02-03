@@ -12,6 +12,7 @@
 #include "exp.h"
 #include "imagedev/floppy.h"
 #include "machine/wd_fdc.h"
+#include "formats/acorn_dsk.h"
 
 //**************************************************************************
 //  TYPE DEFINITIONS

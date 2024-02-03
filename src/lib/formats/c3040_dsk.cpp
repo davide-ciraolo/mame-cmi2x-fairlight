@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/c3040_dsk.cpp
+    formats/c3040_dsk.c
 
     Commodore 3040 sector disk image format
 
@@ -14,17 +14,17 @@ c3040_format::c3040_format() : d64_format(file_formats)
 {
 }
 
-const char *c3040_format::name() const noexcept
+const char *c3040_format::name() const
 {
 	return "c3040";
 }
 
-const char *c3040_format::description() const noexcept
+const char *c3040_format::description() const
 {
 	return "Commodore 3040 disk image";
 }
 
-const char *c3040_format::extensions() const noexcept
+const char *c3040_format::extensions() const
 {
 	return "d67";
 }

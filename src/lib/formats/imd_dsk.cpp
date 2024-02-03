@@ -2,7 +2,7 @@
 // copyright-holders:Miodrag Milanovic
 /*********************************************************************
 
-    formats/imd_dsk.cpp
+    formats/imd_dsk.c
 
     IMD disk images
 
@@ -23,7 +23,6 @@ struct imddsk_tag
 {
 	int heads;
 	int tracks;
-	int track_sectors[84*2]; /* number of sectors for each track */
 	int sector_size;
 	uint64_t track_offsets[84*2]; /* offset within data for each track */
 };
@@ -59,11 +58,6 @@ static int imd_get_heads_per_disk(floppy_image_legacy *floppy)
 static int imd_get_tracks_per_disk(floppy_image_legacy *floppy)
 {
 	return get_tag(floppy)->tracks;
-}
-
-static int imd_get_sectors_per_track(floppy_image_legacy *floppy, int head, int track)
-{
-	return get_tag(floppy)->track_sectors[(track<<1) + head];
 }
 
 static uint64_t imd_get_track_offset(floppy_image_legacy *floppy, int head, int track)
@@ -340,11 +334,9 @@ FLOPPY_CONSTRUCT( imd_dsk_construct )
 	tag->heads = 1;
 	do {
 		floppy_image_read(floppy, header, pos, 5);
-		sector_num = header[3];
-		int track = (header[1]<<1) + (header[2] & 1);
 		if ((header[2] & 1)==1) tag->heads = 2;
-		tag->track_offsets[track] = pos;
-		tag->track_sectors[track] = sector_num;
+		tag->track_offsets[(header[1]<<1) + (header[2] & 1)] = pos;
+		sector_num = header[3];
 		pos += 5 + sector_num; // skip header and sector numbering map
 		if(header[2] & 0x80) pos += sector_num; // skip cylinder numbering map
 		if(header[2] & 0x40) pos += sector_num; // skip head numbering map
@@ -373,7 +365,6 @@ FLOPPY_CONSTRUCT( imd_dsk_construct )
 	callbacks->get_heads_per_disk = imd_get_heads_per_disk;
 	callbacks->get_tracks_per_disk = imd_get_tracks_per_disk;
 	callbacks->get_indexed_sector_info = imd_get_indexed_sector_info;
-	callbacks->get_sectors_per_track = imd_get_sectors_per_track;
 
 	return FLOPPY_ERROR_SUCCESS;
 }
@@ -383,7 +374,7 @@ FLOPPY_CONSTRUCT( imd_dsk_construct )
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/imd_dsk.cpp
+    formats/imd_dsk.c
 
     IMD disk images
 
@@ -393,17 +384,17 @@ imd_format::imd_format()
 {
 }
 
-const char *imd_format::name() const noexcept
+const char *imd_format::name() const
 {
 	return "imd";
 }
 
-const char *imd_format::description() const noexcept
+const char *imd_format::description() const
 {
 	return "IMD disk image";
 }
 
-const char *imd_format::extensions() const noexcept
+const char *imd_format::extensions() const
 {
 	return "imd";
 }
@@ -434,7 +425,7 @@ int imd_format::identify(util::random_read &io, uint32_t form_factor, const std:
 	return 0;
 }
 
-bool imd_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool imd_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	std::vector<uint8_t> comment;
 	std::vector<std::vector<uint8_t> > snum;
@@ -466,7 +457,7 @@ bool imd_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 		return false;
 
 	int tracks, heads;
-	image.get_maximal_geometry(tracks, heads);
+	image->get_maximal_geometry(tracks, heads);
 
 	mode.clear();
 	track.clear();
@@ -648,7 +639,7 @@ bool imd_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 	return true;
 }
 
-bool imd_format::supports_save() const noexcept
+bool imd_format::supports_save() const
 {
 	return false;
 }

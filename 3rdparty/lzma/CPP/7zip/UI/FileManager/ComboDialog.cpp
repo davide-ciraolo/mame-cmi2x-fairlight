@@ -5,7 +5,7 @@
 
 #include "../../../Windows/Control/Static.h"
 
-#ifdef Z7_LANG
+#ifdef LANG
 #include "LangUtils.h"
 #endif
 
@@ -13,7 +13,7 @@ using namespace NWindows;
 
 bool CComboDialog::OnInit()
 {
-  #ifdef Z7_LANG
+  #ifdef LANG
   LangSetDlgItems(*this, NULL, 0);
   #endif
   _comboBox.Attach(GetItem(IDC_COMBO));

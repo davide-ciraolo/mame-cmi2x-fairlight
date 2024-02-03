@@ -6,14 +6,12 @@
 //
 //============================================================
 
-#ifndef MAME_RENDER_BGFX_PARAMREADER_H
-#define MAME_RENDER_BGFX_PARAMREADER_H
-
 #pragma once
 
-#include "statereader.h"
+#ifndef __DRAWBGFX_PARAM_READER__
+#define __DRAWBGFX_PARAM_READER__
 
-#include <string>
+#include "statereader.h"
 
 class bgfx_parameter;
 class chain_manager;
@@ -21,13 +19,13 @@ class chain_manager;
 class parameter_reader : public state_reader
 {
 public:
-	static bgfx_parameter* read_from_value(const Value& value, const std::string &prefix, chain_manager& chains);
+	static bgfx_parameter* read_from_value(const Value& value, std::string prefix, chain_manager& chains);
 
 private:
-	static bool validate_parameters(const Value& value, const std::string &prefix);
+	static bool validate_parameters(const Value& value, std::string prefix);
 
 	static const int TYPE_COUNT = 3;
 	static const string_to_enum TYPE_NAMES[TYPE_COUNT];
 };
 
-#endif // MAME_RENDER_BGFX_PARAMREADER_H
+#endif // __DRAWBGFX_PARAM_READER__

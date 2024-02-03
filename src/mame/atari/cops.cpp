@@ -43,14 +43,11 @@
 
 #include "cops.lh"
 
-#define LOG_CDROM   (1U << 1)
-#define LOG_DACIA   (1U << 2)
-
-#define VERBOSE (LOG_CDROM | LOG_DACIA)
-#include "logmacro.h"
-
 
 namespace {
+
+#define LOG_CDROM   1
+#define LOG_DACIA   1
 
 #define CMP_REGISTER 0
 #define AUX_REGISTER 1
@@ -68,16 +65,6 @@ public:
 		, m_switches(*this, "SW%u", 0U)
 		, m_steer(*this, "STEER")
 		, m_digits(*this, "digit%u", 0U)
-		, m_offroad_right_lamp(*this, "Offroad Right %u Lamp", 1U)
-		, m_offroad_left_lamp(*this, "Offroad Left %u Lamp", 1U)
-		, m_damage_lamp(*this, "Damage Lamp")
-		, m_stop_lamp(*this, "Stop Lamp")
-		, m_gun_active_right_lamp(*this, "Gun Active Right Lamp")
-		, m_gun_active_left_lamp(*this, "Gun Active Left Lamp")
-		, m_vest_hit_lamp(*this, "Vest Hit %u Lamp", 1U)
-		, m_flash_red_lamp(*this, "Flash Red Lamp")
-		, m_flash_blue_lamp(*this, "Flash Blue Lamp")
-		, m_bullet_lamp(*this, "Bullet Lamp %u", 1U)
 		, m_irq(0)
 	{ }
 
@@ -104,16 +91,6 @@ private:
 	required_ioport_array<3> m_switches;
 	optional_ioport m_steer;
 	output_finder<16> m_digits;
-	output_finder<4> m_offroad_right_lamp;
-	output_finder<4> m_offroad_left_lamp;
-	output_finder<> m_damage_lamp;
-	output_finder<> m_stop_lamp;
-	output_finder<> m_gun_active_right_lamp;
-	output_finder<> m_gun_active_left_lamp;
-	output_finder<3> m_vest_hit_lamp;
-	output_finder<> m_flash_red_lamp;
-	output_finder<> m_flash_blue_lamp;
-	output_finder<6> m_bullet_lamp;
 
 	// screen updates
 	[[maybe_unused]] uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
@@ -123,10 +100,10 @@ private:
 	uint8_t io1_lm_r(offs_t offset);
 	void io2_w(offs_t offset, uint8_t data);
 	uint8_t io2_r(offs_t offset);
-	void dacia_irq(int state);
-	[[maybe_unused]] void ld_w(int state);
-	void via1_irq(int state);
-	void via2_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(dacia_irq);
+	[[maybe_unused]] DECLARE_WRITE_LINE_MEMBER(ld_w);
+	DECLARE_WRITE_LINE_MEMBER(via1_irq);
+	DECLARE_WRITE_LINE_MEMBER(via2_irq);
 	void dacia_receive(uint8_t data);
 	void update_dacia_irq();
 	void dacia_w(offs_t offset, uint8_t data);
@@ -242,12 +219,12 @@ void cops_state::cdrom_data_w(uint8_t data)
 	const char *regs[4] = { "CMD", "PARAM", "WRITE", "CTRL" };
 	m_cdrom_data = bitswap<8>(data,0,1,2,3,4,5,6,7);
 	uint8_t reg = ((m_cdrom_ctrl & 4) >> 1) | ((m_cdrom_ctrl & 8) >> 3);
-	LOGMASKED(LOG_CDROM, "%s:cdrom_data_w(reg = %s, data = %02x)\n", machine().describe_context(), regs[reg & 0x03], m_cdrom_data);
+	if (LOG_CDROM) logerror("%s:cdrom_data_w(reg = %s, data = %02x)\n", machine().describe_context(), regs[reg & 0x03], m_cdrom_data);
 }
 
 void cops_state::cdrom_ctrl_w(uint8_t data)
 {
-	LOGMASKED(LOG_CDROM, "%s:cdrom_ctrl_w(%02x)\n", machine().describe_context(), data);
+	if (LOG_CDROM) logerror("%s:cdrom_ctrl_w(%02x)\n", machine().describe_context(), data);
 	m_cdrom_ctrl = data;
 }
 
@@ -255,7 +232,7 @@ uint8_t cops_state::cdrom_data_r()
 {
 	const char *regs[4] = { "STATUS", "RESULT", "READ", "FIFOST" };
 	uint8_t reg = ((m_cdrom_ctrl & 4) >> 1) | ((m_cdrom_ctrl & 8) >> 3);
-	LOGMASKED(LOG_CDROM, "%s:cdrom_data_r(reg = %s)\n", machine().describe_context(), regs[reg & 0x03]);
+	if (LOG_CDROM) logerror("%s:cdrom_data_r(reg = %s)\n", machine().describe_context(), regs[reg & 0x03]);
 	return machine().rand()&0xff;
 }
 /*************************************
@@ -280,7 +257,7 @@ TIMER_CALLBACK_MEMBER(cops_state::ld_timer_callback)
 	}
 }
 
-void cops_state::ld_w(int state)
+WRITE_LINE_MEMBER(cops_state::ld_w)
 {
 	m_lddata <<= 1;
 
@@ -415,7 +392,7 @@ uint8_t cops_state::dacia_r(offs_t offset)
 			csr |= (m_dacia_dtr1 << 1);
 			csr |= (m_dacia_cts <<4);
 			csr |= (m_dacia_fe1 <<7);
-			LOGMASKED(LOG_DACIA, "CSR1 %02x\n",csr);
+			if (LOG_DACIA) logerror("CSR1 %02x\n",csr);
 			return csr;
 		}
 
@@ -424,8 +401,8 @@ uint8_t cops_state::dacia_r(offs_t offset)
 			m_dacia_receiver_full = 0;
 			m_dacia_fe1=0;
 
-//          LOGMASKED(LOG_DACIA, "RDR1 %02x\n",m_dacia_receiver_data);
-			LOGMASKED(LOG_DACIA, "RDR1 %02x\n",m_ld->status_r());
+//          if (LOG_DACIA) logerror("RDR1 %02x\n",m_dacia_receiver_data);
+			if (LOG_DACIA) logerror("RDR1 %02x\n",m_ld->status_r());
 			return m_ld->status_r();
 		}
 		case 4: /* ISR2: Interrupt Status Register */
@@ -443,7 +420,7 @@ uint8_t cops_state::dacia_r(offs_t offset)
 			csr2 |= (m_dacia_dtr2 << 1);
 			csr2 |= (m_dacia_cts <<4);
 			csr2 |= (m_dacia_fe2 <<7);
-			LOGMASKED(LOG_DACIA, "CSR2 %02x\n",csr2);
+			if (LOG_DACIA) logerror("CSR2 %02x\n",csr2);
 			return csr2;
 		}
 
@@ -451,12 +428,12 @@ uint8_t cops_state::dacia_r(offs_t offset)
 			m_dacia_receiver_full2 = 0;
 			m_dacia_fe2=0;
 
-			LOGMASKED(LOG_DACIA, "RDR2 %02x\n",m_ld->status_r());
+			if (LOG_DACIA) logerror("RDR2 %02x\n",m_ld->status_r());
 			return m_ld->status_r();
 
 
-		default:
-			LOGMASKED(LOG_DACIA, "%s:dacia_r(%02x)\n", machine().describe_context(), offset);
+			default:
+			if (LOG_DACIA) logerror("%s:dacia_r(%02x)\n", machine().describe_context(), offset);
 			return 0;
 	}
 }
@@ -476,7 +453,7 @@ void cops_state::dacia_w(offs_t offset, uint8_t data)
 			{
 				m_dacia_irq1_reg &= ~(data & 0x7f);
 			}
-			LOGMASKED(LOG_DACIA, "DACIA IRQ 1 Register: %02x\n", m_dacia_irq1_reg);
+			if (LOG_DACIA) logerror("DACIA IRQ 1 Register: %02x\n", m_dacia_irq1_reg);
 			update_dacia_irq();
 			break;
 
@@ -488,7 +465,7 @@ void cops_state::dacia_w(offs_t offset, uint8_t data)
 				m_parity_1 = (data & 0x04);
 				m_parity_mode_1 = ((data & 0x18) >> 3);
 				m_bpc_1 = ((data & 0x60) >> 5) +5;
-				LOGMASKED(LOG_DACIA, "DACIA Format Register: %02x\n", data);
+				if (LOG_DACIA) logerror("DACIA Format Register: %02x\n", data);
 			}
 			else // Control register
 			{
@@ -503,11 +480,11 @@ void cops_state::dacia_w(offs_t offset, uint8_t data)
 				{
 					m_dacia_reg1 = CMP_REGISTER;
 				}
-				LOGMASKED(LOG_DACIA, "DACIA TIME %02d\n", (XTAL(3'686'400) / m_dacia_ic_div_1).value());
+				if (LOG_DACIA) logerror("DACIA TIME %02d\n", (XTAL(3'686'400) / m_dacia_ic_div_1).value());
 
 //              m_ld_timer->adjust(attotime::from_hz(XTAL(3'686'400) / m_dacia_ic_div_1), 0, attotime::from_hz(XTAL(3'686'400) / m_dacia_ic_div_1));
 
-				LOGMASKED(LOG_DACIA, "DACIA Ctrl Register: %02x\n", data);
+				if (LOG_DACIA) logerror("DACIA Ctrl Register: %02x\n", data);
 
 			}
 			break;
@@ -517,16 +494,16 @@ void cops_state::dacia_w(offs_t offset, uint8_t data)
 			{
 				m_dacia_cmp1 = 1;
 				m_dacia_cmpval1 = data;
-				LOGMASKED(LOG_DACIA, "DACIA Compare mode: %02x \n", data);
+				if (LOG_DACIA) logerror("DACIA Compare mode: %02x \n", data);
 //              update_dacia_irq();
 			}
 			else
 			{
-				LOGMASKED(LOG_DACIA, "DACIA Aux ctrl: %02x \n", data);
+				if (LOG_DACIA) logerror("DACIA Aux ctrl: %02x \n", data);
 			}
 			[[fallthrough]]; // FIXME: really?
 		case 3: /* Transmit Data Register 1 */
-			LOGMASKED(LOG_DACIA, "DACIA Transmit: %02x %c\n", data, (char)data);
+			if (LOG_DACIA) logerror("DACIA Transmit: %02x %c\n", data, (char)data);
 			m_ld->command_w(data);
 			break;
 
@@ -541,7 +518,7 @@ void cops_state::dacia_w(offs_t offset, uint8_t data)
 			{
 				m_dacia_irq2_reg &= ~(data & 0x7f);
 			}
-			LOGMASKED(LOG_DACIA, "DACIA IRQ 2 Register: %02x\n", m_dacia_irq2_reg);
+			if (LOG_DACIA) logerror("DACIA IRQ 2 Register: %02x\n", m_dacia_irq2_reg);
 			update_dacia_irq();
 			break;
 
@@ -553,7 +530,7 @@ void cops_state::dacia_w(offs_t offset, uint8_t data)
 				m_parity_2 = (data & 0x04);
 				m_parity_mode_2 = ((data & 0x18) >> 3);
 				m_bpc_2 = ((data & 0x60) >> 5) +5;
-				LOGMASKED(LOG_DACIA, "DACIA Format Register 2: %02x\n", data);
+				if (LOG_DACIA) logerror("DACIA Format Register 2: %02x\n", data);
 			}
 			else // Control register
 			{
@@ -568,11 +545,11 @@ void cops_state::dacia_w(offs_t offset, uint8_t data)
 				{
 					m_dacia_reg2 = CMP_REGISTER;
 				}
-				LOGMASKED(LOG_DACIA, "DACIA TIME 2 %02d\n", (XTAL(3'686'400) / m_dacia_ic_div_1).value());
+				if (LOG_DACIA) logerror("DACIA TIME 2 %02d\n", (XTAL(3'686'400) / m_dacia_ic_div_1).value());
 
 				m_ld_timer->adjust(attotime::from_hz(XTAL(3'686'400) / m_dacia_ic_div_2), 0, attotime::from_hz(XTAL(3'686'400) / m_dacia_ic_div_2));
 
-				LOGMASKED(LOG_DACIA, "DACIA Ctrl Register 2: %02x\n", data);
+				if (LOG_DACIA) logerror("DACIA Ctrl Register 2: %02x\n", data);
 
 			}
 			break;
@@ -582,16 +559,16 @@ void cops_state::dacia_w(offs_t offset, uint8_t data)
 			{
 				m_dacia_cmp2 =1;
 				m_dacia_cmpval2=data;
-				LOGMASKED(LOG_DACIA, "DACIA Compare mode 2: %02x \n", data);
+				if (LOG_DACIA) logerror("DACIA Compare mode 2: %02x \n", data);
 //              update_dacia_irq();
 			}
 			else
 			{
-				LOGMASKED(LOG_DACIA, "DACIA Aux ctrl 2: %02x \n", data);
+				if (LOG_DACIA) logerror("DACIA Aux ctrl 2: %02x \n", data);
 			}
 			[[fallthrough]]; // FIXME: really?
 		case 7: /* Transmit Data Register 2 */
-			LOGMASKED(LOG_DACIA, "DACIA Transmit 2: %02x %c\n", data, (char)data);
+			if (LOG_DACIA) logerror("DACIA Transmit 2: %02x %c\n", data, (char)data);
 
 		//  for (int i=0; i <8; i++)
 			{
@@ -674,19 +651,23 @@ void cops_state::io1_w(offs_t offset, uint8_t data)
 			m_lcd_data_h = data;
 			break;
 		case 0x04: /* WOP4 */
-			for (int i = 3; i >= 0; i--)
-				m_offroad_right_lamp[i] = BIT(data, i + 4);
-			for (int i = 3; i >= 0; i--)
-				m_offroad_left_lamp[i] = BIT(data, i);
+			output().set_value("Offroad Right 4 Lamp", data & 0x80);
+			output().set_value("Offroad Right 3 Lamp", data & 0x40);
+			output().set_value("Offroad Right 2 Lamp", data & 0x20);
+			output().set_value("Offroad Right 1 Lamp", data & 0x10);
+			output().set_value("Offroad Left 4 Lamp", data & 0x08);
+			output().set_value("Offroad Left 3 Lamp", data & 0x04);
+			output().set_value("Offroad Left 2 Lamp", data & 0x02);
+			output().set_value("Offroad Left 1 Lamp", data & 0x01);
 			break;
 		case 0x05: /* WOP5 */
-			m_damage_lamp = BIT(data, 7);
-			m_stop_lamp = BIT(data, 6);
-			m_gun_active_right_lamp = BIT(data, 5);
-			m_vest_hit_lamp[1] = BIT(data, 4);
-			m_vest_hit_lamp[2] = BIT(data, 2);
-			m_gun_active_left_lamp = BIT(data, 1);
-			m_vest_hit_lamp[0] = BIT(data, 0);
+			output().set_value("Damage Lamp", data & 0x80);
+			output().set_value("Stop Lamp", data & 0x40);
+			output().set_value("Gun Active Right Lamp", data & 0x20);
+			output().set_value("Vest Hit 2 Lamp", data & 0x10);
+			output().set_value("Vest Hit 3 Lamp", data & 0x04);
+			output().set_value("Gun Active Left Lamp", data & 0x02);
+			output().set_value("Vest Hit 1 Lamp", data & 0x01);
 			break;
 		case 0x06: /* WOP6 */
 			logerror("WOP6: data = %02x\n", data);
@@ -720,13 +701,17 @@ void cops_state::io2_w(offs_t offset, uint8_t data)
 	switch( offset & 0x0f )
 	{
 		case 0x02:
-			m_flash_red_lamp = BIT(data, 0);
-			m_flash_blue_lamp = BIT(data, 7);
+			output().set_value("Flash Red Lamp", data & 0x01);
+			output().set_value("Flash Blue Lamp", data & 0x80);
 			if ( data & ~0x91 ) logerror("Unknown io2_w, offset = %02x, data = %02x\n", offset, data);
 			break;
 		case 0x04:
-			for (int i = 5; i >= 0; i--)
-				m_bullet_lamp[i] = BIT(data, i);
+			output().set_value("Bullet Lamp 6", data & 0x20);
+			output().set_value("Bullet Lamp 5", data & 0x10);
+			output().set_value("Bullet Lamp 4", data & 0x08);
+			output().set_value("Bullet Lamp 3", data & 0x04);
+			output().set_value("Bullet Lamp 2", data & 0x02);
+			output().set_value("Bullet Lamp 1", data & 0x01);
 			if ( data & ~0x3f ) logerror("Unknown io2_w, offset = %02x, data = %02x\n", offset, data);
 			break;
 		default:
@@ -749,7 +734,7 @@ void cops_state::io2_w(offs_t offset, uint8_t data)
  *
  *************************************/
 
-void cops_state::via1_irq(int state)
+WRITE_LINE_MEMBER(cops_state::via1_irq)
 {
 	if ( state == ASSERT_LINE )
 	{
@@ -785,7 +770,7 @@ void cops_state::via1_cb1_w(uint8_t data)
  *
  *************************************/
 
-void cops_state::via2_irq(int state)
+WRITE_LINE_MEMBER(cops_state::via2_irq)
 {
 	if ( state == ASSERT_LINE )
 	{
@@ -890,16 +875,6 @@ INPUT_PORTS_END
 void cops_state::machine_start()
 {
 	m_digits.resolve();
-	m_offroad_right_lamp.resolve();
-	m_offroad_left_lamp.resolve();
-	m_damage_lamp.resolve();
-	m_stop_lamp.resolve();
-	m_gun_active_right_lamp.resolve();
-	m_gun_active_left_lamp.resolve();
-	m_vest_hit_lamp.resolve();
-	m_flash_red_lamp.resolve();
-	m_flash_blue_lamp.resolve();
-	m_bullet_lamp.resolve();
 
 	m_ld_timer = timer_alloc(FUNC(cops_state::ld_timer_callback), this);
 

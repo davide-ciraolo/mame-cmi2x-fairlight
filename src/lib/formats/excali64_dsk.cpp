@@ -2,7 +2,7 @@
 // copyright-holders:Robbbert
 /*********************************************************************
 
-    formats/excali64_dsk.cpp
+    formats/excali64_dsk.c
 
     Excalibur 64 disk image format
 
@@ -14,17 +14,17 @@ excali64_format::excali64_format() : wd177x_format(formats)
 {
 }
 
-const char *excali64_format::name() const noexcept
+const char *excali64_format::name() const
 {
 	return "excali64";
 }
 
-const char *excali64_format::description() const noexcept
+const char *excali64_format::description() const
 {
 	return "Excalibur 64 disk image";
 }
 
-const char *excali64_format::extensions() const noexcept
+const char *excali64_format::extensions() const
 {
 	return "raw";
 }

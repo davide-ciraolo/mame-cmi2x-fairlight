@@ -62,8 +62,8 @@ public:
 
 	void install_read_write_handlers(address_space& space);
 
-	void irl_w(int state);
-	void halt_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irl_w);
+	DECLARE_WRITE_LINE_MEMBER(halt_w);
 
 	void inten();
 	void clear_service();
@@ -97,8 +97,8 @@ protected:
 	required_ioport m_select_code_port;
 
 	// card device handling
-	void irl_w(int state);
-	void halt_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irl_w);
+	DECLARE_WRITE_LINE_MEMBER(halt_w);
 };
 
 // device type definition

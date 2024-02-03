@@ -43,7 +43,7 @@ protected:
 	virtual const tiny_rom_entry *device_rom_region() const override;
 
 private:
-	void ide_interrupt(int state);
+	DECLARE_WRITE_LINE_MEMBER( ide_interrupt );
 
 	required_device<ata_interface_device> m_ata;
 	required_ioport m_config;

@@ -60,7 +60,7 @@ public:
 
 	uint8_t read();
 
-	int da_r() { return m_da; }
+	DECLARE_READ_LINE_MEMBER(da_r) { return m_da; }
 
 protected:
 	mm74c922_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, int max_y);

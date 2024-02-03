@@ -6,8 +6,8 @@
  *
  ******************************************/
 
-#ifndef MAME_NEC_PC9801_H
-#define MAME_NEC_PC9801_H
+#ifndef MAME_INCLUDES_PC9801_H
+#define MAME_INCLUDES_PC9801_H
 
 #pragma once
 
@@ -218,11 +218,10 @@ private:
 
 	void sasi_data_w(uint8_t data);
 	uint8_t sasi_data_r();
-	void write_sasi_io(int state);
-	void write_sasi_req(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_sasi_io);
+	DECLARE_WRITE_LINE_MEMBER(write_sasi_req);
 	uint8_t sasi_status_r();
 	void sasi_ctrl_w(uint8_t data);
-	void draw_text(bitmap_rgb32 &bitmap, uint32_t addr, int y, int wd, int pitch, int lr, int cursor_on, int cursor_addr, bool lower);
 
 //  uint8_t winram_r();
 //  void winram_w(uint8_t data);
@@ -246,7 +245,7 @@ protected:
 
 	bool fdc_drive_ready_r(upd765a_device *fdc);
 private:
-	void fdc_2dd_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(fdc_2dd_irq);
 
 	uint8_t fdc_2dd_ctrl_r();
 	void fdc_2dd_ctrl_w(uint8_t data);
@@ -259,21 +258,19 @@ protected:
 	uint8_t m_dma_autoinc[4];
 	int m_dack;
 
-	virtual uint8_t dma_read_byte(offs_t offset);
-	virtual void dma_write_byte(offs_t offset, uint8_t data);
-
 private:
 	void dmapg4_w(offs_t offset, uint8_t data);
 
 	inline void set_dma_channel(int channel, int state);
 
-	void dma_hrq_changed(int state);
-	void tc_w(int state);
-
-	void dack0_w(int state);
-	void dack1_w(int state);
-	void dack2_w(int state);
-	void dack3_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(dma_hrq_changed);
+	DECLARE_WRITE_LINE_MEMBER(tc_w);
+	uint8_t dma_read_byte(offs_t offset);
+	void dma_write_byte(offs_t offset, uint8_t data);
+	DECLARE_WRITE_LINE_MEMBER(dack0_w);
+	DECLARE_WRITE_LINE_MEMBER(dack1_w);
+	DECLARE_WRITE_LINE_MEMBER(dack2_w);
+	DECLARE_WRITE_LINE_MEMBER(dack3_w);
 
 //  Video
 protected:
@@ -313,13 +310,14 @@ protected:
 private:
 	UPD7220_DRAW_TEXT_LINE_MEMBER( hgdc_draw_text );
 
-	void vrtc_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(vrtc_irq);
 	void vrtc_clear_w(uint8_t data);
 	uint8_t txt_scrl_r(offs_t offset);
 	void txt_scrl_w(offs_t offset, uint8_t data);
 
-	// (virtual is necessary for H98 high-reso mode, PC9821-E02, SVGA binds)
-	virtual uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
+	// TODO: make this virtual
+	// (necessary for H98 high-reso mode, PC9821-E02, SVGA binds)
+	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
 	uint8_t m_font_line = 0;
 	std::unique_ptr<uint16_t[]> m_tvram;
@@ -374,8 +372,6 @@ public:
 	void pc9801ux(machine_config &config);
 	void pc9801vx(machine_config &config);
 	void pc9801rs(machine_config &config);
-	void pc9801dx(machine_config &config);
-	void pc9801fs(machine_config &config);
 
 	void init_pc9801vm_kanji();
 
@@ -384,8 +380,6 @@ protected:
 
 	void pc9801rs_io(address_map &map);
 	void pc9801rs_map(address_map &map);
-	void pc9801ux_io(address_map &map);
-	void pc9801ux_map(address_map &map);
 
 	uint16_t grcg_gvram_r(offs_t offset, uint16_t mem_mask = ~0);
 	void grcg_gvram_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
@@ -416,7 +410,6 @@ protected:
 
 	void ppi_sys_dac_portc_w(uint8_t data);
 	virtual u8 ppi_prn_portb_r() override;
-	uint32_t a20_286(bool state);
 
 	DECLARE_MACHINE_START(pc9801rs);
 	DECLARE_MACHINE_RESET(pc9801rs);
@@ -425,14 +418,8 @@ protected:
 	u8 m_dma_access_ctrl = 0;
 	u8 m_ide_sel = 0;
 
-	virtual uint8_t dma_read_byte(offs_t offset) override;
-	virtual void dma_write_byte(offs_t offset, uint8_t data) override;
-
 	// starting from PC9801VF/U buzzer is substituted with a DAC1BIT
 	bool m_dac1bit_disable;
-
-	uint8_t pc9801rs_knjram_r(offs_t offset);
-	void pc9801rs_knjram_w(offs_t offset, uint8_t data);
 
 	required_ioport m_dsw3;
 private:
@@ -440,6 +427,13 @@ private:
 //  optional_device<dac_1bit_device> m_dac1bit;
 	required_device<speaker_sound_device> m_dac1bit;
 
+	void pc9801ux_io(address_map &map);
+	void pc9801ux_map(address_map &map);
+
+	uint32_t a20_286(bool state);
+
+	uint8_t pc9801rs_knjram_r(offs_t offset);
+	void pc9801rs_knjram_w(offs_t offset, uint8_t data);
 	void pc9801rs_bank_w(offs_t offset, uint8_t data);
 	uint8_t midi_r();
 
@@ -453,8 +447,8 @@ private:
 	template <unsigned port> u8 fdc_2hd_2dd_ctrl_r();
 	template <unsigned port> void fdc_2hd_2dd_ctrl_w(u8 data);
 
-	void fdc_irq_w(int state);
-	void fdc_drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(fdc_irq_w);
+	DECLARE_WRITE_LINE_MEMBER(fdc_drq_w);
 
 	emu_timer *m_fdc_timer = nullptr;
 
@@ -553,4 +547,4 @@ private:
 	void gdc_31kHz_w(offs_t offset, u8 data);
 };
 
-#endif // MAME_NEC_PC9801_H
+#endif // MAME_INCLUDES_PC9801_H

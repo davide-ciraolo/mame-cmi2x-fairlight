@@ -122,12 +122,12 @@ class eeprom_serial_93cxx_device : public eeprom_serial_base_device
 {
 public:
 	// read handlers
-	int do_read();  // combined DO+READY/BUSY
+	DECLARE_READ_LINE_MEMBER(do_read);  // combined DO+READY/BUSY
 
 	// write handlers
-	void cs_write(int state);        // CS signal (active high)
-	void clk_write(int state);       // CLK signal (active high)
-	void di_write(int state);        // DI
+	DECLARE_WRITE_LINE_MEMBER(cs_write);        // CS signal (active high)
+	DECLARE_WRITE_LINE_MEMBER(clk_write);       // CLK signal (active high)
+	DECLARE_WRITE_LINE_MEMBER(di_write);        // DI
 
 protected:
 	// construction/destruction
@@ -154,13 +154,13 @@ class eeprom_serial_er5911_device : public eeprom_serial_base_device
 {
 public:
 	// read handlers
-	int do_read();          // DO
-	int ready_read();       // READY/BUSY only
+	DECLARE_READ_LINE_MEMBER(do_read);          // DO
+	DECLARE_READ_LINE_MEMBER(ready_read);       // READY/BUSY only
 
 	// write handlers
-	void cs_write(int state);        // CS signal (active high)
-	void clk_write(int state);       // CLK signal (active high)
-	void di_write(int state);        // DI
+	DECLARE_WRITE_LINE_MEMBER(cs_write);        // CS signal (active high)
+	DECLARE_WRITE_LINE_MEMBER(clk_write);       // CLK signal (active high)
+	DECLARE_WRITE_LINE_MEMBER(di_write);        // DI
 
 protected:
 	// construction/destruction
@@ -179,12 +179,12 @@ class eeprom_serial_x24c44_device : public eeprom_serial_base_device
 		//async store not implemented
 public:
 	// read handlers
-	int do_read();          // DO
+	DECLARE_READ_LINE_MEMBER(do_read);          // DO
 
 	// write handlers
-	void cs_write(int state);        // CS signal (active high)
-	void clk_write(int state);       // CLK signal (active high)
-	void di_write(int state);        // DI
+	DECLARE_WRITE_LINE_MEMBER(cs_write);        // CS signal (active high)
+	DECLARE_WRITE_LINE_MEMBER(clk_write);       // CLK signal (active high)
+	DECLARE_WRITE_LINE_MEMBER(di_write);        // DI
 
 protected:
 	// construction/destruction

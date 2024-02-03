@@ -16,7 +16,6 @@ Platform also used by Lowen? (at least some of their sets use the same address l
 #include "machine/68340.h"
 
 
-namespace {
 
 class astrafr_state : public driver_device
 {
@@ -50,21 +49,21 @@ public:
 	void init_astradec_sml_dual();
 
 private:
-	uint16_t* m_cpuregion = nullptr;
+	uint32_t* m_cpuregion = nullptr;
 	int  m_cpuregion_size = 0;
-	std::unique_ptr<uint16_t[]> m_mainram{};
+	std::unique_ptr<uint32_t[]> m_mainram{};
 
-	uint16_t* m_slavecpuregion = nullptr;
+	uint32_t* m_slavecpuregion = nullptr;
 	int  m_slavecpuregion_size = 0;
-	std::unique_ptr<uint16_t[]> m_slaveram{};
+	std::unique_ptr<uint32_t[]> m_slaveram{};
 
 
 
-	uint16_t astrafr_mem_r(offs_t offset, uint16_t mem_mask = ~0);
-	void astrafr_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
+	uint32_t astrafr_mem_r(offs_t offset, uint32_t mem_mask = ~0);
+	void astrafr_mem_w(offs_t offset, uint32_t data, uint32_t mem_mask = ~0);
 
-	uint16_t astrafr_slave_mem_r(offs_t offset, uint16_t mem_mask = ~0);
-	void astrafr_slave_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
+	uint32_t astrafr_slave_mem_r(offs_t offset, uint32_t mem_mask = ~0);
+	void astrafr_slave_mem_w(offs_t offset, uint32_t data, uint32_t mem_mask = ~0);
 
 
 	// ports move above from game to game..
@@ -142,9 +141,9 @@ private:
 
 
 
-uint16_t astrafr_state::astrafr_mem_r(offs_t offset, uint16_t mem_mask)
+uint32_t astrafr_state::astrafr_mem_r(offs_t offset, uint32_t mem_mask)
 {
-	int cs = m_maincpu->get_cs(offset * 2);
+	int cs = m_maincpu->get_cs(offset * 4);
 
 	switch ( cs )
 	{
@@ -155,7 +154,7 @@ uint16_t astrafr_state::astrafr_mem_r(offs_t offset, uint16_t mem_mask)
 				return 0x0000;
 
 		case 2:
-			offset &= 0x7fff;
+			offset &= 0x3fff;
 			return m_mainram[offset];
 
 		default:
@@ -168,9 +167,9 @@ uint16_t astrafr_state::astrafr_mem_r(offs_t offset, uint16_t mem_mask)
 
 
 
-void astrafr_state::astrafr_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask)
+void astrafr_state::astrafr_mem_w(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
-	int address = offset * 2;
+	int address = offset * 4;
 	int cs = m_maincpu->get_cs(address);
 
 
@@ -180,12 +179,14 @@ void astrafr_state::astrafr_mem_w(offs_t offset, uint16_t data, uint16_t mem_mas
 		case 3:
 			address &= 0xfffff;
 
-			if (ACCESSING_BITS_8_15) astra_fgpa_w(address+0, data >> 8);
-			if (ACCESSING_BITS_0_7) astra_fgpa_w(address+1, data >> 0);
+			if (ACCESSING_BITS_24_31) astra_fgpa_w(address+0, data >> 24);
+			if (ACCESSING_BITS_16_23) astra_fgpa_w(address+1, data >> 16);
+			if (ACCESSING_BITS_8_15) astra_fgpa_w(address+2, data >> 8);
+			if (ACCESSING_BITS_0_7) astra_fgpa_w(address+3, data >> 0);
 			break;
 
 		case 2:
-			offset &= 0x7fff;
+			offset &= 0x3fff;
 			COMBINE_DATA(&m_mainram[offset]);
 			break;
 
@@ -195,9 +196,9 @@ void astrafr_state::astrafr_mem_w(offs_t offset, uint16_t data, uint16_t mem_mas
 	}
 }
 
-uint16_t astrafr_state::astrafr_slave_mem_r(offs_t offset, uint16_t mem_mask)
+uint32_t astrafr_state::astrafr_slave_mem_r(offs_t offset, uint32_t mem_mask)
 {
-	int cs = m_slavecpu->get_cs(offset * 2);
+	int cs = m_slavecpu->get_cs(offset * 4);
 
 	switch ( cs )
 	{
@@ -208,7 +209,7 @@ uint16_t astrafr_state::astrafr_slave_mem_r(offs_t offset, uint16_t mem_mask)
 				return 0x0000;
 
 		case 2:
-			offset &= 0x7fff;
+			offset &= 0x3fff;
 			return m_slaveram[offset];
 
 		default:
@@ -219,9 +220,9 @@ uint16_t astrafr_state::astrafr_slave_mem_r(offs_t offset, uint16_t mem_mask)
 	return 0x0000;
 }
 
-void astrafr_state::astrafr_slave_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask)
+void astrafr_state::astrafr_slave_mem_w(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
-	int address = offset * 2;
+	int address = offset * 4;
 	int cs = m_slavecpu->get_cs(address);
 
 
@@ -231,12 +232,14 @@ void astrafr_state::astrafr_slave_mem_w(offs_t offset, uint16_t data, uint16_t m
 		case 3:
 			address &= 0xfffff;
 
-			if (ACCESSING_BITS_8_15) astra_fgpa_slave_w(address+0, data >> 8);
-			if (ACCESSING_BITS_0_7) astra_fgpa_slave_w(address+1, data >> 0);
+			if (ACCESSING_BITS_24_31) astra_fgpa_slave_w(address+0, data >> 24);
+			if (ACCESSING_BITS_16_23) astra_fgpa_slave_w(address+1, data >> 16);
+			if (ACCESSING_BITS_8_15) astra_fgpa_slave_w(address+2, data >> 8);
+			if (ACCESSING_BITS_0_7) astra_fgpa_slave_w(address+3, data >> 0);
 			break;
 
 		case 2:
-			offset &= 0x7fff;
+			offset &= 0x3fff;
 			COMBINE_DATA(&m_slaveram[offset]);
 			break;
 
@@ -276,15 +279,15 @@ INPUT_PORTS_END
 
 MACHINE_START_MEMBER(astrafr_state,astra_common)
 {
-	m_cpuregion = (uint16_t*)memregion( "maincpu" )->base();
-	m_cpuregion_size = memregion( "maincpu" )->bytes()/2;
-	m_mainram = make_unique_clear<uint16_t[]>(0x20000);
+	m_cpuregion = (uint32_t*)memregion( "maincpu" )->base();
+	m_cpuregion_size = memregion( "maincpu" )->bytes()/4;
+	m_mainram = make_unique_clear<uint32_t[]>(0x10000);
 
 	if (memregion("slavecpu"))
 	{
-		m_slavecpuregion = (uint16_t*)memregion( "slavecpu" )->base();
-		m_slavecpuregion_size = memregion( "slavecpu" )->bytes()/2;
-		m_slaveram = make_unique_clear<uint16_t[]>(0x20000);
+		m_slavecpuregion = (uint32_t*)memregion( "slavecpu" )->base();
+		m_slavecpuregion_size = memregion( "slavecpu" )->bytes()/4;
+		m_slaveram = make_unique_clear<uint32_t[]>(0x10000);
 	}
 
 
@@ -2164,9 +2167,6 @@ void astrafr_state::init_astradec_sml_dual()
 	astra_addresslines( (uint16_t*)memregion( "maincpu" )->base(), memregion( "maincpu" )->bytes(), 1 );
 	astra_addresslines( (uint16_t*)memregion( "slavecpu" )->base(), memregion( "slavecpu" )->bytes(), 1 );
 }
-
-} // anonymous namespace
-
 
 // Single games?
 GAME( 200?, as_srb,    0,        astra_single,        astrafr, astrafr_state, empty_init,         ROT0, "Astra", "Super Ring a Bell (Astra, V004)"       , MACHINE_IS_SKELETON_MECHANICAL)

@@ -10,18 +10,13 @@
 
 #if defined(OSD_SDL)
 
-#include "monitor_common.h"
-
-#include "modules/lib/osdobj_common.h"
-#include "modules/osdwindow.h"
-
-#include "osdcore.h"
-#include "window.h"
-
+#include <algorithm>
 #include <SDL2/SDL.h>
 
-#include <algorithm>
-
+#include "modules/osdwindow.h"
+#include "monitor_common.h"
+#include "osdcore.h"
+#include "window.h"
 
 inline osd_rect SDL_Rect_to_osd_rect(const SDL_Rect &r)
 {

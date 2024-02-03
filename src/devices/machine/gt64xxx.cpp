@@ -3,6 +3,7 @@
 #include "emu.h"
 #include "gt64xxx.h"
 
+#define LOG_GENERAL         (1U << 0)
 #define LOG_GALILEO         (1U << 1)
 #define LOG_TIMERS          (1U << 2)
 #define LOG_DMA             (1U << 3)
@@ -466,7 +467,7 @@ void gt64xxx_device::reset_all_mappings()
 }
 
 // PCI Stalling
-void gt64xxx_device::pci_stall(int state)
+WRITE_LINE_MEMBER(gt64xxx_device::pci_stall)
 {
 	// Reset the retry count once unstalled
 	if (state==0 && m_pci_stall_state==1) {

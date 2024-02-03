@@ -201,6 +201,13 @@ msm58321_device::msm58321_device(const machine_config &mconfig, const char *tag,
 
 void msm58321_device::device_start()
 {
+	// resolve callbacks
+	m_d0_handler.resolve_safe();
+	m_d1_handler.resolve_safe();
+	m_d2_handler.resolve_safe();
+	m_d3_handler.resolve_safe();
+	m_busy_handler.resolve_safe();
+
 	// allocate timers
 	m_clock_timer = timer_alloc(FUNC(msm58321_device::clock_tick), this);
 	m_clock_timer->adjust(clocks_to_attotime(32768/1024), 0, clocks_to_attotime(32768/1024));
@@ -508,7 +515,7 @@ void msm58321_device::update_input()
 //  cs2_w -
 //-------------------------------------------------
 
-void msm58321_device::cs2_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::cs2_w )
 {
 	if (m_cs2 != state)
 	{
@@ -525,7 +532,7 @@ void msm58321_device::cs2_w(int state)
 //  write_w -
 //-------------------------------------------------
 
-void msm58321_device::write_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::write_w )
 {
 	if (m_write != state)
 	{
@@ -542,7 +549,7 @@ void msm58321_device::write_w(int state)
 //  read_w -
 //-------------------------------------------------
 
-void msm58321_device::read_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::read_w )
 {
 	if (m_read != state)
 	{
@@ -560,7 +567,7 @@ void msm58321_device::read_w(int state)
 //  d0_w -
 //-------------------------------------------------
 
-void msm58321_device::d0_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::d0_w )
 {
 	if (m_d0_in != state)
 	{
@@ -575,7 +582,7 @@ void msm58321_device::d0_w(int state)
 //  d1_w -
 //-------------------------------------------------
 
-void msm58321_device::d1_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::d1_w )
 {
 	if (m_d1_in != state)
 	{
@@ -590,7 +597,7 @@ void msm58321_device::d1_w(int state)
 //  d2_w -
 //-------------------------------------------------
 
-void msm58321_device::d2_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::d2_w )
 {
 	if (m_d2_in != state)
 	{
@@ -605,7 +612,7 @@ void msm58321_device::d2_w(int state)
 //  d3_w -
 //-------------------------------------------------
 
-void msm58321_device::d3_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::d3_w )
 {
 	if (m_d3_in != state)
 	{
@@ -620,7 +627,7 @@ void msm58321_device::d3_w(int state)
 //  address_write_w -
 //-------------------------------------------------
 
-void msm58321_device::address_write_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::address_write_w )
 {
 	if (m_address_write != state)
 	{
@@ -637,7 +644,7 @@ void msm58321_device::address_write_w(int state)
 //  stop_w -
 //-------------------------------------------------
 
-void msm58321_device::stop_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::stop_w )
 {
 	if (m_stop != state)
 	{
@@ -652,7 +659,7 @@ void msm58321_device::stop_w(int state)
 //  test_w -
 //-------------------------------------------------
 
-void msm58321_device::test_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::test_w )
 {
 	if (m_test != state)
 	{
@@ -668,7 +675,7 @@ void msm58321_device::test_w(int state)
 //  cs1_w -
 //-------------------------------------------------
 
-void msm58321_device::cs1_w(int state)
+WRITE_LINE_MEMBER( msm58321_device::cs1_w )
 {
 	if (m_cs1 != state)
 	{

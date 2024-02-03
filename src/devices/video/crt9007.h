@@ -72,13 +72,14 @@ public:
 	void lpstb_w(int state);
 
 protected:
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 	virtual void device_post_load() override;
 	virtual void device_clock_changed() override;
 
-	// device_memory_interface implementation
+	// device_memory_interface overrides
 	virtual space_config_vector memory_space_config() const override;
 
 	TIMER_CALLBACK_MEMBER(hsync_update);

@@ -30,7 +30,7 @@ TODO:
   interleaving is taken into account. A high resolution timer around the
   poll loop is probably the best bet. The driver sets its timer manually
   because strange enough, interleaving doesn't occur immediately when
-  perfect_quantum() is called. Speculations are TIME_NOWs could have
+  cpuexec_boost_interleave() is called. Speculations are TIME_NOWs could have
   been used as the timer durations to force instant triggering.
 
 
@@ -285,12 +285,12 @@ uint8_t combatsc_state::busy_r()
 
 void combatsc_state::play_w(uint8_t data)
 {
-	m_upd7759->start_w(!BIT(data, 1));
+	m_upd7759->start_w(data & 2);
 }
 
 void combatsc_state::voice_reset_w(uint8_t data)
 {
-	m_upd7759->reset_w(BIT(data, 0));
+	m_upd7759->reset_w(data & 1);
 }
 
 void combatsc_state::portA_w(uint8_t data)
@@ -563,6 +563,17 @@ INPUT_PORTS_END
  *
  *************************************/
 
+static const gfx_layout gfxlayout =
+{
+	8,8,
+	0x4000,
+	4,
+	{ 0,1,2,3 },
+	{ 0, 4, 8, 12, 16, 20, 24, 28},
+	{ 0*32, 1*32, 2*32, 3*32, 4*32, 5*32, 6*32, 7*32 },
+	32*8
+};
+
 static const gfx_layout tile_layout =
 {
 	8,8,
@@ -591,12 +602,9 @@ static const gfx_layout sprite_layout =
 	8*8*4
 };
 
-static GFXDECODE_START( gfx_combatsc_1 )
-	GFXDECODE_ENTRY( "gfx1", 0x00000, gfx_8x8x4_packed_msb, 0, 8*16 )
-GFXDECODE_END
-
-static GFXDECODE_START( gfx_combatsc_2 )
-	GFXDECODE_ENTRY( "gfx2", 0x00000, gfx_8x8x4_packed_msb, 0, 8*16 )
+static GFXDECODE_START( gfx_combatsc )
+	GFXDECODE_ENTRY( "gfx1", 0x00000, gfxlayout, 0, 8*16 )
+	GFXDECODE_ENTRY( "gfx2", 0x00000, gfxlayout, 0, 8*16 )
 GFXDECODE_END
 
 static GFXDECODE_START( gfx_combatscb )
@@ -671,11 +679,11 @@ void combatscb_state::machine_reset()
 void combatsc_state::combatsc(machine_config &config)
 {
 	// basic machine hardware
-	HD6309E(config, m_maincpu, 24_MHz_XTAL / 8);  // HD63C09E, 3 MHz?
+	HD6309(config, m_maincpu, 3000000*4);  // 3 MHz?
 	m_maincpu->set_addrmap(AS_PROGRAM, &combatsc_state::main_map);
 	m_maincpu->set_vblank_int("screen", FUNC(combatsc_state::irq0_line_hold));
 
-	Z80(config, m_audiocpu, 3579545);   // 3.579545 MHz??? (no such XTAL on board!)
+	Z80(config, m_audiocpu, 3579545);   // 3.579545 MHz
 	m_audiocpu->set_addrmap(AS_PROGRAM, &combatsc_state::sound_map);
 
 	config.set_maximum_quantum(attotime::from_hz(1200));
@@ -694,12 +702,15 @@ void combatsc_state::combatsc(machine_config &config)
 	m_screen->set_screen_update(FUNC(combatsc_state::screen_update));
 	m_screen->set_palette(m_palette);
 
+	GFXDECODE(config, m_gfxdecode, m_palette, gfx_combatsc);
 	PALETTE(config, m_palette, FUNC(combatsc_state::palette));
 	m_palette->set_format(palette_device::xBGR_555, 8 * 16 * 16, 128);
 	m_palette->set_endianness(ENDIANNESS_LITTLE);
 
-	K007121(config, m_k007121[0], 0, m_palette, gfx_combatsc_1);
-	K007121(config, m_k007121[1], 0, m_palette, gfx_combatsc_2);
+	K007121(config, m_k007121[0], 0);
+	m_k007121[0]->set_palette_tag(m_palette);
+	K007121(config, m_k007121[1], 0);
+	m_k007121[1]->set_palette_tag(m_palette);
 
 	// sound hardware
 	SPEAKER(config, "mono").front_center();
@@ -718,7 +729,7 @@ void combatsc_state::combatsc(machine_config &config)
 void combatscb_state::combatscb(machine_config &config)
 {
 	// basic machine hardware
-	HD6309E(config, m_maincpu, 3000000);  // 3 MHz?
+	HD6309(config, m_maincpu, 3000000*4);  // 3 MHz?
 	m_maincpu->set_addrmap(AS_PROGRAM, &combatscb_state::main_map);
 	m_maincpu->set_vblank_int("screen", FUNC(combatsc_state::irq0_line_hold));
 

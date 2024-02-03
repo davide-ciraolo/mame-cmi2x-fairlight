@@ -21,7 +21,7 @@ Rewritten by Robbbert (see notes in driver file).
 
 ************************************************************/
 
-void mbee_state::pio_ardy(int state)
+WRITE_LINE_MEMBER( mbee_state::pio_ardy )
 {
 	m_centronics->write_strobe((state) ? 0 : 1);
 }
@@ -77,12 +77,12 @@ u8 mbee_state::pio_port_b_r()
 
 *************************************************************************************/
 
-void mbee_state::fdc_intrq_w(int state)
+WRITE_LINE_MEMBER( mbee_state::fdc_intrq_w )
 {
 	m_fdc_rq = (m_fdc_rq & 2) | state;
 }
 
-void mbee_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( mbee_state::fdc_drq_w )
 {
 	m_fdc_rq = (m_fdc_rq & 1) | (state << 1);
 }
@@ -214,8 +214,23 @@ u8 mbee_state::speed_r(offs_t offset)
 
 ************************************************************/
 
+void mbee_state::port04_w(u8 data)  // address
+{
+	m_rtc->write(0, data);
+}
+
+void mbee_state::port06_w(u8 data)  // write
+{
+	m_rtc->write(1, data);
+}
+
+u8 mbee_state::port07_r()   // read
+{
+	return m_rtc->read(1);
+}
+
 // See it work: Run mbeett, choose RTC in the config switches, run the F3 test, press Esc.
-void mbee_state::rtc_irq_w(int state)
+WRITE_LINE_MEMBER( mbee_state::rtc_irq_w )
 {
 	m_b7_rtc = state; // inverted by IC15 (pins 8,9,10) then again by mame
 
@@ -593,9 +608,8 @@ QUICKLOAD_LOAD_MEMBER(mbee_state::quickload_cb)
 		uint16_t execute_address, start_addr, end_addr;
 
 		/* load the binary into memory */
-		auto err = z80bin_load_file(image, space, execute_address, start_addr, end_addr);
-		if (err.first)
-			return err;
+		if (z80bin_load_file(image, space, execute_address, start_addr, end_addr) != image_init_result::PASS)
+			return image_init_result::FAIL;
 
 		/* is this file executable? */
 		if (execute_address != 0xffff)
@@ -613,25 +627,33 @@ QUICKLOAD_LOAD_MEMBER(mbee_state::quickload_cb)
 			}
 		}
 
-		return std::make_pair(std::error_condition(), std::string());
+		return image_init_result::PASS;
 	}
+
+	uint16_t i, j;
+	u8 data;
 
 	size_t quickload_size = image.length();
 	if (image.is_filetype("mwb"))
 	{
 		/* mwb files - standard basic files */
-		for (int i = 0; i < quickload_size; i++)
+		for (i = 0; i < quickload_size; i++)
 		{
-			int j = 0x8c0 + i;
+			j = 0x8c0 + i;
 
-			u8 data;
 			if (image.fread(&data, 1) != 1)
-				return std::make_pair(image_error::UNSPECIFIED, "Unexpected EOF");
+			{
+				image.message("Unexpected EOF");
+				return image_init_result::FAIL;
+			}
 
 			if ((j < m_size) || (j > 0xefff))
 				space.write_byte(j, data);
 			else
-				return std::make_pair(image_error::UNSUPPORTED, "Not enough memory in this microbee");
+			{
+				image.message("Not enough memory in this microbee");
+				return image_init_result::FAIL;
+			}
 		}
 
 		if (autorun)
@@ -642,72 +664,88 @@ QUICKLOAD_LOAD_MEMBER(mbee_state::quickload_cb)
 		else
 			space.write_word(0xa2,0x8517);
 	}
-	else if (image.is_filetype("com"))
+	else
+	if (image.is_filetype("com"))
 	{
 		/* com files - most com files are just machine-language games with a wrapper and don't need cp/m to be present */
-		for (int i = 0; i < quickload_size; i++)
+		for (i = 0; i < quickload_size; i++)
 		{
-			int j = 0x100 + i;
+			j = 0x100 + i;
 
-			u8 data;
 			if (image.fread(&data, 1) != 1)
-				return std::make_pair(image_error::UNSPECIFIED, "Unexpected EOF");
+			{
+				image.message("Unexpected EOF");
+				return image_init_result::FAIL;
+			}
 
 			if ((j < m_size) || (j > 0xefff))
 				space.write_byte(j, data);
 			else
-				return std::make_pair(image_error::UNSUPPORTED, "Not enough memory in this microbee");
+			{
+				image.message("Not enough memory in this microbee");
+				return image_init_result::FAIL;
+			}
 		}
 
 		if (autorun)
 			m_maincpu->set_pc(0x100);
 	}
-	else if (image.is_filetype("bee"))
+	else
+	if (image.is_filetype("bee"))
 	{
 		/* bee files - machine-language games that start at 0900 */
-		for (int i = 0; i < quickload_size; i++)
+		for (i = 0; i < quickload_size; i++)
 		{
-			int j = 0x900 + i;
+			j = 0x900 + i;
 
-			u8 data;
 			if (image.fread(&data, 1) != 1)
-				return std::make_pair(image_error::UNSPECIFIED, "Unexpected EOF");
+			{
+				image.message("Unexpected EOF");
+				return image_init_result::FAIL;
+			}
 
 			if ((j < m_size) || (j > 0xefff))
 				space.write_byte(j, data);
 			else
-				return std::make_pair(image_error::UNSUPPORTED, "Not enough memory in this microbee");
+			{
+				image.message("Not enough memory in this microbee");
+				return image_init_result::FAIL;
+			}
 		}
 
 		if (autorun)
 			m_maincpu->set_pc(0x900);
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 // Index usage: 0 = not used; 1 = net rom; 2-7 = pak roms
-std::pair<std::error_condition, std::string> mbee_state::load_cart(device_image_interface &image, generic_slot_device *slot, u8 pak_index)
+image_init_result mbee_state::load_cart(device_image_interface &image, generic_slot_device *slot, u8 pak_index)
 {
 	u32 size = slot->common_get_size("rom");
 
 	if (pak_index > 1)
 	{
-		// "mbp" ROMs
+		// "mbp" roms
 		if ((size == 0) || (size > 0x4000))
-			return std::make_pair(image_error::INVALIDLENGTH, "Unsupported ROM size (must be no larger than 16K)");
+		{
+			image.seterror(image_error::INVALIDIMAGE, "Unsupported ROM size");
+			return image_init_result::FAIL;
+		}
 
 		m_pak_extended[pak_index] = (size > 0x2000) ? true : false;
 
 		slot->rom_alloc(m_pak_extended[pak_index] ? 0x4000 : 0x2000, GENERIC_ROM8_WIDTH, ENDIANNESS_LITTLE); // we alloc the amount for a real rom
 		slot->common_load_rom(slot->get_rom_base(), size, "rom");
 
-		// Validate the ROM
-		logerror("ROM header = %02X %02X %02X\n", slot->read_rom(0), slot->read_rom(1), slot->read_rom(2));
+		// Validate the rom
+		logerror ("Rom header = %02X %02X %02X\n", slot->read_rom(0), slot->read_rom(1), slot->read_rom(2));
 		if ((slot->read_rom(0) != 0xc3) || ((slot->read_rom(2) & 0xe0) != 0xc0))
 		{
+			image.seterror(image_error::INVALIDIMAGE, "Not a PAK rom");
 			slot->call_unload();
-			return std::make_pair(image_error::INVALIDIMAGE, "Not a PAK ROM");
+			return image_init_result::FAIL;
 		}
 	}
 	else
@@ -715,7 +753,8 @@ std::pair<std::error_condition, std::string> mbee_state::load_cart(device_image_
 		// "mbn" roms
 		if ((size == 0) || (size > 0x2000))
 		{
-			return std::make_pair(image_error::INVALIDLENGTH, "Unsupported ROM size (must be no larger than 8K)");
+			image.seterror(image_error::INVALIDIMAGE, "Unsupported ROM size");
+			return image_init_result::FAIL;
 		}
 		m_pak_extended[pak_index] = (size > 0x1000) ? true : false;
 
@@ -723,18 +762,19 @@ std::pair<std::error_condition, std::string> mbee_state::load_cart(device_image_
 		slot->common_load_rom(slot->get_rom_base(), size, "rom");
 
 		// Validate the rom
-		logerror("ROM header = %02X %02X %02X\n", slot->read_rom(0), slot->read_rom(1), slot->read_rom(2));
+		logerror ("Rom header = %02X %02X %02X\n", slot->read_rom(0), slot->read_rom(1), slot->read_rom(2));
 		if (!image.loaded_through_softlist())  // need to let pascal through without testing
 		{
 			if ((slot->read_rom(0) != 0xc3) || ((slot->read_rom(2) & 0xf0) != 0xe0))
 			{
+				image.seterror(image_error::INVALIDIMAGE, "Not a NET rom");
 				slot->call_unload();
-				return std::make_pair(image_error::INVALIDIMAGE, "Not a NET ROM");
+				return image_init_result::FAIL;
 			}
 		}
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void mbee_state::unload_cart(u8 pak_index)

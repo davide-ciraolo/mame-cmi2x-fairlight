@@ -39,7 +39,7 @@ protected:
 private:
 	DECLARE_DEVICE_IMAGE_LOAD_MEMBER(socket_load);
 
-	void intrq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(intrq_w);
 
 	TIMER_DEVICE_CALLBACK_MEMBER(timer_callback);
 

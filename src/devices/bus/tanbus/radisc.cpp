@@ -11,8 +11,6 @@
 
 #include "emu.h"
 #include "radisc.h"
-#include "formats/acorn_dsk.h"
-#include "formats/flex_dsk.h"
 #include "speaker.h"
 
 
@@ -33,30 +31,24 @@ static void tandos_floppies(device_slot_interface &device)
 	device.option_add("525qd", FLOPPY_525_QD);
 }
 
-void tanbus_radisc_device::floppy_formats(format_registration &fr)
-{
-	fr.add_mfm_containers();
-	fr.add(FLOPPY_FLEX_FORMAT);
-	fr.add(FLOPPY_ACORN_SSD_FORMAT);
-}
-
 //-------------------------------------------------
 //  device_add_mconfig - add device configuration
 //-------------------------------------------------
 
 void tanbus_radisc_device::device_add_mconfig(machine_config &config)
 {
-	INPUT_MERGER_ANY_HIGH(config, m_irq_line).output_handler().set(FUNC(tanbus_radisc_device::irq_w));
+	INPUT_MERGER_ANY_HIGH(config, m_irq_line).output_handler().set(FUNC(tanbus_radisc_device::fdc_irq_w));
 
 	FD1793(config, m_fdc, 4_MHz_XTAL / 4);
-	m_fdc->intrq_wr_callback().set(FUNC(tanbus_radisc_device::fdc_irq_w));
+	m_fdc->intrq_wr_callback().set(m_irq_line, FUNC(input_merger_device::in_w<IRQ_FDC>));
 	m_fdc->drq_wr_callback().set(FUNC(tanbus_radisc_device::fdc_drq_w));
+	m_fdc->hld_wr_callback().set(FUNC(tanbus_radisc_device::fdc_hld_w));
 	m_fdc->set_force_ready(true);
 
-	FLOPPY_CONNECTOR(config, m_floppies[0], tandos_floppies, "525qd", tanbus_radisc_device::floppy_formats).enable_sound(true);
-	FLOPPY_CONNECTOR(config, m_floppies[1], tandos_floppies, "525qd", tanbus_radisc_device::floppy_formats).enable_sound(true);
-	FLOPPY_CONNECTOR(config, m_floppies[2], tandos_floppies, nullptr, tanbus_radisc_device::floppy_formats).enable_sound(true);
-	FLOPPY_CONNECTOR(config, m_floppies[3], tandos_floppies, nullptr, tanbus_radisc_device::floppy_formats).enable_sound(true);
+	FLOPPY_CONNECTOR(config, m_floppies[0], tandos_floppies, "525qd", floppy_image_device::default_mfm_floppy_formats).enable_sound(true);
+	FLOPPY_CONNECTOR(config, m_floppies[1], tandos_floppies, "525qd", floppy_image_device::default_mfm_floppy_formats).enable_sound(true);
+	FLOPPY_CONNECTOR(config, m_floppies[2], tandos_floppies, nullptr, floppy_image_device::default_mfm_floppy_formats).enable_sound(true);
+	FLOPPY_CONNECTOR(config, m_floppies[3], tandos_floppies, nullptr, floppy_image_device::default_mfm_floppy_formats).enable_sound(true);
 
 	MC146818(config, m_rtc, 32.768_kHz_XTAL);
 	m_rtc->irq().set(m_irq_line, FUNC(input_merger_device::in_w<IRQ_RTC>));
@@ -64,6 +56,7 @@ void tanbus_radisc_device::device_add_mconfig(machine_config &config)
 	MOS6522(config, m_via, 4_MHz_XTAL / 4);
 	m_via->irq_handler().set(m_irq_line, FUNC(input_merger_device::in_w<IRQ_VIA>));
 
+	/* audio hardware */
 	SPEAKER(config, "mono").front_center();
 	BEEP(config, m_beeper, 1000); // TODO: unknown frequency
 	m_beeper->add_route(ALL_OUTPUTS, "mono", 1.0);
@@ -82,14 +75,13 @@ tanbus_radisc_device::tanbus_radisc_device(const machine_config &mconfig, const 
 	, device_tanbus_interface(mconfig, *this)
 	, m_fdc(*this, "fdc")
 	, m_floppies(*this, "fdc:%u", 0)
+	, m_floppy(nullptr)
 	, m_rtc(*this, "rtc")
 	, m_via(*this, "via")
 	, m_irq_line(*this, "irq_line")
 	, m_beeper(*this, "beeper")
 	, m_beeper_state(0)
-	, m_status(0)
-	, m_irq_enable(0)
-	, m_drq_enable(0)
+	, m_drive_control(0)
 {
 }
 
@@ -99,6 +91,14 @@ tanbus_radisc_device::tanbus_radisc_device(const machine_config &mconfig, const 
 //-------------------------------------------------
 
 void tanbus_radisc_device::device_start()
+{
+}
+
+//-------------------------------------------------
+//  device_reset - device-specific reset
+//-------------------------------------------------
+
+void tanbus_radisc_device::device_reset()
 {
 }
 
@@ -119,10 +119,10 @@ uint8_t tanbus_radisc_device::read(offs_t offset, int inhrom, int inhram, int be
 		data = m_fdc->read(offset & 0x03);
 		break;
 	case 0xbf94:
-		data = status_r();
+		data = control_r();
 		break;
-	case 0xbf99:
-		data = m_rtc->data_r();
+	case 0xbf98: case 0xbf99:
+		data = m_rtc->read(offset & 0x01);
 		break;
 	}
 
@@ -150,11 +150,8 @@ void tanbus_radisc_device::write(offs_t offset, uint8_t data, int inhrom, int in
 		m_beeper_state ^= 1;
 		m_beeper->set_state(m_beeper_state);
 		break;
-	case 0xbf98:
-		m_rtc->address_w(data);
-		break;
-	case 0xbf99:
-		m_rtc->data_w(data);
+	case 0xbf98: case 0xbf99:
+		m_rtc->write(offset & 0x01, data);
 		break;
 	}
 }
@@ -163,51 +160,54 @@ void tanbus_radisc_device::write(offs_t offset, uint8_t data, int inhrom, int in
 //  IMPLEMENTATION
 //**************************************************************************
 
-void tanbus_radisc_device::control_w(uint8_t data)
+void tanbus_radisc_device::control_w(uint8_t val)
 {
-	m_status = data & 0x3e;
+	logerror("control_w %02x\n", val);
+	m_drive_control = val;
 
 	// bit 0: irq enable
-	m_irq_enable = BIT(data, 0);
+	m_irq_enable = BIT(val, 0);
 
 	// bit 1: data select (data stream controller)
 
 	// bit 2, 3: drive select
-	floppy_image_device *floppy = m_floppies[BIT(data, 2, 2)]->get_device();
-	m_fdc->set_floppy(floppy);
+	m_floppy = m_floppies[(val >> 2) & 0x03]->get_device();
+	m_fdc->set_floppy(m_floppy);
 
 	// bit 4: side select
-	if (floppy)
-		floppy->ss_w(BIT(data, 4));
+	if (m_floppy)
+		m_floppy->ss_w(BIT(val, 4));
 
 	// bit 5: density
-	m_fdc->dden_w(BIT(data, 5));
+	m_fdc->dden_w(BIT(val, 5));
 
-	// bit 6: head load timing
-	m_fdc->hlt_w(BIT(data, 6));
-	if (floppy)
-		floppy->mon_w(!BIT(data, 6));
+	// bit 6: head load
+	if (m_floppy)
+		m_floppy->mon_w(BIT(val, 6));
 
 	// bit 7: drq enable
-	m_drq_enable = BIT(data, 7);
+	m_drq_enable = BIT(val, 7);
 }
 
-uint8_t tanbus_radisc_device::status_r()
+uint8_t tanbus_radisc_device::control_r()
 {
-	return m_status | (m_fdc->drq_r() << 7) | (m_fdc->hld_r() << 6) | (m_fdc->intrq_r() << 0);
+	logerror("control_r %02x\n", m_drive_control);
+	return m_drive_control;
 }
 
-void tanbus_radisc_device::fdc_drq_w(int state)
+WRITE_LINE_MEMBER(tanbus_radisc_device::fdc_drq_w)
 {
 	m_tanbus->so_w((m_drq_enable && state) ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void tanbus_radisc_device::fdc_irq_w(int state)
+WRITE_LINE_MEMBER(tanbus_radisc_device::fdc_irq_w)
 {
-	m_irq_line->in_w<IRQ_FDC>((m_irq_enable && state) ? ASSERT_LINE : CLEAR_LINE);
+	m_tanbus->irq_w((m_irq_enable && state) ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void tanbus_radisc_device::irq_w(int state)
+WRITE_LINE_MEMBER(tanbus_radisc_device::fdc_hld_w)
 {
-	m_tanbus->irq_w(state ? ASSERT_LINE : CLEAR_LINE);
+	logerror("fdc_hld_w %d\n", state);
+	if (m_floppy)
+		m_floppy->mon_w(state);
 }

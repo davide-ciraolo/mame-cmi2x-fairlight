@@ -114,11 +114,11 @@
 #include "multiconn.h"
 #include "gkracker.h"
 
-#define LOG_WARN         (1U << 1)   // Warnings
-#define LOG_READ         (1U << 2)   // Reading
-#define LOG_WRITE        (1U << 3)   // Writing
+#define LOG_WARN         (1U<<1)   // Warnings
+#define LOG_READ         (1U<<2)   // Reading
+#define LOG_WRITE        (1U<<3)   // Writing
 
-#define VERBOSE (LOG_WARN)
+#define VERBOSE ( LOG_WARN )
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(TI99_GROMPORT, bus::ti99::gromport::gromport_device, "gromport", "TI-99 Cartridge port")
@@ -173,7 +173,7 @@ void gromport_device::cruwrite(offs_t offset, uint8_t data)
 		m_connector->cruwrite(offset, data);
 }
 
-void gromport_device::ready_line(int state)
+WRITE_LINE_MEMBER(gromport_device::ready_line)
 {
 	m_console_ready(state);
 }
@@ -181,14 +181,14 @@ void gromport_device::ready_line(int state)
 /*
     Asserted when the console addresses cartridge rom.
 */
-void gromport_device::romgq_line(int state)
+WRITE_LINE_MEMBER(gromport_device::romgq_line)
 {
 	m_romgq = state;
 	if (m_connector != nullptr)
 		m_connector->romgq_line(state);
 }
 
-void gromport_device::gclock_in(int state)
+WRITE_LINE_MEMBER(gromport_device::gclock_in)
 {
 	if (m_connector != nullptr)
 		m_connector->gclock_in(state);
@@ -205,6 +205,8 @@ void gromport_device::set_gromlines(line_state mline, line_state moline, line_st
 
 void gromport_device::device_start()
 {
+	m_console_ready.resolve();
+	m_console_reset.resolve();
 
 	save_item(NAME(m_romgq));
 }
@@ -276,7 +278,7 @@ cartridge_connector_device::cartridge_connector_device(const machine_config &mco
 {
 }
 
-void  cartridge_connector_device::ready_line(int state)
+WRITE_LINE_MEMBER( cartridge_connector_device::ready_line )
 {
 	m_gromport->ready_line(state);
 }

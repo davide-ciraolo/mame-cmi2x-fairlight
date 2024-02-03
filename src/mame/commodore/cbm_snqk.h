@@ -6,20 +6,16 @@
 
  ***********************************************/
 
-#ifndef MAME_COMMODORE_CBM_SNQK_H
-#define MAME_COMMODORE_CBM_SNQK_H
+#ifndef MAME_MACHINE_CBM_SNQK_H
+#define MAME_MACHINE_CBM_SNQK_H
 
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <system_error>
-#include <utility>
-
+#include "imagedev/snapquik.h"
 
 #define CBM_QUICKLOAD_DELAY (attotime::from_seconds(3))
 
-std::pair<std::error_condition, std::string> general_cbm_loadsnap(
+image_init_result general_cbm_loadsnap(
 		device_image_interface &image,
 		address_space &space,
 		offs_t offset,
@@ -27,4 +23,4 @@ std::pair<std::error_condition, std::string> general_cbm_loadsnap(
 
 void cbm_quick_sethiaddress(address_space &space, uint16_t hiaddress);
 
-#endif // MAME_COMMODORE_CBM_SNQK_H
+#endif // MAME_MACHINE_CBM_SNQK_H

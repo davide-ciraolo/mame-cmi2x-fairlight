@@ -89,6 +89,19 @@ kp64_device::kp64_device(const machine_config &mconfig, const char *tag, device_
 
 
 //-------------------------------------------------
+//  device_resolve_objects - resolve objects that
+//  may be needed for other devices to set
+//  initial conditions at start time
+//-------------------------------------------------
+
+void kp64_device::device_resolve_objects()
+{
+	// Resolve output callback
+	m_out_callback.resolve_safe();
+}
+
+
+//-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
 
@@ -460,7 +473,7 @@ void kp64_device::control_w(u8 data)
 //  xclk_w - set external count input
 //-------------------------------------------------
 
-void kp64_device::xclk_w(int state)
+WRITE_LINE_MEMBER(kp64_device::xclk_w)
 {
 	// Only falling edges count
 	if (std::exchange(m_xclk, state) && !state)
@@ -493,7 +506,7 @@ void kp64_device::xclk_w(int state)
 //  gate_w - set gate input
 //-------------------------------------------------
 
-void kp64_device::gate_w(int state)
+WRITE_LINE_MEMBER(kp64_device::gate_w)
 {
 	if (m_gate == bool(state))
 		return;

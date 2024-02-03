@@ -446,7 +446,7 @@ void hp98046_io_card_device::p2_w(uint8_t data)
 	}
 }
 
-void hp98046_io_card_device::sio_int_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::sio_int_w)
 {
 	if (m_sio_int != state) {
 		LOG_SIO("SIO int=%d\n" , state);
@@ -454,7 +454,7 @@ void hp98046_io_card_device::sio_int_w(int state)
 	m_sio_int = state;
 }
 
-void hp98046_io_card_device::sio_txd_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::sio_txd_w)
 {
 	m_sio->rxb_w(state);
 	if (m_loopback) {
@@ -464,42 +464,42 @@ void hp98046_io_card_device::sio_txd_w(int state)
 	}
 }
 
-void hp98046_io_card_device::rs232_rxd_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::rs232_rxd_w)
 {
 	if (!m_loopback) {
 		m_sio->rxa_w(state);
 	}
 }
 
-void hp98046_io_card_device::rs232_dcd_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::rs232_dcd_w)
 {
 	if (!m_loopback) {
 		m_sio->dcda_w(state);
 	}
 }
 
-void hp98046_io_card_device::rs232_dsr_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::rs232_dsr_w)
 {
 	if (!m_loopback) {
 		m_sio->dcdb_w(state);
 	}
 }
 
-void hp98046_io_card_device::rs232_cts_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::rs232_cts_w)
 {
 	if (!m_loopback) {
 		m_sio->ctsa_w(state);
 	}
 }
 
-void hp98046_io_card_device::rs232_rxc_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::rs232_rxc_w)
 {
 	if (!m_loopback) {
 		machine().scheduler().synchronize(timer_expired_delegate(FUNC(hp98046_io_card_device::sync_rx_im_w) , this) , state);
 	}
 }
 
-void hp98046_io_card_device::rs232_txc_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::rs232_txc_w)
 {
 	if (!m_loopback) {
 		machine().scheduler().synchronize(timer_expired_delegate(FUNC(hp98046_io_card_device::sync_tx_im_w) , this) , state);
@@ -630,7 +630,7 @@ uint8_t hp98046_io_card_device::get_hs_input() const
 	return res;
 }
 
-void hp98046_io_card_device::rxc_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::rxc_w)
 {
 	if (m_last_rxc != bool(state)) {
 		m_last_rxc = bool(state);
@@ -641,7 +641,7 @@ void hp98046_io_card_device::rxc_w(int state)
 	}
 }
 
-void hp98046_io_card_device::txc_w(int state)
+WRITE_LINE_MEMBER(hp98046_io_card_device::txc_w)
 {
 	if (m_last_txc != bool(state)) {
 		m_last_txc = bool(state);

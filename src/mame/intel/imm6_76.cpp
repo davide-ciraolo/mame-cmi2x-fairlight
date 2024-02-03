@@ -48,33 +48,23 @@ void intel_imm6_76_device::device_start()
 }
 
 
-std::pair<std::error_condition, std::string> intel_imm6_76_device::call_load()
+image_init_result intel_imm6_76_device::call_load()
 {
 	if (length() != std::size(m_data))
-	{
-		return std::make_pair(
-				image_error::INVALIDLENGTH,
-				util::string_format("Incorrect PROM image length (must be %u bytes)", std::size(m_data)));
-	}
+		return image_init_result::FAIL;
 	else if (fread(m_data, std::size(m_data)) != std::size(m_data))
-	{
-		return std::make_pair(image_error::UNSPECIFIED, std::string());
-	}
+		return image_init_result::FAIL;
 	else
-	{
-		return std::make_pair(std::error_condition(), std::string());
-	}
+		return image_init_result::PASS;
 }
 
-std::pair<std::error_condition, std::string> intel_imm6_76_device::call_create(
-		int format_type,
-		util::option_resolution *format_options)
+image_init_result intel_imm6_76_device::call_create(int format_type, util::option_resolution *format_options)
 {
 	std::fill(std::begin(m_data), std::end(m_data), 0U);
 	if (fwrite(m_data, std::size(m_data)) != std::size(m_data))
-		return std::make_pair(image_error::UNSPECIFIED, std::string());
+		return image_init_result::FAIL;
 	else
-		return std::make_pair(std::error_condition(), std::string());
+		return image_init_result::PASS;
 }
 
 void intel_imm6_76_device::call_unload()
@@ -121,12 +111,12 @@ u8 intel_imm6_76_device::do_r() const
 	}
 }
 
-void intel_imm6_76_device::data_out_enable(int state)
+DECLARE_WRITE_LINE_MEMBER(intel_imm6_76_device::data_out_enable)
 {
 	m_do_enable = bool(state);
 }
 
-void intel_imm6_76_device::data_in_positive(int state)
+DECLARE_WRITE_LINE_MEMBER(intel_imm6_76_device::data_in_positive)
 {
 	if (bool(state) != m_di_pos)
 	{
@@ -136,12 +126,12 @@ void intel_imm6_76_device::data_in_positive(int state)
 	}
 }
 
-void intel_imm6_76_device::data_out_positive(int state)
+DECLARE_WRITE_LINE_MEMBER(intel_imm6_76_device::data_out_positive)
 {
 	m_do_pos = !bool(state);
 }
 
-void intel_imm6_76_device::r_w(int state)
+WRITE_LINE_MEMBER(intel_imm6_76_device::r_w)
 {
 	if (!m_r_w && !bool(state) && !m_cycle)
 	{
@@ -154,7 +144,7 @@ void intel_imm6_76_device::r_w(int state)
 	m_r_w = !bool(state);
 }
 
-void intel_imm6_76_device::r_w_a(int state)
+WRITE_LINE_MEMBER(intel_imm6_76_device::r_w_a)
 {
 	if (!m_r_w_a && !bool(state) && !m_cycle_a)
 	{
@@ -167,7 +157,7 @@ void intel_imm6_76_device::r_w_a(int state)
 	m_r_w_a = !bool(state);
 }
 
-void intel_imm6_76_device::prgm_prom_pwr(int state)
+WRITE_LINE_MEMBER(intel_imm6_76_device::prgm_prom_pwr)
 {
 	if (!bool(state) != m_prgm_pwr)
 	{

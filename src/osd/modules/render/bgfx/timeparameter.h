@@ -6,19 +6,22 @@
 //
 //============================================================
 
-#ifndef MAME_RENDER_BGFX_TIMEPARAMETER_H
-#define MAME_RENDER_BGFX_TIMEPARAMETER_H
-
 #pragma once
 
-#include "parameter.h"
+#ifndef __DRAWBGFX_TIME_PARAMETER__
+#define __DRAWBGFX_TIME_PARAMETER__
+
+#include <bgfx/bgfx.h>
 
 #include <string>
+
+#include "parameter.h"
 
 class bgfx_time_parameter : public bgfx_parameter
 {
 public:
-	bgfx_time_parameter(std::string &&name, parameter_type type, double limit);
+	bgfx_time_parameter(std::string name, parameter_type type, double limit);
+	virtual ~bgfx_time_parameter() { }
 
 	virtual float value() override;
 	virtual void tick(double delta) override;
@@ -28,4 +31,4 @@ private:
 	double m_limit;
 };
 
-#endif // MAME_RENDER_BGFX_TIMEPARAMETER_H
+#endif // __DRAWBGFX_TIME_PARAMETER__

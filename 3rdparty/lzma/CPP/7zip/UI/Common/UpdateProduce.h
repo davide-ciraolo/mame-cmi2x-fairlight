@@ -1,7 +1,7 @@
 // UpdateProduce.h
 
-#ifndef ZIP7_INC_UPDATE_PRODUCE_H
-#define ZIP7_INC_UPDATE_PRODUCE_H
+#ifndef __UPDATE_PRODUCE_H
+#define __UPDATE_PRODUCE_H
 
 #include "UpdatePair.h"
 
@@ -17,14 +17,13 @@ struct CUpdatePair2
   int NewNameIndex;
 
   bool IsMainRenameItem;
-  bool IsSameTime;
 
-  void SetAs_NoChangeArcItem(unsigned arcIndex) // int
+  void SetAs_NoChangeArcItem(int arcIndex)
   {
     NewData = NewProps = false;
     UseArcProps = true;
     IsAnti = false;
-    ArcIndex = (int)arcIndex;
+    ArcIndex = arcIndex;
   }
 
   bool ExistOnDisk() const { return DirIndex != -1; }
@@ -38,18 +37,14 @@ struct CUpdatePair2
       DirIndex(-1),
       ArcIndex(-1),
       NewNameIndex(-1),
-      IsMainRenameItem(false),
-      IsSameTime(false)
+      IsMainRenameItem(false)
       {}
 };
 
-Z7_PURE_INTERFACES_BEGIN
-
-DECLARE_INTERFACE(IUpdateProduceCallback)
+struct IUpdateProduceCallback
 {
   virtual HRESULT ShowDeleteFile(unsigned arcIndex) = 0;
 };
-Z7_PURE_INTERFACES_END
 
 void UpdateProduce(
     const CRecordVector<CUpdatePair> &updatePairs,

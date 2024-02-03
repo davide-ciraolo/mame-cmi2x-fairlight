@@ -26,8 +26,8 @@ DEFINE_DEVICE_TYPE(IMAGE_AVIVIDEO, avivideo_image_device, "avivideo_image", "AVI
 avivideo_image_device::avivideo_image_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
 	device_t(mconfig, IMAGE_AVIVIDEO, tag, owner, clock),
 	device_image_interface(mconfig, *this),
-	m_frame(),
-	m_avi(),
+	m_frame(nullptr),
+	m_avi(nullptr),
 	m_frame_timer(nullptr),
 	m_frame_count(0),
 	m_frame_num(0)
@@ -60,7 +60,7 @@ void avivideo_image_device::device_reset()
 
 TIMER_CALLBACK_MEMBER(avivideo_image_device::frame_timer)
 {
-	if (m_avi)
+	if (m_avi != nullptr)
 	{
 		avi_file::error avierr = m_avi->read_uncompressed_video_frame(m_frame_num, *m_frame);
 		if (avierr != avi_file::error::NONE)
@@ -80,14 +80,15 @@ TIMER_CALLBACK_MEMBER(avivideo_image_device::frame_timer)
 	}
 }
 
-std::pair<std::error_condition, std::string> avivideo_image_device::call_load()
+image_init_result avivideo_image_device::call_load()
 {
-	m_frame.reset(new bitmap_argb32);
+	m_frame = new bitmap_argb32;
 	avi_file::error avierr = avi_file::open(filename(), m_avi);
 	if (avierr != avi_file::error::NONE)
 	{
-		m_frame.reset();
-		return std::make_pair(image_error::UNSPECIFIED, std::string());
+		delete m_frame;
+		m_frame = nullptr;
+		return image_init_result::FAIL;
 	}
 
 	const avi_file::movie_info &aviinfo = m_avi->get_movie_info();
@@ -96,11 +97,19 @@ std::pair<std::error_condition, std::string> avivideo_image_device::call_load()
 	m_frame_timer->adjust(frame_time, 0, frame_time);
 	m_frame_count = aviinfo.video_numsamples;
 	m_frame_num = 0;
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void avivideo_image_device::call_unload()
 {
-	m_frame.reset();
-	m_avi.reset();
+	if (m_frame)
+	{
+		delete m_frame;
+		m_frame = nullptr;
+	}
+	if (m_avi)
+	{
+		m_avi.release();
+		m_avi = nullptr;
+	}
 }

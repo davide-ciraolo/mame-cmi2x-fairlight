@@ -73,7 +73,7 @@
 #include "agat7.h"
 #include "agat9.h"
 
-#include "bus/a2bus/a2diskiing.h"
+#include "bus/a2bus/a2diskii.h"
 #include "bus/a2bus/agat7langcard.h"
 #include "bus/a2bus/agat7ports.h"
 #include "bus/a2bus/agat7ram.h"
@@ -91,8 +91,6 @@
 #include "softlist.h"
 #include "speaker.h"
 
-
-namespace {
 
 #define A7_CPU_TAG "maincpu"
 #define A7_SPEAKER_TAG "speaker"
@@ -130,9 +128,9 @@ public:
 	void c800_w(offs_t offset, uint8_t data);
 	uint8_t inh_r(offs_t offset);
 	void inh_w(offs_t offset, uint8_t data);
-	void a2bus_irq_w(int state);
-	void a2bus_nmi_w(int state);
-	void a2bus_inh_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(a2bus_irq_w);
+	DECLARE_WRITE_LINE_MEMBER(a2bus_nmi_w);
+	DECLARE_WRITE_LINE_MEMBER(a2bus_inh_w);
 
 	uint8_t agat7_membank_r(offs_t offset);
 	void agat7_membank_w(offs_t offset, uint8_t data);
@@ -153,7 +151,7 @@ public:
 	void controller_strobe_w(uint8_t data);
 
 	void kbd_put(u8 data);
-	void kbd_meta(int state);
+	DECLARE_WRITE_LINE_MEMBER(kbd_meta);
 
 protected:
 	required_device<cpu_device> m_maincpu;
@@ -270,18 +268,18 @@ private:
 #define JOYSTICK_SENSITIVITY    50
 #define JOYSTICK_AUTOCENTER     80
 
-void agat_base_state::a2bus_irq_w(int state)
+WRITE_LINE_MEMBER(agat_base_state::a2bus_irq_w)
 {
 	m_maincpu->set_input_line(M6502_IRQ_LINE, state);
 }
 
-void agat_base_state::a2bus_nmi_w(int state)
+WRITE_LINE_MEMBER(agat_base_state::a2bus_nmi_w)
 {
 	m_maincpu->set_input_line(INPUT_LINE_NMI, state);
 }
 
 // This code makes a ton of assumptions because we can guarantee a pre-IIe machine!
-void agat_base_state::a2bus_inh_w(int state)
+WRITE_LINE_MEMBER(agat_base_state::a2bus_inh_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -462,7 +460,7 @@ void agat_base_state::kbd_put(u8 data)
 	}
 }
 
-void agat_base_state::kbd_meta(int state)
+WRITE_LINE_MEMBER( agat_base_state::kbd_meta )
 {
 	m_meta = state;
 }
@@ -1221,7 +1219,7 @@ static void agat7_cards(device_slot_interface &device)
 static void agat9_cards(device_slot_interface &device)
 {
 //  device.option_add("a9ram", A2BUS_AGAT9RAM); // Agat-9 128K RAM Card -- decimal 3.089.170
-	device.option_add("diskiing", A2BUS_DISKIING);  /* Disk II Controller Card */
+	device.option_add("diskii", A2BUS_DISKII);  /* Disk II Controller Card */
 	device.option_add("a9fdc140", A2BUS_AGAT9_FDC); // Disk II clone -- decimal 3.089.173 (reworked for agat9)
 	device.option_add("a9fdchle", A2BUS_AGAT840K_HLE); // 840K floppy controller -- decimal 7.104.351 or 3.089.023?
 	device.option_add("a9fdc", A2BUS_AGAT_FDC); // 840K floppy controller LLE
@@ -1365,9 +1363,6 @@ ROM_START( agat9 )
 	ROM_REGION(0x0800,"gfx1",0)
 	ROM_LOAD( "agathe9.fnt", 0x0000, 0x0800, CRC(8c55c984) SHA1(5a5a202000576b88b4ae2e180dd2d1b9b337b594))
 ROM_END
-
-} // anonymous namespace
-
 
 //    YEAR  NAME   PARENT  COMPAT  MACHINE  INPUT  CLASS        INIT        COMPANY  FULLNAME  FLAGS
 COMP( 1983, agat7, apple2, 0,      agat7,   agat7, agat7_state, empty_init, "Agat",  "Agat-7", MACHINE_IMPERFECT_GRAPHICS)

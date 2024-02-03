@@ -92,9 +92,6 @@
 
 #pragma once
 
-#include <functional>
-#include <vector>
-
 
 
 //**************************************************************************
@@ -128,7 +125,7 @@ public:
 protected:
 	nasbus_slot_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
 
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 
 private:
@@ -156,22 +153,20 @@ public:
 	template <typename T> void set_io_space(T &&tag, int spacenum) { m_io.set_tag(std::forward<T>(tag), spacenum); }
 
 	// from cards
-	void ram_disable_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( ram_disable_w );
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
 private:
-	using card_vector = std::vector<std::reference_wrapper<device_nasbus_card_interface> >;
-
 	required_address_space m_program;
 	required_address_space m_io;
 
-	devcb_write_line m_ram_disable_handler;
+	simple_list<device_nasbus_card_interface> m_dev;
 
-	card_vector m_dev;
+	devcb_write_line m_ram_disable_handler;
 };
 
 // device type definition
@@ -181,24 +176,29 @@ DECLARE_DEVICE_TYPE(NASBUS, nasbus_device)
 
 class device_nasbus_card_interface : public device_interface
 {
+	template <class ElementType> friend class simple_list;
 public:
 	// construction/destruction
 	virtual ~device_nasbus_card_interface();
 
 	void set_nasbus_device(nasbus_device &nasbus);
 
+	device_nasbus_card_interface *next() const { return m_next; }
+
 protected:
 	device_nasbus_card_interface(const machine_config &mconfig, device_t &device);
 
 	virtual void interface_pre_start() override;
 
-	void ram_disable_w(int state) { m_nasbus->ram_disable_w(state); }
+	DECLARE_WRITE_LINE_MEMBER( ram_disable_w ) { m_nasbus->ram_disable_w(state); }
 
 	address_space &program_space() { return *m_nasbus->m_program; }
 	address_space &io_space() { return *m_nasbus->m_io; }
 
 private:
 	nasbus_device *m_nasbus;
+
+	device_nasbus_card_interface *m_next;
 };
 
 // include here so drivers don't need to

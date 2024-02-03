@@ -7,26 +7,21 @@
 //============================================================
 
 #include "output_module.h"
-
 #include "modules/osdmodule.h"
+#include "modules/lib/osdobj_common.h"
 
 #if defined(OSD_WINDOWS)
-
-#include "win32_output.h"
-
-#include "winmain.h"
-#include "winutil.h"
-
-// MAME headers
-#include "emu.h"
 
 // standard windows headers
 #include <windows.h>
 
+// MAME headers
+#include "emu.h"
+#include "winmain.h"
 
-namespace osd {
+#include "winutil.h"
+#include "win32_output.h"
 
-namespace {
 
 //============================================================
 //  CONSTANTS
@@ -71,36 +66,30 @@ class output_win32 : public osd_module, public output_module
 {
 public:
 	output_win32()
-		: osd_module(OSD_OUTPUT_PROVIDER, "windows")
-		, output_module()
-		, m_output_hwnd(nullptr)
-		, m_clientlist(nullptr)
-		, m_machine(nullptr)
+		: osd_module(OSD_OUTPUT_PROVIDER, "windows"), output_module(), m_output_hwnd(nullptr), m_clientlist(nullptr)
 	{
 	}
 	virtual ~output_win32() { }
 
-	virtual int init(osd_interface &osd, const osd_options &options) override;
+	virtual int init(const osd_options &options) override;
 	virtual void exit() override;
 
 	// output_module
+
 	virtual void notify(const char *outname, int32_t value) override;
 
-	running_machine &machine() { return *m_machine; }
-
+	int create_window_class();
 	LRESULT register_client(HWND hwnd, LPARAM id);
 	LRESULT unregister_client(HWND hwnd, LPARAM id);
 	LRESULT send_id_string(HWND hwnd, LPARAM id);
 
 private:
-	int create_window_class();
 	// our HWND
 	HWND                 m_output_hwnd;
 
 	// client list
 	registered_client *  m_clientlist;
 
-	running_machine *    m_machine;
 };
 
 
@@ -108,10 +97,8 @@ private:
 //  output_init
 //============================================================
 
-int output_win32::init(osd_interface &osd, const osd_options &options)
+int output_win32::init(const osd_options &options)
 {
-	m_machine = &downcast<osd_common_t &>(osd).machine();
-
 	int result;
 
 	// reset globals
@@ -239,13 +226,13 @@ static LRESULT CALLBACK output_window_proc(HWND wnd, UINT message, WPARAM wparam
 	{
 		switch(wparam)
 		{
-		case output_module::IM_MAME_PAUSE:
+		case IM_MAME_PAUSE:
 			if (lparam == 1 && !output.machine().paused())
 				output.machine().pause();
 			else if (lparam == 0 && output.machine().paused())
 				output.machine().resume();
 			break;
-		case output_module::IM_MAME_SAVESTATE:
+		case IM_MAME_SAVESTATE:
 			if (lparam == 0)
 				output.machine().schedule_load("auto");
 			else if (lparam == 1)
@@ -365,15 +352,10 @@ void output_win32::notify(const char *outname, int32_t value)
 		PostMessage(client->hwnd, om_mame_update_state, client->machine->output().name_to_id(outname), value);
 }
 
-} // anonymous namespace
-
-} // namespace osd
 
 
 #else
-
-namespace osd { namespace { MODULE_NOT_SUPPORTED(output_win32, OSD_OUTPUT_PROVIDER, "windows") } }
-
+	MODULE_NOT_SUPPORTED(output_win32, OSD_OUTPUT_PROVIDER, "windows")
 #endif
 
-MODULE_DEFINITION(OUTPUT_WIN32, osd::output_win32)
+MODULE_DEFINITION(OUTPUT_WIN32, output_win32)

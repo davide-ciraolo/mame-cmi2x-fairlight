@@ -110,7 +110,7 @@ void bsmt2000_device::device_add_mconfig(machine_config &config)
 
 void bsmt2000_device::device_start()
 {
-	m_ready_callback.resolve_safe();
+	m_ready_callback.resolve();
 
 	// create the stream; BSMT typically runs at 24MHz and writes to a DAC, so
 	// in theory we should generate a 24MHz stream, but that's certainly overkill
@@ -196,11 +196,10 @@ void bsmt2000_device::sound_stream_update(sound_stream &stream, std::vector<read
 
 
 //-------------------------------------------------
-//  rom_bank_pre_change - refresh the stream if the
-//  ROM banking changes
+//  rom_bank_updated - the rom bank has changed
 //-------------------------------------------------
 
-void bsmt2000_device::rom_bank_pre_change()
+void bsmt2000_device::rom_bank_updated()
 {
 	m_stream->update();
 }
@@ -237,7 +236,7 @@ void bsmt2000_device::write_data(uint16_t data)
 	m_deferred_data_write->adjust(attotime::zero, data);
 
 	// boost the interleave on a write so that the caller detects the status more accurately
-	machine().scheduler().add_quantum(attotime::from_usec(1), attotime::from_usec(10));
+	machine().scheduler().boost_interleave(attotime::from_usec(1), attotime::from_usec(10));
 }
 
 
@@ -261,7 +260,8 @@ uint16_t bsmt2000_device::tms_data_r()
 {
 	// also implicitly clear the write pending flag
 	m_write_pending = false;
-	m_ready_callback();
+	if (!m_ready_callback.isnull())
+		m_ready_callback();
 	return m_write_data;
 }
 
@@ -330,7 +330,7 @@ void bsmt2000_device::tms_right_w(uint16_t data)
 //  on the TMS32015
 //-------------------------------------------------
 
-int bsmt2000_device::tms_write_pending_r()
+READ_LINE_MEMBER( bsmt2000_device::tms_write_pending_r )
 {
 	return m_write_pending ? 1 : 0;
 }

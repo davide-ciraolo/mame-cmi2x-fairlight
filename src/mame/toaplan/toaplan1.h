@@ -4,14 +4,13 @@
                 ToaPlan game hardware from 1988-1991
                 ------------------------------------
 ****************************************************************************/
-#ifndef MAME_TOAPLAN_TOAPLAN1_H
-#define MAME_TOAPLAN_TOAPLAN1_H
+#ifndef MAME_INCLUDES_TOAPLAN1_H
+#define MAME_INCLUDES_TOAPLAN1_H
 
 #pragma once
 
 #include "cpu/m68000/m68000.h"
 #include "cpu/tms32010/tms32010.h"
-#include "machine/gen_latch.h"
 #include "sound/ymopl.h"
 #include "toaplan_scu.h"
 #include "emupal.h"
@@ -125,7 +124,7 @@ protected:
 	DECLARE_MACHINE_RESET(zerowing);
 	u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
-	void screen_vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
 	void interrupt();
 
 	void create_tilemaps();
@@ -135,8 +134,8 @@ protected:
 	void register_common();
 	void log_vram();
 	void draw_sprites(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	virtual void reset_sound();
-	void reset_callback(int state);
+	void reset_sound();
+	DECLARE_WRITE_LINE_MEMBER(reset_callback);
 	required_device<m68000_device> m_maincpu;
 	required_device<cpu_device> m_audiocpu;
 	required_device<ym3812_device> m_ymsnd;
@@ -174,14 +173,14 @@ protected:
 	virtual void video_start() override;
 
 private:
-	void coin_counter_1_w(int state);
-	void coin_counter_2_w(int state);
-	void coin_lockout_1_w(int state);
-	void coin_lockout_2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(coin_counter_1_w);
+	DECLARE_WRITE_LINE_MEMBER(coin_counter_2_w);
+	DECLARE_WRITE_LINE_MEMBER(coin_lockout_1_w);
+	DECLARE_WRITE_LINE_MEMBER(coin_lockout_2_w);
 	u16 tileram_r(offs_t offset);
 	void pri_cb(u8 priority, u32 &pri_mask);
 	u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	void screen_vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
 
 	required_device<toaplan_scu_device> m_spritegen;
 	void rallybik_main_map(address_map &map);
@@ -216,7 +215,7 @@ private:
 	u16 dsp_r();
 	void dsp_w(u16 data);
 	void dsp_bio_w(u16 data);
-	int bio_r();
+	DECLARE_READ_LINE_MEMBER(bio_r);
 	void dsp_ctrl_w(u8 data);
 	void dsp_int_w(int enable);
 
@@ -231,27 +230,30 @@ class toaplan1_samesame_state : public toaplan1_state
 {
 public:
 	toaplan1_samesame_state(const machine_config &mconfig, device_type type, const char *tag) :
-		toaplan1_state(mconfig, type, tag),
-		m_soundlatch(*this, "soundlatch")
+		toaplan1_state(mconfig, type, tag)
 	{
 	}
 
 	void samesame(machine_config &config);
 
 protected:
-	virtual void reset_sound() override;
+	virtual void machine_start() override;
 
 private:
 	// Fire Shark sound
-	required_device<generic_latch_8_device> m_soundlatch;
+	u8 m_to_mcu = 0;
+	u8 m_cmdavailable = 0;
 
+	void mcu_w(u8 data);
+	u8 soundlatch_r();
+	void sound_done_w(u8 data);
 	u8 cmdavailable_r();
 	u8 port_6_word_r();
 
-	void screen_vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
 
 	void hd647180_io_map(address_map &map);
 	void main_map(address_map &map);
 };
 
-#endif // MAME_TOAPLAN_TOAPLAN1_H
+#endif // MAME_INCLUDES_TOAPLAN1_H

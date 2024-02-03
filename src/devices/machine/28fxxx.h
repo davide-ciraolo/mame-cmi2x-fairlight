@@ -21,7 +21,7 @@ public:
 		RESET               = 0xff
 	};
 
-	void vpp(int state) { m_program_power = state; }
+	DECLARE_WRITE_LINE_MEMBER(vpp) { m_program_power = state; }
 	u8 read(address_space &space, offs_t offset, u8 mem_mask = ~0);
 	void write(offs_t offset, u8 data);
 

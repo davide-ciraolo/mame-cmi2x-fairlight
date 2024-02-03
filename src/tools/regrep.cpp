@@ -8,9 +8,7 @@
 
 #include "corefile.h"
 #include "corestr.h"
-#include "path.h"
 #include "png.h"
-#include "strformat.h"
 
 #include "osdcomm.h"
 
@@ -20,6 +18,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <new>
+
+
+using util::string_format;
 
 
 /***************************************************************************
@@ -154,15 +155,15 @@ static int CLIB_DECL compare_file(const void *file0ptr, const void *file1ptr);
 static summary_file *sort_file_list(void);
 
 /* HTML helpers */
-static util::core_file::ptr create_file_and_output_header(std::string_view filename, std::string_view templatefile, const std::string &title);
-static void output_footer_and_close_file(util::write_stream::ptr &&file, std::string_view templatefile, const std::string &title);
+static util::core_file::ptr create_file_and_output_header(std::string &filename, std::string &templatefile, std::string &title);
+static void output_footer_and_close_file(util::write_stream::ptr &&file, std::string &templatefile, std::string &title);
 
 /* report generators */
-static void output_report(std::string_view dirname, std::string_view tempheader, std::string_view tempfooter, summary_file *filelist);
+static void output_report(std::string &dirname, std::string &tempheader, std::string &tempfooter, summary_file *filelist);
 static int compare_screenshots(summary_file *curfile);
-static int generate_png_diff(const summary_file *curfile, std::string_view destdir, std::string_view destname);
-static void create_linked_file(std::string_view dirname, const summary_file *curfile, const summary_file *prevfile, const summary_file *nextfile, std::string_view pngfile, std::string_view tempheader, std::string_view tempfooter);
-static void append_driver_list_table(const char *header, std::string_view dirname, util::core_file &indexfile, const summary_file *listhead, std::string_view tempheader, std::string_view tempfooter);
+static int generate_png_diff(const summary_file *curfile, std::string &destdir, const char *destname);
+static void create_linked_file(std::string &dirname, const summary_file *curfile, const summary_file *prevfile, const summary_file *nextfile, const char *pngfile, std::string &tempheader, std::string &tempfooter);
+static void append_driver_list_table(const char *header, std::string &dirname, util::core_file &indexfile, const summary_file *listhead, std::string &tempheader, std::string &tempfooter);
 
 
 
@@ -241,7 +242,7 @@ int main(int argc, char *argv[])
 
 	/* read the template file into an astring */
 	std::string tempheader;
-	if (!util::core_file::load(tempfilename, &buffer, bufsize))
+	if (!util::core_file::load(tempfilename.c_str(), &buffer, bufsize))
 	{
 		tempheader.assign((const char *)buffer, bufsize);
 		free(buffer);
@@ -566,7 +567,7 @@ static summary_file *sort_file_list(void)
     HTML file with a standard header
 -------------------------------------------------*/
 
-static util::core_file::ptr create_file_and_output_header(std::string_view filename, std::string_view templatefile, const std::string &title)
+static util::core_file::ptr create_file_and_output_header(std::string &filename, std::string &templatefile, std::string &title)
 {
 	util::core_file::ptr file;
 
@@ -576,7 +577,7 @@ static util::core_file::ptr create_file_and_output_header(std::string_view filen
 
 	/* print a header */
 	std::string modified(templatefile);
-	strreplace(modified, "<!--TITLE-->", title);
+	strreplace(modified, "<!--TITLE-->", title.c_str());
 	std::size_t written;
 	file->write(modified.c_str(), modified.length(), written); // FIXME: check for errors
 
@@ -590,10 +591,10 @@ static util::core_file::ptr create_file_and_output_header(std::string_view filen
     standard footer to an HTML file and close it
 -------------------------------------------------*/
 
-static void output_footer_and_close_file(util::write_stream::ptr &&file, std::string_view templatefile, const std::string &title)
+static void output_footer_and_close_file(util::write_stream::ptr &&file, std::string &templatefile, std::string &title)
 {
 	std::string modified(templatefile);
-	strreplace(modified, "<!--TITLE-->", title);
+	strreplace(modified, "<!--TITLE-->", title.c_str());
 	std::size_t written;
 	file->write(modified.c_str(), modified.length(), written); // FIXME: check for errors
 	file.reset();
@@ -610,7 +611,7 @@ static void output_footer_and_close_file(util::write_stream::ptr &&file, std::st
     report HTML files
 -------------------------------------------------*/
 
-static void output_report(std::string_view dirname, std::string_view tempheader, std::string_view tempfooter, summary_file *filelist)
+static void output_report(std::string &dirname, std::string &tempheader, std::string &tempfooter, summary_file *filelist)
 {
 	summary_file *buckethead[BUCKET_COUNT], **buckettailptr[BUCKET_COUNT];
 	summary_file *curfile;
@@ -693,7 +694,7 @@ static void output_report(std::string_view dirname, std::string_view tempheader,
 		*buckettailptr[bucknum] = nullptr;
 
 	/* output header */
-	std::string tempname = util::path_concat(dirname, "index.html");
+	std::string tempname = string_format("%s" PATH_SEPARATOR "%s", dirname.c_str(), "index.html");
 	indexfile = create_file_and_output_header(tempname, tempheader, title);
 	if (!indexfile)
 	{
@@ -738,7 +739,7 @@ static int compare_screenshots(summary_file *curfile)
 			util::core_file::ptr file;
 
 			/* get the filename for the image */
-			fullname = util::path_concat(lists[listnum].dir, "snap", curfile->name, "final.png");
+			fullname = string_format("%s" PATH_SEPARATOR "snap" PATH_SEPARATOR "%s" PATH_SEPARATOR "final.png", lists[listnum].dir, curfile->name);
 
 			/* open the file */
 			filerr = util::core_file::open(fullname, OPEN_FLAG_READ, file);
@@ -747,7 +748,7 @@ static int compare_screenshots(summary_file *curfile)
 			if (filerr)
 			{
 				/* get the filename for the image */
-				fullname = util::path_concat(lists[listnum].dir, "snap", util::string_format("_%s.png", curfile->name));
+				fullname = string_format("%s" PATH_SEPARATOR "snap" PATH_SEPARATOR "_%s.png", lists[listnum].dir, curfile->name);
 
 				/* open the file */
 				filerr = util::core_file::open(fullname, OPEN_FLAG_READ, file);
@@ -833,7 +834,7 @@ static int compare_screenshots(summary_file *curfile)
     side with a third set of differences
 -------------------------------------------------*/
 
-static int generate_png_diff(const summary_file *curfile, std::string_view destdir, std::string_view destname)
+static int generate_png_diff(const summary_file *curfile, std::string &destdir, const char *destname)
 {
 	bitmap_argb32 bitmaps[MAX_COMPARES];
 	std::string srcimgname;
@@ -847,14 +848,14 @@ static int generate_png_diff(const summary_file *curfile, std::string_view destd
 	int starty;
 
 	/* generate the common source filename */
-	dstfilename = util::path_concat(destdir, destname);
-	srcimgname = util::path_concat("snap", curfile->name, "final.png");
+	dstfilename = string_format("%s" PATH_SEPARATOR "%s", destdir.c_str(), destname);
+	srcimgname = string_format("snap" PATH_SEPARATOR "%s" PATH_SEPARATOR "final.png", curfile->name);
 
 	/* open and load all unique bitmaps */
 	for (int listnum = 0; listnum < list_count; listnum++)
 		if (curfile->matchbitmap[listnum] == listnum)
 		{
-			std::string tempname = util::path_concat(lists[listnum].dir, srcimgname);
+			std::string tempname = string_format("%s" PATH_SEPARATOR "%s", lists[listnum].dir, srcimgname.c_str());
 
 			/* open the source image */
 			filerr = util::core_file::open(tempname, OPEN_FLAG_READ, file);
@@ -951,7 +952,7 @@ error:
     file between differing versions
 -------------------------------------------------*/
 
-static void create_linked_file(std::string_view dirname, const summary_file *curfile, const summary_file *prevfile, const summary_file *nextfile, std::string_view pngfile, std::string_view tempheader, std::string_view tempfooter)
+static void create_linked_file(std::string &dirname, const summary_file *curfile, const summary_file *prevfile, const summary_file *nextfile, const char *pngfile, std::string &tempheader, std::string &tempfooter)
 {
 	std::string linkname;
 	std::string filename;
@@ -960,11 +961,11 @@ static void create_linked_file(std::string_view dirname, const summary_file *cur
 	int listnum;
 
 	/* create the filename */
-	filename = util::string_format("%s.html", curfile->name);
+	filename = string_format("%s.html", curfile->name);
 
 	/* output header */
-	title = util::string_format("%s Regressions (%s)", curfile->name, curfile->source);
-	linkname = util::path_concat(dirname, filename);
+	title = string_format("%s Regressions (%s)", curfile->name, curfile->source);
+	linkname = string_format("%s" PATH_SEPARATOR "%s", dirname.c_str(), filename.c_str());
 	linkfile = create_file_and_output_header(linkname, tempheader, title);
 	if (linkfile == nullptr)
 	{
@@ -996,7 +997,7 @@ static void create_linked_file(std::string_view dirname, const summary_file *cur
 		linkfile->printf("\n\t<h2>%s</h2>\n", lists[listnum].version);
 		linkfile->printf("\t<p>\n");
 		linkfile->printf("\t<b>Status:</b> %s\n", status_text[curfile->status[listnum]]);
-		if (!pngfile.empty())
+		if (pngfile != nullptr)
 			imageindex = get_unique_index(curfile, listnum);
 		if (imageindex != -1)
 			linkfile->printf(" [%d]", imageindex);
@@ -1005,13 +1006,13 @@ static void create_linked_file(std::string_view dirname, const summary_file *cur
 		{
 			linkfile->printf("\t<p>\n");
 			linkfile->printf("\t<b>Errors:</b>\n");
-			linkfile->printf("\t<pre>%s</pre>\n", curfile->text[listnum]);
+			linkfile->printf("\t<pre>%s</pre>\n", curfile->text[listnum].c_str());
 			linkfile->printf("\t</p>\n");
 		}
 	}
 
 	/* output link to the image */
-	if (!pngfile.empty())
+	if (pngfile != nullptr)
 	{
 		linkfile->printf("\n\t<h2>Screenshot Comparisons</h2>\n");
 		linkfile->printf("\t<p>\n");
@@ -1029,7 +1030,7 @@ static void create_linked_file(std::string_view dirname, const summary_file *cur
     of drivers from a list to an HTML file
 -------------------------------------------------*/
 
-static void append_driver_list_table(const char *header, std::string_view dirname, util::core_file &indexfile, const summary_file *listhead, std::string_view tempheader, std::string_view tempfooter)
+static void append_driver_list_table(const char *header, std::string &dirname, util::core_file &indexfile, const summary_file *listhead, std::string &tempheader, std::string &tempfooter)
 {
 	const summary_file *curfile, *prevfile;
 	int width = 100 / (2 + list_count);
@@ -1057,6 +1058,7 @@ static void append_driver_list_table(const char *header, std::string_view dirnam
 	for (prevfile = nullptr, curfile = listhead; curfile != nullptr; prevfile = curfile, curfile = curfile->next)
 	{
 		int rowspan = 0, uniqueshots = 0;
+		char pngdiffname[40];
 
 		/* if this is the first entry in this source file, count how many rows we need to span */
 		if (prevfile == nullptr || strcmp(prevfile->source, curfile->source) != 0)
@@ -1070,19 +1072,19 @@ static void append_driver_list_table(const char *header, std::string_view dirnam
 		}
 
 		/* create screenshots if necessary */
-		std::string pngdiffname;
+		pngdiffname[0] = 0;
 		for (listnum = 0; listnum < list_count; listnum++)
 			if (curfile->matchbitmap[listnum] == listnum)
 				uniqueshots++;
 		if (uniqueshots > 1)
 		{
-			pngdiffname = util::string_format("compare_%s.png", curfile->name);
+			sprintf(pngdiffname, "compare_%s.png", curfile->name);
 			if (generate_png_diff(curfile, dirname, pngdiffname) != 0)
-				pngdiffname.clear();
+				pngdiffname[0] = 0;
 		}
 
 		/* create a linked file */
-		create_linked_file(dirname, curfile, prevfile, curfile->next, pngdiffname, tempheader, tempfooter);
+		create_linked_file(dirname, curfile, prevfile, curfile->next, (pngdiffname[0] == 0) ? nullptr : pngdiffname, tempheader, tempfooter);
 
 		/* create a row */
 		indexfile.printf("\t\t<tr>\n\t\t\t");
@@ -1093,7 +1095,7 @@ static void append_driver_list_table(const char *header, std::string_view dirnam
 		{
 			int unique_index = -1;
 
-			if (!pngdiffname.empty())
+			if (pngdiffname[0] != 0)
 				unique_index = get_unique_index(curfile, listnum);
 			if (unique_index != -1)
 				indexfile.printf("<td><span style=\"%s\">&nbsp;&nbsp;&nbsp;</span> %s [<a href=\"%s\" target=\"blank\">%d</a>]</td>", status_color[curfile->status[listnum]], status_text[curfile->status[listnum]], pngdiffname, unique_index);

@@ -11,16 +11,13 @@
 #include "emu.h"
 #include "pcf8593.h"
 
-#define LOG_LEVEL0 (1U << 1)
-#define LOG_LEVEL1 (1U << 2)
-#define LOG_LEVEL2 (1U << 3)
-#define VERBOSE (LOG_LEVEL0)
-#include "logmacro.h"
-
 
 /***************************************************************************
     PARAMETERS/CONSTANTS/MACROS
 ***************************************************************************/
+
+#define LOG_LEVEL  1
+#define _logerror(level,x)  do { if (LOG_LEVEL > level) logerror x; } while (0)
 
 // get/set date
 #define RTC_GET_DATE_YEAR       ((m_data[5] >> 6) & 3)
@@ -64,7 +61,7 @@ pcf8593_device::pcf8593_device(const machine_config &mconfig, const char *tag, d
 
 void pcf8593_device::device_start()
 {
-	LOGMASKED(LOG_LEVEL0, "pcf8593_init\n");
+	_logerror( 0, ("pcf8593_init\n"));
 	memset(m_register, 0, sizeof(m_register));
 	m_timer = timer_alloc(FUNC(pcf8593_device::clock_tick), this);
 	m_timer->adjust(attotime::from_seconds(1), 0, attotime::from_seconds(1));
@@ -76,7 +73,7 @@ void pcf8593_device::device_start()
 
 void pcf8593_device::device_reset()
 {
-	LOGMASKED(LOG_LEVEL0, "pcf8593_reset\n");
+	_logerror( 0, ("pcf8593_reset\n"));
 	m_pin_scl = 1;
 	m_pin_sda = 1;
 	m_active  = false;
@@ -95,7 +92,7 @@ void pcf8593_device::device_reset()
 
 TIMER_CALLBACK_MEMBER(pcf8593_device::clock_tick)
 {
-	LOGMASKED(LOG_LEVEL2, "pcf8593_timer_callback (%d)\n", param);
+	_logerror( 2, ("pcf8593_timer_callback (%d)\n", param));
 	// check if counting is enabled
 	if (!(m_data[0] & 0x80))
 		advance_seconds();
@@ -156,7 +153,7 @@ bool pcf8593_device::nvram_write(util::write_stream &file)
     pcf8593_pin_scl
 -------------------------------------------------*/
 
-void pcf8593_device::scl_w(int state)
+WRITE_LINE_MEMBER(pcf8593_device::scl_w)
 {
 	// send bit
 	// FIXME: Processing on the rising edge of the clock causes sda output to
@@ -176,7 +173,7 @@ void pcf8593_device::scl_w(int state)
 				// bit 9 = end
 				if (m_bits > 8)
 				{
-					LOGMASKED(LOG_LEVEL2, "pcf8593_write_byte(%02X)\n", m_data_recv[m_data_recv_index]);
+					_logerror( 2, ("pcf8593_write_byte(%02X)\n", m_data_recv[m_data_recv_index]));
 					// enter receive mode when 1st byte = 0xA3
 					if ((m_data_recv[0] == 0xA3) && (m_data_recv_index == 0))
 					{
@@ -212,11 +209,11 @@ void pcf8593_device::scl_w(int state)
 				// bit 9 = end
 				if (m_bits > 8)
 				{
-					LOGMASKED(LOG_LEVEL2, "pcf8593_read_byte(%02X)\n", m_data[m_pos]);
+					_logerror( 2, ("pcf8593_read_byte(%02X)\n", m_data[m_pos]));
 					// end ?
 					if (m_pin_sda)
 					{
-						LOGMASKED(LOG_LEVEL2, "pcf8593 end\n");
+						_logerror( 2, ("pcf8593 end\n"));
 						m_mode = RTC_MODE_RECV;
 						clear_buffer_rx();
 					}
@@ -238,17 +235,17 @@ void pcf8593_device::scl_w(int state)
     pcf8593_pin_sda_w
 -------------------------------------------------*/
 
-void pcf8593_device::sda_w(int state)
+WRITE_LINE_MEMBER(pcf8593_device::sda_w)
 {
 	// clock is high
 	if (m_pin_scl)
 	{
 		// log init I2C
-		if (state) LOGMASKED(LOG_LEVEL1, "pcf8593 init i2c\n");
+		if (state) _logerror( 1, ("pcf8593 init i2c\n"));
 		// start condition (high to low when clock is high)
 		if ((!state) && (m_pin_sda))
 		{
-			LOGMASKED(LOG_LEVEL1, "pcf8593 start condition\n");
+			_logerror( 1, ("pcf8593 start condition\n"));
 			m_active          = true;
 			m_bits            = 0;
 			m_data_recv_index = 0;
@@ -258,7 +255,7 @@ void pcf8593_device::sda_w(int state)
 		// stop condition (low to high when clock is high)
 		if ((state) && (!m_pin_sda))
 		{
-			LOGMASKED(LOG_LEVEL1, "pcf8593 stop condition\n");
+			_logerror( 1, ("pcf8593 stop condition\n"));
 			m_active = false;
 		}
 	}
@@ -272,7 +269,7 @@ void pcf8593_device::sda_w(int state)
     pcf8593_pin_sda_r
 -------------------------------------------------*/
 
-int pcf8593_device::sda_r()
+READ_LINE_MEMBER(pcf8593_device::sda_r)
 {
 	return m_inp;
 }

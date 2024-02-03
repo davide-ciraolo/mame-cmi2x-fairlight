@@ -6,7 +6,7 @@
 
 #include "LimitedStreams.h"
 
-Z7_COM7F_IMF(CLimitedSequentialInStream::Read(void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CLimitedSequentialInStream::Read(void *data, UInt32 size, UInt32 *processedSize)
 {
   UInt32 realProcessedSize = 0;
   {
@@ -27,7 +27,7 @@ Z7_COM7F_IMF(CLimitedSequentialInStream::Read(void *data, UInt32 size, UInt32 *p
   return result;
 }
 
-Z7_COM7F_IMF(CLimitedInStream::Read(void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CLimitedInStream::Read(void *data, UInt32 size, UInt32 *processedSize)
 {
   if (processedSize)
     *processedSize = 0;
@@ -46,7 +46,7 @@ Z7_COM7F_IMF(CLimitedInStream::Read(void *data, UInt32 size, UInt32 *processedSi
   if (newPos != _physPos)
   {
     _physPos = newPos;
-    RINOK(SeekToPhys())
+    RINOK(SeekToPhys());
   }
   HRESULT res = _stream->Read(data, size, &size);
   if (processedSize)
@@ -56,7 +56,7 @@ Z7_COM7F_IMF(CLimitedInStream::Read(void *data, UInt32 size, UInt32 *processedSi
   return res;
 }
 
-Z7_COM7F_IMF(CLimitedInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition))
+STDMETHODIMP CLimitedInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition)
 {
   switch (seekOrigin)
   {
@@ -67,7 +67,7 @@ Z7_COM7F_IMF(CLimitedInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *new
   }
   if (offset < 0)
     return HRESULT_WIN32_ERROR_NEGATIVE_SEEK;
-  _virtPos = (UInt64)offset;
+  _virtPos = offset;
   if (newPosition)
     *newPosition = _virtPos;
   return S_OK;
@@ -75,17 +75,17 @@ Z7_COM7F_IMF(CLimitedInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *new
 
 HRESULT CreateLimitedInStream(IInStream *inStream, UInt64 pos, UInt64 size, ISequentialInStream **resStream)
 {
-  *resStream = NULL;
+  *resStream = 0;
   CLimitedInStream *streamSpec = new CLimitedInStream;
   CMyComPtr<ISequentialInStream> streamTemp = streamSpec;
   streamSpec->SetStream(inStream);
-  RINOK(streamSpec->InitAndSeek(pos, size))
+  RINOK(streamSpec->InitAndSeek(pos, size));
   streamSpec->SeekToStart();
   *resStream = streamTemp.Detach();
   return S_OK;
 }
 
-Z7_COM7F_IMF(CClusterInStream::Read(void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CClusterInStream::Read(void *data, UInt32 size, UInt32 *processedSize)
 {
   if (processedSize)
     *processedSize = 0;
@@ -110,12 +110,12 @@ Z7_COM7F_IMF(CClusterInStream::Read(void *data, UInt32 size, UInt32 *processedSi
     if (newPos != _physPos)
     {
       _physPos = newPos;
-      RINOK(SeekToPhys())
+      RINOK(SeekToPhys());
     }
 
     _curRem = blockSize - offsetInBlock;
     
-    for (unsigned i = 1; i < 64 && (virtBlock + i) < (UInt32)Vector.Size() && phyBlock + i == Vector[virtBlock + i]; i++)
+    for (int i = 1; i < 64 && (virtBlock + i) < (UInt32)Vector.Size() && phyBlock + i == Vector[virtBlock + i]; i++)
       _curRem += (UInt32)1 << BlockSizeLog;
   }
   
@@ -130,7 +130,7 @@ Z7_COM7F_IMF(CClusterInStream::Read(void *data, UInt32 size, UInt32 *processedSi
   return res;
 }
  
-Z7_COM7F_IMF(CClusterInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition))
+STDMETHODIMP CClusterInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition)
 {
   switch (seekOrigin)
   {
@@ -143,82 +143,56 @@ Z7_COM7F_IMF(CClusterInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *new
     return HRESULT_WIN32_ERROR_NEGATIVE_SEEK;
   if (_virtPos != (UInt64)offset)
     _curRem = 0;
-  _virtPos = (UInt64)offset;
+  _virtPos = offset;
   if (newPosition)
-    *newPosition = (UInt64)offset;
+    *newPosition = offset;
   return S_OK;
 }
 
 
-Z7_COM7F_IMF(CExtentsStream::Read(void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CExtentsStream::Read(void *data, UInt32 size, UInt32 *processedSize)
 {
   if (processedSize)
     *processedSize = 0;
-  const UInt64 virt = _virtPos;
-  if (virt >= Extents.Back().Virt)
+  if (_virtPos >= Extents.Back().Virt)
     return S_OK;
   if (size == 0)
     return S_OK;
   
-  unsigned left = _prevExtentIndex;
-  if (virt <  Extents[left].Virt ||
-      virt >= Extents[left + 1].Virt)
+  unsigned left = 0, right = Extents.Size() - 1;
+  for (;;)
   {
-    left = 0;
-    unsigned right = Extents.Size() - 1;
-    for (;;)
-    {
-      const unsigned mid = (unsigned)(((size_t)left + (size_t)right) / 2);
-      if (mid == left)
-        break;
-      if (virt < Extents[mid].Virt)
-        right = mid;
-      else
-        left = mid;
-    }
-    _prevExtentIndex = left;
-  }
-  
-  {
-    const UInt64 rem = Extents[left + 1].Virt - virt;
-    if (size > rem)
-      size = (UInt32)rem;
+    unsigned mid = (left + right) / 2;
+    if (mid == left)
+      break;
+    if (_virtPos < Extents[mid].Virt)
+      right = mid;
+    else
+      left = mid;
   }
   
   const CSeekExtent &extent = Extents[left];
-  
-  if (extent.Is_ZeroFill())
+  UInt64 phyPos = extent.Phy + (_virtPos - extent.Virt);
+  if (_needStartSeek || _phyPos != phyPos)
   {
-    memset(data, 0, size);
-    _virtPos += size;
-    if (processedSize)
-      *processedSize = size;
-    return S_OK;
-  }
-
-  {
-    const UInt64 phy = extent.Phy + (virt - extent.Virt);
-    if (_phyPos != phy)
-    {
-      _phyPos = (UInt64)0 - 1;  // we don't trust seek_pos in case of error
-      RINOK(InStream_SeekSet(Stream, phy))
-      _phyPos = phy;
-    }
+    _needStartSeek = false;
+    _phyPos = phyPos;
+    RINOK(SeekToPhys());
   }
   
-  const HRESULT res = Stream->Read(data, size, &size);
+  UInt64 rem = Extents[left + 1].Virt - _virtPos;
+  if (size > rem)
+    size = (UInt32)rem;
+  
+  HRESULT res = Stream->Read(data, size, &size);
+  _phyPos += size;
   _virtPos += size;
-  if (res == S_OK)
-    _phyPos += size;
-  else
-    _phyPos = (UInt64)0 - 1;  // we don't trust seek_pos in case of error
   if (processedSize)
     *processedSize = size;
   return res;
 }
 
-
-Z7_COM7F_IMF(CExtentsStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition))
+STDMETHODIMP CExtentsStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition)
 {
   switch (seekOrigin)
   {
@@ -229,14 +203,14 @@ Z7_COM7F_IMF(CExtentsStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPo
   }
   if (offset < 0)
     return HRESULT_WIN32_ERROR_NEGATIVE_SEEK;
-  _virtPos = (UInt64)offset;
+  _virtPos = offset;
   if (newPosition)
     *newPosition = _virtPos;
   return S_OK;
 }
 
 
-Z7_COM7F_IMF(CLimitedSequentialOutStream::Write(const void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CLimitedSequentialOutStream::Write(const void *data, UInt32 size, UInt32 *processedSize)
 {
   HRESULT result = S_OK;
   if (processedSize)
@@ -263,7 +237,7 @@ Z7_COM7F_IMF(CLimitedSequentialOutStream::Write(const void *data, UInt32 size, U
 }
 
 
-Z7_COM7F_IMF(CTailInStream::Read(void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CTailInStream::Read(void *data, UInt32 size, UInt32 *processedSize)
 {
   UInt32 cur;
   HRESULT res = Stream->Read(data, size, &cur);
@@ -273,7 +247,7 @@ Z7_COM7F_IMF(CTailInStream::Read(void *data, UInt32 size, UInt32 *processedSize)
   return res;
 }
   
-Z7_COM7F_IMF(CTailInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition))
+STDMETHODIMP CTailInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition)
 {
   switch (seekOrigin)
   {
@@ -282,7 +256,7 @@ Z7_COM7F_IMF(CTailInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPos
     case STREAM_SEEK_END:
     {
       UInt64 pos = 0;
-      RINOK(Stream->Seek(offset, STREAM_SEEK_END, &pos))
+      RINOK(Stream->Seek(offset, STREAM_SEEK_END, &pos));
       if (pos < Offset)
         return HRESULT_WIN32_ERROR_NEGATIVE_SEEK;
       _virtPos = pos - Offset;
@@ -294,13 +268,13 @@ Z7_COM7F_IMF(CTailInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPos
   }
   if (offset < 0)
     return HRESULT_WIN32_ERROR_NEGATIVE_SEEK;
-  _virtPos = (UInt64)offset;
+  _virtPos = offset;
   if (newPosition)
     *newPosition = _virtPos;
-  return InStream_SeekSet(Stream, Offset + _virtPos);
+  return Stream->Seek(Offset + _virtPos, STREAM_SEEK_SET, NULL);
 }
 
-Z7_COM7F_IMF(CLimitedCachedInStream::Read(void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CLimitedCachedInStream::Read(void *data, UInt32 size, UInt32 *processedSize)
 {
   if (processedSize)
     *processedSize = 0;
@@ -329,7 +303,7 @@ Z7_COM7F_IMF(CLimitedCachedInStream::Read(void *data, UInt32 size, UInt32 *proce
     if (newPos != _physPos)
     {
       _physPos = newPos;
-      RINOK(SeekToPhys())
+      RINOK(SeekToPhys());
     }
     res = _stream->Read(data, size, &size);
     _physPos += size;
@@ -340,7 +314,7 @@ Z7_COM7F_IMF(CLimitedCachedInStream::Read(void *data, UInt32 size, UInt32 *proce
   return res;
 }
 
-Z7_COM7F_IMF(CLimitedCachedInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition))
+STDMETHODIMP CLimitedCachedInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition)
 {
   switch (seekOrigin)
   {
@@ -351,13 +325,13 @@ Z7_COM7F_IMF(CLimitedCachedInStream::Seek(Int64 offset, UInt32 seekOrigin, UInt6
   }
   if (offset < 0)
     return HRESULT_WIN32_ERROR_NEGATIVE_SEEK;
-  _virtPos = (UInt64)offset;
+  _virtPos = offset;
   if (newPosition)
     *newPosition = _virtPos;
   return S_OK;
 }
 
-Z7_COM7F_IMF(CTailOutStream::Write(const void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CTailOutStream::Write(const void *data, UInt32 size, UInt32 *processedSize)
 {
   UInt32 cur;
   HRESULT res = Stream->Write(data, size, &cur);
@@ -369,7 +343,7 @@ Z7_COM7F_IMF(CTailOutStream::Write(const void *data, UInt32 size, UInt32 *proces
   return res;
 }
   
-Z7_COM7F_IMF(CTailOutStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition))
+STDMETHODIMP CTailOutStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition)
 {
   switch (seekOrigin)
   {
@@ -380,13 +354,13 @@ Z7_COM7F_IMF(CTailOutStream::Seek(Int64 offset, UInt32 seekOrigin, UInt64 *newPo
   }
   if (offset < 0)
     return HRESULT_WIN32_ERROR_NEGATIVE_SEEK;
-  _virtPos = (UInt64)offset;
+  _virtPos = offset;
   if (newPosition)
     *newPosition = _virtPos;
-  return Stream->Seek((Int64)(Offset + _virtPos), STREAM_SEEK_SET, NULL);
+  return Stream->Seek(Offset + _virtPos, STREAM_SEEK_SET, NULL);
 }
 
-Z7_COM7F_IMF(CTailOutStream::SetSize(UInt64 newSize))
+STDMETHODIMP CTailOutStream::SetSize(UInt64 newSize)
 {
   _virtSize = newSize;
   return Stream->SetSize(Offset + newSize);

@@ -25,7 +25,6 @@
     The Apple IIe, IIc and IIgs also have an external DE-9 connector
     that carries a subset of the signals, excluding the annunciator
     outputs and utility strobe (which the IIc and IIgs do not have).
-    The Laser 3000 provides only the 9-pin connector.
 
 **********************************************************************
                             ____________
@@ -88,12 +87,6 @@ void apple2_gameio_device::default_options(device_slot_interface &slot)
 	slot.option_add("compeyes", APPLE2_COMPUTEREYES);
 }
 
-void apple2_gameio_device::joystick_options(device_slot_interface &slot)
-{
-	slot.option_add("joy", APPLE2_JOYSTICK);
-	slot.option_add("paddles", APPLE2_PADDLES);
-}
-
 void apple2_gameio_device::device_config_complete()
 {
 	m_intf = get_card_device();
@@ -146,7 +139,7 @@ u8 apple2_gameio_device::pdl3_r()
 	return 0;
 }
 
-int apple2_gameio_device::sw0_r()
+READ_LINE_MEMBER(apple2_gameio_device::sw0_r)
 {
 	if (m_intf != nullptr)
 		return m_intf->sw0_r();
@@ -154,7 +147,7 @@ int apple2_gameio_device::sw0_r()
 	return m_sw_pullups ? 1 : 0;
 }
 
-int apple2_gameio_device::sw1_r()
+READ_LINE_MEMBER(apple2_gameio_device::sw1_r)
 {
 	if (m_intf != nullptr)
 		return m_intf->sw1_r();
@@ -162,7 +155,7 @@ int apple2_gameio_device::sw1_r()
 	return m_sw_pullups ? 1 : 0;
 }
 
-int apple2_gameio_device::sw2_r()
+READ_LINE_MEMBER(apple2_gameio_device::sw2_r)
 {
 	if (m_intf != nullptr)
 		return m_intf->sw2_r();
@@ -170,7 +163,7 @@ int apple2_gameio_device::sw2_r()
 	return m_sw_pullups ? 1 : 0;
 }
 
-int apple2_gameio_device::sw3_r()
+READ_LINE_MEMBER(apple2_gameio_device::sw3_r)
 {
 	if (m_intf != nullptr)
 		return m_intf->sw3_r();
@@ -178,37 +171,37 @@ int apple2_gameio_device::sw3_r()
 	return m_sw_pullups ? 1 : 0;
 }
 
-void apple2_gameio_device::an0_w(int state)
+WRITE_LINE_MEMBER(apple2_gameio_device::an0_w)
 {
 	if (m_intf != nullptr)
 		m_intf->an0_w(state);
 }
 
-void apple2_gameio_device::an1_w(int state)
+WRITE_LINE_MEMBER(apple2_gameio_device::an1_w)
 {
 	if (m_intf != nullptr)
 		m_intf->an1_w(state);
 }
 
-void apple2_gameio_device::an2_w(int state)
+WRITE_LINE_MEMBER(apple2_gameio_device::an2_w)
 {
 	if (m_intf != nullptr)
 		m_intf->an2_w(state);
 }
 
-void apple2_gameio_device::an3_w(int state)
+WRITE_LINE_MEMBER(apple2_gameio_device::an3_w)
 {
 	if (m_intf != nullptr)
 		m_intf->an3_w(state);
 }
 
-void apple2_gameio_device::an4_w(int state)
+WRITE_LINE_MEMBER(apple2_gameio_device::an4_w)
 {
 	if (m_intf != nullptr)
 		m_intf->an4_w(state);
 }
 
-void apple2_gameio_device::strobe_w(int state)
+WRITE_LINE_MEMBER(apple2_gameio_device::strobe_w)
 {
 	if (m_intf != nullptr)
 		m_intf->strobe_w(state);

@@ -59,8 +59,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 class d6800_state : public driver_device
 {
 public:
@@ -85,7 +83,7 @@ private:
 	void d6800_cassette_w(uint8_t data);
 	uint8_t d6800_keyboard_r();
 	void d6800_keyboard_w(uint8_t data);
-	void d6800_screen_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( d6800_screen_w );
 	uint32_t screen_update_d6800(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	INTERRUPT_GEN_MEMBER(rtc_interrupt);
 	TIMER_DEVICE_CALLBACK_MEMBER(kansas_w);
@@ -240,7 +238,7 @@ TIMER_DEVICE_CALLBACK_MEMBER(d6800_state::kansas_r)
 }
 
 
-void d6800_state::d6800_screen_w(int state)
+WRITE_LINE_MEMBER( d6800_state::d6800_screen_w )
 {
 	m_cb2 = state;
 	m_maincpu->set_unscaled_clock(state ? 589744 : 1e6); // effective clock is ~590kHz while screen is on
@@ -342,31 +340,34 @@ void d6800_state::machine_reset()
 
 QUICKLOAD_LOAD_MEMBER(d6800_state::quickload_cb)
 {
-	constexpr u16 QUICK_ADDR = 0x200;
-
-	u32 const quick_length = image.length();
-	if (quick_length > 0xe00)
-		return std::make_pair(image_error::INVALIDIMAGE, "File exceeds 3584 bytes");
-
 	address_space &space = m_maincpu->space(AS_PROGRAM);
-	for (u32 i = 0; i < quick_length; i++)
+	u8 ch;
+	u16 quick_addr = 0x200;
+	u16 exec_addr = 0xc000;
+	u32 quick_length = image.length();
+	if (quick_length > 0xe00)
 	{
-		u8 ch;
-		image.fread(&ch, 1);
-		space.write_byte(i + QUICK_ADDR, ch);
+		image.seterror(image_error::INVALIDIMAGE, "File exceeds 3584 bytes");
+		image.message(" File exceeds 3584 bytes");
+		return image_init_result::FAIL;
 	}
 
-	u16 exec_addr = 0xc000;
-	if (image.is_filetype("bin"))
-		exec_addr = QUICK_ADDR;
+	for (u32 i = 0; i < quick_length; i++)
+	{
+		image.fread(&ch, 1);
+		space.write_byte(i + quick_addr, ch);
+	}
 
-	// display a message about the loaded quickload
-	image.message(" Quickload: size=%04X : start=%04X : end=%04X : exec=%04X", quick_length, QUICK_ADDR, QUICK_ADDR+quick_length, exec_addr);
+	if (image.is_filetype("bin"))
+		exec_addr = quick_addr;
+
+	/* display a message about the loaded quickload */
+	image.message(" Quickload: size=%04X : start=%04X : end=%04X : exec=%04X",quick_length,quick_addr,quick_addr+quick_length,exec_addr);
 
 	// Start the quickload
 	m_maincpu->set_pc(exec_addr);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void d6800_state::d6800(machine_config &config)
@@ -392,7 +393,7 @@ void d6800_state::d6800(machine_config &config)
 	BEEP(config, "beeper", 1200).add_route(ALL_OUTPUTS, "mono", 0.50);
 
 	/* devices */
-	PIA6821(config, m_pia);
+	PIA6821(config, m_pia, 0);
 	m_pia->readpa_handler().set(FUNC(d6800_state::d6800_keyboard_r));
 	m_pia->readpb_handler().set(FUNC(d6800_state::d6800_cassette_r));
 	m_pia->writepa_handler().set(FUNC(d6800_state::d6800_keyboard_w));
@@ -428,9 +429,6 @@ ROM_START( d6800 )
 	ROM_SYSTEM_BIOS(2, "d2m", "Dreamsoft2m")
 	ROMX_LOAD( "d6800d2m.bin",  0x0000, 0x0800, CRC(eec8e56f) SHA1(f587ccbc0872f2982d61120d033f481a862b902b), ROM_BIOS(2) )
 ROM_END
-
-} // anonymous namespace
-
 
 //    YEAR  NAME   PARENT  COMPAT  MACHINE  INPUT  CLASS        INIT        COMPANY          FULLNAME      FLAGS
 COMP( 1979, d6800, 0,      0,      d6800,   d6800, d6800_state, empty_init, "Michael Bauer", "Dream 6800", MACHINE_SUPPORTS_SAVE )

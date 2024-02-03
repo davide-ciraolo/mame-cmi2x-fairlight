@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Stefan Jokisch
-#ifndef MAME_MIDWAY_SSPEEDR_H
-#define MAME_MIDWAY_SSPEEDR_H
+#ifndef MAME_INCLUDES_SSPEEDR_H
+#define MAME_INCLUDES_SSPEEDR_H
 
 #pragma once
 
@@ -17,8 +17,6 @@ public:
 		, m_gfxdecode(*this, "gfxdecode")
 		, m_palette(*this, "palette")
 		, m_digits(*this, "digit%u", 0U)
-		, m_lampgo(*this, "lampGO")
-		, m_lampep(*this, "lampEP")
 		, m_pedal_bit0(*this, "sound_nl:pedal_bit0")
 		, m_pedal_bit1(*this, "sound_nl:pedal_bit1")
 		, m_pedal_bit2(*this, "sound_nl:pedal_bit2")
@@ -37,7 +35,7 @@ public:
 
 protected:
 	virtual void video_start() override;
-	virtual void machine_start() override;
+	virtual void machine_start() override { m_digits.resolve(); }
 
 private:
 	void int_ack_w(uint8_t data);
@@ -60,7 +58,7 @@ private:
 	void track_ice_w(uint8_t data);
 	void palette(palette_device &palette) const;
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void screen_vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
 	void io_map(address_map &map);
 	void prg_map(address_map &map);
 
@@ -84,8 +82,6 @@ private:
 	required_device<gfxdecode_device> m_gfxdecode;
 	required_device<palette_device> m_palette;
 	output_finder<26> m_digits;
-	output_finder<> m_lampgo;
-	output_finder<> m_lampep;
 	required_device<netlist_mame_logic_input_device> m_pedal_bit0;
 	required_device<netlist_mame_logic_input_device> m_pedal_bit1;
 	required_device<netlist_mame_logic_input_device> m_pedal_bit2;
@@ -100,4 +96,4 @@ private:
 	required_region_ptr<uint8_t> m_track;
 };
 
-#endif // MAME_MIDWAY_SSPEEDR_H
+#endif // MAME_INCLUDES_SSPEEDR_H

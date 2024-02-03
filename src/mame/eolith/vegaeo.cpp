@@ -14,40 +14,35 @@
  *********************************************************************/
 
 #include "emu.h"
-#include "eolith_speedup.h"
+#include "eolith.h"
 
 #include "cpu/e132xs/e132xs.h"
 #include "machine/at28c16.h"
 #include "machine/gen_latch.h"
 #include "sound/qs1000.h"
-
 #include "speaker.h"
 
 
-namespace {
-
-class vegaeo_state : public eolith_e1_speedup_state_base
+class vegaeo_state : public eolith_state
 {
 public:
 	vegaeo_state(const machine_config &mconfig, device_type type, const char *tag)
-		: eolith_e1_speedup_state_base(mconfig, type, tag)
+		: eolith_state(mconfig, type, tag)
 		, m_soundlatch(*this, "soundlatch")
-		, m_qs1000(*this, "qs1000")
 		, m_system_io(*this, "SYSTEM")
 		, m_qs1000_bank(*this, "qs1000_bank")
 	{
 	}
 
-	void vega(machine_config &config) ATTR_COLD;
+	void vega(machine_config &config);
 
-	void init_vegaeo() ATTR_COLD;
+	void init_vegaeo();
 
 protected:
-	virtual void video_start() override ATTR_COLD;
+	virtual void video_start() override;
 
 private:
 	required_device<generic_latch_8_device> m_soundlatch;
-	required_device<qs1000_device> m_qs1000;
 	required_ioport m_system_io;
 	memory_bank_creator m_qs1000_bank;
 
@@ -63,7 +58,7 @@ private:
 	void qs1000_p3_w(uint8_t data);
 
 	uint32_t screen_update_vega(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void vega_map(address_map &map) ATTR_COLD;
+	void vega_map(address_map &map);
 };
 
 void vegaeo_state::qs1000_p1_w(uint8_t data)
@@ -163,8 +158,6 @@ INPUT_PORTS_END
 
 void vegaeo_state::video_start()
 {
-	eolith_e1_speedup_state_base::video_start();
-
 	m_vram = std::make_unique<uint8_t[]>(0x14000*2);
 	save_pointer(NAME(m_vram), 0x14000*2);
 	save_item(NAME(m_vbuffer));
@@ -172,13 +165,13 @@ void vegaeo_state::video_start()
 
 uint32_t vegaeo_state::screen_update_vega(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
-	for (int y = cliprect.top(); y <= std::min(cliprect.bottom(), 239); y++)
+	for (int y = 0; y < 240; y++)
 	{
-		auto *pix = &bitmap.pix(y);
 		for (int x = 0; x < 320; x++)
-			*pix++ = m_vram[0x14000 * (m_vbuffer ^ 1) + (y * 320) + x] & 0xff;
+		{
+			bitmap.pix(y, x) = m_vram[0x14000 * (m_vbuffer ^ 1) + (y * 320) + x] & 0xff;
+		}
 	}
-
 	return 0;
 }
 
@@ -304,8 +297,5 @@ void vegaeo_state::init_vegaeo()
 
 	init_speedup();
 }
-
-} // anonymous namespace
-
 
 GAME( 2002, crazywar, 0, vega, crazywar, vegaeo_state, init_vegaeo, ROT0, "Eolith", "Crazy War", MACHINE_SUPPORTS_SAVE )

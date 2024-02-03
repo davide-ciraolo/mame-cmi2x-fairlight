@@ -2,7 +2,7 @@
 // copyright-holders:Nigel Barnes
 /**********************************************************************
 
-    EMR BBC MIDI Interface
+    EMR BBC Midi Interface
 
     http://chrisacorns.computinghistory.org.uk/8bit_Upgrades/EMR_BBCMIDI.html
 
@@ -40,7 +40,7 @@ protected:
 	virtual void fred_w(offs_t offset, uint8_t data) override;
 
 private:
-	void write_acia_clock(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_acia_clock);
 
 	required_device<acia6850_device> m_acia;
 	required_device<clock_device> m_acia_clock;

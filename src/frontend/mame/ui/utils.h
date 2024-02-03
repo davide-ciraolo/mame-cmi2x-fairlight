@@ -15,17 +15,12 @@
 #include "softlist.h"
 #include "unicode.h"
 
-// FIXME: allow OSD module headers to be included in a less ugly way
-#include "../osd/modules/lib/osdlib.h"
-
 #include <algorithm>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <string>
-#include <string_view>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 
@@ -186,7 +181,6 @@ public:
 		CLONES,
 		MANUFACTURER,
 		YEAR,
-		SOURCE_FILE,
 		SAVE,
 		NOSAVE,
 		CHD,
@@ -277,13 +271,10 @@ class machine_filter_data
 public:
 	std::vector<std::string> const &manufacturers()     const { return m_manufacturers; }
 	std::vector<std::string> const &years()             const { return m_years; }
-	std::vector<std::string> const &source_files()      const { return m_source_files; }
 
 	// adding entries
 	void add_manufacturer(std::string const &manufacturer);
 	void add_year(std::string const &year);
-	void add_source_file(std::string_view path);
-
 	void finalise();
 
 	// use heuristics to extract meaningful parts from machine metadata
@@ -310,7 +301,6 @@ private:
 
 	std::vector<std::string>    m_manufacturers;
 	std::vector<std::string>    m_years;
-	std::vector<std::string>    m_source_files;
 
 	machine_filter::type        m_current_filter = machine_filter::ALL;
 	filter_map                  m_filters;
@@ -403,17 +393,18 @@ enum
 // GLOBAL CLASS
 struct ui_globals
 {
-	static uint8_t      curdats_view, curdats_total, cur_sw_dats_view, cur_sw_dats_total;
-	static bool         reset;
+	static uint8_t      curdats_view, curdats_total, cur_sw_dats_view, cur_sw_dats_total, rpanel;
+	static bool         default_image, reset;
+	static int          visible_main_lines, visible_sw_lines;
+	static uint16_t     panels_status;
 };
 
 // GLOBAL FUNCTIONS
 char* chartrimcarriage(char str[]);
+const char* strensure(const char* s);
 int getprecisionchr(const char* s);
 std::vector<std::string> tokenize(const std::string &text, char sep);
 
-
-namespace ui {
 
 //-------------------------------------------------
 //  input_character - inputs a typed character
@@ -423,30 +414,31 @@ namespace ui {
 template <typename F>
 bool input_character(std::string &buffer, std::string::size_type size, char32_t unichar, F &&filter)
 {
-	auto const buflen(buffer.length());
+	bool result = false;
+	auto buflen = buffer.size();
+
 	if ((unichar == 8) || (unichar == 0x7f))
 	{
 		// backspace
 		if (0 < buflen)
 		{
-			auto const buffer_oldend(buffer.c_str() + buflen);
-			auto const buffer_newend(utf8_previous_char(buffer_oldend));
+			auto buffer_oldend = buffer.c_str() + buflen;
+			auto buffer_newend = utf8_previous_char(buffer_oldend);
 			buffer.resize(buffer_newend - buffer.c_str());
-			return true;
+			result = true;
 		}
 	}
 	else if ((unichar >= ' ') && filter(unichar))
 	{
 		// append this character - check against the size first
-		char utf8char[UTF8_CHAR_MAX];
-		auto const utf8len(utf8_from_uchar(utf8char, std::size(utf8char), unichar));
-		if ((0 < utf8len) && (size >= utf8len) && ((size - utf8len) >= buflen))
+		std::string utf8_char = utf8_from_uchar(unichar);
+		if ((buffer.size() + utf8_char.size()) <= size)
 		{
-			buffer.append(utf8char, utf8len);
-			return true;
+			buffer += utf8_char;
+			result = true;
 		}
 	}
-	return false;
+	return result;
 }
 
 
@@ -458,61 +450,9 @@ bool input_character(std::string &buffer, std::string::size_type size, char32_t 
 template <typename F>
 bool input_character(std::string &buffer, char32_t unichar, F &&filter)
 {
-	auto const size(std::numeric_limits<std::string::size_type>::max());
-	return input_character(buffer, size, unichar, std::forward<F>(filter));
+	auto size = std::numeric_limits<std::string::size_type>::max();
+	return input_character(buffer, size, unichar, filter);
 }
 
-
-//-------------------------------------------------
-//  paste_text - paste text from clipboard into a
-//  buffer, ignoring invalid characters
-//-------------------------------------------------
-
-template <typename F>
-bool paste_text(std::string &buffer, std::string::size_type size, F &&filter)
-{
-	std::string const clip(osd_get_clipboard_text());
-	std::string_view text(clip);
-	bool updated(false);
-	int codelength;
-	char32_t unichar;
-	while ((codelength = uchar_from_utf8(&unichar, text)) != 0)
-	{
-		text.remove_prefix((0 < codelength) ? codelength : 1);
-		if ((0 < codelength) && filter(unichar))
-		{
-			char utf8char[UTF8_CHAR_MAX];
-			auto const utf8len(utf8_from_uchar(utf8char, std::size(utf8char), unichar));
-			if (0 < utf8len)
-			{
-				if ((size < utf8len) || ((size - utf8len) < buffer.length()))
-				{
-					return updated;
-				}
-				else
-				{
-					buffer.append(utf8char, utf8len);
-					updated = true;
-				}
-			}
-		}
-	}
-	return updated;
-}
-
-
-//-------------------------------------------------
-//  paste_text - paste text from clipboard into a
-//  buffer, ignoring invalid characters
-//-------------------------------------------------
-
-template <typename F>
-bool paste_text(std::string &buffer, F &&filter)
-{
-	auto const size(std::numeric_limits<std::string::size_type>::max());
-	return paste_text(buffer, size, std::forward<F>(filter));
-}
-
-} // namespace ui
 
 #endif // MAME_FRONTEND_UI_UTILS_H

@@ -80,8 +80,6 @@ ToDo:
 #include "ravens.lh"
 
 
-namespace {
-
 class ravens_base : public driver_device
 {
 public:
@@ -92,8 +90,8 @@ public:
 	{ }
 
 protected:
-	int cass_r();
-	void cass_w(int state);
+	DECLARE_READ_LINE_MEMBER(cass_r);
+	DECLARE_WRITE_LINE_MEMBER(cass_w);
 	DECLARE_QUICKLOAD_LOAD_MEMBER(quickload_cb);
 	void mem_map(address_map &map);
 	required_device<s2650_device> m_maincpu;
@@ -151,12 +149,12 @@ private:
 	required_device<generic_terminal_device> m_terminal;
 };
 
-void ravens_base::cass_w(int state)
+WRITE_LINE_MEMBER( ravens_base::cass_w )
 {
 	m_cass->output(state ? -1.0 : +1.0);
 }
 
-int ravens_base::cass_r()
+READ_LINE_MEMBER( ravens_base::cass_r )
 {
 	return (m_cass->input() > 0.03) ? 1 : 0;
 }
@@ -312,40 +310,66 @@ void ravens2_state::kbd_put(u8 data)
 
 QUICKLOAD_LOAD_MEMBER(ravens_base::quickload_cb)
 {
-	int const quick_length = image.length();
-	if (quick_length < 0x0900)
-		return std::make_pair(image_error::INVALIDLENGTH, "File too short");
-	else if (quick_length > 0x8000)
-		return std::make_pair(image_error::INVALIDLENGTH, "File too long (must be no more than 32K)");
-
+	address_space &space = m_maincpu->space(AS_PROGRAM);
+	int i;
+	int quick_addr = 0x900;
+	int exec_addr;
+	int quick_length;
 	std::vector<u8> quick_data;
-	quick_data.resize(quick_length);
-	int const read_ = image.fread( &quick_data[0], quick_length);
-	if (read_ != quick_length)
-		return std::make_pair(image_error::UNSPECIFIED, "Cannot read the file");
-	else if (quick_data[0] != 0xc6)
-		return std::make_pair(image_error::INVALIDIMAGE, "Invalid header");
+	int read_;
+	image_init_result result = image_init_result::FAIL;
 
-	int const exec_addr = quick_data[2] * 256 + quick_data[3];
-	if (exec_addr >= quick_length)
+	quick_length = image.length();
+	if (quick_length < 0x0900)
 	{
-		return std::make_pair(
-				image_error::INVALIDIMAGE,
-				util::string_format("Exec address %04X beyond end of file %04X", exec_addr, quick_length));
+		image.seterror(image_error::INVALIDIMAGE, "File too short");
+		image.message(" File too short");
+	}
+	else if (quick_length > 0x8000)
+	{
+		image.seterror(image_error::INVALIDIMAGE, "File too long");
+		image.message(" File too long");
+	}
+	else
+	{
+		quick_data.resize(quick_length);
+		read_ = image.fread( &quick_data[0], quick_length);
+		if (read_ != quick_length)
+		{
+			image.seterror(image_error::INVALIDIMAGE, "Cannot read the file");
+			image.message(" Cannot read the file");
+		}
+		else if (quick_data[0] != 0xc6)
+		{
+			image.seterror(image_error::INVALIDIMAGE, "Invalid header");
+			image.message(" Invalid header");
+		}
+		else
+		{
+			exec_addr = quick_data[2] * 256 + quick_data[3];
+
+			if (exec_addr >= quick_length)
+			{
+				image.seterror(image_error::INVALIDIMAGE, "Exec address beyond end of file");
+				image.message(" Exec address beyond end of file");
+			}
+			else
+			{
+				for (i = quick_addr; i < read_; i++)
+					space.write_byte(i, quick_data[i]);
+
+				/* display a message about the loaded quickload */
+				image.message(" Quickload: size=%04X : exec=%04X",quick_length,exec_addr);
+
+				// Start the quickload
+				m_maincpu->set_state_int(S2650_PC, exec_addr);
+
+				result = image_init_result::PASS;
+			}
+		}
 	}
 
-	constexpr int QUICK_ADDR = 0x900;
-	address_space &space = m_maincpu->space(AS_PROGRAM);
-	for (int i = QUICK_ADDR; i < read_; i++)
-		space.write_byte(i, quick_data[i]);
-
-	// display a message about the loaded quickload
-	image.message(" Quickload: size=%04X : exec=%04X",quick_length,exec_addr);
-
-	// Start the quickload
-	m_maincpu->set_state_int(S2650_PC, exec_addr);
-
-	return std::pair(std::error_condition(), std::string());
+	return result;
 }
 
 void ravens_state::ravens(machine_config &config)
@@ -406,9 +430,6 @@ ROM_START( ravens2 )
 	ROM_REGION( 0x0800, "maincpu", 0 )
 	ROM_LOAD( "mon_v2.0.bin", 0x0000, 0x0800, CRC(bcd47c58) SHA1(f261a3f128fbedbf59a8b5480758fff4d7f76de1))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

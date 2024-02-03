@@ -1,7 +1,7 @@
 // ExtractDialog.h
 
-#ifndef ZIP7_INC_EXTRACT_DIALOG_H
-#define ZIP7_INC_EXTRACT_DIALOG_H
+#ifndef __EXTRACT_DIALOG_H
+#define __EXTRACT_DIALOG_H
 
 #include "ExtractDialogRes.h"
 
@@ -12,7 +12,7 @@
 
 #include "../FileManager/DialogSize.h"
 
-#ifndef Z7_NO_REGISTRY
+#ifndef NO_REGISTRY
 #include "../Common/ZipRegistry.h"
 #endif
 
@@ -33,20 +33,20 @@ namespace NExtractionDialog
 
 class CExtractDialog: public NWindows::NControl::CModalDialog
 {
-  #ifdef Z7_NO_REGISTRY
+  #ifdef NO_REGISTRY
   NWindows::NControl::CDialogChildControl _path;
   #else
   NWindows::NControl::CComboBox _path;
   #endif
 
-  #ifndef Z7_SFX
+  #ifndef _SFX
   NWindows::NControl::CEdit _pathName;
   NWindows::NControl::CEdit _passwordControl;
   NWindows::NControl::CComboBox _pathMode;
   NWindows::NControl::CComboBox _overwriteMode;
   #endif
 
-  #ifndef Z7_SFX
+  #ifndef _SFX
   // int GetFilesMode() const;
   void UpdatePasswordControl();
   #endif
@@ -55,13 +55,13 @@ class CExtractDialog: public NWindows::NControl::CModalDialog
 
   void CheckButton_TwoBools(UINT id, const CBoolPair &b1, const CBoolPair &b2);
   void GetButton_Bools(UINT id, CBoolPair &b1, CBoolPair &b2);
-  virtual bool OnInit() Z7_override;
-  virtual bool OnButtonClicked(unsigned buttonID, HWND buttonHWND) Z7_override;
-  virtual void OnOK() Z7_override;
+  virtual bool OnInit();
+  virtual bool OnButtonClicked(int buttonID, HWND buttonHWND);
+  virtual void OnOK();
   
-  #ifndef Z7_NO_REGISTRY
+  #ifndef NO_REGISTRY
 
-  virtual void OnHelp() Z7_override;
+  virtual void OnHelp();
 
   NExtract::CInfo _info;
   
@@ -76,7 +76,7 @@ public:
   UString DirPath;
   UString ArcPath;
 
-  #ifndef Z7_SFX
+  #ifndef _SFX
   UString Password;
   #endif
   bool PathMode_Force;
@@ -84,16 +84,16 @@ public:
   NExtract::NPathMode::EEnum PathMode;
   NExtract::NOverwriteMode::EEnum OverwriteMode;
 
-  #ifndef Z7_SFX
+  #ifndef _SFX
   // CBoolPair AltStreams;
   CBoolPair NtSecurity;
   #endif
 
   CBoolPair ElimDup;
 
-  INT_PTR Create(HWND aWndParent = NULL)
+  INT_PTR Create(HWND aWndParent = 0)
   {
-    #ifdef Z7_SFX
+    #ifdef _SFX
     BIG_DIALOG_SIZE(240, 64);
     #else
     BIG_DIALOG_SIZE(300, 160);

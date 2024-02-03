@@ -20,14 +20,14 @@ DEFINE_DEVICE_TYPE(FMT_ICMEM, fmt_icmem_device, "fmt_icmem", "FM Towns IC Memory
 //  fmt_icmem_device - constructor
 //-------------------------------------------------
 
-fmt_icmem_device::fmt_icmem_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
-	device_t(mconfig, FMT_ICMEM, tag, owner, clock),
-	device_memcard_image_interface(mconfig, *this),
-	m_writeprotect(*this,"icmem"),
-	m_change(false),
-	m_attr_select(false),
-	m_detect(false),
-	m_bank(0)
+fmt_icmem_device::fmt_icmem_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: device_t(mconfig, FMT_ICMEM, tag, owner, clock),
+		device_memcard_image_interface(mconfig, *this),
+		m_writeprotect(*this,"icmem"),
+		m_change(false),
+		m_attr_select(false),
+		m_detect(false),
+		m_bank(0)
 {
 }
 
@@ -60,18 +60,18 @@ ioport_constructor fmt_icmem_device::device_input_ports() const
 	return INPUT_PORTS_NAME(fmt_icmem);
 }
 
-std::pair<std::error_condition, std::string> fmt_icmem_device::call_load()
+image_init_result fmt_icmem_device::call_load()
 {
 	memset(m_memcard_ram.get(), 0xff, 0x1000000);
 	fseek(0, SEEK_SET);
 	size_t ret = fread(m_memcard_ram.get(), 0x1000000);
 
 	if(ret != length())
-		return std::make_pair(image_error::UNSPECIFIED, std::string());
+		return image_init_result::FAIL;
 
 	m_change = true;
 	m_detect = true;
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void fmt_icmem_device::call_unload()
@@ -83,17 +83,17 @@ void fmt_icmem_device::call_unload()
 	m_detect = false;
 }
 
-std::pair<std::error_condition, std::string> fmt_icmem_device::call_create(int format_type, util::option_resolution *format_options)
+image_init_result fmt_icmem_device::call_create(int format_type, util::option_resolution *format_options)
 {
 	memset(m_memcard_ram.get(), 0xff, 0x1000000);
 
 	size_t ret = fwrite(m_memcard_ram.get(), 0x1000000);
 	if(ret != 0x1000000)
-		return std::make_pair(image_error::UNSPECIFIED, std::string());
+		return image_init_result::FAIL;
 
 	m_change = true;
 	m_detect = true;
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 

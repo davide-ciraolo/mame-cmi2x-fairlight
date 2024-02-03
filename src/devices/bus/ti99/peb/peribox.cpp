@@ -201,12 +201,12 @@ CRUCLK*  51||52  DBIN
 #include "scsicard.h"
 #include "tipi.h"
 
-#define LOG_WARN        (1U << 1)   // Warnings
-#define LOG_CONFIG      (1U << 2)   // Configuration
-#define LOG_INT         (1U << 3)
-#define LOG_READY       (1U << 4)
+#define LOG_WARN        (1U<<1)   // Warnings
+#define LOG_CONFIG      (1U<<2)   // Configuration
+#define LOG_INT         (1U<<3)
+#define LOG_READY       (1U<<4)
 
-#define VERBOSE (LOG_CONFIG | LOG_WARN)
+#define VERBOSE ( LOG_CONFIG | LOG_WARN )
 
 #include "logmacro.h"
 
@@ -323,7 +323,7 @@ void peribox_device::cruwrite(offs_t offset, uint8_t data)
 /*
     RESET line from the console.
 */
-void peribox_device::reset_in(int state)
+WRITE_LINE_MEMBER(peribox_device::reset_in)
 {
 	for (int i=2; i <= 8; i++)
 	{
@@ -335,7 +335,7 @@ void peribox_device::reset_in(int state)
     And here are finally the two mythical lines SENILA* and SENILB*; mythical
     since there is no report of any software that ever used them.
 */
-void peribox_device::senila(int state)
+WRITE_LINE_MEMBER(peribox_device::senila)
 {
 	for (int i=2; i <= 8; i++)
 	{
@@ -343,7 +343,7 @@ void peribox_device::senila(int state)
 	}
 }
 
-void peribox_device::senilb(int state)
+WRITE_LINE_MEMBER(peribox_device::senilb)
 {
 	for (int i=2; i <= 8; i++)
 	{
@@ -354,7 +354,7 @@ void peribox_device::senilb(int state)
 /*
     MEMEN input. Used to start the external memory access cycle.
 */
-void peribox_device::memen_in(int state)
+WRITE_LINE_MEMBER(peribox_device::memen_in)
 {
 	m_memen = (state==ASSERT_LINE);
 }
@@ -362,7 +362,7 @@ void peribox_device::memen_in(int state)
 /*
     MSAST input. Defined by TI-99/8; we ignore this part in the PEB.
 */
-void peribox_device::msast_in(int state)
+WRITE_LINE_MEMBER(peribox_device::msast_in)
 {
 	m_msast = (state==ASSERT_LINE);
 }
@@ -371,7 +371,7 @@ void peribox_device::msast_in(int state)
     CLKOUT line
 */
 
-void peribox_device::clock_in(int state)
+WRITE_LINE_MEMBER(peribox_device::clock_in)
 {
 	for (int i=2; i <= 8; i++)
 	{
@@ -452,7 +452,13 @@ void peribox_device::set_slot_loaded(int slot, peribox_slot_device* slotdev)
 
 void peribox_device::device_start()
 {
-	m_ioport_connected = (m_slot1_inta.isunset()); // TODO: init
+	// Resolve the callback lines to the console
+	m_slot1_inta.resolve();
+	m_slot1_intb.resolve();
+	m_slot1_lcp.resolve();
+	m_slot1_ready.resolve();
+
+	m_ioport_connected = (m_slot1_inta.isnull()); // TODO: init
 
 	LOGMASKED(LOG_CONFIG, "AMA/B/C address prefix set to %05x\n", m_address_prefix);
 	for (int i=2; i < 9; i++)
@@ -712,22 +718,22 @@ void peribox_slot_device::cruwrite(offs_t offset, uint8_t data)
 	m_card->cruwrite(offset, data);
 }
 
-void peribox_slot_device::senila(int state)
+WRITE_LINE_MEMBER( peribox_slot_device::senila )
 {
 	m_card->set_senila(state);
 }
 
-void peribox_slot_device::senilb(int state)
+WRITE_LINE_MEMBER( peribox_slot_device::senilb )
 {
 	m_card->set_senilb(state);
 }
 
-void peribox_slot_device::clock_in(int state)
+WRITE_LINE_MEMBER( peribox_slot_device::clock_in )
 {
 	m_card->clock_in(state);
 }
 
-void peribox_slot_device::reset_in(int state)
+WRITE_LINE_MEMBER( peribox_slot_device::reset_in )
 {
 	m_card->reset_in(state);
 }
@@ -748,25 +754,25 @@ void peribox_slot_device::device_config_complete()
     These methods are called from the expansion cards. They add the
     slot number to identify the slot to the box.
 */
-void peribox_slot_device::set_inta(int state)
+WRITE_LINE_MEMBER( peribox_slot_device::set_inta )
 {
 	peribox_device *peb = static_cast<peribox_device*>(owner());
 	peb->inta_join(m_slotnumber, state);
 }
 
-void peribox_slot_device::set_intb(int state)
+WRITE_LINE_MEMBER( peribox_slot_device::set_intb )
 {
 	peribox_device *peb = static_cast<peribox_device*>(owner());
 	peb->intb_join(m_slotnumber, state);
 }
 
-void peribox_slot_device::lcp_line(int state)
+WRITE_LINE_MEMBER( peribox_slot_device::lcp_line )
 {
 	peribox_device *peb = static_cast<peribox_device*>(owner());
 	peb->lcp_join(m_slotnumber, state);
 }
 
-void peribox_slot_device::set_ready(int state)
+WRITE_LINE_MEMBER( peribox_slot_device::set_ready )
 {
 	peribox_device *peb = static_cast<peribox_device*>(owner());
 	peb->ready_join(m_slotnumber, state);

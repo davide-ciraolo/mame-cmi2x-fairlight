@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/nanos_dsk.cpp
+    formats/nanos_dsk.c
 
     nanos format
 
@@ -14,17 +14,17 @@ nanos_format::nanos_format() : upd765_format(formats)
 {
 }
 
-const char *nanos_format::name() const noexcept
+const char *nanos_format::name() const
 {
 	return "nanos";
 }
 
-const char *nanos_format::description() const noexcept
+const char *nanos_format::description() const
 {
 	return "NANOS disk image";
 }
 
-const char *nanos_format::extensions() const noexcept
+const char *nanos_format::extensions() const
 {
 	return "img";
 }

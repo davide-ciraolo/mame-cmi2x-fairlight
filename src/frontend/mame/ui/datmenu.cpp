@@ -45,13 +45,12 @@ menu_dats_view::menu_dats_view(mame_ui_manager &mui, render_container &container
 	set_process_flags(PROCESS_LR_ALWAYS | PROCESS_CUSTOM_NAV);
 	for (device_image_interface& image : image_interface_enumerator(mui.machine().root_device()))
 	{
-		if (image.loaded_through_softlist())
+		if (image.filename())
 		{
-			m_list = image.software_list_name();
+			m_list = strensure(image.software_list_name());
 			m_short = image.software_entry()->shortname();
 			m_long = image.software_entry()->longname();
 			m_parent = image.software_entry()->parentname();
-			break;
 		}
 	}
 	std::vector<std::string> lua_list;
@@ -167,55 +166,42 @@ void menu_dats_view::add_info_text(text_layout &layout, std::string_view text, r
 //  handle
 //-------------------------------------------------
 
-bool menu_dats_view::handle(event const *ev)
+void menu_dats_view::handle(event const *ev)
 {
-	if (!ev)
-		return false;
-
-	switch (ev->iptkey)
+	if (ev)
 	{
-	case IPT_UI_LEFT:
-		if (m_actual > 0)
+		switch (ev->iptkey)
 		{
-			m_actual--;
-			reset_layout();
-			return true;
-		}
-		break;
+		case IPT_UI_LEFT:
+			if (m_actual > 0)
+			{
+				m_actual--;
+				reset_layout();
+			}
+			break;
 
-	case IPT_UI_RIGHT:
-		if ((m_actual + 1) < m_items_list.size())
-		{
-			m_actual++;
-			reset_layout();
-			return true;
-		}
-		break;
+		case IPT_UI_RIGHT:
+			if ((m_actual + 1) < m_items_list.size())
+			{
+				m_actual++;
+				reset_layout();
+			}
+			break;
 
-	default:
-		return handle_key(ev->iptkey);
+		default:
+			handle_key(ev->iptkey);
+		}
 	}
-
-	return false;
 }
 
 //-------------------------------------------------
 //  populate
 //-------------------------------------------------
 
-void menu_dats_view::populate()
+void menu_dats_view::populate(float &customtop, float &custombottom)
 {
-}
-
-//-------------------------------------------------
-//  recompute metrics
-//-------------------------------------------------
-
-void menu_dats_view::recompute_metrics(uint32_t width, uint32_t height, float aspect)
-{
-	menu_textbox::recompute_metrics(width, height, aspect);
-
-	set_custom_space(2.0F * line_height() + 4.0F * tb_border(), line_height() + 3.0F * tb_border());
+	customtop = 2.0f * ui().get_line_height() + 4.0f * ui().box_tb_border();
+	custombottom = ui().get_line_height() + 3.0f * ui().box_tb_border();
 }
 
 //-------------------------------------------------
@@ -228,50 +214,63 @@ void menu_dats_view::custom_render(void *selectedref, float top, float bottom, f
 	float width;
 	std::string_view const driver = m_issoft ? m_swinfo->longname : m_system->description;
 
-	width = get_string_width(driver);
-	width += 2 * lr_border();
+	float const lr_border = ui().box_lr_border() * machine().render().ui_aspect(&container());
+	ui().draw_text_full(
+			container(),
+			driver,
+			0.0f, 0.0f, 1.0f,
+			ui::text_layout::text_justify::CENTER, text_layout::word_wrapping::TRUNCATE,
+			mame_ui_manager::NONE, rgb_t::white(), rgb_t::black(), &width, nullptr);
+	width += 2 * lr_border;
 	maxwidth = std::max(maxwidth, width);
 
 	// compute our bounds
-	float x1 = 0.5F - 0.5F * maxwidth;
+	float x1 = 0.5f - 0.5f * maxwidth;
 	float x2 = x1 + maxwidth;
 	float y1 = origy1 - top;
-	float y2 = origy1 - 2.0F * tb_border() - line_height();
+	float y2 = origy1 - 2.0f * ui().box_tb_border() - ui().get_line_height();
 
 	// draw a box
 	ui().draw_outlined_box(container(), x1, y1, x2, y2, UI_GREEN_COLOR);
 
 	// take off the borders
-	x1 += lr_border();
-	x2 -= lr_border();
-	y1 += tb_border();
+	x1 += lr_border;
+	x2 -= lr_border;
+	y1 += ui().box_tb_border();
 
-	draw_text_normal(
+	ui().draw_text_full(
+			container(),
 			driver,
 			x1, y1, x2 - x1,
 			text_layout::text_justify::CENTER, ui::text_layout::word_wrapping::NEVER,
-			ui().colors().text_color());
+			mame_ui_manager::NORMAL, ui().colors().text_color(), ui().colors().text_bg_color());
 
 	maxwidth = 0;
 	for (auto const &elem : m_items_list)
 	{
-		width = get_string_width(elem.label);
+		ui().draw_text_full(
+				container(),
+				elem.label,
+				0.0f, 0.0f, 1.0f,
+				text_layout::text_justify::CENTER, text_layout::word_wrapping::NEVER,
+				mame_ui_manager::NONE, rgb_t::white(), rgb_t::black(),
+				&width, nullptr);
 		maxwidth += width;
 	}
 
-	float space = (1.0F - maxwidth) / (m_items_list.size() * 2);
+	float space = (1.0f - maxwidth) / (m_items_list.size() * 2);
 
 	// compute our bounds
-	x1 -= lr_border();
-	x2 += lr_border();
-	y1 = y2 + tb_border();
-	y2 += line_height() + 2.0F * tb_border();
+	x1 -= lr_border;
+	x2 += lr_border;
+	y1 = y2 + ui().box_tb_border();
+	y2 += ui().get_line_height() + 2.0f * ui().box_tb_border();
 
 	// draw a box
 	ui().draw_outlined_box(container(), x1, y1, x2, y2, ui().colors().background_color());
 
 	// take off the borders
-	y1 += tb_border();
+	y1 += ui().box_tb_border();
 
 	// draw the text within it
 	int x = 0;
@@ -283,7 +282,13 @@ void menu_dats_view::custom_render(void *selectedref, float top, float bottom, f
 
 		rgb_t const fcolor = (m_actual == x) ? rgb_t(0xff, 0xff, 0xff, 0x00) : ui().colors().text_color();
 		rgb_t const bcolor = (m_actual == x) ? rgb_t(0xff, 0xff, 0xff, 0xff) : ui().colors().text_bg_color();
-		width = get_string_width(elem.label);
+		ui().draw_text_full(
+				container(),
+				elem.label,
+				x1, y1, 1.0f,
+				text_layout::text_justify::LEFT, text_layout::word_wrapping::NEVER,
+				mame_ui_manager::NONE, fcolor, bcolor,
+				&width, nullptr);
 
 		if (bcolor != ui().colors().text_bg_color())
 		{
@@ -297,11 +302,10 @@ void menu_dats_view::custom_render(void *selectedref, float top, float bottom, f
 		ui().draw_text_full(
 				container(),
 				elem.label,
-				x1, y1, 1.0F,
+				x1, y1, 1.0f,
 				text_layout::text_justify::LEFT, text_layout::word_wrapping::NEVER,
 				mame_ui_manager::NORMAL, fcolor, bcolor,
-				&width, nullptr,
-				line_height());
+				&width, nullptr);
 		x1 += width + space;
 		++x;
 	}
@@ -310,33 +314,37 @@ void menu_dats_view::custom_render(void *selectedref, float top, float bottom, f
 	if (!m_items_list.empty())
 	{
 		std::string const revision(util::string_format(_("Revision: %1$s"), m_items_list[m_actual].revision));
-		width = get_text_width(
+		ui().draw_text_full(
+				container(),
 				revision,
-				0.0F, 0.0F, 1.0F,
-				text_layout::text_justify::CENTER, text_layout::word_wrapping::TRUNCATE);
-		width += 2 * lr_border();
+				0.0f, 0.0f, 1.0f,
+				text_layout::text_justify::CENTER, text_layout::word_wrapping::TRUNCATE,
+				mame_ui_manager::NONE, rgb_t::white(), rgb_t::black(),
+				&width, nullptr);
+		width += 2 * lr_border;
 		maxwidth = std::max(origx2 - origx1, width);
 
 		// compute our bounds
-		x1 = 0.5F - 0.5F * maxwidth;
+		x1 = 0.5f - 0.5f * maxwidth;
 		x2 = x1 + maxwidth;
-		y1 = origy2 + tb_border();
+		y1 = origy2 + ui().box_tb_border();
 		y2 = origy2 + bottom;
 
 		// draw a box
 		ui().draw_outlined_box(container(), x1, y1, x2, y2, UI_GREEN_COLOR);
 
 		// take off the borders
-		x1 += lr_border();
-		x2 -= lr_border();
-		y1 += tb_border();
+		x1 += lr_border;
+		x2 -= lr_border;
+		y1 += ui().box_tb_border();
 
 		// draw the text within it
-		draw_text_normal(
+		ui().draw_text_full(
+				container(),
 				revision,
 				x1, y1, x2 - x1,
 				text_layout::text_justify::CENTER, text_layout::word_wrapping::TRUNCATE,
-				ui().colors().text_color());
+				mame_ui_manager::NORMAL, ui().colors().text_color(), ui().colors().text_bg_color());
 	}
 }
 
@@ -377,7 +385,7 @@ void menu_dats_view::populate_text(std::optional<text_layout> &layout, float &wi
 			else
 				get_data(buffer);
 		}
-		layout.emplace(create_layout(width));
+		layout.emplace(ui().create_layout(container(), width));
 		add_info_text(*layout, buffer, ui().colors().text_color());
 		lines = std::numeric_limits<int>::max();
 	}

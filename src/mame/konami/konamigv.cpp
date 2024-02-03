@@ -230,8 +230,6 @@ Notes:
 #include "speaker.h"
 #include "cdrom.h"
 
-#include "multibyte.h"
-
 
 namespace {
 
@@ -385,7 +383,11 @@ void konamigv_state::scsi_dma_read( uint32_t *p_n_psxram, uint32_t n_address, in
 		i = 0;
 		while( n_this > 0 )
 		{
-			p_n_psxram[ n_address / 4 ] = get_u32le( &sector_buffer[ i ] );
+			p_n_psxram[ n_address / 4 ] =
+				( sector_buffer[ i + 0 ] << 0 ) |
+				( sector_buffer[ i + 1 ] << 8 ) |
+				( sector_buffer[ i + 2 ] << 16 ) |
+				( sector_buffer[ i + 3 ] << 24 );
 			n_address += 4;
 			i += 4;
 			n_this--;
@@ -414,7 +416,10 @@ void konamigv_state::scsi_dma_write( uint32_t *p_n_psxram, uint32_t n_address, i
 		i = 0;
 		while( n_this > 0 )
 		{
-			put_u32le( &sector_buffer[ i ], p_n_psxram[ n_address / 4 ] );
+			sector_buffer[ i + 0 ] = ( p_n_psxram[ n_address / 4 ] >> 0 ) & 0xff;
+			sector_buffer[ i + 1 ] = ( p_n_psxram[ n_address / 4 ] >> 8 ) & 0xff;
+			sector_buffer[ i + 2 ] = ( p_n_psxram[ n_address / 4 ] >> 16 ) & 0xff;
+			sector_buffer[ i + 3 ] = ( p_n_psxram[ n_address / 4 ] >> 24 ) & 0xff;
 			n_address += 4;
 			i += 4;
 			n_this--;

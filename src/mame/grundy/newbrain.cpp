@@ -53,8 +53,6 @@
 #include "speaker.h"
 #include "screen.h"
 
-#include "utf8.h"
-
 #include "newbrain.lh"
 #include "newbraina.lh"
 
@@ -64,8 +62,8 @@
 //  MACROS / CONSTANTS
 //**************************************************************************
 
-#define LOG_COP (1U << 1)
-#define LOG_VFD (1U << 2)
+#define LOG_COP (1 << 1U)
+#define LOG_VFD (1 << 2U)
 #define VERBOSE 0
 #include "logmacro.h"
 
@@ -536,7 +534,7 @@ void newbrain_state::cop_d_w(uint8_t data)
 //  k1_w -
 //-------------------------------------------------
 
-void newbrain_state::k1_w(int state)
+WRITE_LINE_MEMBER( newbrain_state::k1_w )
 {
 	LOGMASKED(LOG_VFD, "%s %s SO %u\n", machine().time().as_string(), machine().describe_context(), state);
 
@@ -548,7 +546,7 @@ void newbrain_state::k1_w(int state)
 //  k2_w -
 //-------------------------------------------------
 
-void newbrain_state::k2_w(int state)
+WRITE_LINE_MEMBER( newbrain_state::k2_w )
 {
 	LOGMASKED(LOG_VFD, "%s %s SK %u\n", machine().time().as_string(), machine().describe_context(), state);
 
@@ -569,7 +567,7 @@ int newbrain_state::tpin()
 	return (m_cassette1->input() > +0.04) || (m_cassette2->input() > +0.04);
 }
 
-int newbrain_state::tdi_r()
+READ_LINE_MEMBER( newbrain_state::tdi_r )
 {
 	return tpin() ^ m_cop_tdo;
 }
@@ -656,7 +654,7 @@ static INPUT_PORTS_START( newbrain )
 
 	PORT_START("Y7")
 	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_KEYBOARD ) PORT_CODE(KEYCODE_COLON) PORT_CHAR(';') PORT_CHAR(':')
-	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_KEYBOARD ) PORT_CODE(KEYCODE_CLOSEBRACE) PORT_CHAR('*') PORT_CHAR(U'£')
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_KEYBOARD ) PORT_NAME("* \xC2\xA3") PORT_CODE(KEYCODE_CLOSEBRACE) PORT_CHAR('*') PORT_CHAR(0x00A3)
 	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_KEYBOARD ) PORT_CODE(KEYCODE_2) PORT_CHAR('2') PORT_CHAR('"')
 	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_KEYBOARD ) PORT_CODE(KEYCODE_B) PORT_CHAR('b') PORT_CHAR('B')
 

@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Curt Coder
-#ifndef MAME_BONDWELL_BW2_H
-#define MAME_BONDWELL_BW2_H
+#ifndef MAME_INCLUDES_BW2_H
+#define MAME_INCLUDES_BW2_H
 
 #pragma once
 
@@ -71,9 +71,9 @@ public:
 	void ppi_pc_w(uint8_t data);
 	uint8_t  ppi_pc_r();
 
-	void mtron_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( mtron_w );
 
-	void fdc_drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( fdc_drq_w );
 	static void floppy_formats(format_registration &fr);
 
 	// keyboard state
@@ -90,7 +90,7 @@ public:
 	optional_shared_ptr<uint8_t> m_video_ram;
 	void bw2_palette(palette_device &palette) const;
 
-	void write_centronics_busy(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_busy);
 	int m_centronics_busy;
 	void bw2(machine_config &config);
 	void bw2_io(address_map &map);
@@ -98,4 +98,4 @@ public:
 	void lcdc_map(address_map &map);
 };
 
-#endif // MAME_BONDWELL_BW2_H
+#endif // MAME_INCLUDES_BW2_H

@@ -27,9 +27,6 @@
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
-
 class vt52_state : public driver_device
 {
 public:
@@ -51,7 +48,7 @@ public:
 
 	void vt52(machine_config &config);
 
-	void break_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(break_w);
 	DECLARE_INPUT_CHANGED_MEMBER(data_sw_changed);
 
 protected:
@@ -62,13 +59,13 @@ private:
 	void update_serial_settings();
 
 	u8 key_r(offs_t offset);
-	void baud_9600_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(baud_9600_w);
 	void vert_count_w(u8 data);
 	void uart_xd_w(u8 data);
 	void gated_serial_output(bool state);
-	void serial_out_w(int state);
-	void rec_data_w(int state);
-	int xrdy_eoc_r();
+	DECLARE_WRITE_LINE_MEMBER(serial_out_w);
+	DECLARE_WRITE_LINE_MEMBER(rec_data_w);
+	DECLARE_READ_LINE_MEMBER(xrdy_eoc_r);
 	u8 chargen_r(offs_t offset);
 
 	void rom_1k(address_map &map);
@@ -132,7 +129,7 @@ u8 vt52_state::key_r(offs_t offset)
 	return !BIT(~m_keys[offset & 7]->read() & 0x3ff, (offset & 0170) >> 3);
 }
 
-void vt52_state::baud_9600_w(int state)
+WRITE_LINE_MEMBER(vt52_state::baud_9600_w)
 {
 	u16 baud = m_baud_sw->read();
 	if (!BIT(baud, 13))
@@ -207,7 +204,7 @@ void vt52_state::gated_serial_output(bool state)
 		m_uart->write_si(state);
 }
 
-void vt52_state::serial_out_w(int state)
+WRITE_LINE_MEMBER(vt52_state::serial_out_w)
 {
 	if (m_serial_out != state)
 	{
@@ -217,13 +214,13 @@ void vt52_state::serial_out_w(int state)
 	}
 }
 
-void vt52_state::break_w(int state)
+WRITE_LINE_MEMBER(vt52_state::break_w)
 {
 	if (m_serial_out)
 		gated_serial_output(state);
 }
 
-void vt52_state::rec_data_w(int state)
+WRITE_LINE_MEMBER(vt52_state::rec_data_w)
 {
 	m_rec_data = state;
 
@@ -235,7 +232,7 @@ void vt52_state::rec_data_w(int state)
 	}
 }
 
-int vt52_state::xrdy_eoc_r()
+READ_LINE_MEMBER(vt52_state::xrdy_eoc_r)
 {
 	return m_uart->tbmt_r() && m_uart->eoc_r();
 }
@@ -440,8 +437,5 @@ ROM_START(vt52)
 	ROM_LOAD("23-002b4.e1", 0x000, 0x400, CRC(b486500c) SHA1(029f07424d6c23ee083db42d9f9c252ac728ccd0))
 	// K1 or L1 version may use either 23-001B4 or 23-002B4
 ROM_END
-
-} // anonymous namespace
-
 
 COMP(1975, vt52, 0, 0, vt52, vt52, vt52_state, empty_init, "Digital Equipment Corporation", "VT52 Video Display Terminal (M4)", MACHINE_SUPPORTS_SAVE | MACHINE_IMPERFECT_SOUND | MACHINE_NODEVICE_PRINTER)

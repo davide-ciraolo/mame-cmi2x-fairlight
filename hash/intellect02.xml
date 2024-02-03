@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
+license:CC0
 -->
 
-<softwarelist name="intellect02" description="Intellect-02 cartridges">
+<softwarelist name="intellect02" description="Intellect-02 Cartridges">
 
-<!-- Intellect-02 cartridges -->
+<!-- Intellect-02 Cartridges -->
 
 	<software name="chess">
 		<description>Chess (3 levels)</description>

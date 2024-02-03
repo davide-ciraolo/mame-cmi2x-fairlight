@@ -28,10 +28,12 @@ void mz80_state::machine_reset()
 
 uint8_t mz80_state::mz80k_8255_portb_r()
 {
-	if (m_mz80k_keyboard_line < 10)
-		return m_keyboard[m_mz80k_keyboard_line]->read();
-	else
+	char kbdrow[8];
+	sprintf(kbdrow,"LINE%d", m_mz80k_keyboard_line);
+	if (m_mz80k_keyboard_line > 9)
 		return 0xff;
+	else
+		return ioport(kbdrow)->read();
 }
 
 uint8_t mz80_state::mz80k_8255_portc_r()
@@ -59,7 +61,7 @@ void mz80_state::mz80k_8255_portc_w(uint8_t data)
 }
 
 
-void mz80_state::pit_out0_changed(int state)
+WRITE_LINE_MEMBER( mz80_state::pit_out0_changed )
 {
 	if(!m_prev_state && state)
 		m_speaker_level++;
@@ -68,7 +70,7 @@ void mz80_state::pit_out0_changed(int state)
 	m_speaker->level_w(BIT(m_speaker_level, 1));
 }
 
-void mz80_state::pit_out2_changed(int state)
+WRITE_LINE_MEMBER( mz80_state::pit_out2_changed )
 {
 	m_maincpu->set_input_line(0, HOLD_LINE);
 }

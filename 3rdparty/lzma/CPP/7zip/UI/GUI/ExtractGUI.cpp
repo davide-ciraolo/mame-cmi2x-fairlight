@@ -34,25 +34,37 @@ using namespace NWindows;
 using namespace NFile;
 using namespace NDir;
 
-static const wchar_t * const kIncorrectOutDir = L"Incorrect output directory path";
+static const wchar_t *kIncorrectOutDir = L"Incorrect output directory path";
 
-#ifndef Z7_SFX
+#ifndef _SFX
 
 static void AddValuePair(UString &s, UINT resourceID, UInt64 value, bool addColon = true)
 {
   AddLangString(s, resourceID);
   if (addColon)
-    s += ':';
+    s += L':';
   s.Add_Space();
-  s.Add_UInt64(value);
+  char sz[32];
+  ConvertUInt64ToString(value, sz);
+  s.AddAscii(sz);
   s.Add_LF();
 }
 
 static void AddSizePair(UString &s, UINT resourceID, UInt64 value)
 {
+  wchar_t sz[32];
   AddLangString(s, resourceID);
-  s += ": ";
-  AddSizeValue(s, value);
+  s += L": ";
+  ConvertUInt64ToString(value, sz);
+  s += MyFormatNew(IDS_FILE_SIZE, sz);
+  // s += sz;
+  if (value >= (1 << 20))
+  {
+    ConvertUInt64ToString(value >> 20, sz);
+    s += L" (";
+    s += sz;
+    s += L" MB)";
+  }
   s.Add_LF();
 }
 
@@ -60,14 +72,8 @@ static void AddSizePair(UString &s, UINT resourceID, UInt64 value)
 
 class CThreadExtracting: public CProgressThreadVirt
 {
-  HRESULT ProcessVirt() Z7_override;
+  HRESULT ProcessVirt();
 public:
-  /*
-  #ifdef Z7_EXTERNAL_CODECS
-  const CExternalCodecs *externalCodecs;
-  #endif
-  */
-
   CCodecs *codecs;
   CExtractCallbackImp *ExtractCallbackSpec;
   const CObjectVector<COpenType> *FormatIndices;
@@ -77,70 +83,39 @@ public:
   UStringVector *ArchivePathsFull;
   const NWildcard::CCensorNode *WildcardCensor;
   const CExtractOptions *Options;
-
-  #ifndef Z7_SFX
+  #ifndef _SFX
   CHashBundle *HashBundle;
-  virtual void ProcessWasFinished_GuiVirt() Z7_override;
   #endif
-
-  CMyComPtr<IFolderArchiveExtractCallback> FolderArchiveExtractCallback;
+  CMyComPtr<IExtractCallbackUI> ExtractCallback;
   UString Title;
-
-  CPropNameValPairs Pairs;
 };
-
-
-#ifndef Z7_SFX
-void CThreadExtracting::ProcessWasFinished_GuiVirt()
-{
-  if (HashBundle && !Pairs.IsEmpty())
-    ShowHashResults(Pairs, *this);
-}
-#endif
 
 HRESULT CThreadExtracting::ProcessVirt()
 {
   CDecompressStat Stat;
-  
-  #ifndef Z7_SFX
-  /*
+  #ifndef _SFX
   if (HashBundle)
     HashBundle->Init();
-  */
   #endif
 
-  HRESULT res = Extract(
-      /*
-      #ifdef Z7_EXTERNAL_CODECS
-      externalCodecs,
-      #endif
-      */
-      codecs,
+  HRESULT res = Extract(codecs,
       *FormatIndices, *ExcludedFormatIndices,
       *ArchivePaths, *ArchivePathsFull,
-      *WildcardCensor, *Options,
-      ExtractCallbackSpec, ExtractCallbackSpec, FolderArchiveExtractCallback,
-      #ifndef Z7_SFX
+      *WildcardCensor, *Options, ExtractCallbackSpec, ExtractCallback,
+      #ifndef _SFX
         HashBundle,
       #endif
       FinalMessage.ErrorMessage.Message, Stat);
-  
-  #ifndef Z7_SFX
-  if (res == S_OK && ExtractCallbackSpec->IsOK())
+  #ifndef _SFX
+  if (res == S_OK && Options->TestMode && ExtractCallbackSpec->IsOK())
   {
-    if (HashBundle)
-    {
-      AddValuePair(Pairs, IDS_ARCHIVES_COLON, Stat.NumArchives);
-      AddSizeValuePair(Pairs, IDS_PROP_PACKED_SIZE, Stat.PackSize);
-      AddHashBundleRes(Pairs, *HashBundle);
-    }
-    else if (Options->TestMode)
-    {
-      UString s;
+    UString s;
     
-      AddValuePair(s, IDS_ARCHIVES_COLON, Stat.NumArchives, false);
-      AddSizePair(s, IDS_PROP_PACKED_SIZE, Stat.PackSize);
+    AddValuePair(s, IDS_ARCHIVES_COLON, Stat.NumArchives, false);
+    AddSizePair(s, IDS_PROP_PACKED_SIZE, Stat.PackSize);
 
+    if (!HashBundle)
+    {
       if (Stat.NumFolders != 0)
         AddValuePair(s, IDS_PROP_FOLDERS, Stat.NumFolders);
       AddValuePair(s, IDS_PROP_FILES, Stat.NumFiles);
@@ -151,21 +126,25 @@ HRESULT CThreadExtracting::ProcessVirt()
         AddValuePair(s, IDS_PROP_NUM_ALT_STREAMS, Stat.NumAltStreams);
         AddSizePair(s, IDS_PROP_ALT_STREAMS_SIZE, Stat.AltStreams_UnpackSize);
       }
-      s.Add_LF();
-      AddLangString(s, IDS_MESSAGE_NO_ERRORS);
-      FinalMessage.OkMessage.Title = Title;
-      FinalMessage.OkMessage.Message = s;
     }
+    
+    if (HashBundle)
+    {
+      s.Add_LF();
+      AddHashBundleRes(s, *HashBundle, UString());
+    }
+    
+    s.Add_LF();
+    AddLangString(s, IDS_MESSAGE_NO_ERRORS);
+    
+    FinalMessage.OkMessage.Title = Title;
+    FinalMessage.OkMessage.Message = s;
   }
   #endif
-
   return res;
 }
 
-
-
 HRESULT ExtractGUI(
-    // DECL_EXTERNAL_CODECS_LOC_VARS
     CCodecs *codecs,
     const CObjectVector<COpenType> &formatIndices,
     const CIntVector &excludedFormatIndices,
@@ -173,7 +152,7 @@ HRESULT ExtractGUI(
     UStringVector &archivePathsFull,
     const NWildcard::CCensorNode &wildcardCensor,
     CExtractOptions &options,
-    #ifndef Z7_SFX
+    #ifndef _SFX
     CHashBundle *hb,
     #endif
     bool showDialog,
@@ -184,11 +163,6 @@ HRESULT ExtractGUI(
   messageWasDisplayed = false;
 
   CThreadExtracting extracter;
-  /*
-  #ifdef Z7_EXTERNAL_CODECS
-  extracter.externalCodecs = _externalCodecs;
-  #endif
-  */
   extracter.codecs = codecs;
   extracter.FormatIndices = &formatIndices;
   extracter.ExcludedFormatIndices = &excludedFormatIndices;
@@ -223,7 +197,7 @@ HRESULT ExtractGUI(
       if (archivePathsFull.Size() == 1)
         dialog.ArcPath = archivePathsFull[0];
 
-      #ifndef Z7_SFX
+      #ifndef _SFX
       // dialog.AltStreams = options.NtOptions.AltStreams;
       dialog.NtSecurity = options.NtOptions.NtSecurity;
       if (extractCallback->PasswordIsDefined)
@@ -239,7 +213,7 @@ HRESULT ExtractGUI(
       options.PathMode = dialog.PathMode;
       options.ElimDup = dialog.ElimDup;
       
-      #ifndef Z7_SFX
+      #ifndef _SFX
       // options.NtOptions.AltStreams = dialog.AltStreams;
       options.NtOptions.NtSecurity = dialog.NtSecurity;
       extractCallback->Password = dialog.Password;
@@ -259,7 +233,7 @@ HRESULT ExtractGUI(
     {
       UString s = GetUnicodeString(NError::MyFormatMessage(GetLastError()));
       UString s2 = MyFormatNew(IDS_CANNOT_CREATE_FOLDER,
-      #ifdef Z7_LANG
+      #ifdef LANG
       0x02000603,
       #endif
       options.OutputDir);
@@ -275,23 +249,24 @@ HRESULT ExtractGUI(
 
   extracter.Title = title;
   extracter.ExtractCallbackSpec = extractCallback;
-  extracter.ExtractCallbackSpec->ProgressDialog = &extracter;
-  extracter.FolderArchiveExtractCallback = extractCallback;
+  extracter.ExtractCallbackSpec->ProgressDialog = &extracter.ProgressDialog;
+  extracter.ExtractCallback = extractCallback;
   extracter.ExtractCallbackSpec->Init();
 
-  extracter.CompressingMode = false;
+  extracter.ProgressDialog.CompressingMode = false;
 
   extracter.ArchivePaths = &archivePaths;
   extracter.ArchivePathsFull = &archivePathsFull;
   extracter.WildcardCensor = &wildcardCensor;
   extracter.Options = &options;
-  #ifndef Z7_SFX
+  #ifndef _SFX
   extracter.HashBundle = hb;
   #endif
 
-  extracter.IconID = IDI_ICON;
+  extracter.ProgressDialog.IconID = IDI_ICON;
 
-  RINOK(extracter.Create(title, hwndParent))
-  messageWasDisplayed = extracter.ThreadFinishedOK && extracter.MessagesDisplayed;
+  RINOK(extracter.Create(title, hwndParent));
+  messageWasDisplayed = extracter.ThreadFinishedOK &
+      extracter.ProgressDialog.MessagesDisplayed;
   return extracter.Result;
 }

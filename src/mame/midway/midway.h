@@ -7,8 +7,8 @@
     Functions to emulate general the various Midway sound cards.
 
 ***************************************************************************/
-#ifndef MAME_MIDWAY_MIDWAY_H
-#define MAME_MIDWAY_MIDWAY_H
+#ifndef MAME_AUDIO_MIDWAY_H
+#define MAME_AUDIO_MIDWAY_H
 
 #pragma once
 
@@ -54,7 +54,7 @@ public:
 	// read/write
 	uint8_t read();
 	void write(offs_t offset, uint8_t data);
-	void reset_write(int state);
+	DECLARE_WRITE_LINE_MEMBER(reset_write);
 	uint8_t ioport_read(offs_t offset);
 	void ioport_write(offs_t offset, uint8_t data);
 
@@ -136,7 +136,7 @@ public:
 	// read/write
 	uint8_t read();
 	void write(uint8_t data);
-	void reset_write(int state);
+	DECLARE_WRITE_LINE_MEMBER(reset_write);
 
 	void soundsgood_map(address_map &map);
 protected:
@@ -161,7 +161,7 @@ private:
 	// internal communications
 	void porta_w(uint8_t data);
 	void portb_w(uint8_t data);
-	void irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_w);
 };
 
 
@@ -177,7 +177,7 @@ public:
 	// read/write
 	uint8_t read();
 	void write(uint8_t data);
-	void reset_write(int state);
+	DECLARE_WRITE_LINE_MEMBER(reset_write);
 
 	void turbocs_map(address_map &map);
 protected:
@@ -202,7 +202,7 @@ private:
 	// internal communications
 	void porta_w(uint8_t data);
 	void portb_w(uint8_t data);
-	void irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_w);
 };
 
-#endif // MAME_MIDWAY_MIDWAY_H
+#endif // MAME_AUDIO_MIDWAY_H

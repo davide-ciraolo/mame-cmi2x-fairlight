@@ -79,7 +79,7 @@ TIMER_CALLBACK_MEMBER(dcheese_state::signal_irq)
 }
 
 
-void dcheese_state::vblank(int state)
+WRITE_LINE_MEMBER(dcheese_state::vblank)
 {
 	if (state)
 	{

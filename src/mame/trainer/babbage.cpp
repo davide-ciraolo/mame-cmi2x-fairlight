@@ -29,9 +29,6 @@
 #include "video/pwm.h"
 #include "babbage.lh"
 
-
-namespace {
-
 #define MAIN_CLOCK 25e5
 
 class babbage_state : public driver_device
@@ -56,9 +53,9 @@ private:
 	uint8_t pio2_a_r();
 	void pio1_b_w(uint8_t data);
 	void pio2_b_w(uint8_t data);
-	void ctc_z0_w(int state);
-	void ctc_z1_w(int state);
-	void ctc_z2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(ctc_z0_w);
+	DECLARE_WRITE_LINE_MEMBER(ctc_z1_w);
+	DECLARE_WRITE_LINE_MEMBER(ctc_z2_w);
 	TIMER_DEVICE_CALLBACK_MEMBER(keyboard_callback);
 
 	void babbage_io(address_map &map);
@@ -141,15 +138,15 @@ INPUT_PORTS_END
 
 /* Z80-CTC Interface */
 
-void babbage_state::ctc_z0_w(int state)
+WRITE_LINE_MEMBER( babbage_state::ctc_z0_w )
 {
 }
 
-void babbage_state::ctc_z1_w(int state)
+WRITE_LINE_MEMBER( babbage_state::ctc_z1_w )
 {
 }
 
-void babbage_state::ctc_z2_w(int state)
+WRITE_LINE_MEMBER( babbage_state::ctc_z2_w )
 {
 }
 
@@ -280,8 +277,6 @@ ROM_START(babbage)
 	ROM_REGION(0x0800, "maincpu", ROMREGION_ERASEFF)
 	ROM_LOAD("mon.rom",    0x0000, 0x0200, CRC(469bd607) SHA1(8f3489a0f96de6a03b05c1ee01b89d9848f4b152) )
 ROM_END
-
-} // anonymous namespace
 
 
 //    YEAR  NAME     PARENT  COMPAT  MACHINE  INPUT    CLASS          INIT        COMPANY               FULLNAME       FLAGS

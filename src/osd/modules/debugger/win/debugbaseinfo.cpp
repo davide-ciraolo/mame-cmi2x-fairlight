@@ -10,8 +10,6 @@
 #include "debugbaseinfo.h"
 
 
-namespace osd::debugger::win {
-
 debugbase_info::debugbase_info(debugger_windows_interface &debugger) :
 	m_debugger(debugger),
 	m_machine(debugger.machine()),
@@ -62,5 +60,3 @@ void debugbase_info::smart_show_window(HWND wnd, bool show)
 	if (visible != show)
 		ShowWindow(wnd, show ? SW_SHOW : SW_HIDE);
 }
-
-} // namespace osd::debugger::win

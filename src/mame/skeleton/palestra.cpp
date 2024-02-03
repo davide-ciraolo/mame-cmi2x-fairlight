@@ -34,8 +34,6 @@
 #include <cmath>
 
 
-namespace {
-
 #define MASTER_CLOCK    (4000000)
 #define V_TOTAL_PONG    315
 #define H_TOTAL_PONG    256     // tbc
@@ -89,8 +87,5 @@ void palestra_state::palestra(machine_config &config)
 ROM_START( palestra ) /* dummy to satisfy game entry*/
 	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00 )
 ROM_END
-
-} // anonymous namespace
-
 
 CONS(  1978, palestra, 0,   0, palestra,   palestra,    palestra_state,   empty_init, "LPO", "Palestra-02", MACHINE_IS_SKELETON)

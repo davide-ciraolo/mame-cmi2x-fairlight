@@ -6,7 +6,7 @@
 
 #include "PpmdDecoder.h"
 
-#ifndef Z7_EXTRACT_ONLY
+#ifndef EXTRACT_ONLY
 #include "PpmdEncoder.h"
 #endif
 

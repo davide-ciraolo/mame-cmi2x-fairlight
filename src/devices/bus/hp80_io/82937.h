@@ -51,13 +51,13 @@ private:
 	uint8_t m_latch;    // U3
 	bool m_updating;
 
-	void reset_w(int state);
-	int t0_r();
+	DECLARE_WRITE_LINE_MEMBER(reset_w);
+	DECLARE_READ_LINE_MEMBER(t0_r);
 	uint8_t p1_r();
 	void p1_w(uint8_t data);
 	uint8_t dio_r();
 	void dio_w(uint8_t data);
-	void ieee488_ctrl_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(ieee488_ctrl_w);
 	uint8_t switch_r();
 	void latch_w(uint8_t data);
 

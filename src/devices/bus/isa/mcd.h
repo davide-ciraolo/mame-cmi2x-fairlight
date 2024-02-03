@@ -6,7 +6,7 @@
 #pragma once
 
 #include "isa.h"
-#include "imagedev/cdromimg.h"
+#include "imagedev/chd_cd.h"
 #include "sound/cdda.h"
 
 //**************************************************************************

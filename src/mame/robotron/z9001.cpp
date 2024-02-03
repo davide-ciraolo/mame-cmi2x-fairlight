@@ -74,7 +74,7 @@ public:
 private:
 	void kbd_put(u8 data);
 	void port88_w(uint8_t data);
-	void cass_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(cass_w);
 	TIMER_DEVICE_CALLBACK_MEMBER(timer_callback);
 	uint32_t screen_update_z9001(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
@@ -133,7 +133,7 @@ void z9001_state::port88_w(uint8_t data)
 	m_beeper->set_state(BIT(data, 7));
 }
 
-void z9001_state::cass_w(int state)
+WRITE_LINE_MEMBER( z9001_state::cass_w )
 {
 	if (state)
 	{

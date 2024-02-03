@@ -327,19 +327,19 @@ MC6845_UPDATE_ROW( bbc_state::crtc_update_row )
 	}
 }
 
-void bbc_state::bbc_hsync_changed(int state)
+WRITE_LINE_MEMBER(bbc_state::bbc_hsync_changed)
 {
 	m_hsync = state;
 }
 
-void bbc_state::bbc_vsync_changed(int state)
+WRITE_LINE_MEMBER(bbc_state::bbc_vsync_changed)
 {
 	m_vsync = state;
 	m_via6522_0->write_ca1(state); // screen refresh interrupts
 	m_trom->dew_w(state);
 }
 
-void bbc_state::bbc_de_changed(int state)
+WRITE_LINE_MEMBER(bbc_state::bbc_de_changed)
 {
 	if (!state)
 		m_teletext_latch |= 0x80;

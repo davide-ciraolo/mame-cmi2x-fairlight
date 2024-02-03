@@ -1,8 +1,8 @@
 // license:BSD-3-Clause
 // copyright-holders:David Haywood
 
-#ifndef MAME_SHARED_SEC_H
-#define MAME_SHARED_SEC_H
+#ifndef MAME_MACHINE_SEC_H
+#define MAME_MACHINE_SEC_H
 
 #pragma once
 
@@ -49,9 +49,9 @@ public:
 	sec_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock = 0);
 
 	/* serial interface */
-	void clk_w(int state);
-	void data_w(int state);
-	void cs_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(clk_w);
+	DECLARE_WRITE_LINE_MEMBER(data_w);
+	DECLARE_WRITE_LINE_MEMBER(cs_w);
 
 	int data_r();
 
@@ -112,4 +112,4 @@ private:
 
 DECLARE_DEVICE_TYPE(SEC, sec_device)
 
-#endif // MAME_SHARED_SEC_H
+#endif // MAME_MACHINE_SEC_H

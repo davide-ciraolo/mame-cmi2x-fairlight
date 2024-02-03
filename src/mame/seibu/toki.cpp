@@ -6,6 +6,9 @@ Toki
 
 driver by Jarek Parchanski
 
+Coin inputs are handled by the sound CPU, so they don't work with sound
+disabled. Use the service switch instead.
+
 Mametesters bug tokiu056gre - "tokiu: "0000000" is always displayed as the top hiscore during gameplay,
 regardless of what it actually is. This does not happen in the other Toki sets."
 
@@ -113,7 +116,7 @@ uint16_t toki_state::pip_r()
 
 
 
-void toki_state::tokib_adpcm_int(int state)
+WRITE_LINE_MEMBER(toki_state::tokib_adpcm_int)
 {
 	m_msm->data_w(m_msm5205next);
 	m_msm5205next >>= 4;

@@ -22,10 +22,10 @@ const std::string_view applepic_device::s_interrupt_names[8] = { "0", "DMA 1", "
 applepic_device::applepic_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
 	: device_t(mconfig, APPLEPIC, tag, owner, clock)
 	, m_iopcpu(*this, "iopcpu")
-	, m_prd_callback(*this, 0)
+	, m_prd_callback(*this)
 	, m_pwr_callback(*this)
 	, m_hint_callback(*this)
-	, m_gpin_callback(*this, 0)
+	, m_gpin_callback(*this)
 	, m_gpout_callback(*this)
 	, m_timer1(nullptr)
 	, m_timer_last_expired(attotime::zero)
@@ -66,6 +66,16 @@ void applepic_device::device_add_mconfig(machine_config &config)
 {
 	R65C02(config, m_iopcpu, DERIVED_CLOCK(1, 8));
 	m_iopcpu->set_addrmap(AS_PROGRAM, &applepic_device::internal_map);
+}
+
+void applepic_device::device_resolve_objects()
+{
+	// Resolve callbacks
+	m_prd_callback.resolve_safe(0);
+	m_pwr_callback.resolve_safe();
+	m_hint_callback.resolve_safe();
+	m_gpin_callback.resolve_safe(0);
+	m_gpout_callback.resolve_all_safe();
 }
 
 void applepic_device::device_start()
@@ -172,7 +182,7 @@ void applepic_device::host_w(offs_t offset, u8 data)
 		m_ram_address = u16(data) << 8 | (m_ram_address & 0x00ff);
 }
 
-void applepic_device::pint_w(int state)
+WRITE_LINE_MEMBER(applepic_device::pint_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -188,7 +198,7 @@ void applepic_device::pint_w(int state)
 	}
 }
 
-void applepic_device::reqa_w(int state)
+WRITE_LINE_MEMBER(applepic_device::reqa_w)
 {
 	if (state == ASSERT_LINE)
 		m_dma_channel[0].control |= 0x02;
@@ -196,7 +206,7 @@ void applepic_device::reqa_w(int state)
 		m_dma_channel[0].control &= 0xfd;
 }
 
-void applepic_device::reqb_w(int state)
+WRITE_LINE_MEMBER(applepic_device::reqb_w)
 {
 	if (state == ASSERT_LINE)
 		m_dma_channel[1].control |= 0x02;

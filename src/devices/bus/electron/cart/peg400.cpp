@@ -9,10 +9,9 @@
 
 **********************************************************************/
 
+
 #include "emu.h"
 #include "peg400.h"
-
-#include "formats/acorn_dsk.h"
 
 
 //**************************************************************************
@@ -172,7 +171,7 @@ void electron_peg400_device::wd1770_control_w(uint8_t data)
 	// bit 5: head load
 }
 
-void electron_peg400_device::fdc_drq_w(int state)
+WRITE_LINE_MEMBER(electron_peg400_device::fdc_drq_w)
 {
 	m_slot->nmi_w((state && m_fdc_ie) ? ASSERT_LINE : CLEAR_LINE);
 }

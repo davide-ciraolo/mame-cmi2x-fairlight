@@ -266,8 +266,6 @@ FS 0 to F
 #include "mekd4.lh"
 
 
-namespace {
-
 class mekd4_state : public driver_device
 {
 public:
@@ -303,7 +301,7 @@ public:
 	void mekd4(machine_config &config);
 	void init_mekd4();
 
-	void reset_key_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(reset_key_w);
 	DECLARE_INPUT_CHANGED_MEMBER(keypad_changed);
 	DECLARE_INPUT_CHANGED_MEMBER(rs232_cts_route_change);
 	DECLARE_INPUT_CHANGED_MEMBER(rs232_dcd_route_change);
@@ -319,24 +317,24 @@ private:
 	void stop_pia_pb_w(uint8_t data);
 	uint16_t m_stop_address;
 
-	void rs232_route_cts(int state);
-	void rs232_route_dcd(int state);
+	DECLARE_WRITE_LINE_MEMBER(rs232_route_cts);
+	DECLARE_WRITE_LINE_MEMBER(rs232_route_dcd);
 
 	// Clocks
-	void write_f1_clock(int state);
-	void write_f3_clock(int state);
-	void write_f7_clock(int state);
-	void write_f8_clock(int state);
-	void write_f9_clock(int state);
-	void write_f13_clock(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_f1_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f3_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f7_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f8_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f9_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f13_clock);
 
-	int keypad_cb1_r();
+	DECLARE_READ_LINE_MEMBER(keypad_cb1_r);
 	uint8_t keypad_key_r();
 	void led_digit_w(uint8_t data);
 	void led_segment_w(uint8_t data);
 
-	int stop_pia_cb1_r();
-	void stop_pia_cb2_w(int state);
+	DECLARE_READ_LINE_MEMBER(stop_pia_cb1_r);
+	DECLARE_WRITE_LINE_MEMBER(stop_pia_cb2_w);
 
 	void mekd4_stop_mem(address_map &map);
 	void mekd4_mem(address_map &map);
@@ -622,7 +620,7 @@ void mekd4_state::page_w(uint8_t data)
 
 ************************************************************/
 
-void mekd4_state::reset_key_w(int state)
+WRITE_LINE_MEMBER(mekd4_state::reset_key_w)
 {
 	m_maincpu->set_input_line(INPUT_LINE_RESET, state ? CLEAR_LINE : ASSERT_LINE);
 
@@ -642,7 +640,7 @@ INPUT_CHANGED_MEMBER(mekd4_state::keypad_changed)
 	m_kpd_pia->cb1_w(mekd4_state::keypad_key_pressed());
 }
 
-int mekd4_state::keypad_cb1_r()
+READ_LINE_MEMBER(mekd4_state::keypad_cb1_r)
 {
 	return mekd4_state::keypad_key_pressed();
 }
@@ -684,13 +682,13 @@ void mekd4_state::led_digit_w(uint8_t data)
 
 ************************************************************/
 
-int mekd4_state::stop_pia_cb1_r()
+READ_LINE_MEMBER(mekd4_state::stop_pia_cb1_r)
 {
 	uint8_t state = m_cass->input() > +0.0;
 	return state;
 }
 
-void mekd4_state::stop_pia_cb2_w(int state)
+WRITE_LINE_MEMBER(mekd4_state::stop_pia_cb2_w)
 {
 	m_cass->output(state ? -1.0 : +1.0);
 }
@@ -701,7 +699,7 @@ void mekd4_state::stop_pia_cb2_w(int state)
 
 ************************************************************/
 
-void mekd4_state::rs232_route_cts(int state)
+WRITE_LINE_MEMBER(mekd4_state::rs232_route_cts)
 {
 	if (m_rs232_cts_route->read())
 		m_acia->write_cts(state);
@@ -710,7 +708,7 @@ void mekd4_state::rs232_route_cts(int state)
 	m_cts = state;
 }
 
-void mekd4_state::rs232_route_dcd(int state)
+WRITE_LINE_MEMBER(mekd4_state::rs232_route_dcd)
 {
 	if (m_rs232_dcd_route->read())
 		m_acia->write_dcd(state);
@@ -735,7 +733,7 @@ INPUT_CHANGED_MEMBER(mekd4_state::rs232_dcd_route_change)
 		m_acia->write_dcd(0);
 }
 
-void mekd4_state::write_f1_clock(int state)
+WRITE_LINE_MEMBER(mekd4_state::write_f1_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 0))
 		m_acia->write_txc(state);
@@ -743,7 +741,7 @@ void mekd4_state::write_f1_clock(int state)
 		m_acia->write_rxc(state);
 }
 
-void mekd4_state::write_f3_clock(int state)
+WRITE_LINE_MEMBER(mekd4_state::write_f3_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 1))
 		m_acia->write_txc(state);
@@ -751,7 +749,7 @@ void mekd4_state::write_f3_clock(int state)
 		m_acia->write_rxc(state);
 }
 
-void mekd4_state::write_f7_clock(int state)
+WRITE_LINE_MEMBER(mekd4_state::write_f7_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 2))
 		m_acia->write_txc(state);
@@ -759,7 +757,7 @@ void mekd4_state::write_f7_clock(int state)
 		m_acia->write_rxc(state);
 }
 
-void mekd4_state::write_f8_clock(int state)
+WRITE_LINE_MEMBER(mekd4_state::write_f8_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 3))
 		m_acia->write_txc(state);
@@ -767,7 +765,7 @@ void mekd4_state::write_f8_clock(int state)
 		m_acia->write_rxc(state);
 }
 
-void mekd4_state::write_f9_clock(int state)
+WRITE_LINE_MEMBER(mekd4_state::write_f9_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 4))
 		m_acia->write_txc(state);
@@ -775,7 +773,7 @@ void mekd4_state::write_f9_clock(int state)
 		m_acia->write_rxc(state);
 }
 
-void mekd4_state::write_f13_clock(int state)
+WRITE_LINE_MEMBER(mekd4_state::write_f13_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 5))
 		m_acia->write_txc(state);
@@ -1001,7 +999,7 @@ void mekd4_state::mekd4(machine_config &config)
 	rs232.set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal));
 
 	// Stop PIA. IRQB is NC.
-	PIA6821(config, m_stop_pia);
+	PIA6821(config, m_stop_pia, 0);
 	m_stop_pia->writepa_handler().set(FUNC(mekd4_state::stop_pia_pa_w));
 	m_stop_pia->writepb_handler().set(FUNC(mekd4_state::stop_pia_pb_w));
 	m_stop_pia->ca2_w(1); // Connected to 'abort' TP2. Can be toggled low to and abort user code.
@@ -1010,7 +1008,7 @@ void mekd4_state::mekd4(machine_config &config)
 	m_stop_pia->irqa_handler().set("mainnmi", FUNC(input_merger_device::in_w<0>));
 
 	// Keypad and display PIA. CA1, CA2, IRQA are NC. CB2 is pulled high.
-	PIA6821(config, m_kpd_pia);
+	PIA6821(config, m_kpd_pia, 0);
 	m_kpd_pia->readpa_handler().set(FUNC(mekd4_state::keypad_key_r));
 	m_kpd_pia->readcb1_handler().set(FUNC(mekd4_state::keypad_cb1_r));
 	m_kpd_pia->writepa_handler().set(FUNC(mekd4_state::led_segment_w));
@@ -1018,7 +1016,7 @@ void mekd4_state::mekd4(machine_config &config)
 	m_kpd_pia->irqb_handler().set("mainnmi", FUNC(input_merger_device::in_w<1>));
 
 	// Keypad and display board User PIA.
-	PIA6821(config, m_user_pia);
+	PIA6821(config, m_user_pia, 0);
 	m_user_pia->irqa_handler().set("mainirq", FUNC(input_merger_device::in_w<0>));
 	m_user_pia->irqb_handler().set("mainirq", FUNC(input_merger_device::in_w<1>));
 
@@ -1046,7 +1044,7 @@ void mekd4_state::mekd4(machine_config &config)
 	// CA2 light pen input.
 	// PB0 is mode flags and light pen control.
 	// CB1 is VSYNC, and CB2 is HSYNC.
-	PIA6821(config, m_r2_pia);
+	PIA6821(config, m_r2_pia, 0);
 	m_r2_pia->readpa_handler().set(FUNC(mekd4_state::r2_pia_pa_r));
 	m_r2_pia->readpb_handler().set(FUNC(mekd4_state::r2_pia_pb_r));
 	m_r2_pia->irqa_handler().set("mainirq", FUNC(input_merger_device::in_w<2>));
@@ -1071,9 +1069,6 @@ ROM_START(mekd4)
 	ROM_REGION(0x0400, "rommap",0)
 	ROM_LOAD("d4map00.rom", 0x0000, 0x0400, CRC(7e676444) SHA1(4f8a7443da509561be958786f9bd72eac3969a89))
 ROM_END
-
-} // anonymous namespace
-
 
 /***************************************************************************
 

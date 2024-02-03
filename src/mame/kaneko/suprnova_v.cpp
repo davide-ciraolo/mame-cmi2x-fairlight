@@ -605,7 +605,7 @@ uint32_t skns_state::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, 
 	return 0;
 }
 
-void skns_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(skns_state::screen_vblank)
 {
 	if (state)
 	{

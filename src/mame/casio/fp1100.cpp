@@ -50,9 +50,6 @@
 #define VERBOSE 0
 #include "logmacro.h"
 
-
-namespace {
-
 #define MAIN_CLOCK 15.9744_MHz_XTAL
 
 class fp1100_state : public driver_device
@@ -90,7 +87,7 @@ private:
 	u8 portb_r();
 	u8 portc_r();
 	void portc_w(u8 data);
-	void centronics_busy_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(centronics_busy_w);
 	INTERRUPT_GEN_MEMBER(vblank_irq);
 	MC6845_UPDATE_ROW(crtc_update_row);
 	TIMER_DEVICE_CALLBACK_MEMBER(kansas_w);
@@ -590,7 +587,7 @@ static GFXDECODE_START( gfx_fp1100 )
 	GFXDECODE_ENTRY( "sub_ipl", 0x2400, chars_8x8, 0, 1 )
 GFXDECODE_END
 
-void fp1100_state::centronics_busy_w(int state)
+WRITE_LINE_MEMBER( fp1100_state::centronics_busy_w )
 {
 	m_centronics_busy = state;
 }
@@ -712,9 +709,6 @@ ROM_START( fp1100 )
 	ROM_LOAD( "sub2.rom", 0x1000, 0x1000, CRC(359f007e) SHA1(0188d5a7b859075cb156ee55318611bd004128d7))
 	ROM_LOAD( "sub3.rom", 0x2000, 0xf80, BAD_DUMP CRC(fb2b577a) SHA1(a9ae6b03e06ea2f5db30dfd51ebf5aede01d9672))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

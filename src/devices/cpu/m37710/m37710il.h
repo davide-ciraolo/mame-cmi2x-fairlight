@@ -1,9 +1,10 @@
 // license:BSD-3-Clause
-// copyright-holders:R. Belmont, Karl Stenerud
-#ifndef MAME_CPU_M37710_M37710IL_H
-#define MAME_CPU_M37710_M37710IL_H
-
+// copyright-holders:R. Belmont, Karl Stenerud, hap
 #pragma once
+
+#ifndef __M37710IL_H__
+#define __M37710IL_H__
+
 
 /* ======================================================================== */
 /* ================================= MEMORY =============================== */
@@ -204,4 +205,4 @@ inline uint32_t m37710_cpu_device::EA_AXI()   {return read_16_AXI(MAKE_UINT_16(O
 inline uint32_t m37710_cpu_device::EA_S()     {return MAKE_UINT_16(REG_S + OPER_8_IMM());}
 inline uint32_t m37710_cpu_device::EA_SIY()   {return MAKE_UINT_16(read_16_SIY(REG_S + OPER_8_IMM()) + REG_Y) | REG_DT;}
 
-#endif /* MAME_CPU_M37710_M37710IL_H */
+#endif /* __M37710IL_H__ */

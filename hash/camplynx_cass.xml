@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
+license:CC0
 -->
 
 <softwarelist name="camplynx_cass" description="Camputers Lynx cassettes">
@@ -264,7 +264,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="labyrinth">
-		<description>Labyrinthe (France)</description>
+		<description>Labyrinthe (Fra)</description>
 		<year>1983</year>
 		<publisher>Quazar Computing</publisher>
 		<info name="usage" value="LOAD &quot;LABYRINTHE&quot;" />
@@ -301,7 +301,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="mastermnd">
-		<description>Mastermind (96K)(France)</description>
+		<description>Mastermind (96K)(Fra)</description>
 		<year>198?</year>
 		<publisher>Willowsoft</publisher>
 		<info name="usage" value="LOAD &quot;MASTERMIND&quot;" />
@@ -337,7 +337,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="moonfallf" cloneof="moonfall">
-		<description>Moonfall (France)</description>
+		<description>Moonfall (Fra)</description>
 		<year>1983</year>
 		<publisher>Camsoft</publisher>
 		<info name="usage" value="LOAD &quot;Moonfall2&quot;" />
@@ -386,7 +386,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="numerons">
-		<description>Numerons (France)</description>
+		<description>Numerons (Fra)</description>
 		<year>1983</year>
 		<publisher>Camsoft</publisher>
 		<info name="usage" value="LOAD &quot;NUMERONS&quot;" />
@@ -411,7 +411,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="asterix">
-		<description>L'odyssée d'Astérix (96K)(France)</description>
+		<description>L'odyssée d'Astérix (96K)(Fra)</description>
 		<year>198?</year>
 		<publisher>La Bibliothèque de Cintre</publisher>
 		<info name="usage" value="LOAD &quot;ASTERIX&quot;" />
@@ -509,7 +509,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="scrablynx">
-		<description>ScrabLynx (96K)(France)</description>
+		<description>ScrabLynx (96K)(Fra)</description>
 		<year>1985</year>
 		<publisher>&lt;unknown&gt;</publisher>
 		<info name="author" value="Alain Sauget" />
@@ -597,7 +597,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="wormf" cloneof="worm">
-		<description>The Worm (96K)(France)</description>
+		<description>The Worm (96K)(Fra)</description>
 		<year>1983</year>
 		<publisher>Quazar Computing</publisher>
 		<info name="usage" value="LOAD &quot;THE WORM&quot;" />
@@ -622,7 +622,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="zombie">
-		<description>Zombie Panic (France)</description>
+		<description>Zombie Panic (Fra)</description>
 		<year>1983</year>
 		<publisher>Bus-Tech</publisher>
 		<info name="author" value="A.Miller" />
@@ -637,7 +637,7 @@ license:CC0-1.0
 	<!-- Applications -->
 
 	<software name="aide">
-		<description>Aide (Label-Procedures) (France)</description>
+		<description>Aide (Label-Procedures) (Fra)</description>
 		<year>198?</year>
 		<publisher>&lt;unknown&gt;</publisher>
 		<info name="usage" value="LOAD &quot;AIDE&quot;" />
@@ -693,7 +693,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="disassmbf">
-		<description>Disassembler (France)</description>
+		<description>Disassembler (Fra)</description>
 		<year>198?</year>
 		<publisher>&lt;unknown&gt;</publisher>
 		<info name="usage" value="LOAD &quot;DES.IMP&quot;" />
@@ -705,7 +705,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="disassmb">
-		<description>Lynx Disassembler (France)</description>
+		<description>Lynx Disassembler (Fra)</description>
 		<year>1983</year>
 		<publisher>Camsoft</publisher>
 		<info name="usage" value="LOAD &quot;DESASS&quot;" />
@@ -717,7 +717,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="genbasic">
-		<description>Générateur Basic (France)</description>
+		<description>Générateur Basic (Fra)</description>
 		<year>1984</year>
 		<publisher>L'oeil de Lynx</publisher>
 		<info name="author" value="C.Aussage" />
@@ -730,7 +730,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="gencarac">
-		<description>Générateur de Caracteres (96K)(France)</description>
+		<description>Générateur de Caracteres (96K)(Fra)</description>
 		<year>1984</year>
 		<publisher>L'oeil de Lynx</publisher>
 		<info name="usage" value="LOAD &quot;GENECAR&quot;" />
@@ -754,7 +754,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="maths">
-		<description>Maths (France)</description>
+		<description>Maths (Fra)</description>
 		<year>198?</year>
 		<publisher>&lt;unknown&gt;</publisher>
 		<part name="cass1" interface="camplynx_cass">
@@ -810,7 +810,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="chopin">
-		<description>Chopin (France)</description>
+		<description>Chopin (Fra)</description>
 		<year>1984</year>
 		<publisher>Tout Savoir sur Lynx</publisher>
 		<info name="usage" value="LOAD &quot;CHOPIN&quot;" />
@@ -855,7 +855,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="gridtrap">
-		<description>Grid Trap (France)</description>
+		<description>Grid Trap (Fra)</description>
 		<year>1984</year>
 		<publisher>L'oeil de Lynx</publisher>
 		<info name="author" value="M.S.Fowkes" />
@@ -881,7 +881,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="inteltab">
-		<description>IntelTab (96K)(France)</description>
+		<description>IntelTab (96K)(Fra)</description>
 		<year>1984</year>
 		<publisher>&lt;unknown&gt;</publisher>
 		<info name="author" value="A.Sauget" />
@@ -894,7 +894,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="maximots">
-		<description>Maxi-Mots (96K)(France)</description>
+		<description>Maxi-Mots (96K)(Fra)</description>
 		<year>1984</year>
 		<publisher>L'oeil de Lynx</publisher>
 		<info name="author" value="M.Sauget" />
@@ -976,7 +976,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="tronblkr">
-		<description>Tron Blocker (96K)(France)</description>
+		<description>Tron Blocker (96K)(Fra)</description>
 		<year>1984</year>
 		<publisher>NiLUG News</publisher>
 		<info name="author" value="Stephen Sawyer" />

@@ -43,13 +43,11 @@
 	// calculate the optimal size for everything
 	{
 		NSSize  desired = [NSScrollView frameSizeForContentSize:[logView maximumFrameSize]
-										horizontalScrollerClass:[NSScroller class]
-										  verticalScrollerClass:[NSScroller class]
-													 borderType:[logScroll borderType]
-													controlSize:NSControlSizeRegular
-												  scrollerStyle:NSScrollerStyleOverlay];
+										  hasHorizontalScroller:YES
+											hasVerticalScroller:YES
+													 borderType:[logScroll borderType]];
 
-		// this thing starts with no content, so its preferred height may be very small
+		// this thing starts with no content, so its prefered height may be very small
 		desired.height = std::max(desired.height, CGFloat(240));
 		[self cascadeWindowWithDesiredSize:desired forView:logScroll];
 	}
@@ -66,7 +64,7 @@
 
 - (void)saveConfigurationToNode:(util::xml::data_node *)node {
 	[super saveConfigurationToNode:node];
-	node->set_attribute_int(osd::debugger::ATTR_WINDOW_TYPE, osd::debugger::WINDOW_TYPE_ERROR_LOG_VIEWER);
+	node->set_attribute_int("type", MAME_DEBUGGER_WINDOW_TYPE_ERROR_LOG_VIEWER);
 }
 
 @end

@@ -15,11 +15,6 @@
 
 #include "diserial.h"
 
-#include <memory>
-#include <string>
-#include <system_error>
-#include <utility>
-
 
 /***************************************************************************
     TYPE DEFINITIONS
@@ -32,10 +27,9 @@ class midiout_device :    public device_t,
 public:
 	// construction/destruction
 	midiout_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
-	~midiout_device();
 
-	// device_image_interface implementation
-	virtual std::pair<std::error_condition, std::string> call_load() override;
+	// image-level overrides
+	virtual image_init_result call_load() override;
 	virtual void call_unload() override;
 
 	// image device
@@ -51,11 +45,11 @@ public:
 	virtual void tx(uint8_t state) { rx_w(state); }
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
-	// device_serial_interface implementation
+	// serial overrides
 	virtual void rcv_complete() override;    // Rx completed receiving byte
 
 private:

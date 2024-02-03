@@ -109,6 +109,11 @@ acia6850_device::acia6850_device(const machine_config &mconfig, device_type type
 
 void acia6850_device::device_start()
 {
+	// resolve callbacks
+	m_txd_handler.resolve_safe();
+	m_rts_handler.resolve_safe();
+	m_irq_handler.resolve_safe();
+
 	save_item(NAME(m_status));
 	save_item(NAME(m_tdr));
 	save_item(NAME(m_rdr));
@@ -314,7 +319,7 @@ uint8_t acia6850_device::read(offs_t offset)
 	return BIT(offset, 0) ? data_r() : status_r();
 }
 
-void acia6850_device::write_cts(int state)
+DECLARE_WRITE_LINE_MEMBER( acia6850_device::write_cts )
 {
 	if (state)
 	{
@@ -326,12 +331,12 @@ void acia6850_device::write_cts(int state)
 	}
 }
 
-void acia6850_device::write_dcd(int state)
+DECLARE_WRITE_LINE_MEMBER( acia6850_device::write_dcd )
 {
 	m_dcd = state;
 }
 
-void acia6850_device::write_rxc(int state)
+WRITE_LINE_MEMBER( acia6850_device::write_rxc )
 {
 	if (m_rxc != state)
 	{
@@ -479,12 +484,12 @@ void acia6850_device::write_rxc(int state)
 	}
 }
 
-void acia6850_device::write_rxd(int state)
+DECLARE_WRITE_LINE_MEMBER( acia6850_device::write_rxd )
 {
 	m_rxd = state;
 }
 
-void acia6850_device::write_txc(int state)
+WRITE_LINE_MEMBER( acia6850_device::write_txc )
 {
 	if (m_txc != state)
 	{

@@ -114,7 +114,7 @@ a1200_kbd_device::a1200_kbd_device(machine_config const &mconfig, char const *ta
 {
 }
 
-void a1200_kbd_device::kdat_w(int state)
+WRITE_LINE_MEMBER(a1200_kbd_device::kdat_w)
 {
 	if (bool(state) != m_host_kdat)
 	{
@@ -167,7 +167,7 @@ void a1200_kbd_device::mpu_portc_w(offs_t offset, u8 data, u8 mem_mask)
 	m_led_kbd_caps = BIT(~data, 7);
 }
 
-void a1200_kbd_device::mpu_tcmp(int state)
+WRITE_LINE_MEMBER(a1200_kbd_device::mpu_tcmp)
 {
 	m_host->krst_w(state);
 }

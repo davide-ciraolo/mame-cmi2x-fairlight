@@ -1,8 +1,8 @@
 // license:BSD-3-Clause
 // copyright-holders:AJR
 
-#ifndef MAME_TELEVIDEO_TV955KB_H
-#define MAME_TELEVIDEO_TV955KB_H
+#ifndef MAME_MACHINE_TV955KB_H
+#define MAME_MACHINE_TV955KB_H
 
 #pragma once
 
@@ -25,10 +25,11 @@ public:
 	auto txd_cb() { return m_txd_cb.bind(); }
 	auto reset_cb() { return m_reset_cb.bind(); }
 
-	void write_rxd(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_rxd);
 
 protected:
-	// device_t implementation
+	// device-specific overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 	virtual void device_add_mconfig(machine_config &config) override;
@@ -37,9 +38,9 @@ protected:
 
 private:
 	u8 keys_r();
-	void bell_w(int state);
-	void txd_w(int state);
-	void reset_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(bell_w);
+	DECLARE_WRITE_LINE_MEMBER(txd_w);
+	DECLARE_WRITE_LINE_MEMBER(reset_w);
 
 	TIMER_CALLBACK_MEMBER(bell_q8);
 	void bell_reset();
@@ -59,4 +60,4 @@ private:
 // device type definition
 DECLARE_DEVICE_TYPE(TV955_KEYBOARD, tv955kb_device)
 
-#endif // MAME_TELEVIDEO_TV955KB_H
+#endif // MAME_MACHINE_TV955KB_H

@@ -224,10 +224,7 @@ void huc6270_device::select_sprites()
 		static const int cgy_table[4] = { 16, 32, 64, 64 };
 		int cgy = ( m_sat[i+3] >> 12 ) & 0x03;
 		int height = cgy_table[ cgy ];
-		// TODO: we are one line off in alignment, is following compensation right?
-		// cfr. rennybla & draculax (at least), they are otherwise offset by 1
-		// compared to background.
-		int sprite_line = m_raster_count - 1 - m_sat[i];
+		int sprite_line = m_raster_count - m_sat[i];
 
 		if ( sprite_line >= 0 && sprite_line < height )
 		{
@@ -484,7 +481,7 @@ u16 huc6270_device::next_pixel()
 //}
 
 
-void huc6270_device::vsync_changed(int state)
+WRITE_LINE_MEMBER( huc6270_device::vsync_changed )
 {
 	state &= 0x01;
 	if ( m_vsync != state )
@@ -510,7 +507,7 @@ void huc6270_device::vsync_changed(int state)
 }
 
 
-void huc6270_device::hsync_changed(int state)
+WRITE_LINE_MEMBER( huc6270_device::hsync_changed )
 {
 	state &= 0x01;
 
@@ -535,14 +532,7 @@ void huc6270_device::hsync_changed(int state)
 			m_horz_steps = 0;
 			m_byr_latched += 1;
 			m_raster_count += 1;
-			// raster count VSW latch happens one line earlier (cfr. +2 on assignment)
-			// This has been confirmed on real HW, where the last possible RCR with
-			// 240 VDW is 0x130 (i.e. 64 + 240). m_vert_to_go == 1 will also
-			// cause several side effects, namely:
-			// - draculax Stage 4' "all blue" Richter;
-			// - faussete Stage 2 excessive slowdown;
-			// - xwiber Stage 2 boss never spawning (MT#07384)
-			if ( m_vert_to_go == 2 && m_vert_state == v_state::VDS )
+			if ( m_vert_to_go == 1 && m_vert_state == v_state::VDS )
 			{
 				m_raster_count = 0x40;
 			}
@@ -846,6 +836,9 @@ void huc6270_device::write(offs_t offset, u8 data)
 
 void huc6270_device::device_start()
 {
+	/* Resolve callbacks */
+	m_irq_changed_cb.resolve_safe();
+
 	m_vram = make_unique_clear<uint16_t[]>(m_vram_size/sizeof(uint16_t));
 	m_vram_mask = (m_vram_size >> 1) - 1;
 

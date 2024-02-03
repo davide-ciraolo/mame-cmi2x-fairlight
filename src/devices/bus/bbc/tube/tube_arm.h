@@ -51,7 +51,7 @@ private:
 
 	void tube_arm_mem(address_map &map);
 
-	void prst_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(prst_w);
 };
 
 

@@ -58,15 +58,23 @@ mb63h130_device::mb63h130_device(const machine_config &mconfig, const char *tag,
 
 
 //-------------------------------------------------
+//  device_resolve_objects - resolve objects that
+//  may be needed for other devices to set
+//  initial conditions at start time
+//-------------------------------------------------
+
+void mb63h149_device::device_resolve_objects()
+{
+	m_int_callback.resolve_safe();
+}
+
+
+//-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
 
 void mb63h149_device::device_start()
 {
-	m_sram = util::make_unique_clear<uint8_t []>(0x800);
-
-	// save state
-	save_pointer(NAME(m_sram), 0x800);
 }
 
 
@@ -76,7 +84,6 @@ void mb63h149_device::device_start()
 
 void mb63h149_device::device_reset()
 {
-	m_int_callback(CLEAR_LINE);
 }
 
 
@@ -86,8 +93,8 @@ void mb63h149_device::device_reset()
 
 u8 mb63h149_device::read(offs_t offset)
 {
-	// TODO: side effects?
-	return m_sram[offset & 0x7ff];
+	// TODO
+	return 0;
 }
 
 
@@ -97,6 +104,5 @@ u8 mb63h149_device::read(offs_t offset)
 
 void mb63h149_device::write(offs_t offset, u8 data)
 {
-	// TODO: side effects?
-	m_sram[offset & 0x7ff] = data;
+	// TODO
 }

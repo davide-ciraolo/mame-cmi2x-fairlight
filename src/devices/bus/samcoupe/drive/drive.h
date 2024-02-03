@@ -60,7 +60,7 @@ public:
 	uint8_t read(offs_t offset);
 	void write(offs_t offset, uint8_t data);
 
-	void disk1_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( disk1_w );
 
 protected:
 	// device-level overrides

@@ -10,8 +10,8 @@
 #include "emu.h"
 #include "decioga.h"
 
-#define LOG_DMA         (1U << 1)
-#define LOG_LANCE_DMA   (1U << 2)
+#define LOG_DMA         (1U << 0)
+#define LOG_LANCE_DMA   (1U << 1)
 
 #define VERBOSE (LOG_DMA|LOG_LANCE_DMA)
 
@@ -35,6 +35,8 @@ dec_ioga_device::dec_ioga_device(const machine_config &mconfig, const char *tag,
 
 void dec_ioga_device::device_start()
 {
+	m_irq_out_cb.resolve_safe();
+
 	save_item(NAME(m_csr));
 	save_item(NAME(m_intr));
 	save_item(NAME(m_imsk));
@@ -108,7 +110,7 @@ void dec_ioga_device::dmaptr_w(offs_t offset, u32 data, u32 mem_mask)
 	LOGMASKED(LOG_DMA, "DECIOGA: %08x to DMA pointer %x (addr %x)\n", data, offset/4, offset*4);
 }
 
-void dec_ioga_device::rtc_irq_w(int state)
+WRITE_LINE_MEMBER(dec_ioga_device::rtc_irq_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -117,7 +119,7 @@ void dec_ioga_device::rtc_irq_w(int state)
 	recalc_irq();
 }
 
-void dec_ioga_device::lance_irq_w(int state)
+WRITE_LINE_MEMBER(dec_ioga_device::lance_irq_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -130,7 +132,7 @@ void dec_ioga_device::lance_irq_w(int state)
 	recalc_irq();
 }
 
-void dec_ioga_device::scc0_irq_w(int state)
+WRITE_LINE_MEMBER(dec_ioga_device::scc0_irq_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -143,7 +145,7 @@ void dec_ioga_device::scc0_irq_w(int state)
 	recalc_irq();
 }
 
-void dec_ioga_device::scc1_irq_w(int state)
+WRITE_LINE_MEMBER(dec_ioga_device::scc1_irq_w)
 {
 	if (state == ASSERT_LINE)
 	{

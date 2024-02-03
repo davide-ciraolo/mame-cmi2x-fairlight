@@ -215,6 +215,7 @@ m24_keyboard_device::m24_keyboard_device(const machine_config &mconfig, const ch
 
 void m24_keyboard_device::device_start()
 {
+	m_out_data.resolve_safe();
 	m_out_data(1);
 	m_reset_timer = timer_alloc(FUNC(m24_keyboard_device::reset_mcu), this);
 }
@@ -251,12 +252,12 @@ uint8_t m24_keyboard_device::p2_r()
 	return (m_keypress << 7) | m_mousebtn->read();
 }
 
-int m24_keyboard_device::t0_r()
+READ_LINE_MEMBER( m24_keyboard_device::t0_r )
 {
 	return 0;
 }
 
-int m24_keyboard_device::t1_r()
+READ_LINE_MEMBER( m24_keyboard_device::t1_r )
 {
 	return 0;
 }
@@ -267,7 +268,7 @@ void m24_keyboard_device::bus_w(uint8_t data)
 	m_keypress = (col & (1 << (data & 7))) ? 1 : 0;
 }
 
-void m24_keyboard_device::clock_w(int state)
+WRITE_LINE_MEMBER( m24_keyboard_device::clock_w )
 {
 	m_mcu->set_input_line(MCS48_INPUT_IRQ, !state);
 	if(!state)
@@ -279,7 +280,7 @@ void m24_keyboard_device::clock_w(int state)
 	}
 }
 
-void m24_keyboard_device::data_w(int state)
+WRITE_LINE_MEMBER( m24_keyboard_device::data_w )
 {
 	m_kbcdata = state;
 }

@@ -58,6 +58,9 @@ comx_expansion_slot_device::comx_expansion_slot_device(const machine_config &mco
 void comx_expansion_slot_device::device_start()
 {
 	m_card = get_card_device();
+
+	// resolve callbacks
+	m_write_irq.resolve_safe();
 }
 
 
@@ -117,7 +120,7 @@ void comx_expansion_slot_device::io_w(offs_t offset, uint8_t data)
 //  ds_w - device select write
 //-------------------------------------------------
 
-void comx_expansion_slot_device::ds_w(int state)
+WRITE_LINE_MEMBER(comx_expansion_slot_device::ds_w)
 {
 	if (m_card != nullptr)
 		m_card->comx_ds_w(state);
@@ -128,7 +131,7 @@ void comx_expansion_slot_device::ds_w(int state)
 //  q_w - Q write
 //-------------------------------------------------
 
-void comx_expansion_slot_device::q_w(int state)
+WRITE_LINE_MEMBER(comx_expansion_slot_device::q_w)
 {
 	if (m_card != nullptr)
 		m_card->comx_q_w(state);
@@ -139,7 +142,7 @@ void comx_expansion_slot_device::q_w(int state)
 //  ef4_r - EF4 poll
 //-------------------------------------------------
 
-int comx_expansion_slot_device::ef4_r()
+READ_LINE_MEMBER(comx_expansion_slot_device::ef4_r)
 {
 	int state = CLEAR_LINE;
 
@@ -165,7 +168,7 @@ void comx_expansion_slot_device::sc_w(offs_t offset, uint8_t data)
 //  tpb_w - TPB write
 //-------------------------------------------------
 
-void comx_expansion_slot_device::tpb_w(int state)
+WRITE_LINE_MEMBER(comx_expansion_slot_device::tpb_w)
 {
 	if (m_card != nullptr)
 		m_card->comx_tpb_w(state);

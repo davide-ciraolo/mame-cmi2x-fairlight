@@ -14,17 +14,17 @@ hmd_format::hmd_format() : upd765_format(formats)
 {
 }
 
-const char *hmd_format::name() const noexcept
+const char *hmd_format::name() const
 {
 	return "hector_minidisc";
 }
 
-const char *hmd_format::description() const noexcept
+const char *hmd_format::description() const
 {
 	return "Hector Minidisc disk image";
 }
 
-const char *hmd_format::extensions() const noexcept
+const char *hmd_format::extensions() const
 {
 	return "hmd";
 }

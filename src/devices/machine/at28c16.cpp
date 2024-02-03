@@ -207,7 +207,7 @@ uint8_t at28c16_device::read(offs_t offset)
 }
 
 
-void at28c16_device::set_a9_12v(int state)
+WRITE_LINE_MEMBER( at28c16_device::set_a9_12v )
 {
 	state &= 1;
 	if( m_a9_12v != state )
@@ -218,7 +218,7 @@ void at28c16_device::set_a9_12v(int state)
 }
 
 
-void at28c16_device::set_oe_12v(int state)
+WRITE_LINE_MEMBER( at28c16_device::set_oe_12v )
 {
 	state &= 1;
 	if( m_oe_12v != state )

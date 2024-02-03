@@ -30,13 +30,14 @@ void vtech2_state::init_laser()
 	init_waitstates();
 
 	uint8_t *gfx = memregion("gfx2")->base();
+	int i;
 
 	m_laser_track_x2[0] = m_laser_track_x2[1] = 80;
 	m_laser_fdc_bits = 8;
 	m_laser_drive = -1;
 	m_cart_size = 0;
 
-	for (int i = 0; i < 256; i++)
+	for (i = 0; i < 256; i++)
 		gfx[i] = i;
 
 	m_laser_latch = -1;
@@ -53,14 +54,15 @@ DEVICE_IMAGE_LOAD_MEMBER( vtech2_state::cart_load )
 
 	if (m_cart_size > 0x10000)
 	{
+		image.seterror(image_error::INVALIDIMAGE, "Cartridge bigger than 64k");
 		m_cart_size = 0;
-		return std::make_pair(image_error::INVALIDLENGTH, "Cartridge bigger than 64k");
+		return image_init_result::FAIL;
 	}
 
 	m_cart->rom_alloc(m_cart_size, GENERIC_ROM8_WIDTH, ENDIANNESS_LITTLE);
 	m_cart->common_load_rom(m_cart->get_rom_base(), m_cart_size, "rom");
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void vtech2_state::machine_reset()

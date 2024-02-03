@@ -81,22 +81,22 @@ void cgenie_printer_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void cgenie_printer_device::busy_w(int state)
+WRITE_LINE_MEMBER( cgenie_printer_device::busy_w )
 {
 	m_centronics_busy = state;
 }
 
-void cgenie_printer_device::perror_w(int state)
+WRITE_LINE_MEMBER( cgenie_printer_device::perror_w )
 {
 	m_centronics_out_of_paper = state;
 }
 
-void cgenie_printer_device::select_w(int state)
+WRITE_LINE_MEMBER( cgenie_printer_device::select_w )
 {
 	m_centronics_unit_sel = state;
 }
 
-void cgenie_printer_device::fault_w(int state)
+WRITE_LINE_MEMBER( cgenie_printer_device::fault_w )
 {
 	m_centronics_ready = state;
 }

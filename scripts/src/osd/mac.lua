@@ -23,7 +23,6 @@ BASE_TARGETOS       = "unix"
 local os_version = str_to_version(backtick("sw_vers -productVersion"))
 links {
 	"Cocoa.framework",
-	"IOKit.framework"
 }
 linkoptions {
 	"-framework QuartzCore",

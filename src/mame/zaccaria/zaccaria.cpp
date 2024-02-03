@@ -137,12 +137,12 @@ uint8_t zaccaria_state::prot2_r(offs_t offset)
 }
 
 
-void zaccaria_state::coin_w(int state)
+WRITE_LINE_MEMBER(zaccaria_state::coin_w)
 {
 	machine().bookkeeping().coin_counter_w(0, state);
 }
 
-void zaccaria_state::nmi_mask_w(int state)
+WRITE_LINE_MEMBER(zaccaria_state::nmi_mask_w)
 {
 	m_nmi_mask = state;
 	if (!m_nmi_mask)
@@ -327,7 +327,7 @@ static GFXDECODE_START( gfx_zaccaria )
 GFXDECODE_END
 
 
-void zaccaria_state::vblank_irq(int state)
+WRITE_LINE_MEMBER(zaccaria_state::vblank_irq)
 {
 	if (state && m_nmi_mask)
 		m_maincpu->set_input_line(INPUT_LINE_NMI, ASSERT_LINE);
@@ -337,7 +337,7 @@ void zaccaria_state::vblank_irq(int state)
 void zaccaria_state::zaccaria(machine_config &config)
 {
 	// basic machine hardware
-	Z80(config, m_maincpu, 18.432_MHz_XTAL / 6);   // verified on PCB
+	Z80(config, m_maincpu, XTAL(18'432'000)/6);   // verified on PCB
 	m_maincpu->set_addrmap(AS_PROGRAM, &zaccaria_state::main_map);
 
 //  config.set_maximum_quantum(attotime::from_hz(1000000));
@@ -359,7 +359,10 @@ void zaccaria_state::zaccaria(machine_config &config)
 
 	// video hardware
 	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
-	screen.set_raw(18.432_MHz_XTAL / 3, 384, 0, 256, 264, 16, 240); // verified from schematics
+	screen.set_refresh_hz(60.57); // verified on PCB
+	screen.set_vblank_time(ATTOSECONDS_IN_USEC(0));
+	screen.set_size(32*8, 32*8);
+	screen.set_visarea(0*8, 32*8-1, 2*8, 30*8-1);
 	screen.set_screen_update(FUNC(zaccaria_state::screen_update));
 	screen.set_palette(m_palette);
 	screen.screen_vblank().set(FUNC(zaccaria_state::vblank_irq));

@@ -1,7 +1,7 @@
 // UpdateAction.h
 
-#ifndef ZIP7_INC_UPDATE_ACTION_H
-#define ZIP7_INC_UPDATE_ACTION_H
+#ifndef __UPDATE_ACTION_H
+#define __UPDATE_ACTION_H
 
 namespace NUpdateArchive {
 

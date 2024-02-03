@@ -20,9 +20,6 @@
 #include "softlist_dev.h"
 #include "speaker.h"
 
-
-namespace {
-
 class gamate_state : public driver_device
 {
 public:
@@ -232,8 +229,6 @@ ROM_START(gamate)
 	ROM_SYSTEM_BIOS(1, "newer", "NEWER")
 	ROMX_LOAD("gamate_bios_bit.bin", 0x0000, 0x1000, CRC(03a5f3a7) SHA1(4e9dfbfe916ca485530ef4221593ab68738e2217), ROM_BIOS(1))
 ROM_END
-
-} // anonymous namespace
 
 
 //    YEAR  NAME    PARENT  COMPAT  MACHINE  INPUT   CLASS         INIT         COMPANY     FULLNAME  FLAGS

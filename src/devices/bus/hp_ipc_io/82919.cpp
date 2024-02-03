@@ -82,13 +82,13 @@ void hp82919_io_card_device::write(offs_t addr , uint8_t data)
 	}
 }
 
-void hp82919_io_card_device::uart_irq(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::uart_irq)
 {
 	m_uart_int = state;
 	update_irq();
 }
 
-void hp82919_io_card_device::uart_a_tx(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::uart_a_tx)
 {
 	m_rs232_prim->write_txd(state);
 	if (m_loopback) {
@@ -96,7 +96,7 @@ void hp82919_io_card_device::uart_a_tx(int state)
 	}
 }
 
-void hp82919_io_card_device::uart_b_tx(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::uart_b_tx)
 {
 	m_rs232_sec->write_txd(state);
 	if (m_loopback) {
@@ -121,56 +121,56 @@ void hp82919_io_card_device::uart_output(uint8_t data)
 	}
 }
 
-void hp82919_io_card_device::prim_rxd(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::prim_rxd)
 {
 	if (!m_loopback) {
 		m_uart->rx_a_w(state);
 	}
 }
 
-void hp82919_io_card_device::prim_dcd(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::prim_dcd)
 {
 	if (!m_loopback) {
 		m_uart->ip3_w(state);
 	}
 }
 
-void hp82919_io_card_device::prim_dsr(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::prim_dsr)
 {
 	if (!m_loopback) {
 		m_uart->ip1_w(state);
 	}
 }
 
-void hp82919_io_card_device::prim_ri(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::prim_ri)
 {
 	if (!m_loopback) {
 		m_uart->ip2_w(state);
 	}
 }
 
-void hp82919_io_card_device::prim_cts(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::prim_cts)
 {
 	if (!m_loopback) {
 		m_uart->ip0_w(state);
 	}
 }
 
-void hp82919_io_card_device::sec_rxd(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::sec_rxd)
 {
 	if (!m_loopback) {
 		m_uart->rx_b_w(state);
 	}
 }
 
-void hp82919_io_card_device::sec_dcd(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::sec_dcd)
 {
 	if (!m_loopback) {
 		m_uart->ip5_w(state);
 	}
 }
 
-void hp82919_io_card_device::sec_cts(int state)
+WRITE_LINE_MEMBER(hp82919_io_card_device::sec_cts)
 {
 	if (!m_loopback) {
 		m_uart->ip4_w(state);

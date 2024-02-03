@@ -41,7 +41,7 @@ void buffered_spriteram_device<Type>::device_start()
 {
 	if (m_spriteram)
 	{
-		m_buffered.resize(length());
+		m_buffered.resize(m_spriteram.bytes() / sizeof(Type));
 		save_item(NAME(m_buffered));
 	}
 }

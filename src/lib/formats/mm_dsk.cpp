@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/mm_dsk.cpp
+    formats/mm_dsk.c
 
     mm format
 
@@ -14,17 +14,17 @@ mm1_format::mm1_format() : upd765_format(formats)
 {
 }
 
-const char *mm1_format::name() const noexcept
+const char *mm1_format::name() const
 {
 	return "mm1";
 }
 
-const char *mm1_format::description() const noexcept
+const char *mm1_format::description() const
 {
 	return "Nokia MikroMikko 1 disk image";
 }
 
-const char *mm1_format::extensions() const noexcept
+const char *mm1_format::extensions() const
 {
 	return "dsk";
 }
@@ -33,17 +33,17 @@ mm2_format::mm2_format() : upd765_format(formats)
 {
 }
 
-const char *mm2_format::name() const noexcept
+const char *mm2_format::name() const
 {
 	return "mm2";
 }
 
-const char *mm2_format::description() const noexcept
+const char *mm2_format::description() const
 {
 	return "Nokia MikroMikko 2 disk image";
 }
 
-const char *mm2_format::extensions() const noexcept
+const char *mm2_format::extensions() const
 {
 	return "dsk";
 }

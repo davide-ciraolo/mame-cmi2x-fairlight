@@ -163,8 +163,6 @@ DIPSW-2
 #include "speaker.h"
 
 
-namespace {
-
 class sfkick_state : public driver_device
 {
 public:
@@ -194,7 +192,7 @@ private:
 	uint8_t ppi_port_b_r();
 	void ppi_port_a_w(uint8_t data);
 	void ppi_port_c_w(uint8_t data);
-	void irqhandler(int state);
+	DECLARE_WRITE_LINE_MEMBER(irqhandler);
 	void sfkick_io_map(address_map &map);
 	void sfkick_map(address_map &map);
 	void sfkick_sound_io_map(address_map &map);
@@ -293,7 +291,7 @@ void sfkick_state::sfkick_io_map(address_map &map)
 	map(0xa0, 0xa7).w("soundlatch", FUNC(generic_latch_8_device::write));
 	map(0x98, 0x9b).rw("v9938", FUNC(v9938_device::read), FUNC(v9938_device::write));
 	map(0xa8, 0xab).rw("ppi8255", FUNC(i8255_device::read), FUNC(i8255_device::write));
-	map(0xb4, 0xb5).ram(); // loopback ? req by sfkicka (MSX BIOS leftover)
+	map(0xb4, 0xb5).ram(); // loopback ? req by sfkicka (MSX Bios leftover)
 }
 
 void sfkick_state::sfkick_sound_map(address_map &map)
@@ -399,7 +397,7 @@ void sfkick_state::machine_reset()
 		m_bank[i]->set_entry(i);
 }
 
-void sfkick_state::irqhandler(int state)
+WRITE_LINE_MEMBER(sfkick_state::irqhandler)
 {
 	m_soundcpu->set_input_line_and_vector(0, state ? ASSERT_LINE : CLEAR_LINE, 0xff); // Z80
 }
@@ -512,8 +510,6 @@ ROM_START( spinkick )
 	ROM_REGION(0x10000,  "soundcpu", 0)
 	ROM_LOAD( "spinkick.r1", 0x00000, 0x8000, CRC(2f5e3b7a) SHA1(d2ff566b415ab10c0681fa1eb221a56e3c137ecf) )
 ROM_END
-
-} // anonymous namespace
 
 
 GAME( 1988, sfkick,   0,      sfkick, sfkick, sfkick_state, empty_init, ROT90, "Haesung/HJ Corp", "Super Free Kick (set 1)", MACHINE_SUPPORTS_SAVE )

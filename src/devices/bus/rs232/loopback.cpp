@@ -16,7 +16,7 @@ void rs232_loopback_device::device_start()
 {
 }
 
-void rs232_loopback_device::input_txd(int state)
+WRITE_LINE_MEMBER( rs232_loopback_device::input_txd )
 {
 	if (started())
 	{
@@ -24,7 +24,7 @@ void rs232_loopback_device::input_txd(int state)
 	}
 }
 
-void rs232_loopback_device::input_rts(int state)
+WRITE_LINE_MEMBER( rs232_loopback_device::input_rts )
 {
 	if (started())
 	{
@@ -34,7 +34,7 @@ void rs232_loopback_device::input_rts(int state)
 	}
 }
 
-void rs232_loopback_device::input_dtr(int state)
+WRITE_LINE_MEMBER( rs232_loopback_device::input_dtr )
 {
 	if (started())
 	{
@@ -55,7 +55,7 @@ void dec_rs232_loopback_device::device_start()
 {
 }
 
-void dec_rs232_loopback_device::input_txd(int state)
+WRITE_LINE_MEMBER( dec_rs232_loopback_device::input_txd )
 {
 	// Pin 2 (Transmitted Data) connected to Pin 3 (Received Data) and Pin 15 (Transmission Clock)
 	if (started())
@@ -65,7 +65,7 @@ void dec_rs232_loopback_device::input_txd(int state)
 	}
 }
 
-void dec_rs232_loopback_device::input_rts(int state)
+WRITE_LINE_MEMBER( dec_rs232_loopback_device::input_rts )
 {
 	// Pin 4 (Request to Send) connected to Pin 5 (Clear to Send) and Pin 8 (Carrier Detect)
 	if (started())
@@ -75,7 +75,7 @@ void dec_rs232_loopback_device::input_rts(int state)
 	}
 }
 
-void dec_rs232_loopback_device::input_dtr(int state)
+WRITE_LINE_MEMBER( dec_rs232_loopback_device::input_dtr )
 {
 	// Pin 20 (Data Terminal Ready) connected to Pin 6 (Data Set Ready) and 22 (Ring Indicator)
 	if (started())
@@ -85,7 +85,7 @@ void dec_rs232_loopback_device::input_dtr(int state)
 	}
 }
 
-void dec_rs232_loopback_device::input_spds(int state)
+WRITE_LINE_MEMBER( dec_rs232_loopback_device::input_spds )
 {
 	// Pin 19 (Speed Select) connected to Pin 12 (Speed Indicator) and 17 (Receive Clock)
 	if (started())

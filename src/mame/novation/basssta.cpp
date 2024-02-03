@@ -10,9 +10,6 @@
 #include "cpu/mn1880/mn1880.h"
 #include "machine/eeprompar.h"
 
-
-namespace {
-
 class basssta_state : public driver_device
 {
 public:
@@ -107,9 +104,6 @@ ROM_START(sbasssta)
 	ROM_REGION(0x10000, "program", 0)
 	ROM_LOAD("v1.9.bin", 0x00000, 0x10000, CRC(045bf9e3) SHA1(69155026c2497a4731162cadb6b441e00902d3f6))
 ROM_END
-
-} // anonymous namespace
-
 
 SYST(1995, bassstr, 0, 0,  bassstr,  basssta, basssta_state, empty_init, "Novation", "BassStation Rack Analogue Synthesizer Module", MACHINE_IS_SKELETON)
 SYST(1997, sbasssta, 0, 0, sbasssta, basssta, basssta_state, empty_init, "Novation", "Super Bass Station", MACHINE_IS_SKELETON)

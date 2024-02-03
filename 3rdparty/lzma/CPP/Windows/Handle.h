@@ -1,13 +1,11 @@
 // Windows/Handle.h
 
-#ifndef ZIP7_INC_WINDOWS_HANDLE_H
-#define ZIP7_INC_WINDOWS_HANDLE_H
-
-#include "../Common/MyWindows.h"
+#ifndef __WINDOWS_HANDLE_H
+#define __WINDOWS_HANDLE_H
 
 namespace NWindows {
 
-class CHandle  MY_UNCOPYABLE
+class CHandle
 {
 protected:
   HANDLE _handle;
@@ -28,7 +26,7 @@ public:
   void Attach(HANDLE handle) { _handle = handle; }
   HANDLE Detach()
   {
-    const HANDLE handle = _handle;
+    HANDLE handle = _handle;
     _handle = NULL;
     return handle;
   }

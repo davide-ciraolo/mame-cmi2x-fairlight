@@ -12,9 +12,6 @@
 #include "cpu/tms32010/tms32010.h"
 #include "machine/nvram.h"
 
-
-namespace {
-
 class korgdvp1_state : public driver_device
 {
 public:
@@ -112,8 +109,5 @@ ROM_START(dvp1)
 	ROM_REGION16_LE(0xc00, "dsp2", 0) // 1536 x 16 internal bootloader (almost certainly identical to DSP 1)
 	ROM_LOAD("tms320m10nl.ic8", 0x000, 0xc00, NO_DUMP)
 ROM_END
-
-} // anonymous namespace
-
 
 SYST(1985, dvp1, 0, 0, dvp1, dvp1, korgdvp1_state, empty_init, "Korg", "DVP-1 Digital Voice Processor", MACHINE_IS_SKELETON)

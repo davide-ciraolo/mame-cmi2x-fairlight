@@ -2,7 +2,7 @@
 // copyright-holders:Fabio Priuli
 /*********************************************************************
 
-    formats/dip_dsk.cpp
+    formats/dip_dsk.h
 
     PC98 DIP disk images
 
@@ -23,17 +23,17 @@ dip_format::dip_format()
 {
 }
 
-const char *dip_format::name() const noexcept
+const char *dip_format::name() const
 {
 	return "dip";
 }
 
-const char *dip_format::description() const noexcept
+const char *dip_format::description() const
 {
 	return "DIP disk image";
 }
 
-const char *dip_format::extensions() const noexcept
+const char *dip_format::extensions() const
 {
 	return "dip";
 }
@@ -50,7 +50,7 @@ int dip_format::identify(util::random_read &io, uint32_t form_factor, const std:
 	return 0;
 }
 
-bool dip_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool dip_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	int heads, tracks, spt, bps;
 
@@ -93,7 +93,7 @@ bool dip_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 	return true;
 }
 
-bool dip_format::supports_save() const noexcept
+bool dip_format::supports_save() const
 {
 	return false;
 }

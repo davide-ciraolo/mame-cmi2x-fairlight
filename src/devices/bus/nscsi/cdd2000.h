@@ -17,7 +17,6 @@ public:
 
 protected:
 	virtual void device_start() override;
-	virtual void device_reset() override;
 	virtual void device_add_mconfig(machine_config &config) override;
 	virtual const tiny_rom_entry *device_rom_region() const override;
 
@@ -25,7 +24,6 @@ private:
 	void mem_map(address_map &map);
 
 	required_device<cpu_device> m_cdcpu;
-	required_memory_bank m_rombank;
 };
 
 DECLARE_DEVICE_TYPE(CDD2000, cdd2000_device)

@@ -13,8 +13,6 @@ local history_file = "console_history"
 
 local history_fullpath = nil
 
-local reset_subscription, stop_subscription
-
 function console.startplugin()
 	local conth = emu.thread()
 	local ln_started = false
@@ -25,6 +23,16 @@ function console.startplugin()
 	local matches = {}
 	local lastindex = 0
 	local consolebuf
+	_G.history = function (index)
+		local history = ln.historyget()
+		if index then
+			ln.preload(history[index])
+			return
+		end
+		for num, line in ipairs(history) do
+			print(num, line)
+		end
+	end
 	print("       /|  /|    /|     /|  /|    _______")
 	print("      / | / |   / |    / | / |   /      /")
 	print("     /  |/  |  /  |   /  |/  |  /  ____/ ")
@@ -43,14 +51,11 @@ function console.startplugin()
 	ln.historysetmaxlen(50)
 	local scr = [[
 		local ln = require('linenoise')
-		ln.setcompletion(
-			function(c, str)
-				status = str
+		ln.setcompletion(function(c, str, pos)
+				status = str .. "\x01" .. tostring(pos)
 				yield()
-				for candidate in status:gmatch('([^\001]+)') do
-					ln.addcompletion(c, candidate)
-				end
-			end)
+				ln.addcompletion(c, status:match("([^\x01]*)\x01(.*)"))
+		end)
 		local ret = ln.linenoise('$PROMPT')
 		if ret == nil then
 			return "\n"
@@ -196,8 +201,11 @@ function console.startplugin()
 		return curstring, strs, expr:match("([%.:%w%(%)%[%]_]-)([:%.%[%(])" .. word .. "$")
 	end
 
-	local function get_completions(line)
+	local function get_completions(line, endpos)
 		matches = {}
+		local endstr = line:sub(endpos + 1, -1)
+		line = line:sub(1, endpos)
+		endstr = endstr or ""
 		local start, word = line:match("^(.*[ \t\n\"\\'><=;:%+%-%*/%%^~#{}%(%)%[%].,])(.-)$")
 		if not start then
 			start = ""
@@ -208,38 +216,34 @@ function console.startplugin()
 
 		local str, strs, expr, sep = simplify_expression(line, word)
 		contextual_list(expr, sep, str, word, strs)
-		if #matches == 0 then
-			return line
+		if #matches > 1 then
+			print("\n")
+			for k, v in pairs(matches) do
+				print(v)
+			end
+			return "\x01" .. "-1"
 		elseif #matches == 1 then
-			return start .. matches[1]
+			return start .. matches[1] .. endstr .. "\x01" .. (#start + #matches[1])
 		end
-		print("")
-		result = { }
-		for k, v in pairs(matches) do
-			print(v)
-			table.insert(result, start .. v)
-		end
-		return table.concat(result, '\001')
+		return "\x01" .. "-1"
 	end
 
-	reset_subscription = emu.add_machine_reset_notifier(function ()
+	emu.register_start(function()
 		if not consolebuf and manager.machine.debugger then
 			consolebuf = manager.machine.debugger.consolelog
 			lastindex = 0
 		end
 	end)
 
-	stop_subscription = emu.add_machine_stop_notifier(function ()
-		consolebuf = nil
-	end)
+	emu.register_stop(function() consolebuf = nil end)
 
-	emu.register_periodic(function ()
+	emu.register_periodic(function()
 		if stopped then
 			return
 		end
 		if (not started) then
 			-- options are not available in startplugin, so we load the history here
-			local homepath = manager.options.entries.homepath:value():match("([^;]+)")
+			local homepath = emu.subst_env(manager.options.entries.homepath:value():match("([^;]+)"))
 			history_fullpath = homepath .. '/' .. history_file
 			ln.loadhistory(history_fullpath)
 			started = true
@@ -252,10 +256,10 @@ function console.startplugin()
 				lastindex = lastindex + 1
 				print(consolebuf[lastindex])
 			end
-			-- ln.refresh() FIXME: how to replicate this now that the API has been removed?
+			ln.refresh()
 		end
 		if conth.yield then
-			conth:continue(get_completions(conth.result))
+			conth:continue(get_completions(conth.result:match("([^\x01]*)\x01(.*)")))
 			return
 		elseif conth.busy then
 			return
@@ -271,7 +275,6 @@ function console.startplugin()
 				end
 			else
 				cmdbuf = cmdbuf .. "\n" .. cmd
-				ln.historyadd(cmd)
 				local func, err = load(cmdbuf)
 				if not func then
 					if err:match("<eof>") then
@@ -281,15 +284,14 @@ function console.startplugin()
 						cmdbuf = ""
 					end
 				else
-					cmdbuf = ""
-					stopped = true
 					local status
 					status, err = pcall(func)
 					if not status then
 						print("error: ", err)
 					end
-					stopped = false
+					cmdbuf = ""
 				end
+				ln.historyadd(cmd)
 			end
 		end
 		conth:start(scr:gsub("$PROMPT", prompt))

@@ -8,11 +8,9 @@
 
 **********************************************************************/
 
+
 #include "emu.h"
 #include "cumana.h"
-
-#include "formats/acorn_dsk.h"
-#include "formats/fsd_dsk.h"
 
 
 //**************************************************************************
@@ -206,19 +204,19 @@ void bbc_cumanafdc_device::write(offs_t offset, uint8_t data)
 	}
 }
 
-void bbc_cumanafdc_device::fdc_intrq_w(int state)
+WRITE_LINE_MEMBER(bbc_cumanafdc_device::fdc_intrq_w)
 {
 	if (m_fdc_ie)
 		m_slot->intrq_w(state);
 }
 
-void bbc_cumanafdc_device::fdc_drq_w(int state)
+WRITE_LINE_MEMBER(bbc_cumanafdc_device::fdc_drq_w)
 {
 	if (m_fdc_ie)
 		m_slot->drq_w(state);
 }
 
-void bbc_cumanafdc_device::motor_w(int state)
+WRITE_LINE_MEMBER(bbc_cumanafdc_device::motor_w)
 {
 	if (m_floppy[0]->get_device()) m_floppy[0]->get_device()->mon_w(!state);
 	if (m_floppy[1]->get_device()) m_floppy[1]->get_device()->mon_w(!state);

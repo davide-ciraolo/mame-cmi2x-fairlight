@@ -6,13 +6,8 @@
 //
 //============================================================
 
-#ifndef MAME_OSD_DEBUGGER_OSX_DEBUGOSX_H
-#define MAME_OSD_DEBUGGER_OSX_DEBUGOSX_H
-
-#pragma once
-
-#include "../xmlconfig.h"
-
+#ifndef __SDL_DEBUGOSX__
+#define __SDL_DEBUGOSX__
 
 #define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 0
 
@@ -25,6 +20,30 @@
 // standard Cocoa headers
 #import <Cocoa/Cocoa.h>
 
+// workarounds for 10.6 warnings
+#ifdef MAC_OS_X_VERSION_MAX_ALLOWED
+
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 1060
+
+@protocol NSWindowDelegate <NSObject>
+@end
+
+@protocol NSSplitViewDelegate <NSObject>
+@end
+
+@protocol NSControlTextEditingDelegate <NSObject>
+@end
+
+@protocol NSTextFieldDelegate <NSControlTextEditingDelegate>
+@end
+
+@protocol NSOutlineViewDataSource <NSObject>
+@end
+
+#endif // MAC_OS_X_VERSION_MAX_ALLOWED < 1060
+
+#endif // MAC_OS_X_VERSION_MAX_ALLOWED
+
 #endif // __OBJC__
 
-#endif // MAME_OSD_DEBUGGER_OSX_DEBUGOSX_H
+#endif // __SDL_DEBUGOSX__

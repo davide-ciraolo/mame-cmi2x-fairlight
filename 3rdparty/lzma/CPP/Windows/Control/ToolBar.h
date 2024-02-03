@@ -1,7 +1,7 @@
 // Windows/Control/ToolBar.h
   
-#ifndef ZIP7_INC_WINDOWS_CONTROL_TOOLBAR_H
-#define ZIP7_INC_WINDOWS_CONTROL_TOOLBAR_H
+#ifndef __WINDOWS_CONTROL_TOOLBAR_H
+#define __WINDOWS_CONTROL_TOOLBAR_H
 
 #include "../Window.h"
 
@@ -18,7 +18,7 @@ public:
   #ifdef UNDER_CE
   {
     // maybe it must be fixed for more than 1 buttons
-    const DWORD val = GetButtonSize();
+    DWORD val = GetButtonSize();
     size->cx = LOWORD(val);
     size->cy = HIWORD(val);
     return true;

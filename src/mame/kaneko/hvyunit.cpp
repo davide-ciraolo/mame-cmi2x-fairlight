@@ -75,7 +75,6 @@ To Do:
 #include "tilemap.h"
 
 
-namespace {
 
 /*************************************
  *
@@ -161,7 +160,7 @@ private:
 	virtual void video_start() override;
 
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void screen_vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
 
 	TIMER_DEVICE_CALLBACK_MEMBER(scanline);
 	void master_io(address_map &map);
@@ -206,7 +205,7 @@ TILE_GET_INFO_MEMBER(hvyunit_state::get_bg_tile_info)
 	int code = m_videoram[tile_index] + ((attr & 0x0f) << 8);
 	int color = (attr >> 4);
 
-	tileinfo.set(0, code, color, 0);
+	tileinfo.set(1, code, color, 0);
 }
 
 void hvyunit_state::video_start()
@@ -232,7 +231,7 @@ uint32_t hvyunit_state::screen_update(screen_device &screen, bitmap_ind16 &bitma
 	return 0;
 }
 
-void hvyunit_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(hvyunit_state::screen_vblank)
 {
 	// rising edge
 	if (state)
@@ -578,11 +577,8 @@ INPUT_PORTS_END
  *************************************/
 
 static GFXDECODE_START( gfx_hvyunit )
-	GFXDECODE_ENTRY( "gfx2", 0, gfx_8x8x4_row_2x2_group_packed_msb, 0x000, 16 ) /* background tiles */
-GFXDECODE_END
-
-static GFXDECODE_START( gfx_hvyunit_spr )
 	GFXDECODE_ENTRY( "gfx1", 0, gfx_8x8x4_row_2x2_group_packed_msb, 0x100, 16 ) /* sprite bank */
+	GFXDECODE_ENTRY( "gfx2", 0, gfx_8x8x4_row_2x2_group_packed_msb, 0x000, 16 ) /* background tiles */
 GFXDECODE_END
 
 
@@ -655,7 +651,8 @@ void hvyunit_state::hvyunit(machine_config &config)
 	GFXDECODE(config, m_gfxdecode, m_palette, gfx_hvyunit);
 	PALETTE(config, m_palette).set_format(palette_device::xRGB_444, 0x800);
 
-	KANEKO_PANDORA(config, m_pandora, 0, m_palette, gfx_hvyunit_spr);
+	KANEKO_PANDORA(config, m_pandora, 0);
+	m_pandora->set_gfxdecode_tag(m_gfxdecode);
 
 	/* sound hardware */
 	SPEAKER(config, "mono").front_center();
@@ -812,8 +809,6 @@ ROM_START( hvyunitu )
 	ROM_REGION( 0x80000, "gfx2", 0 )
 	ROM_LOAD( "b73_09.2p",  0x000000, 0x080000, CRC(537c647f) SHA1(941c0f4e251bc68e53d62e70b033a3a6c145bb7e) )
 ROM_END
-
-} // anonymous namespace
 
 
 /*************************************

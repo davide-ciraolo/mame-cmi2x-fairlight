@@ -6,15 +6,12 @@
 //
 //============================================================
 
-#ifndef MAME_RENDER_BGFX_CHAINREADER_H
-#define MAME_RENDER_BGFX_CHAINREADER_H
-
 #pragma once
 
-#include "statereader.h"
+#ifndef __DRAWBGFX_CHAIN_READER__
+#define __DRAWBGFX_CHAIN_READER__
 
-#include <memory>
-#include <string>
+#include "statereader.h"
 
 class bgfx_chain;
 class chain_manager;
@@ -22,10 +19,10 @@ class chain_manager;
 class chain_reader : public state_reader
 {
 public:
-	static std::unique_ptr<bgfx_chain> read_from_value(const Value& value, const std::string &prefix, chain_manager& chains, uint32_t screen_index, uint16_t user_prescale, uint16_t max_prescale_size);
+	static bgfx_chain* read_from_value(const Value& value, std::string prefix, chain_manager& chains, uint32_t screen_index);
 
 private:
-	static bool validate_parameters(const Value& value, const std::string &prefix);
+	static bool validate_parameters(const Value& value, std::string prefix);
 };
 
-#endif // MAME_RENDER_BGFX_CHAINREADER_H
+#endif // __DRAWBGFX_CHAIN_READER__

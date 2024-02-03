@@ -67,6 +67,9 @@ adam_expansion_slot_device::adam_expansion_slot_device(const machine_config &mco
 void adam_expansion_slot_device::device_start()
 {
 	m_card = get_card_device();
+
+	// resolve callbacks
+	m_write_irq.resolve_safe();
 }
 
 
@@ -74,13 +77,15 @@ void adam_expansion_slot_device::device_start()
 //  call_load -
 //-------------------------------------------------
 
-std::pair<std::error_condition, std::string> adam_expansion_slot_device::call_load()
+image_init_result adam_expansion_slot_device::call_load()
 {
 	if (m_card)
 	{
+		size_t size;
+
 		if (!loaded_through_softlist())
 		{
-			size_t const size = length();
+			size = length();
 
 			fread(m_card->m_rom, size);
 		}
@@ -90,7 +95,7 @@ std::pair<std::error_condition, std::string> adam_expansion_slot_device::call_lo
 		}
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 

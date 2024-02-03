@@ -37,8 +37,8 @@ protected:
 	virtual void scs_write(offs_t offset, u8 data) override;
 
 private:
-	void pia_cb2_w(int state);
-	void nmi_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pia_cb2_w);
+	DECLARE_WRITE_LINE_MEMBER(nmi_w);
 
 	required_memory_region m_eprom;
 	required_device<pia6821_device> m_pia;

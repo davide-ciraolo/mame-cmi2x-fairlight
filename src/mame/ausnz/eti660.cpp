@@ -47,9 +47,6 @@
 #include "softlist_dev.h"
 #include "speaker.h"
 
-
-namespace {
-
 #define CDP1802_TAG     "ic3"
 #define CDP1864_TAG     "ic4"
 #define MC6821_TAG      "ic5"
@@ -81,11 +78,11 @@ private:
 	u8 pia_r();
 	void pia_w(u8 data);
 	void colorram_w(offs_t offset, u8 data);
-	int clear_r();
-	int ef2_r();
-	int ef4_r();
-	void q_w(int state);
-	void ca2_w(int state);
+	DECLARE_READ_LINE_MEMBER( clear_r );
+	DECLARE_READ_LINE_MEMBER( ef2_r );
+	DECLARE_READ_LINE_MEMBER( ef4_r );
+	DECLARE_WRITE_LINE_MEMBER( q_w );
+	DECLARE_WRITE_LINE_MEMBER( ca2_w );
 	void dma_w(offs_t offset, u8 data);
 	u8 pia_pa_r();
 	void pia_pa_w(u8 data);
@@ -132,7 +129,7 @@ void eti660_state::pia_w(u8 data)
 	m_pia->write(pia_offset, data);
 }
 
-void eti660_state::ca2_w(int state) // test with Wipeout game - it should start up in colour
+WRITE_LINE_MEMBER( eti660_state::ca2_w ) // test with Wipeout game - it should start up in colour
 {
 	m_cti->con_w(state);
 }
@@ -203,7 +200,7 @@ INPUT_PORTS_END
 
 /* CDP1802 Interface */
 
-int eti660_state::clear_r()
+READ_LINE_MEMBER( eti660_state::clear_r )
 {
 	// A hack to make the machine reset itself on
 	// boot, like the real one does.
@@ -214,17 +211,17 @@ int eti660_state::clear_r()
 	return BIT(m_special->read(), 0); // R key
 }
 
-int eti660_state::ef2_r()
+READ_LINE_MEMBER( eti660_state::ef2_r )
 {
 	return m_cassette->input() < 0;
 }
 
-int eti660_state::ef4_r()
+READ_LINE_MEMBER( eti660_state::ef4_r )
 {
 	return BIT(m_special->read(), 1); // S key
 }
 
-void eti660_state::q_w(int state)
+WRITE_LINE_MEMBER( eti660_state::q_w )
 {
 	/* CDP1864 audio output enable */
 	m_cti->aoe_w(state);
@@ -316,28 +313,38 @@ void eti660_state::machine_start()
 
 QUICKLOAD_LOAD_MEMBER(eti660_state::quickload_cb)
 {
-	int const quick_length = image.length();
-	std::vector<u8> quick_data;
-	quick_data.resize(quick_length);
-	int const read_ = image.fread( &quick_data[0], quick_length);
-	if (read_ != quick_length)
-		return std::make_pair(image_error::INVALIDIMAGE, "Cannot read the file");
-
-	constexpr int QUICK_ADDR = 0x600;
 	address_space &space = m_maincpu->space(AS_PROGRAM);
-	for (int i = 0; i < quick_length; i++)
+	int i;
+	int quick_addr = 0x600;
+	int quick_length;
+	std::vector<u8> quick_data;
+	int read_;
+	image_init_result result = image_init_result::FAIL;
+
+	quick_length = image.length();
+	quick_data.resize(quick_length);
+	read_ = image.fread( &quick_data[0], quick_length);
+	if (read_ != quick_length)
 	{
-		if ((QUICK_ADDR + i) < 0x1000)
-			space.write_byte(i + QUICK_ADDR, quick_data[i]);
+		image.seterror(image_error::INVALIDIMAGE, "Cannot read the file");
+		image.message(" Cannot read the file");
+	}
+	else
+	{
+		for (i = 0; i < quick_length; i++)
+			if ((quick_addr + i) < 0x1000)
+				space.write_byte(i + quick_addr, quick_data[i]);
+
+		/* display a message about the loaded quickload */
+		if (image.is_filetype("bin"))
+			image.message(" Quickload: size=%04X : start=%04X : end=%04X : Press 6 to start",quick_length,quick_addr,quick_addr+quick_length);
+		else
+			image.message(" Quickload: size=%04X : start=%04X : end=%04X : Press 8 to start",quick_length,quick_addr,quick_addr+quick_length);
+
+		result = image_init_result::PASS;
 	}
 
-	// display a message about the loaded quickload
-	if (image.is_filetype("bin"))
-		image.message(" Quickload: size=%04X : start=%04X : end=%04X : Press 6 to start", quick_length, QUICK_ADDR, QUICK_ADDR+quick_length);
-	else
-		image.message(" Quickload: size=%04X : start=%04X : end=%04X : Press 8 to start", quick_length, QUICK_ADDR, QUICK_ADDR+quick_length);
-
-	return std::make_pair(std::error_condition(), std::string());
+	return result;
 }
 
 /* Machine Drivers */
@@ -372,7 +379,7 @@ void eti660_state::eti660(machine_config &config)
 	m_cti->add_route(ALL_OUTPUTS, "mono", 0.25);
 
 	/* devices */
-	PIA6821(config, m_pia);
+	PIA6821(config, m_pia, 0);
 	m_pia->readpa_handler().set(FUNC(eti660_state::pia_pa_r));
 	m_pia->writepa_handler().set(FUNC(eti660_state::pia_pa_w));
 	m_pia->ca2_handler().set(FUNC(eti660_state::ca2_w));  // not working, bug in pia
@@ -399,9 +406,6 @@ ROM_START( eti660 )
 	ROM_REGION( 0x10000, CDP1802_TAG, 0 )
 	ROM_LOAD( "eti660.bin", 0x0000, 0x0400, CRC(811dfa62) SHA1(c0c4951e02f873f15560bdc3f35cdf3f99653922) )
 ROM_END
-
-} // anonymous namespace
-
 
 //    YEAR  NAME    PARENT  COMPAT  MACHINE  INPUT   CLASS         INIT        COMPANY                            FULLNAME   FLAGS
 COMP( 1981, eti660, 0,      0,      eti660,  eti660, eti660_state, empty_init, "Electronics Today International", "ETI-660 Learners' Microcomputer", MACHINE_SUPPORTS_SAVE )

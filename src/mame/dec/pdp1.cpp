@@ -63,18 +63,6 @@ To load and play a game:
 #include "screen.h"
 #include "softlist_dev.h"
 
-#define LOG_IOT_EXTRA (1U << 1)
-
-/* IOT completion may take much more than the 5us instruction time.  A possible programming
-error would be to execute an IOT before the last IOT of the same kind is over: such a thing
-would confuse the targeted IO device, which might ignore the latter IOT, execute either
-or both IOT incompletely, or screw up completely.  I insist that such an error can be caused
-by a pdp-1 programming error, even if there is no emulator error. */
-#define LOG_IOT_OVERLAP (1U << 2)
-
-#define VERBOSE (0)
-#include "logmacro.h"
-
 
 /*
  *
@@ -385,6 +373,17 @@ we need to determine the exact relationship between the status register and the 
 system (both standard and type 20). */
 #define USE_SBS 0
 
+#define LOG_IOT 0
+#define LOG_IOT_EXTRA 0
+
+/* IOT completion may take much more than the 5us instruction time.  A possible programming
+error would be to execute an IOT before the last IOT of the same kind is over: such a thing
+would confuse the targeted IO device, which might ignore the latter IOT, execute either
+or both IOT incompletely, or screw up completely.  I insist that such an error can be caused
+by a pdp-1 programming error, even if there is no emulator error. */
+#define LOG_IOT_OVERLAP 0
+
+
 /*
     devices which are known to generate a completion pulse (source: maintenance manual 9-??,
     and 9-20, 9-21):
@@ -619,6 +618,11 @@ pdp1_readtape_image_device::pdp1_readtape_image_device(const machine_config &mco
 {
 }
 
+void pdp1_readtape_image_device::device_resolve_objects()
+{
+	m_st_ptr.resolve_safe();
+}
+
 void pdp1_readtape_image_device::device_start()
 {
 	m_timer = timer_alloc(FUNC(pdp1_readtape_image_device::reader_callback), this);
@@ -635,6 +639,11 @@ pdp1_punchtape_image_device::pdp1_punchtape_image_device(const machine_config &m
 	, m_st_ptp(*this)
 	, m_timer(nullptr)
 {
+}
+
+void pdp1_punchtape_image_device::device_resolve_objects()
+{
+	m_st_ptp.resolve_safe();
 }
 
 void pdp1_punchtape_image_device::device_start()
@@ -655,6 +664,12 @@ pdp1_typewriter_device::pdp1_typewriter_device(const machine_config &mconfig, co
 	, m_st_tyi(*this)
 	, m_tyo_timer(nullptr)
 {
+}
+
+void pdp1_typewriter_device::device_resolve_objects()
+{
+	m_st_tyo.resolve_safe();
+	m_st_tyi.resolve_safe();
 }
 
 void pdp1_typewriter_device::device_start()
@@ -681,7 +696,7 @@ void pdp1_cylinder_image_device::device_start()
 /*
     Open a perforated tape image
 */
-std::pair<std::error_condition, std::string> pdp1_readtape_image_device::call_load()
+image_init_result pdp1_readtape_image_device::call_load()
 {
 	// start motor
 	m_motor_on = 1;
@@ -703,7 +718,7 @@ std::pair<std::error_condition, std::string> pdp1_readtape_image_device::call_lo
 		}
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void pdp1_readtape_image_device::call_unload()
@@ -738,9 +753,11 @@ void pdp1_readtape_image_device::begin_tape_read(int binary, int nac)
 	m_rby = (binary) ? 1 : 0;
 	m_rcp = nac;
 
-	if (m_timer->enable(0))
-		LOGMASKED(LOG_IOT_OVERLAP, "Error: overlapped perforated tape reads (Read-in mode, RPA/RPB instruction)\n");
-
+	if (LOG_IOT_OVERLAP)
+	{
+		if (m_timer->enable(0))
+			logerror("Error: overlapped perforated tape reads (Read-in mode, RPA/RPB instruction)\n");
+	}
 	/* set up delay if tape is advancing */
 	if (m_motor_on && m_rcl)
 	{
@@ -833,7 +850,8 @@ TIMER_CALLBACK_MEMBER(pdp1_readtape_image_device::reader_callback)
  */
 void pdp1_readtape_image_device::iot_rpa(int op2, int nac, int mb, int &io, int ac)
 {
-	LOGMASKED(LOG_IOT_EXTRA, "Warning, RPA instruction not fully emulated: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	if (LOG_IOT_EXTRA)
+		logerror("Warning, RPA instruction not fully emulated: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
 
 	begin_tape_read(0, nac);
 }
@@ -871,7 +889,8 @@ void pdp1_readtape_image_device::iot_rpa(int op2, int nac, int mb, int &io, int 
  */
 void pdp1_readtape_image_device::iot_rpb(int op2, int nac, int mb, int &io, int ac)
 {
-	LOGMASKED(LOG_IOT_EXTRA, "Warning, RPB instruction not fully emulated: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	if (LOG_IOT_EXTRA)
+		logerror("Warning, RPB instruction not fully emulated: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
 
 	begin_tape_read(1, nac);
 }
@@ -881,16 +900,17 @@ void pdp1_readtape_image_device::iot_rpb(int op2, int nac, int mb, int &io, int 
 */
 void pdp1_readtape_image_device::iot_rrb(int op2, int nac, int mb, int &io, int ac)
 {
-	LOGMASKED(LOG_IOT_EXTRA, "RRB instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	if (LOG_IOT_EXTRA)
+		logerror("RRB instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
 
 	io = m_rb;
 	m_st_ptr(0);
 }
 
 
-std::pair<std::error_condition, std::string> pdp1_punchtape_image_device::call_load()
+image_init_result pdp1_punchtape_image_device::call_load()
 {
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void pdp1_punchtape_image_device::call_unload()
@@ -935,15 +955,18 @@ TIMER_CALLBACK_MEMBER(pdp1_punchtape_image_device::puncher_callback)
  */
 void pdp1_punchtape_image_device::iot_ppa(int op2, int nac, int mb, int &io, int ac)
 {
-	LOGMASKED(LOG_IOT_EXTRA, "PPA instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	if (LOG_IOT_EXTRA)
+		logerror("PPA instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
 
 	tape_write(io & 0377);
 	m_st_ptp(0);
-
-	if (m_timer->enable(0))
-		LOGMASKED(LOG_IOT_OVERLAP, "Error: overlapped PPA/PPB instructions: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
-
 	// delay is approximately 1/63.3 second
+	if (LOG_IOT_OVERLAP)
+	{
+		if (m_timer->enable(0))
+			logerror("Error: overlapped PPA/PPB instructions: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	}
+
 	m_timer->adjust(attotime::from_usec(15800), nac);
 }
 
@@ -960,15 +983,17 @@ void pdp1_punchtape_image_device::iot_ppa(int op2, int nac, int mb, int &io, int
  */
 void pdp1_punchtape_image_device::iot_ppb(int op2, int nac, int mb, int &io, int ac)
 {
-	LOGMASKED(LOG_IOT_EXTRA, "PPB instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	if (LOG_IOT_EXTRA)
+		logerror("PPB instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
 
 	tape_write((io >> 12) | 0200);
 	m_st_ptp(0);
-
-	if (m_timer->enable(0))
-		LOGMASKED(LOG_IOT_OVERLAP, "Error: overlapped PPA/PPB instructions: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
-
 	/* delay is approximately 1/63.3 second */
+	if (LOG_IOT_OVERLAP)
+	{
+		if (m_timer->enable(0))
+			logerror("Error: overlapped PPA/PPB instructions: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	}
 	m_timer->adjust(attotime::from_usec(15800), nac);
 }
 
@@ -983,11 +1008,11 @@ void pdp1_punchtape_image_device::iot_ppb(int op2, int nac, int mb, int &io, int
 /*
     Open a file for typewriter output
 */
-std::pair<std::error_condition, std::string> pdp1_typewriter_device::call_load()
+image_init_result pdp1_typewriter_device::call_load()
 {
 	m_st_tyo(1);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void pdp1_typewriter_device::call_unload()
@@ -999,7 +1024,8 @@ void pdp1_typewriter_device::call_unload()
 */
 void pdp1_typewriter_device::typewriter_out(uint8_t data)
 {
-	LOGMASKED(LOG_IOT_EXTRA, "typewriter output %o\n", data);
+	if (LOG_IOT_EXTRA)
+		logerror("typewriter output %o\n", data);
 
 	drawchar(data);
 	if (is_loaded())
@@ -1118,7 +1144,8 @@ TIMER_CALLBACK_MEMBER(pdp1_typewriter_device::tyo_callback)
 */
 void pdp1_typewriter_device::iot_tyo(int op2, int nac, int mb, int &io, int ac)
 {
-	LOGMASKED(LOG_IOT_EXTRA, "Warning, TYO instruction not fully emulated: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	if (LOG_IOT_EXTRA)
+		logerror("Warning, TYO instruction not fully emulated: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
 
 	int ch = io & 077;
 
@@ -1144,9 +1171,11 @@ void pdp1_typewriter_device::iot_tyo(int op2, int nac, int mb, int &io, int ac)
 		delay = 105;    /* approximately 105ms */
 		break;
 	}
-
-	if (m_tyo_timer->enable(0))
-		LOGMASKED(LOG_IOT_OVERLAP, "Error: overlapped TYO instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	if (LOG_IOT_OVERLAP)
+	{
+		if (m_tyo_timer->enable(0))
+			logerror("Error: overlapped TYO instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	}
 
 	m_tyo_timer->adjust(attotime::from_msec(delay), nac);
 }
@@ -1167,7 +1196,8 @@ void pdp1_typewriter_device::iot_tyo(int op2, int nac, int mb, int &io, int ac)
  */
 void pdp1_typewriter_device::iot_tyi(int op2, int nac, int mb, int &io, int ac)
 {
-	LOGMASKED(LOG_IOT_EXTRA, "Warning, TYI instruction not fully emulated: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	if (LOG_IOT_EXTRA)
+		logerror("Warning, TYI instruction not fully emulated: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
 
 	io = m_tb;
 	if (! (m_driver_state->m_io_status & io_st_tyi))
@@ -1243,12 +1273,14 @@ void pdp1_state::iot_dpy(int op2, int nac, int mb, int &io, int ac)
 
 	if (nac)
 	{
-		/* note that overlap detection is incomplete: it will only work if both DPY
-		instructions require a completion pulse */
-		if (m_dpy_timer->enable(0))
-			LOGMASKED(LOG_IOT_OVERLAP, "Error: overlapped DPY instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
-
 		/* 50us delay */
+		if (LOG_IOT_OVERLAP)
+		{
+			/* note that overlap detection is incomplete: it will only work if both DPY
+			instructions require a completion pulse */
+			if (m_dpy_timer->enable(0))
+				logerror("Error: overlapped DPY instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+		}
 		m_dpy_timer->adjust(attotime::from_usec(50));
 	}
 }
@@ -1294,9 +1326,9 @@ void pdp1_cylinder_image_device::parallel_drum_init()
 /*
     Open a file for drum
 */
-std::pair<std::error_condition, std::string> pdp1_cylinder_image_device::call_load()
+image_init_result pdp1_cylinder_image_device::call_load()
 {
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void pdp1_cylinder_image_device::call_unload()
@@ -1450,13 +1482,14 @@ void pdp1_state::iot_011(int op2, int nac, int mb, int &io, int ac)
 */
 void pdp1_state::iot_cks(int op2, int nac, int mb, int &io, int ac)
 {
-	LOGMASKED(LOG_IOT_EXTRA, "CKS instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
+	if (LOG_IOT_EXTRA)
+		logerror("CKS instruction: mb=0%06o, (%s)\n", (unsigned) mb, machine().describe_context());
 
 	io = m_io_status;
 }
 
 template <int Mask>
-void pdp1_state::io_status_w(int state)
+WRITE_LINE_MEMBER(pdp1_state::io_status_w)
 {
 	if (state)
 		m_io_status |= Mask;

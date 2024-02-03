@@ -6,6 +6,7 @@
 
 **********************************************************************/
 
+
 #ifndef MAME_BUS_BBC_FDC_KENDA_H
 #define MAME_BUS_BBC_FDC_KENDA_H
 
@@ -14,6 +15,7 @@
 #include "fdc.h"
 #include "imagedev/floppy.h"
 #include "machine/wd_fdc.h"
+#include "formats/acorn_dsk.h"
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -39,7 +41,7 @@ protected:
 private:
 	static void floppy_formats(format_registration &fr);
 
-	void motor_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(motor_w);
 
 	required_device<wd2793_device> m_fdc;
 	required_device_array<floppy_connector, 2> m_floppy;

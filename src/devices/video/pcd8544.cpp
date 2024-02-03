@@ -175,12 +175,12 @@ void pcd8544_device::write_data(uint8_t data)
 	}
 }
 
-void pcd8544_device::sdin_w(int state)
+WRITE_LINE_MEMBER(pcd8544_device::sdin_w)
 {
 	m_sdin = state;
 }
 
-void pcd8544_device::sclk_w(int state)
+WRITE_LINE_MEMBER(pcd8544_device::sclk_w)
 {
 	if (!m_sclk && state)
 	{
@@ -201,7 +201,7 @@ void pcd8544_device::sclk_w(int state)
 	m_sclk = state;
 }
 
-void pcd8544_device::dc_w(int state)
+WRITE_LINE_MEMBER(pcd8544_device::dc_w)
 {
 	m_dc = state;
 }

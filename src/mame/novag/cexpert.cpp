@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:hap
 // thanks-to:Berger
-/*******************************************************************************
+/******************************************************************************
 
 Novag Constellation Expert (model 853)
 
@@ -19,7 +19,7 @@ I/O is again similar to supercon
 The first version was on a modified Super Constellation PCB. 4MHz CPU speed,
 and 4 TMM27128 with identical ROM contents as the newer version.
 
-*******************************************************************************/
+******************************************************************************/
 
 #include "emu.h"
 
@@ -33,7 +33,7 @@ and 4 TMM27128 with identical ROM contents as the newer version.
 #include "speaker.h"
 
 // internal artwork
-#include "novag_cexpert.lh"
+#include "novag_cexpert.lh" // clickable
 
 
 namespace {
@@ -53,10 +53,11 @@ public:
 	// machine configs
 	void cexpert(machine_config &config);
 
-	DECLARE_INPUT_CHANGED_MEMBER(change_cpu_freq);
+	DECLARE_INPUT_CHANGED_MEMBER(switch_cpu_freq) { set_cpu_freq(); }
 
 protected:
 	virtual void machine_start() override;
+	virtual void machine_reset() override { set_cpu_freq(); }
 
 private:
 	// devices/pointers
@@ -66,8 +67,7 @@ private:
 	required_device<beep_device> m_beeper;
 	required_ioport_array<8> m_inputs;
 
-	u8 m_inp_mux = 0;
-	u8 m_led_select = 0;
+	void set_cpu_freq();
 
 	// address maps
 	void main_map(address_map &map);
@@ -78,6 +78,9 @@ private:
 	void control_w(u8 data);
 	u8 input1_r();
 	u8 input2_r();
+
+	u8 m_inp_mux = 0;
+	u8 m_led_select = 0;
 };
 
 void cexpert_state::machine_start()
@@ -87,17 +90,17 @@ void cexpert_state::machine_start()
 	save_item(NAME(m_led_select));
 }
 
-INPUT_CHANGED_MEMBER(cexpert_state::change_cpu_freq)
+void cexpert_state::set_cpu_freq()
 {
 	// old version had a 4MHz CPU
-	m_maincpu->set_unscaled_clock((newval & 1) ? (10_MHz_XTAL/2) : (8_MHz_XTAL/2));
+	m_maincpu->set_unscaled_clock((ioport("FAKE")->read() & 1) ? (10_MHz_XTAL/2) : (8_MHz_XTAL/2));
 }
 
 
 
-/*******************************************************************************
+/******************************************************************************
     I/O
-*******************************************************************************/
+******************************************************************************/
 
 void cexpert_state::update_display()
 {
@@ -151,9 +154,9 @@ u8 cexpert_state::input2_r()
 
 
 
-/*******************************************************************************
+/******************************************************************************
     Address Maps
-*******************************************************************************/
+******************************************************************************/
 
 void cexpert_state::main_map(address_map &map)
 {
@@ -167,9 +170,9 @@ void cexpert_state::main_map(address_map &map)
 
 
 
-/*******************************************************************************
+/******************************************************************************
     Input Ports
-*******************************************************************************/
+******************************************************************************/
 
 static INPUT_PORTS_START( cexpert )
 	PORT_START("IN.0")
@@ -204,21 +207,21 @@ static INPUT_PORTS_START( cexpert )
 	PORT_BIT(0x01, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_Q) PORT_NAME("Go")
 	PORT_BIT(0x02, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_1) PORT_NAME("Take Back / Restore")
 
-	PORT_START("CPU")
-	PORT_CONFNAME( 0x01, 0x01, "CPU Frequency" ) PORT_CHANGED_MEMBER(DEVICE_SELF, cexpert_state, change_cpu_freq, 0) // factory set
+	PORT_START("FAKE")
+	PORT_CONFNAME( 0x01, 0x01, "CPU Frequency" ) PORT_CHANGED_MEMBER(DEVICE_SELF, cexpert_state, switch_cpu_freq, 0) // factory set
 	PORT_CONFSETTING(    0x00, "4MHz" )
 	PORT_CONFSETTING(    0x01, "5MHz" )
 INPUT_PORTS_END
 
 
 
-/*******************************************************************************
+/******************************************************************************
     Machine Configs
-*******************************************************************************/
+******************************************************************************/
 
 void cexpert_state::cexpert(machine_config &config)
 {
-	// basic machine hardware
+	/* basic machine hardware */
 	R65C02(config, m_maincpu, 10_MHz_XTAL/2);
 	m_maincpu->set_addrmap(AS_PROGRAM, &cexpert_state::main_map);
 
@@ -233,11 +236,11 @@ void cexpert_state::cexpert(machine_config &config)
 	m_board->set_delay(attotime::from_msec(200));
 	m_board->set_nvram_enable(true);
 
-	// video hardware
+	/* video hardware */
 	PWM_DISPLAY(config, m_display).set_size(9, 8);
 	config.set_default_layout(layout_novag_cexpert);
 
-	// sound hardware
+	/* sound hardware */
 	SPEAKER(config, "mono").front_center();
 	BEEP(config, m_beeper, 15440 / 16); // 965Hz
 	m_beeper->add_route(ALL_OUTPUTS, "mono", 0.25);
@@ -245,9 +248,9 @@ void cexpert_state::cexpert(machine_config &config)
 
 
 
-/*******************************************************************************
+/******************************************************************************
     ROM Definitions
-*******************************************************************************/
+******************************************************************************/
 
 ROM_START( cexpert )
 	ROM_REGION( 0x10000, "maincpu", 0 )
@@ -259,9 +262,9 @@ ROM_END
 
 
 
-/*******************************************************************************
+/******************************************************************************
     Drivers
-*******************************************************************************/
+******************************************************************************/
 
-//    YEAR  NAME     PARENT  COMPAT  MACHINE  INPUT    CLASS          INIT        COMPANY, FULLNAME, FLAGS
-SYST( 1985, cexpert, 0,      0,      cexpert, cexpert, cexpert_state, empty_init, "Novag", "Constellation Expert", MACHINE_SUPPORTS_SAVE | MACHINE_CLICKABLE_ARTWORK )
+//    YEAR  NAME     PARENT  CMP MACHINE  INPUT    STATE          INIT        COMPANY, FULLNAME, FLAGS
+CONS( 1985, cexpert, 0,       0, cexpert, cexpert, cexpert_state, empty_init, "Novag", "Constellation Expert", MACHINE_SUPPORTS_SAVE | MACHINE_CLICKABLE_ARTWORK )

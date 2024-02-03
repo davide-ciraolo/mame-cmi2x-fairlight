@@ -13,9 +13,7 @@
 
 // device type definition
 DECLARE_DEVICE_TYPE(M68HC05EG, m68hc05eg_device)
-DECLARE_DEVICE_TYPE(HD6305V0,  hd6305v0_device)
-DECLARE_DEVICE_TYPE(HD6305Y2,  hd6305y2_device)
-DECLARE_DEVICE_TYPE(HD63705Z0, hd63705z0_device)
+DECLARE_DEVICE_TYPE(HD63705,   hd63705_device)
 
 // ======================> m6805_base_device
 
@@ -328,21 +326,15 @@ protected:
 	virtual std::unique_ptr<util::disasm_interface> create_disassembler() override;
 };
 
-// ======================> hd6305_device
+// ======================> hd63705_device
 
-class hd6305_device : public m6805_base_device
+class hd63705_device : public m6805_base_device
 {
-protected:
+public:
 	// construction/destruction
-	hd6305_device(
-			machine_config const &mconfig,
-			char const *tag,
-			device_t *owner,
-			uint32_t clock,
-			device_type const type,
-			configuration_params const &params,
-			address_map_constructor internal_map);
+	hd63705_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
+protected:
 	// device-level overrides
 	virtual void device_reset() override;
 
@@ -351,42 +343,6 @@ protected:
 
 	virtual void interrupt_vector() override;
 	virtual bool test_il() override { return m_nmi_state != CLEAR_LINE; }
-};
-
-// ======================> hd6305v0_device
-
-class hd6305v0_device : public hd6305_device
-{
-public:
-	// construction/destruction
-	hd6305v0_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
-
-private:
-	void internal_map(address_map &map);
-};
-
-// ======================> hd6305y2_device
-
-class hd6305y2_device : public hd6305_device
-{
-public:
-	// construction/destruction
-	hd6305y2_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
-
-private:
-	void internal_map(address_map &map);
-};
-
-// ======================> hd63705z0_device
-
-class hd63705z0_device : public hd6305_device
-{
-public:
-	// construction/destruction
-	hd63705z0_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
-
-private:
-	void internal_map(address_map &map);
 };
 
 #define M6805_IRQ_LINE      0

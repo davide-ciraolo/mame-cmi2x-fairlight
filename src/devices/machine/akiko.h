@@ -18,7 +18,7 @@
 #pragma once
 
 #include "cdrom.h"
-#include "imagedev/cdromimg.h"
+#include "imagedev/chd_cd.h"
 #include "sound/cdda.h"
 
 
@@ -43,8 +43,6 @@ public:
 
 	uint32_t read(offs_t offset);
 	void write(offs_t offset, uint32_t data, uint32_t mem_mask = ~0);
-
-	void set_mute(bool mute);
 
 protected:
 	// device-level overrides
@@ -86,7 +84,8 @@ private:
 	uint8_t m_cdrom_cmd_resp;
 
 	required_device<cdda_device> m_cdda;
-	optional_device<cdrom_image_device> m_cdrom;
+	optional_device<cdrom_image_device> m_cddevice;
+	cdrom_file *m_cdrom;
 
 	std::unique_ptr<uint8_t[]> m_cdrom_toc;
 

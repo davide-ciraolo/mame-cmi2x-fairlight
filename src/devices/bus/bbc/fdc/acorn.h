@@ -16,6 +16,9 @@
 #include "imagedev/floppy.h"
 #include "machine/i8271.h"
 #include "machine/wd_fdc.h"
+#include "formats/acorn_dsk.h"
+#include "formats/fsd_dsk.h"
+#include "formats/pc_dsk.h"
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -43,8 +46,8 @@ protected:
 	virtual void write(offs_t offset, uint8_t data) override;
 
 private:
-	void motor_w(int state);
-	void side_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(motor_w);
+	DECLARE_WRITE_LINE_MEMBER(side_w);
 
 	required_device<i8271_device> m_fdc;
 	required_device_array<floppy_connector, 2> m_floppy;
@@ -70,8 +73,8 @@ protected:
 	virtual void write(offs_t offset, uint8_t data) override;
 
 private:
-	void fdc_intrq_w(int state);
-	void fdc_drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(fdc_intrq_w);
+	DECLARE_WRITE_LINE_MEMBER(fdc_drq_w);
 
 	required_device<wd1770_device> m_fdc;
 	required_device_array<floppy_connector, 2> m_floppy;

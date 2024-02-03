@@ -54,14 +54,14 @@
 - (NSTextField *)makeLabel:(NSString *)text {
 	NSTextField *const result = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 100, 14)];
 	[result setAutoresizingMask:(NSViewMaxYMargin | NSViewMaxXMargin)];
-	[[result cell] setControlSize:NSControlSizeSmall];
+	[[result cell] setControlSize:NSSmallControlSize];
 	[result setEditable:NO];
 	[result setSelectable:NO];
 	[result setBezeled:NO];
 	[result setBordered:NO];
 	[result setDrawsBackground:NO];
-	[result setAlignment:NSTextAlignmentRight];
-	[result setFont:[NSFont systemFontOfSize:[NSFont systemFontSizeForControlSize:NSControlSizeSmall]]];
+	[result setAlignment:NSRightTextAlignment];
+	[result setFont:[NSFont systemFontOfSize:[NSFont systemFontSizeForControlSize:NSSmallControlSize]]];
 	[result setStringValue:text];
 	[result sizeToFit];
 	return result;
@@ -71,14 +71,14 @@
 - (NSTextField *)makeField:(NSString *)text {
 	NSTextField *const result = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 100, 14)];
 	[result setAutoresizingMask:(NSViewWidthSizable | NSViewMaxYMargin)];
-	[[result cell] setControlSize:NSControlSizeSmall];
+	[[result cell] setControlSize:NSSmallControlSize];
 	[result setEditable:NO];
 	[result setSelectable:YES];
 	[result setBezeled:NO];
 	[result setBordered:NO];
 	[result setDrawsBackground:NO];
-	[result setAlignment:NSTextAlignmentLeft];
-	[result setFont:[NSFont systemFontOfSize:[NSFont systemFontSizeForControlSize:NSControlSizeSmall]]];
+	[result setAlignment:NSLeftTextAlignment];
+	[result setFont:[NSFont systemFontOfSize:[NSFont systemFontSizeForControlSize:NSSmallControlSize]]];
 	[result setStringValue:text];
 	[result sizeToFit];
 	return result;
@@ -210,11 +210,9 @@
 
 	// create a scroll view for holding everything
 	NSSize desired = [NSScrollView frameSizeForContentSize:[contentView frame].size
-								   horizontalScrollerClass:[NSScroller class]
-									 verticalScrollerClass:[NSScroller class]
-												borderType:NSNoBorder
-											   controlSize:NSControlSizeRegular
-											 scrollerStyle:NSScrollerStyleOverlay];
+									 hasHorizontalScroller:YES
+									   hasVerticalScroller:YES
+												borderType:NSNoBorder];
 	[window setContentSize:desired];
 	contentScroll = [[NSScrollView alloc] initWithFrame:[[window contentView] bounds]];
 	[contentScroll setDrawsBackground:NO];
@@ -239,8 +237,7 @@
 
 - (void)saveConfigurationToNode:(util::xml::data_node *)node {
 	[super saveConfigurationToNode:node];
-	node->set_attribute_int(osd::debugger::ATTR_WINDOW_TYPE, osd::debugger::WINDOW_TYPE_DEVICE_INFO_VIEWER);
-	node->set_attribute(osd::debugger::ATTR_WINDOW_DEVICE_TAG, device->tag());
+	node->set_attribute_int("type", MAME_DEBUGGER_WINDOW_TYPE_DEVICE_INFO_VIEWER);
 }
 
 @end

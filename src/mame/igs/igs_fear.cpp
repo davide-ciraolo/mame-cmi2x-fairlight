@@ -12,8 +12,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 class igs_fear_state : public driver_device
 {
 public:
@@ -31,7 +29,7 @@ protected:
 	virtual void video_start() override;
 
 private:
-	void sound_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(sound_irq);
 	uint32_t screen_update_igs_fear(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	void pgm_create_dummy_internal_arm_region();
 	required_device<cpu_device> m_maincpu;
@@ -79,7 +77,7 @@ GFXDECODE_END
 static INPUT_PORTS_START( fear )
 INPUT_PORTS_END
 
-void igs_fear_state::sound_irq(int state)
+WRITE_LINE_MEMBER(igs_fear_state::sound_irq)
 {
 }
 
@@ -171,8 +169,5 @@ void igs_fear_state::init_igs_fear()
 	//sdwx_gfx_decrypt(machine());
 	pgm_create_dummy_internal_arm_region();
 }
-
-} // anonymous namespace
-
 
 GAME( 2006, fearless, 0, igs_fear, fear, igs_fear_state, init_igs_fear, ROT0, "IGS", "Fearless Pinocchio (V101US)",   MACHINE_IS_SKELETON )

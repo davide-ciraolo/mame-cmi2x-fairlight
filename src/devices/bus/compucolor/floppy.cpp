@@ -9,8 +9,6 @@
 #include "emu.h"
 #include "floppy.h"
 
-#include "formats/ccvf_dsk.h"
-
 
 
 //**************************************************************************

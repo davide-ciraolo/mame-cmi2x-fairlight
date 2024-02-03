@@ -10,8 +10,20 @@
 #include "emu.h"
 #include "rcnt.h"
 
-#define VERBOSE ( 0 )
-#include "logmacro.h"
+#define VERBOSE_LEVEL ( 0 )
+
+static inline void ATTR_PRINTF(3,4) verboselog( device_t& device, int n_level, const char *s_fmt, ... )
+{
+	if( VERBOSE_LEVEL >= n_level )
+	{
+		va_list v;
+		char buf[ 32768 ];
+		va_start( v, s_fmt );
+		vsprintf( buf, s_fmt, v );
+		va_end( v );
+		device.logerror( "%s: %s", device.machine().describe_context(), buf );
+	}
+}
 
 DEFINE_DEVICE_TYPE(PSX_RCNT, psxrcnt_device, "psxrcnt", "Sony PSX RCNT")
 
@@ -29,33 +41,41 @@ void psxrcnt_device::device_reset()
 
 void psxrcnt_device::device_post_load()
 {
-	for (int n = 0; n < 3; n++)
-		root_timer_adjust(n);
+	int n;
+	for( n = 0; n < 3; n++ )
+	{
+		root_timer_adjust( n );
+	}
 }
 
 void psxrcnt_device::device_start()
 {
-	save_item(STRUCT_MEMBER(root_counter, n_count));
-	save_item(STRUCT_MEMBER(root_counter, n_mode));
-	save_item(STRUCT_MEMBER(root_counter, n_target));
-	save_item(STRUCT_MEMBER(root_counter, n_start));
+	int n;
 
-	for (int n = 0; n < 3; n++)
+	m_irq0_handler.resolve_safe();
+	m_irq1_handler.resolve_safe();
+	m_irq2_handler.resolve_safe();
+
+	for( n = 0; n < 3; n++ )
 	{
-		root_counter[n].timer = timer_alloc(FUNC(psxrcnt_device::timer_update ), this);
-		root_counter[n].n_count = 0;
-		root_counter[n].n_mode = 0;
-		root_counter[n].n_target = 0;
-		root_counter[n].n_start = 0;
+		root_counter[ n ].timer = timer_alloc( FUNC( psxrcnt_device::timer_update ), this );
+		save_item(NAME(root_counter[ n ].n_count), n);
+		save_item(NAME(root_counter[ n ].n_mode), n);
+		save_item(NAME(root_counter[ n ].n_target), n);
+		save_item(NAME(root_counter[ n ].n_start), n);
+		root_counter[ n ].n_count = 0;
+		root_counter[ n ].n_mode = 0;
+		root_counter[ n ].n_target = 0;
+		root_counter[ n ].n_start = 0;
 	}
 }
 
 void psxrcnt_device::write(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
-	int const n_counter = offset / 4;
-	psx_root *const root = &root_counter[ n_counter ];
+	int n_counter = offset / 4;
+	psx_root *root = &root_counter[ n_counter ];
 
-	LOG( "%s: psx_counter_w ( %08x, %08x, %08x )\n", machine().describe_context(), offset, data, mem_mask );
+	verboselog( *this, 1, "psx_counter_w ( %08x, %08x, %08x )\n", offset, data, mem_mask );
 
 	switch( offset % 4 )
 	{
@@ -73,9 +93,7 @@ void psxrcnt_device::write(offs_t offset, uint32_t data, uint32_t mem_mask)
 			root->n_count = 0;
 		}
 
-		// Reached FFFF and reached target value are read-only flags that are only cleared when read
-		data &= ~( PSX_RC_REACHEDFFFF | PSX_RC_REACHEDTARGET );
-		root->n_mode = data | ( root->n_mode & ( PSX_RC_REACHEDFFFF | PSX_RC_REACHEDTARGET ) );
+		root->n_mode = data;
 
 #if 0
 		if( ( data & 0xfca6 ) != 0 ||
@@ -90,7 +108,7 @@ void psxrcnt_device::write(offs_t offset, uint32_t data, uint32_t mem_mask)
 		root->n_target = data;
 		break;
 	default:
-		logerror( "%s: psx_counter_w( %08x, %08x, %08x ) unknown register\n", machine().describe_context(), offset, mem_mask, data );
+		verboselog( *this, 0, "psx_counter_w( %08x, %08x, %08x ) unknown register\n", offset, mem_mask, data );
 		return;
 	}
 
@@ -99,8 +117,8 @@ void psxrcnt_device::write(offs_t offset, uint32_t data, uint32_t mem_mask)
 
 uint32_t psxrcnt_device::read(offs_t offset, uint32_t mem_mask)
 {
-	int const n_counter = offset / 4;
-	psx_root *const root = &root_counter[ n_counter ];
+	int n_counter = offset / 4;
+	psx_root *root = &root_counter[ n_counter ];
 	uint32_t data;
 
 	switch( offset % 4 )
@@ -110,19 +128,15 @@ uint32_t psxrcnt_device::read(offs_t offset, uint32_t mem_mask)
 		break;
 	case 1:
 		data = root->n_mode;
-		if (!machine().side_effects_disabled())
-			root->n_mode &= ~( PSX_RC_REACHEDFFFF | PSX_RC_REACHEDTARGET );
 		break;
 	case 2:
 		data = root->n_target;
 		break;
 	default:
-		if (!machine().side_effects_disabled())
-			logerror( "%s: psx_counter_r( %08x, %08x ) unknown register\n", machine().describe_context(), offset, mem_mask );
+		verboselog( *this, 0, "psx_counter_r( %08x, %08x ) unknown register\n", offset, mem_mask );
 		return 0;
 	}
-	if (!machine().side_effects_disabled())
-		LOG( "%s: psx_counter_r ( %08x, %08x ) %08x\n", machine().describe_context(), offset, mem_mask, data );
+	verboselog( *this, 1, "psx_counter_r ( %08x, %08x ) %08x\n", offset, mem_mask, data );
 	return data;
 }
 
@@ -134,7 +148,7 @@ uint64_t psxrcnt_device::gettotalcycles( void )
 
 int psxrcnt_device::root_divider( int n_counter )
 {
-	psx_root *const root = &root_counter[ n_counter ];
+	psx_root *root = &root_counter[ n_counter ];
 
 	if( n_counter == 0 && ( root->n_mode & PSX_RC_CLC ) != 0 )
 	{
@@ -154,7 +168,7 @@ int psxrcnt_device::root_divider( int n_counter )
 
 uint16_t psxrcnt_device::root_current( int n_counter )
 {
-	psx_root *const root = &root_counter[ n_counter ];
+	psx_root *root = &root_counter[ n_counter ];
 
 	if( ( root->n_mode & PSX_RC_STOP ) != 0 )
 	{
@@ -171,7 +185,6 @@ uint16_t psxrcnt_device::root_current( int n_counter )
 			/* TODO: use timer for wrap on 0x10000. */
 			root->n_count = n_current;
 			root->n_start = gettotalcycles();
-			root->n_mode |= PSX_RC_REACHEDFFFF;
 		}
 		return n_current;
 	}
@@ -179,7 +192,7 @@ uint16_t psxrcnt_device::root_current( int n_counter )
 
 int psxrcnt_device::root_target( int n_counter )
 {
-	psx_root *const root = &root_counter[ n_counter ];
+	psx_root *root = &root_counter[ n_counter ];
 
 	if( ( root->n_mode & PSX_RC_COUNTTARGET ) != 0 ||
 		( root->n_mode & PSX_RC_IRQTARGET ) != 0 )
@@ -191,7 +204,7 @@ int psxrcnt_device::root_target( int n_counter )
 
 void psxrcnt_device::root_timer_adjust( int n_counter )
 {
-	psx_root *const root = &root_counter[ n_counter ];
+	psx_root *root = &root_counter[ n_counter ];
 
 	if( ( root->n_mode & PSX_RC_STOP ) != 0 )
 	{
@@ -205,15 +218,6 @@ void psxrcnt_device::root_timer_adjust( int n_counter )
 		if( n_duration < 1 )
 		{
 			n_duration += 0x10000;
-
-			if ( ( root->n_mode & PSX_RC_COUNTTARGET ) != 0 )
-			{
-				root->n_mode |= PSX_RC_REACHEDTARGET;
-			}
-			else
-			{
-				root->n_mode |= PSX_RC_REACHEDFFFF;
-			}
 		}
 
 		n_duration *= root_divider( n_counter );
@@ -225,10 +229,10 @@ void psxrcnt_device::root_timer_adjust( int n_counter )
 
 TIMER_CALLBACK_MEMBER( psxrcnt_device::timer_update )
 {
-	int const n_counter = param;
-	psx_root *const root = &root_counter[ n_counter ];
+	int n_counter = param;
+	psx_root *root = &root_counter[ n_counter ];
 
-	LOG( "root_finished( %d ) %04x\n", n_counter, root_current( n_counter ) );
+	verboselog( *this, 2, "root_finished( %d ) %04x\n", n_counter, root_current( n_counter ) );
 	//if( ( root->n_mode & PSX_RC_COUNTTARGET ) != 0 )
 	{
 		/* TODO: wrap should be handled differently as PSX_RC_COUNTTARGET & PSX_RC_IRQTARGET don't have to be the same. */

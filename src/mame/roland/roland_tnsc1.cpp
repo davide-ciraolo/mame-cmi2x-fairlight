@@ -27,8 +27,6 @@
 #include "softlist_dev.h"
 
 
-namespace {
-
 class rlndtnsc1_state : public driver_device
 {
 public:
@@ -52,7 +50,7 @@ DEVICE_IMAGE_LOAD_MEMBER(rlndtnsc1_state::cart_load)
 	uint32_t size = m_cart->common_get_size("rom");
 	m_cart->rom_alloc(size, GENERIC_ROM16_WIDTH, ENDIANNESS_LITTLE);
 	m_cart->common_load_rom(m_cart->get_rom_base(), size, "rom");
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void rlndtnsc1_state::rlndtnsc1(machine_config &config)
@@ -68,7 +66,5 @@ void rlndtnsc1_state::rlndtnsc1(machine_config &config)
 ROM_START( rlndtnsc1 )
 ROM_END
 
-} // anonymous namespace
 
-
-CONS( 198?, rlndtnsc1, 0, 0, rlndtnsc1, rlndtnsc1, rlndtnsc1_state, empty_init, "Roland", "Roland Music Style Card TN-SC1 Software List holder", MACHINE_IS_SKELETON )
+CONS( 198?, rlndtnsc1, 0, 0, rlndtnsc1, rlndtnsc1, rlndtnsc1_state, empty_init, "Roland", "Roland Music Style Card Software List holder", MACHINE_IS_SKELETON )

@@ -176,7 +176,7 @@ void midway_serial_pic_device::device_reset()
 	generate_serial_data(m_upper);
 }
 
-void midway_serial_pic_device::reset_w(int state)
+WRITE_LINE_MEMBER(midway_serial_pic_device::reset_w)
 {
 	if (state)
 	{
@@ -269,7 +269,7 @@ void midway_serial_pic_emu_device::device_start()
 	m_status = 0;
 }
 
-void midway_serial_pic_emu_device::reset_w(int state)
+WRITE_LINE_MEMBER(midway_serial_pic_emu_device::reset_w)
 {
 	if (!state) // fixme, PIC should be stopped while 0 and start running at 0->1 transition
 		m_pic->reset();
@@ -765,6 +765,10 @@ void midway_ioasic_device::device_start()
 	}
 
 	m_shuffle_map = &shuffle_maps[m_shuffle_type][0];
+	// resolve callbacks
+	m_irq_callback.resolve_safe();
+	m_serial_tx_cb.resolve_safe();
+	m_aux_output_cb.resolve();
 
 	/* initialize the PIC */
 	midway_serial_pic2_device::device_start();
@@ -827,7 +831,8 @@ void midway_ioasic_device::update_ioasic_irq()
 	if (new_state != m_irq_state)
 	{
 		m_irq_state = new_state;
-		m_irq_callback(m_irq_state ? ASSERT_LINE : CLEAR_LINE);
+		if (!m_irq_callback.isnull())
+			m_irq_callback(m_irq_state ? ASSERT_LINE : CLEAR_LINE);
 		if (m_irq_state && (m_reg[IOASIC_UARTIN] & 0x1000))
 			LOGIRQ("IOASIC: Asserting IRQ INTCTRL=%04x INTSTAT=%04X\n", m_reg[IOASIC_INTCTL], m_reg[IOASIC_INTSTAT]);
 	}
@@ -846,7 +851,7 @@ void midway_ioasic_device::cage_irq_handler(uint8_t data)
 }
 
 
-void midway_ioasic_device::ioasic_input_empty(int state)
+WRITE_LINE_MEMBER(midway_ioasic_device::ioasic_input_empty)
 {
 	LOGFIFO("ioasic_input_empty(%d)\n", state);
 	if (state)
@@ -857,7 +862,7 @@ void midway_ioasic_device::ioasic_input_empty(int state)
 }
 
 
-void midway_ioasic_device::ioasic_output_full(int state)
+WRITE_LINE_MEMBER(midway_ioasic_device::ioasic_output_full)
 {
 	LOGFIFO("ioasic_output_full(%d)\n", state);
 	if (state)
@@ -945,7 +950,7 @@ uint16_t midway_ioasic_device::fifo_status_r(address_space &space)
 }
 
 
-void midway_ioasic_device::fifo_reset_w(int state)
+WRITE_LINE_MEMBER(midway_ioasic_device::fifo_reset_w)
 {
 	/* on the high state, reset the FIFO data */
 	if (state)
@@ -1226,7 +1231,8 @@ void midway_ioasic_device::write(offs_t offset, uint32_t data, uint32_t mem_mask
 
 		case IOASIC_PICIN:
 			/* This is P15 on vegas boards */
-			m_aux_output_cb(data);
+			if (!m_aux_output_cb.isnull())
+				m_aux_output_cb(data);
 			break;
 
 		case IOASIC_INTCTL:

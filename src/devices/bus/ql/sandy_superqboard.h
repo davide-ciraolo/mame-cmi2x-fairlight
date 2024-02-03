@@ -13,6 +13,7 @@
 
 #include "exp.h"
 #include "bus/centronics/ctronics.h"
+#include "formats/ql_dsk.h"
 #include "imagedev/floppy.h"
 #include "machine/wd_fdc.h"
 
@@ -49,7 +50,7 @@ protected:
 	virtual void write(offs_t offset, uint8_t data) override;
 
 private:
-	void busy_w(int state);
+	WRITE_LINE_MEMBER( busy_w );
 
 	static void floppy_formats(format_registration &fr);
 
@@ -68,7 +69,8 @@ private:
 	void check_interrupt();
 
 	required_device<wd1772_device> m_fdc;
-	required_device_array<floppy_connector, 2> m_floppy;
+	required_device<floppy_connector> m_floppy0;
+	required_device<floppy_connector> m_floppy1;
 	required_device<centronics_device> m_centronics;
 	required_device<output_latch_device> m_latch;
 	required_memory_region m_rom;

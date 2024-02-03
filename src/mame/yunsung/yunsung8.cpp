@@ -104,7 +104,7 @@ private:
 	template <uint8_t Which> void paletteram_w(offs_t offset, uint8_t data);
 	void flipscreen_w(uint8_t data);
 	void sound_bankswitch_w(uint8_t data);
-	void adpcm_int(int state);
+	DECLARE_WRITE_LINE_MEMBER(adpcm_int);
 
 	TILE_GET_INFO_MEMBER(get_bg_tile_info);
 	TILE_GET_INFO_MEMBER(get_fg_tile_info);
@@ -560,7 +560,7 @@ GFXDECODE_END
 ***************************************************************************/
 
 
-void yunsung8_state::adpcm_int(int state)
+WRITE_LINE_MEMBER(yunsung8_state::adpcm_int)
 {
 	if (!state)
 		return;

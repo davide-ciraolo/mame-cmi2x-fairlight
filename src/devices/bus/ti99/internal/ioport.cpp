@@ -123,25 +123,25 @@ void ioport_device::cruwrite(offs_t offset, uint8_t data)
 		m_connected->cruwrite(offset, data);
 }
 
-void ioport_device::memen_in(int state)
+WRITE_LINE_MEMBER(ioport_device::memen_in)
 {
 	if (m_connected != nullptr)
 		m_connected->memen_in(state);
 }
 
-void ioport_device::msast_in(int state)
+WRITE_LINE_MEMBER(ioport_device::msast_in)
 {
 	if (m_connected != nullptr)
 		m_connected->msast_in(state);
 }
 
-void ioport_device::clock_in(int state)
+WRITE_LINE_MEMBER(ioport_device::clock_in)
 {
 	if (m_connected != nullptr)
 		m_connected->clock_in(state);
 }
 
-void ioport_device::reset_in(int state)
+WRITE_LINE_MEMBER(ioport_device::reset_in)
 {
 	if (m_connected != nullptr)
 		m_connected->reset_in(state);
@@ -149,6 +149,8 @@ void ioport_device::reset_in(int state)
 
 void ioport_device::device_start()
 {
+	m_console_extint.resolve();
+	m_console_ready.resolve();
 	if (m_connected != nullptr)
 		m_connected->set_ioport(this);
 }
@@ -159,12 +161,12 @@ void ioport_device::device_config_complete()
 }
 
 
-void ioport_attached_device::set_extint(int state)
+WRITE_LINE_MEMBER(ioport_attached_device::set_extint)
 {
 	m_ioport->m_console_extint(state);
 }
 
-void ioport_attached_device::set_ready(int state)
+WRITE_LINE_MEMBER(ioport_attached_device::set_ready)
 {
 	m_ioport->m_console_ready(state);
 }

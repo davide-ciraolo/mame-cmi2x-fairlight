@@ -68,14 +68,15 @@ public:
 	uint8_t pb_r();
 	uint8_t ackb_r();
 
-	void pc2_w(int state);
-	void pc4_w(int state);
-	void pc6_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( pc2_w );
+	DECLARE_WRITE_LINE_MEMBER( pc4_w );
+	DECLARE_WRITE_LINE_MEMBER( pc6_w );
 
 protected:
 	i8255_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, bool is_ams40489);
 
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 

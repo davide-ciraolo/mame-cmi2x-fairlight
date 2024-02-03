@@ -12,11 +12,9 @@
 
 **********************************************************************/
 
+
 #include "emu.h"
 #include "opus.h"
-
-#include "formats/acorn_dsk.h"
-#include "formats/fsd_dsk.h"
 
 
 //**************************************************************************
@@ -318,7 +316,7 @@ void bbc_opusfdc_device::write(offs_t offset, uint8_t data)
 	}
 }
 
-void bbc_opusfdc_device::motor_w(int state)
+WRITE_LINE_MEMBER(bbc_opusfdc_device::motor_w)
 {
 	if (m_floppy[0]->get_device()) m_floppy[0]->get_device()->mon_w(!state);
 	if (m_floppy[1]->get_device()) m_floppy[1]->get_device()->mon_w(!state);

@@ -9,25 +9,20 @@
 ***************************************************************************/
 
 #include "emu.h"
-
-#include "crsshair.h"
-#include "debugger.h"
 #include "emuopts.h"
+#include "debugger.h"
 #include "fileio.h"
-#include "main.h"
+#include "ui/uimain.h"
+#include "crsshair.h"
+#include "rendersw.hxx"
 #include "output.h"
 #include "screen.h"
 
-#include "ui/uimain.h"
-
 #include "corestr.h"
-#include "path.h"
 #include "png.h"
 #include "xmlfile.h"
 
 #include "osdepend.h"
-
-#include "rendersw.hxx"
 
 
 //**************************************************************************
@@ -218,9 +213,8 @@ void video_manager::frame_update(bool from_debugger)
 	bool const update_screens = (phase == machine_phase::RUNNING) && (!machine().paused() || machine().options().update_in_pause());
 	bool anything_changed = update_screens && finish_screen_updates();
 
-	// update inputs and draw the user interface
-	machine().osd().input_update(true);
-	anything_changed = emulator_info::draw_user_interface(machine()) || anything_changed;
+	// draw the user interface
+	emulator_info::draw_user_interface(machine());
 
 	// let plugins draw over the UI
 	anything_changed = emulator_info::frame_hook() || anything_changed;
@@ -235,20 +229,21 @@ void video_manager::frame_update(bool from_debugger)
 
 	// if we're throttling, synchronize before rendering
 	attotime current_time = machine().time();
-	if (!from_debugger && phase > machine_phase::INIT && !m_low_latency && effective_throttle())
+	if (!from_debugger && !skipped_it && phase > machine_phase::INIT && !m_low_latency && effective_throttle())
 		update_throttle(current_time);
 
 	// ask the OSD to update
-	{
-		auto profile = g_profiler.start(PROFILER_BLIT);
-		machine().osd().update(!from_debugger && skipped_it);
-	}
+	g_profiler.start(PROFILER_BLIT);
+	machine().osd().update(!from_debugger && skipped_it);
+	g_profiler.stop();
 
 	// we synchronize after rendering instead of before, if low latency mode is enabled
-	if (!from_debugger && phase > machine_phase::INIT && m_low_latency && effective_throttle())
+	if (!from_debugger && !skipped_it && phase > machine_phase::INIT && m_low_latency && effective_throttle())
 		update_throttle(current_time);
 
-	machine().osd().input_update(false);
+	// get most recent input now
+	machine().osd().input_update();
+
 	emulator_info::periodic_check();
 
 	if (!from_debugger)
@@ -306,7 +301,7 @@ std::string video_manager::speed_text()
 
 	// append the speed for all cases except paused
 	if (!paused)
-		util::stream_format(str, " %3d%%", int(100 * m_speed_percent + 0.5));
+		util::stream_format(str, "%4d%%", (int)(100 * m_speed_percent + 0.5));
 
 	// display the number of partial updates as well
 	int partials = 0;
@@ -518,7 +513,7 @@ void video_manager::exit()
 //  when there are no screens to drive it
 //-------------------------------------------------
 
-void video_manager::screenless_update_callback(s32 param)
+void video_manager::screenless_update_callback(int param)
 {
 	// force an update
 	frame_update(false);
@@ -807,7 +802,7 @@ osd_ticks_t video_manager::throttle_until_ticks(osd_ticks_t target_ticks)
 	bool const allowed_to_sleep = (machine().options().sleep() && (!effective_autoframeskip() || effective_frameskip() == 0)) || machine().paused();
 
 	// loop until we reach our target
-	auto profile = g_profiler.start(PROFILER_IDLE);
+	g_profiler.start(PROFILER_IDLE);
 	osd_ticks_t current_ticks = osd_ticks();
 	while (current_ticks < target_ticks)
 	{
@@ -843,6 +838,7 @@ osd_ticks_t video_manager::throttle_until_ticks(osd_ticks_t target_ticks)
 		}
 		current_ticks = new_ticks;
 	}
+	g_profiler.stop();
 
 	return current_ticks;
 }
@@ -1233,7 +1229,7 @@ void video_manager::record_frame()
 		return;
 
 	// start the profiler and get the current time
-	auto profile = g_profiler.start(PROFILER_MOVIE_REC);
+	g_profiler.start(PROFILER_MOVIE_REC);
 	attotime curtime = machine().time();
 
 	bool error = false;
@@ -1252,6 +1248,7 @@ void video_manager::record_frame()
 
 	if (error)
 		end_recording();
+	g_profiler.stop();
 }
 
 

@@ -15,10 +15,7 @@
 
 #include "ui/textbox.h"
 
-#include "notifier.h"
-
 #include <string>
-#include <vector>
 
 
 namespace ui {
@@ -103,8 +100,8 @@ protected:
 	virtual void populate_text(std::optional<text_layout> &layout, float &width, int &lines) override;
 
 private:
-	virtual void populate() override;
-	virtual bool handle(event const *ev) override;
+	virtual void populate(float &customtop, float &custombottom) override;
+	virtual void handle(event const *ev) override;
 };
 
 
@@ -118,8 +115,8 @@ protected:
 	virtual void populate_text(std::optional<text_layout> &layout, float &width, int &lines) override;
 
 private:
-	virtual void populate() override;
-	virtual bool handle(event const *ev) override;
+	virtual void populate(float &customtop, float &custombottom) override;
+	virtual void handle(event const *ev) override;
 };
 
 
@@ -133,12 +130,9 @@ protected:
 	virtual void menu_activated() override;
 
 private:
-	virtual void populate() override;
-	virtual bool handle(event const *ev) override;
-	void image_info(device_image_interface &image);
-	void reload(device_image_interface::media_change_event ev);
-
-	std::vector<util::notifier_subscription> m_notifiers;
+	virtual void populate(float &customtop, float &custombottom) override;
+	virtual void handle(event const *ev) override;
+	void image_info(device_image_interface *image);
 };
 
 } // namespace ui

@@ -22,10 +22,9 @@
  * Still in the public domain.
  */
 
-#include "md5.h"
-
 #include <cstring>     /* for memcpy() */
 
+#include "md5.h"
 
 #ifndef LSB_FIRST
 void

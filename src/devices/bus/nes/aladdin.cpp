@@ -19,11 +19,12 @@
 
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 
@@ -92,19 +93,20 @@ uint8_t nes_aladdin_slot_device::read(offs_t offset)
 }
 
 // 128K for Dizzy The Adventurer, 256K for the others
-std::pair<std::error_condition, std::string> nes_aladdin_slot_device::call_load()
+image_init_result nes_aladdin_slot_device::call_load()
 {
 	if (m_cart)
 	{
-		uint8_t *const ROM = m_cart->get_cart_base();
-		if (!ROM)
-			return std::make_pair(image_error::INTERNAL, std::string());
-
+		uint8_t *ROM = m_cart->get_cart_base();
 		uint32_t size;
+
+		if (!ROM)
+			return image_init_result::FAIL;
+
 		if (!loaded_through_softlist())
 		{
 			if (length() != 0x20010 && length() != 0x40010)
-				return std::make_pair(image_error::INVALIDLENGTH, std::string());
+				return image_init_result::FAIL;
 
 			uint8_t temp[0x40010];
 			size = length() - 0x10;
@@ -112,28 +114,26 @@ std::pair<std::error_condition, std::string> nes_aladdin_slot_device::call_load(
 			memcpy(ROM, temp + 0x10, size);
 
 			// double check that iNES files are really mapper 71 or 232
-			uint8_t mapper = (temp[6] & 0xf0) >> 4;
-			mapper |= temp[7] & 0xf0;
-			if (mapper != 71 && mapper != 232)
 			{
-				return std::make_pair(
-						image_error::INVALIDIMAGE,
-						util::string_format("Unsupported iNES mapper %u (must be 71 or 232)", mapper));
+				uint8_t mapper = (temp[6] & 0xf0) >> 4;
+				mapper |= temp[7] & 0xf0;
+				if (mapper != 71 && mapper != 232)
+					return image_init_result::FAIL;
 			}
 		}
 		else
 		{
-			size = get_software_region_length("rom");
-			if (size != 0x2'0000 && size != 0x4'0000)
-				return std::make_pair(image_error::INVALIDLENGTH, "Unsupported cartridge size (must be 128K or 256K)");
+			if (get_software_region_length("rom") != 0x20000 && get_software_region_length("rom") != 0x40000)
+				return image_init_result::FAIL;
 
+			size = get_software_region_length("rom");
 			memcpy(ROM, get_software_region("rom"), size);
 		}
 
 		m_cart->set_cart_size(size);
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 
@@ -298,7 +298,7 @@ void nes_aladdin_device::pcb_reset()
 
 uint8_t nes_aladdin_device::read_h(offs_t offset)
 {
-	LOG("aladdin read_h, offset: %04x\n", offset);
+	LOG_MMC(("aladdin read_h, offset: %04x\n", offset));
 	// this shall be the proper code, but it's a bit slower, so we access directly the subcart below
 	//return m_subslot->read(offset);
 
@@ -310,7 +310,7 @@ uint8_t nes_aladdin_device::read_h(offs_t offset)
 
 void nes_aladdin_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("aladdin write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("aladdin write_h, offset: %04x, data: %02x\n", offset, data));
 	m_subslot->write_prg(offset, data);
 }
 

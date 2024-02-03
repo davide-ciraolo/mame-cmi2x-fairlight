@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Barry Rodewald, 68bit
 /*
- * flex_dsk.cpp  -  FLEX compatible disk images
+ * flex_dsk.c  -  FLEX compatible disk images
  *
  *  Created on: 24/06/2014
  *
@@ -60,17 +60,17 @@ flex_format::flex_format() : wd177x_format(formats)
 {
 }
 
-const char *flex_format::name() const noexcept
+const char *flex_format::name() const
 {
 	return "flex";
 }
 
-const char *flex_format::description() const noexcept
+const char *flex_format::description() const
 {
 	return "FLEX compatible disk image";
 }
 
-const char *flex_format::extensions() const noexcept
+const char *flex_format::extensions() const
 {
 	return "dsk";
 }
@@ -91,14 +91,25 @@ int flex_format::find_size(util::random_read &io, uint32_t form_factor, const st
 		return -1;
 
 	uint8_t boot0[256], boot1[256];
+	sysinfo_sector info;
 	size_t actual;
 
 	// Look at the boot sector.
 	// Density, sides, link??
 	io.read_at(256 * 0, &boot0, sizeof(boot0), actual);
 	io.read_at(256 * 1, &boot1, sizeof(boot1), actual);
+	// Look at the system information sector.
+	io.read_at(256 * 2, &info, sizeof(struct sysinfo_sector), actual);
 
 	LOG_FORMATS("FLEX floppy dsk: size %d bytes, %d total sectors, %d remaining bytes, expected form factor %x\n", (uint32_t)size, (uint32_t)size / 256, (uint32_t)size % 256, form_factor);
+
+	// Consistency checks.
+	if (info.fc_start_trk > info.last_trk || info.fc_end_trk > info.last_trk)
+		return -1;
+	if (info.fc_start_sec > info.last_sec || info.fc_end_sec > info.last_sec)
+		return -1;
+	if (info.month < 1 || info.month > 12 || info.day < 1 || info.day > 31)
+		return -1;
 
 	uint8_t boot0_sector_id = 1;
 	//  uint8_t boot1_sector_id = 2;
@@ -126,41 +137,12 @@ int flex_format::find_size(util::random_read &io, uint32_t form_factor, const st
 		if (form_factor != floppy_image::FF_UNKNOWN && form_factor != f.form_factor)
 			continue;
 
-		if (f.sector_base_size == 128) {
-			// FLEX 1.0: Look at the system information sector.
-			sysinfo_sector_flex10 info;
-			io.read_at(f.sector_base_size * 2, &info, sizeof(struct sysinfo_sector_flex10), actual);
+		// Check consistency with the sysinfo record sector.
+		if (f.track_count != info.last_trk + 1)
+			continue;
 
-			LOG_FORMATS("FLEX floppy dsk: size %d bytes, %d total sectors, %d remaining bytes, expected form factor %x\n", (uint32_t)size, (uint32_t)size / f.sector_base_size, (uint32_t)size % f.sector_base_size, form_factor);
-
-			// Consistency checks.
-			if (info.fc_start_trk > (f.track_count - 1) || info.fc_end_trk > (f.track_count - 1))
-				return -1;
-			if (info.fc_start_sec > f.sector_count || info.fc_end_sec > f.sector_count)
-				return -1;
-
-		} else {
-			// FLEX 2+: Look at the system information sector.
-			sysinfo_sector info;
-			io.read_at(f.sector_base_size * 2, &info, sizeof(struct sysinfo_sector), actual);
-
-			LOG_FORMATS("FLEX floppy dsk: size %d bytes, %d total sectors, %d remaining bytes, expected form factor %x\n", (uint32_t)size, (uint32_t)size / f.sector_base_size, (uint32_t)size % f.sector_base_size, form_factor);
-
-			// Consistency checks.
-			if (info.fc_start_trk > info.last_trk || info.fc_end_trk > info.last_trk)
-				return -1;
-			if (info.fc_start_sec > info.last_sec || info.fc_end_sec > info.last_sec)
-				return -1;
-			if (info.month < 1 || info.month > 12 || info.day < 1 || info.day > 31)
-				return -1;
-
-			// Check consistency with the sysinfo record sector.
-			if (f.track_count != info.last_trk + 1)
-				continue;
-
-			if (f.sector_count * f.head_count != info.last_sec)
-				continue;
-		}
+		if (f.sector_count * f.head_count != info.last_sec)
+			continue;
 
 		unsigned int format_size = 0;
 		for (int track=0; track < f.track_count; track++) {
@@ -266,319 +248,315 @@ const wd177x_format::format &flex_format::get_track_format(const format &f, int 
 
 
 const flex_format::format flex_format::formats[] = {
-	{ // 0 80.6K 5 1/4 inch single density flex 1.0 format
-		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
-		4000, 18, 35, 1, 128, {}, -1, {1, 4, 7, 10, 13, 16, 2, 5, 8, 11, 14, 17, 3, 6, 9, 12, 15, 18}, 8, 11, 11
-	},
-	{ // 1 87.5K 5 1/4 inch single density
+	{ // 0 87.5K 5 1/4 inch single density
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 35, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 2 87.5K 5 1/4 inch single density, 6800 one boot sector
+	{ // 1 87.5K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 35, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 3 87.5K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 2 87.5K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 35, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 4 100K 5 1/4 inch single density
+	{ // 3 100K 5 1/4 inch single density
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 40, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 5 100K 5 1/4 inch single density, 6800 one boot sector
+	{ // 4 100K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 40, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 6 100K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 5 100K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 40, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 7 200K 5 1/4 inch single density
+	{ // 6 200K 5 1/4 inch single density
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 80, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 8 200K 5 1/4 inch single density, 6800 one boot sector
+	{ // 7 200K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 80, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 9 200K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 8 200K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 80, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 10 175K 5 1/4 inch single density
+	{ // 9 175K 5 1/4 inch single density
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 11 175K 5 1/4 inch single density, 6800 one boot sector
+	{ // 10 175K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 12 175K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 11 175K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 13 200K 5 1/4 inch single density
+	{ // 12 200K 5 1/4 inch single density
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 14 200K 5 1/4 inch single density, 6800 one boot sector
+	{ // 13 200K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 15 200K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 14 200K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 16 400K 5 1/4 inch single density
+	{ // 15 400K 5 1/4 inch single density
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 17 400K 5 1/4 inch single density, 6800 one boot sector
+	{ // 16 400K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 18 400K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 17 400K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 19 155.5K 5 1/4 inch double density (single density track 0)
+	{ // 18 155.5K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 35, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 20 155.5K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 19 155.5K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 35, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 21 155.5K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 20 155.5K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 35, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 22 157.5K 5 1/4 inch double density
+	{ // 21 157.5K 5 1/4 inch double density
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 35, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 23 157.5K 5 1/4 inch double density, 6800 one boot sector
+	{ // 22 157.5K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 35, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 24 157.5K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 23 157.5K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 35, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 25 311K 5 1/4 inch double density (single density track 0)
+	{ // 24 311K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 26 311K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 25 311K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 27 311K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 26 311K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 28 315K 5 1/4 inch double density
+	{ // 27 315K 5 1/4 inch double density
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 29 315K 5 1/4 inch double density, 6800 one boot sector
+	{ // 28 315K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 30 315K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 29 315K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 31 178K 5 1/4 inch double density (single density track 0)
+	{ // 30 178K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 40, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 32 178K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 31 178K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 40, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 33 178K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 32 178K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 40, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 34 180K 5 1/4 inch double density
+	{ // 33 180K 5 1/4 inch double density
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 40, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 35 180K 5 1/4 inch double density, 6800 one boot sector
+	{ // 34 180K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 40, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 36 180K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 35 180K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 40, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 37 356K 5 1/4 inch double density (single density track 0)
+	{ // 36 356K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 38 356K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 37 356K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 39 356K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 38 356K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 40 360K 5 1/4 inch double density
+	{ // 39 360K 5 1/4 inch double density
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 41 360K 5 1/4 inch double density, 6800 one boot sector
+	{ // 40 360K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 42 360K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 41 360K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 43 358K 5 1/4 inch quad density (single density track 0)
+	{ // 42 358K 5 1/4 inch quad density (single density track 0)
 		floppy_image::FF_525, floppy_image::SSQD, floppy_image::MFM,
 		2000, 18, 80, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 44 358K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
+	{ // 43 358K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSQD, floppy_image::MFM,
 		2000, 18, 80, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 45 358K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
+	{ // 44 358K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSQD, floppy_image::MFM,
 		2000, 18, 80, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 46 360K 5 1/4 inch quad density
+	{ // 45 360K 5 1/4 inch quad density
 		floppy_image::FF_525, floppy_image::SSQD, floppy_image::MFM,
 		2000, 18, 80, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 47 360K 5 1/4 inch quad density, 6800 one boot sector
+	{ // 46 360K 5 1/4 inch quad density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSQD, floppy_image::MFM,
 		2000, 18, 80, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 48 360K 5 1/4 inch quad density, 6800 two boot sectors
+	{ // 47 360K 5 1/4 inch quad density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSQD, floppy_image::MFM,
 		2000, 18, 80, 1, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 49 716K 5 1/4 inch quad density (single density track 0)
+	{ // 48 716K 5 1/4 inch quad density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 50 716K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
+	{ // 49 716K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 51 716K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
+	{ // 50 716K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 52 720K 5 1/4 inch quad density
+	{ // 51 720K 5 1/4 inch quad density
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 53 720K 5 1/4 inch quad density, 6800 one boot sector
+	{ // 52 720K 5 1/4 inch quad density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 54 720K 5 1/4 inch quad density, 6800 two boot sectors
+	{ // 53 720K 5 1/4 inch quad density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 55 288.75K 8 inch single density
+	{ // 54 288.75K 8 inch single density
 		floppy_image::FF_8, floppy_image::SSSD, floppy_image::FM,
 		2000, 15, 77, 1, 256, {}, -1, {1, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 56 288.75K 8 inch single density, 6800 one boot sector
+	{ // 55 288.75K 8 inch single density, 6800 one boot sector
 		floppy_image::FF_8, floppy_image::SSSD, floppy_image::FM,
 		2000, 15, 77, 1, 256, {}, -1, {1, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 57 288.75K 8 inch single density, 6800 two boot sectors
+	{ // 56 288.75K 8 inch single density, 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::SSSD, floppy_image::FM,
 		2000, 15, 77, 1, 256, {}, -1, {1, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 58 577.5K 8 inch single density
+	{ // 57 577.5K 8 inch single density
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {1, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 59 577.5K 8 inch single density, 6800 one boot sector
+	{ // 58 577.5K 8 inch single density, 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {1, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 60 577.5K 8 inch single density, 6800 two boot sectors
+	{ // 59 577.5K 8 inch single density, 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {1, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 61 497.75K 8 inch double density (single density track 0)
+	{ // 60 497.75K 8 inch double density (single density track 0)
 		floppy_image::FF_8, floppy_image::SSDD, floppy_image::MFM,
 		1000, 26, 77, 1, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 62 497.75K 8 inch double density (single density track 0), 6800 one boot sector
+	{ // 61 497.75K 8 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_8, floppy_image::SSDD, floppy_image::MFM,
 		1000, 26, 77, 1, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 63 497.75K 8 inch double density (single density track 0), 6800 two boot sectors
+	{ // 62 497.75K 8 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::SSDD, floppy_image::MFM,
 		1000, 26, 77, 1, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 64 500.5K 8 inch double density
+	{ // 63 500.5K 8 inch double density
 		floppy_image::FF_8, floppy_image::SSDD, floppy_image::MFM,
 		1000, 26, 77, 1, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 65 500.5K 8 inch double density, 6800 one boot sector
+	{ // 64 500.5K 8 inch double density, 6800 one boot sector
 		floppy_image::FF_8, floppy_image::SSDD, floppy_image::MFM,
 		1000, 26, 77, 1, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 66 500.5K 8 inch double density, 6800 two boot sectors
+	{ // 65 500.5K 8 inch double density, 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::SSDD, floppy_image::MFM,
 		1000, 26, 77, 1, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 67 995.5K 8 inch double density (single density track 0)
+	{ // 66 995.5K 8 inch double density (single density track 0)
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 68 995.5K 8 inch double density (single density track 0), 6800 one boot sector
+	{ // 67 995.5K 8 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 69 995.5K 8 inch double density (single density track 0), 6800 two boot sectors
+	{ // 68 995.5K 8 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 70 1001K 8 inch double density
+	{ // 69 1001K 8 inch double density
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 71 1001K 8 inch double density, 6800 one boot sector
+	{ // 70 1001K 8 inch double density, 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 72 1001K 8 inch double density, 6800 two boot sectors
+	{ // 71 1001K 8 inch double density, 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {1, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 73 1440K 3 1/2 inch high density (single density track 0)
+	{ // 72 1440K 3 1/2 inch high density (single density track 0)
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {1, 26, 15, 4, 29, 18, 7, 32, 21, 10, 35, 24, 13, 2, 27, 16, 5, 30, 19, 8, 33, 22, 11, 36, 25, 14, 3, 28, 17, 6, 31, 20, 9, 34, 23, 12}, 80, 22, 24
 	},
-	{ // 74 1440K 3 1/2 inch high density (single density track 0), 6800 one boot sector
+	{ // 73 1440K 3 1/2 inch high density (single density track 0), 6800 one boot sector
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {1, 26, 15, 4, 29, 18, 7, 32, 21, 10, 35, 24, 13, 2, 27, 16, 5, 30, 19, 8, 33, 22, 11, 36, 25, 14, 3, 28, 17, 6, 31, 20, 9, 34, 23, 12}, 80, 22, 24
 	},
-	{ // 75 1440K 3 1/2 inch high density (single density track 0), 6800 two boot sectors
+	{ // 74 1440K 3 1/2 inch high density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {1, 26, 15, 4, 29, 18, 7, 32, 21, 10, 35, 24, 13, 2, 27, 16, 5, 30, 19, 8, 33, 22, 11, 36, 25, 14, 3, 28, 17, 6, 31, 20, 9, 34, 23, 12}, 80, 22, 24
 	},
-	{ // 76 1440K 3 1/2 inch high density.
+	{ // 75 1440K 3 1/2 inch high density.
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {1, 26, 15, 4, 29, 18, 7, 32, 21, 10, 35, 24, 13, 2, 27, 16, 5, 30, 19, 8, 33, 22, 11, 36, 25, 14, 3, 28, 17, 6, 31, 20, 9, 34, 23, 12}, 80, 22, 24
 	},
-	{ // 77 1440K 3 1/2 inch high density, 6800 one boot sector
+	{ // 76 1440K 3 1/2 inch high density, 6800 one boot sector
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {1, 26, 15, 4, 29, 18, 7, 32, 21, 10, 35, 24, 13, 2, 27, 16, 5, 30, 19, 8, 33, 22, 11, 36, 25, 14, 3, 28, 17, 6, 31, 20, 9, 34, 23, 12}, 80, 22, 24
 	},
-	{ // 78 1440K 3 1/2 inch high density, 6800 two boot sectors
+	{ // 77 1440K 3 1/2 inch high density, 6800 two boot sectors
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {1, 26, 15, 4, 29, 18, 7, 32, 21, 10, 35, 24, 13, 2, 27, 16, 5, 30, 19, 8, 33, 22, 11, 36, 25, 14, 3, 28, 17, 6, 31, 20, 9, 34, 23, 12}, 80, 22, 24
 	},
@@ -586,245 +564,243 @@ const flex_format::format flex_format::formats[] = {
 };
 
 const flex_format::format flex_format::formats_head1[] = {
-	{ // 0 80.6K 5 1/4 inch single density flex 1.0 format
+	{ // 0 87.5K 5 1/4 inch single density
 	},
-	{ // 1 87.5K 5 1/4 inch single density
+	{ // 1 87.5K 5 1/4 inch single density, 6800 one boot sector
 	},
-	{ // 2 87.5K 5 1/4 inch single density, 6800 one boot sector
+	{ // 2 87.5K 5 1/4 inch single density, 6800 two boot sectors
 	},
-	{ // 3 87.5K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 3 100K 5 1/4 inch single density
 	},
-	{ // 4 100K 5 1/4 inch single density
+	{ // 4 100K 5 1/4 inch single density, 6800 one boot sector
 	},
-	{ // 5 100K 5 1/4 inch single density, 6800 one boot sector
+	{ // 5 100K 5 1/4 inch single density, 6800 two boot sectors
 	},
-	{ // 6 100K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 6 200K 5 1/4 inch single density
 	},
-	{ // 7 200K 5 1/4 inch single density
+	{ // 7 200K 5 1/4 inch single density, 6800 one boot sector
 	},
-	{ // 8 200K 5 1/4 inch single density, 6800 one boot sector
+	{ // 8 200K 5 1/4 inch single density, 6800 two boot sectors
 	},
-	{ // 9 200K 5 1/4 inch single density, 6800 two boot sectors
-	},
-	{ // 10 175K 5 1/4 inch single density
+	{ // 9 175K 5 1/4 inch single density
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 11 175K 5 1/4 inch single density, 6800 one boot sector
+	{ // 10 175K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 12 175K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 11 175K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 13 200K 5 1/4 inch single density
+	{ // 12 200K 5 1/4 inch single density
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 14 200K 5 1/4 inch single density, 6800 one boot sector
+	{ // 13 200K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 15 200K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 14 200K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 16 400K 5 1/4 inch single density
+	{ // 15 400K 5 1/4 inch single density
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 17 400K 5 1/4 inch single density, 6800 one boot sector
+	{ // 16 400K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 18 400K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 17 400K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 19 155.5K 5 1/4 inch double density (single density track 0)
+	{ // 18 155.5K 5 1/4 inch double density (single density track 0)
 	},
-	{ // 20 155.5K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 19 155.5K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 	},
-	{ // 21 155.5K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 20 155.5K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 	},
-	{ // 22 157.5K 5 1/4 inch double density
+	{ // 21 157.5K 5 1/4 inch double density
 	},
-	{ // 23 157.5K 5 1/4 inch double density, 6800 one boot sector
+	{ // 22 157.5K 5 1/4 inch double density, 6800 one boot sector
 	},
-	{ // 24 157.5K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 23 157.5K 5 1/4 inch double density, 6800 two boot sectors
 	},
-	{ // 25 311K 5 1/4 inch double density (single density track 0)
+	{ // 24 311K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 26 311K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 25 311K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 27 311K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 26 311K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 28 315K 5 1/4 inch double density
+	{ // 27 315K 5 1/4 inch double density
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 29 315K 5 1/4 inch double density, 6800 one boot sector
+	{ // 28 315K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 30 315K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 29 315K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 31 178K 5 1/4 inch double density (single density track 0)
+	{ // 30 178K 5 1/4 inch double density (single density track 0)
 	},
-	{ // 32 178K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 31 178K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 	},
-	{ // 33 178K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 32 178K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 	},
-	{ // 34 180K 5 1/4 inch double density
+	{ // 33 180K 5 1/4 inch double density
 	},
-	{ // 35 180K 5 1/4 inch double density, 6800 one boot sector
+	{ // 34 180K 5 1/4 inch double density, 6800 one boot sector
 	},
-	{ // 36 180K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 35 180K 5 1/4 inch double density, 6800 two boot sectors
 	},
-	{ // 37 356K 5 1/4 inch double density (single density track 0)
+	{ // 36 356K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 38 356K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 37 356K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 39 356K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 38 356K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 40 360K 5 1/4 inch double density
+	{ // 39 360K 5 1/4 inch double density
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 41 360K 5 1/4 inch double density, 6800 one boot sector
+	{ // 40 360K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 42 360K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 41 360K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 43 358K 5 1/4 inch quad density (single density track 0)
+	{ // 42 358K 5 1/4 inch quad density (single density track 0)
 	},
-	{ // 44 358K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
+	{ // 43 358K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
 	},
-	{ // 45 358K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
+	{ // 44 358K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
 	},
-	{ // 46 360K 5 1/4 inch quad density
+	{ // 45 360K 5 1/4 inch quad density
 	},
-	{ // 47 360K 5 1/4 inch quad density, 6800 one boot sector
+	{ // 46 360K 5 1/4 inch quad density, 6800 one boot sector
 	},
-	{ // 48 360K 5 1/4 inch quad density, 6800 two boot sectors
+	{ // 47 360K 5 1/4 inch quad density, 6800 two boot sectors
 	},
-	{ // 49 716K 5 1/4 inch quad density (single density track 0)
+	{ // 48 716K 5 1/4 inch quad density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 50 716K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
+	{ // 49 716K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 51 716K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
+	{ // 50 716K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 52 720K 5 1/4 inch quad density
+	{ // 51 720K 5 1/4 inch quad density
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 53 720K 5 1/4 inch quad density, 6800 one boot sector
+	{ // 52 720K 5 1/4 inch quad density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 54 720K 5 1/4 inch quad density, 6800 two boot sectors
+	{ // 53 720K 5 1/4 inch quad density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 55 288.75K 8 inch single density
+	{ // 54 288.75K 8 inch single density
 	},
-	{ // 56 288.75K 8 inch single density, 6800 one boot sector
+	{ // 55 288.75K 8 inch single density, 6800 one boot sector
 	},
-	{ // 57 288.75K 8 inch single density, 6800 two boot sectors
+	{ // 56 288.75K 8 inch single density, 6800 two boot sectors
 	},
-	{ // 58 577.5K 8 inch single density
+	{ // 57 577.5K 8 inch single density
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {16, 18, 20, 22, 24, 26, 28, 30, 17, 19, 21, 23, 25, 27, 29}, 40, 12, 12
 	},
-	{ // 59 577.5K 8 inch single density, 6800 one boot sector
+	{ // 58 577.5K 8 inch single density, 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {16, 18, 20, 22, 24, 26, 28, 30, 17, 19, 21, 23, 25, 27, 29}, 40, 12, 12
 	},
-	{ // 60 577.5K 8 inch single density, 6800 two boot sectors
+	{ // 59 577.5K 8 inch single density, 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {16, 18, 20, 22, 24, 26, 28, 30, 17, 19, 21, 23, 25, 27, 29}, 40, 12, 12
 	},
-	{ // 61 497.75K 8 inch single density (single density track 0)
+	{ // 60 497.75K 8 inch single density (single density track 0)
 	},
-	{ // 62 497.75K 8 inch single density (single density track 0), 6800 one boot sector
+	{ // 61 497.75K 8 inch single density (single density track 0), 6800 one boot sector
 	},
-	{ // 63 497.75K 8 inch single density (single density track 0), 6800 two boot sectors
+	{ // 62 497.75K 8 inch single density (single density track 0), 6800 two boot sectors
 	},
-	{ // 64 500.5K 8 inch double density
+	{ // 63 500.5K 8 inch double density
 	},
-	{ // 65 500.5K 8 inch double density, 6800 one boot sector
+	{ // 64 500.5K 8 inch double density, 6800 one boot sector
 	},
-	{ // 66 500.5K 8 inch double density, 6800 two boot sectors
+	{ // 65 500.5K 8 inch double density, 6800 two boot sectors
 	},
-	{ // 67 995.5K 8 inch double density (single density track 0)
+	{ // 66 995.5K 8 inch double density (single density track 0)
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {27, 46, 39, 32, 51, 44, 37, 30, 49, 42, 35, 28, 47, 40, 33, 52, 45, 38, 31, 50, 43, 36, 29, 48, 41, 34}, 80, 22, 24
 	},
-	{ // 68 995.5K 8 inch double density (single density track 0), 6800 one boot sector
+	{ // 67 995.5K 8 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {27, 46, 39, 32, 51, 44, 37, 30, 49, 42, 35, 28, 47, 40, 33, 52, 45, 38, 31, 50, 43, 36, 29, 48, 41, 34}, 80, 22, 24
 	},
-	{ // 69 995.5K 8 inch double density (single density track 0), 6800 two boot sectors
+	{ // 68 995.5K 8 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {27, 46, 39, 32, 51, 44, 37, 30, 49, 42, 35, 28, 47, 40, 33, 52, 45, 38, 31, 50, 43, 36, 29, 48, 41, 34}, 80, 22, 24
 	},
-	{ // 70 1001K 8 inch double density
+	{ // 69 1001K 8 inch double density
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {27, 46, 39, 32, 51, 44, 37, 30, 49, 42, 35, 28, 47, 40, 33, 52, 45, 38, 31, 50, 43, 36, 29, 48, 41, 34}, 80, 22, 24
 	},
-	{ // 71 1001K 8 inch double density, 6800 one boot sector
+	{ // 70 1001K 8 inch double density, 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {27, 46, 39, 32, 51, 44, 37, 30, 49, 42, 35, 28, 47, 40, 33, 52, 45, 38, 31, 50, 43, 36, 29, 48, 41, 34}, 80, 22, 24
 	},
-	{ // 72 1001K 8 inch double density, 6800 two boot sectors
+	{ // 71 1001K 8 inch double density, 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {27, 46, 39, 32, 51, 44, 37, 30, 49, 42, 35, 28, 47, 40, 33, 52, 45, 38, 31, 50, 43, 36, 29, 48, 41, 34}, 80, 22, 24
 	},
-	{ // 73 1440K 3 1/2 inch high density (single density track 0)
+	{ // 72 1440K 3 1/2 inch high density (single density track 0)
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {37, 62, 51, 40, 65, 54, 43, 68, 57, 46, 71, 60, 49, 38, 63, 52, 41, 66, 55, 44, 69, 58, 47, 72, 61, 50, 39, 64, 53, 42, 67, 56, 45, 70, 59, 48}, 80, 22, 24
 	},
-	{ // 74 1440K 3 1/2 inch high density (single density track 0), 6800 one boot sector
+	{ // 73 1440K 3 1/2 inch high density (single density track 0), 6800 one boot sector
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {37, 62, 51, 40, 65, 54, 43, 68, 57, 46, 71, 60, 49, 38, 63, 52, 41, 66, 55, 44, 69, 58, 47, 72, 61, 50, 39, 64, 53, 42, 67, 56, 45, 70, 59, 48}, 80, 22, 24
 	},
-	{ // 75 1440K 3 1/2 inch high density (single density track 0), 6800 two boot sectors
+	{ // 74 1440K 3 1/2 inch high density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {37, 62, 51, 40, 65, 54, 43, 68, 57, 46, 71, 60, 49, 38, 63, 52, 41, 66, 55, 44, 69, 58, 47, 72, 61, 50, 39, 64, 53, 42, 67, 56, 45, 70, 59, 48}, 80, 22, 24
 	},
-	{ // 76 1440K 3 1/2 inch high density
+	{ // 75 1440K 3 1/2 inch high density
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {37, 62, 51, 40, 65, 54, 43, 68, 57, 46, 71, 60, 49, 38, 63, 52, 41, 66, 55, 44, 69, 58, 47, 72, 61, 50, 39, 64, 53, 42, 67, 56, 45, 70, 59, 48}, 80, 22, 24
 	},
-	{ // 77 1440K 3 1/2 inch high density, 6800 one boot sector
+	{ // 76 1440K 3 1/2 inch high density, 6800 one boot sector
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {37, 62, 51, 40, 65, 54, 43, 68, 57, 46, 71, 60, 49, 38, 63, 52, 41, 66, 55, 44, 69, 58, 47, 72, 61, 50, 39, 64, 53, 42, 67, 56, 45, 70, 59, 48}, 80, 22, 24
 	},
-	{ // 78 1440K 3 1/2 inch high density, 6800 two boot sectors
+	{ // 77 1440K 3 1/2 inch high density, 6800 two boot sectors
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {37, 62, 51, 40, 65, 54, 43, 68, 57, 46, 71, 60, 49, 38, 63, 52, 41, 66, 55, 44, 69, 58, 47, 72, 61, 50, 39, 64, 53, 42, 67, 56, 45, 70, 59, 48}, 80, 22, 24
 	},
@@ -832,281 +808,277 @@ const flex_format::format flex_format::formats_head1[] = {
 };
 
 const flex_format::format flex_format::formats_track0[] = {
-	{ // 0 80.6K 5 1/4 inch single density flex 1.0 format
-		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
-		4000, 18, 35, 1, 128, {}, -1, {0, 4, 7, 10, 13, 16, 1, 5, 8, 11, 14, 17, 3, 6, 9, 12, 15, 18}, 8, 11, 11
+	{ // 0 87.5K 5 1/4 inch single density
 	},
-	{ // 1 87.5K 5 1/4 inch single density
-	},
-	{ // 2 87.5K 5 1/4 inch single density, 6800 one boot sector
+	{ // 1 87.5K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 35, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 3 87.5K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 2 87.5K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 35, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 4 100K 5 1/4 inch single density
+	{ // 3 100K 5 1/4 inch single density
 	},
-	{ // 5 100K 5 1/4 inch single density, 6800 one boot sector
+	{ // 4 100K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 40, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 6 100K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 5 100K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 40, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 7 200K 5 1/4 inch single density
+	{ // 6 200K 5 1/4 inch single density
 	},
-	{ // 8 200K 5 1/4 inch single density, 6800 one boot sector
+	{ // 7 200K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 80, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 9 200K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 8 200K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 80, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 10 175K 5 1/4 inch single density
+	{ // 9 175K 5 1/4 inch single density
 	},
-	{ // 11 175K 5 1/4 inch single density, 6800 one boot sector
+	{ // 10 175K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 12 175K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 11 175K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 13 200K 5 1/4 inch single density
+	{ // 12 200K 5 1/4 inch single density
 	},
-	{ // 14 200K 5 1/4 inch single densityo, 6800 one boot sector
+	{ // 13 200K 5 1/4 inch single densityo, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 15 200K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 14 200K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 16 400K 5 1/4 inch single density
+	{ // 15 400K 5 1/4 inch single density
 	},
-	{ // 17 400K 5 1/4 inch single density, 6800 one boot sector
+	{ // 16 400K 5 1/4 inch single density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 18 400K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 17 400K 5 1/4 inch single density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 19 155.5K 5 1/4 inch double density (single density track 0)
+	{ // 18 155.5K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 35, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 20 155.5K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 19 155.5K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 35, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 21 155.5K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 20 155.5K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 35, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 22 157.5K 5 1/4 inch double density
+	{ // 21 157.5K 5 1/4 inch double density
 	},
-	{ // 23 157.5K 5 1/4 inch double density, 6800 one boot sector
+	{ // 22 157.5K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 35, 1, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 24 157.5K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 23 157.5K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 35, 1, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 1, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 25 311K 5 1/4 inch double density (single density track 0)
+	{ // 24 311K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 26 311K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 25 311K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 27 311K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 26 311K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 28 315K 5 1/4 inch double density
+	{ // 27 315K 5 1/4 inch double density
 	},
-	{ // 29 315K 5 1/4 inch double density, 6800 one boot sector
+	{ // 28 315K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 30 315K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 29 315K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 35, 2, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 1, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 31 178K 5 1/4 inch double density (single density track 0)
+	{ // 30 178K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 40, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 32 178K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 31 178K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 40, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 33 178K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 32 178K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 40, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 34 180K 5 1/4 inch double density
+	{ // 33 180K 5 1/4 inch double density
 	},
-	{ // 35 180K 5 1/4 inch double density, 6800 one boot sector
+	{ // 34 180K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 40, 1, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 36 180K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 35 180K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSDD, floppy_image::MFM,
 		2000, 18, 40, 1, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 1, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 37 356K 5 1/4 inch double density (single density track 0)
+	{ // 36 356K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 38 356K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 37 356K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 39 356K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 38 356K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 40 360K 5 1/4 inch double density
+	{ // 39 360K 5 1/4 inch double density
 	},
-	{ // 41 360K 5 1/4 inch double density, 6800 one boot sector
+	{ // 40 360K 5 1/4 inch double density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 42 360K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 41 360K 5 1/4 inch double density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSDD, floppy_image::MFM,
 		2000, 18, 40, 2, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 1, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 43 358K 5 1/4 inch quad density (single density track 0)
+	{ // 42 358K 5 1/4 inch quad density (single density track 0)
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 80, 1, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 44 358K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
+	{ // 43 358K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 80, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 45 358K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
+	{ // 44 358K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSSD, floppy_image::FM,
 		4000, 10, 80, 1, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 46 360K 5 1/4 inch quad density
+	{ // 45 360K 5 1/4 inch quad density
 	},
-	{ // 47 360K 5 1/4 inch quad density, 6800 one boot sector
+	{ // 46 360K 5 1/4 inch quad density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::SSQD, floppy_image::MFM,
 		2000, 18, 80, 1, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 48 360K 5 1/4 inch quad density, 6800 two boot sectors
+	{ // 47 360K 5 1/4 inch quad density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::SSQD, floppy_image::MFM,
 		2000, 18, 80, 1, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 1, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 49 716K 5 1/4 inch quad density (single density track 0)
+	{ // 48 716K 5 1/4 inch quad density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {1, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 50 716K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
+	{ // 49 716K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 2, 5, 8}, 40, 16, 11
 	},
-	{ // 51 716K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
+	{ // 50 716K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {0, 4, 7, 10, 3, 6, 9, 1, 5, 8}, 40, 16, 11
 	},
-	{ // 52 720K 5 1/4 inch quad density
+	{ // 51 720K 5 1/4 inch quad density
 	},
-	{ // 53 720K 5 1/4 inch quad density, 6800 one boot sector
+	{ // 52 720K 5 1/4 inch quad density, 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 54 720K 5 1/4 inch quad density, 6800 two boot sectors
+	{ // 53 720K 5 1/4 inch quad density, 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSQD, floppy_image::MFM,
 		2000, 18, 80, 2, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 1, 7, 12, 17, 4, 9, 14}, 80, 22, 24
 	},
-	{ // 55 288.75K 8 inch single density
+	{ // 54 288.75K 8 inch single density
 	},
-	{ // 56 288.75K 8 inch single density, 6800 one boot sector
+	{ // 55 288.75K 8 inch single density, 6800 one boot sector
 	},
-	{ // 57 288.75K 8 inch single density, 6800 two boot sectors
+	{ // 56 288.75K 8 inch single density, 6800 two boot sectors
 	},
-	{ // 58 577.5K 8 inch single density
+	{ // 57 577.5K 8 inch single density
 	},
-	{ // 59 577.5K 8 inch single density, 6800 one boot sector
+	{ // 58 577.5K 8 inch single density, 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {0, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 60 577.5K 8 inch single density, 6800 two boot sectors
+	{ // 59 577.5K 8 inch single density, 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {0, 3, 5, 7, 9, 11, 13, 15, 1, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 61 497.75K 8 inch double density (single density track 0)
+	{ // 60 497.75K 8 inch double density (single density track 0)
 		floppy_image::FF_8, floppy_image::SSSD, floppy_image::FM,
 		2000, 15, 77, 1, 256, {}, -1, {1, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 62 497.75K 8 inch double density (single density track 0), 6800 one boot sector
+	{ // 61 497.75K 8 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_8, floppy_image::SSSD, floppy_image::FM,
 		2000, 15, 77, 1, 256, {}, -1, {0, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 63 497.75K 8 inch double density (single density track 0), 6800 two boot sectors
+	{ // 62 497.75K 8 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::SSSD, floppy_image::FM,
 		2000, 15, 77, 1, 256, {}, -1, {0, 3, 5, 7, 9, 11, 13, 15, 1, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 64 500.5K 8 inch double density
+	{ // 63 500.5K 8 inch double density
 	},
-	{ // 65 500.5K 8 inch double density, 6800 one boot sector
+	{ // 64 500.5K 8 inch double density, 6800 one boot sector
 		floppy_image::FF_8, floppy_image::SSDD, floppy_image::MFM,
 		1000, 26, 77, 1, 256, {}, -1, {0, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 66 500.5K 8 inch double density, 6800 two boot sectors
+	{ // 65 500.5K 8 inch double density, 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::SSDD, floppy_image::MFM,
 		1000, 26, 77, 1, 256, {}, -1, {0, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 1, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 67 995.5K 8 inch double density (single density track 0)
+	{ // 66 995.5K 8 inch double density (single density track 0)
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {1, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 68 995.5K 8 inch double density (single density track 0), 6800 one boot sector
+	{ // 67 995.5K 8 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {0, 3, 5, 7, 9, 11, 13, 15, 2, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 69 995.5K 8 inch double density (single density track 0), 6800 two boot sectors
+	{ // 68 995.5K 8 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {0, 3, 5, 7, 9, 11, 13, 15, 1, 4, 6, 8, 10, 12, 14}, 40, 12, 12
 	},
-	{ // 70 1001K 8 inch double density
+	{ // 69 1001K 8 inch double density
 	},
-	{ // 71 1001K 8 inch double density, 6800 one boot sector
+	{ // 70 1001K 8 inch double density, 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {0, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 2, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 72 1001K 8 inch double density, 6800 two boot sectors
+	{ // 71 1001K 8 inch double density, 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSDD, floppy_image::MFM,
 		1000, 26, 77, 2, 256, {}, -1, {0, 20, 13, 6, 25, 18, 11, 4, 23, 16, 9, 1, 21, 14, 7, 26, 19, 12, 5, 24, 17, 10, 3, 22, 15, 8}, 80, 22, 24
 	},
-	{ // 73 1440K 3 1/2 inch high density (single density track 0)
+	{ // 72 1440K 3 1/2 inch high density (single density track 0)
 		floppy_image::FF_35,  floppy_image::DSSD, floppy_image::FM,
 		2000, 18, 80, 2, 256, {}, -1, {1, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 40, 12, 12
 	},
-	{ // 74 1440K 3 1/2 inch high density (single density track 0), 6800 one boot sector
+	{ // 73 1440K 3 1/2 inch high density (single density track 0), 6800 one boot sector
 		floppy_image::FF_35,  floppy_image::DSSD, floppy_image::FM,
 		2000, 18, 80, 2, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 2, 7, 12, 17, 4, 9, 14}, 40, 12, 12
 	},
-	{ // 75 1440K 3 1/2 inch high density (single density track 0), 6800 two boot sectors
+	{ // 74 1440K 3 1/2 inch high density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_35,  floppy_image::DSSD, floppy_image::FM,
 		2000, 18, 80, 2, 256, {}, -1, {0, 6, 11, 16, 3, 8, 13, 18, 5, 10, 15, 1, 7, 12, 17, 4, 9, 14}, 40, 12, 12
 	},
-	{ // 76 1440K 3 1/2 inch high density
+	{ // 75 1440K 3 1/2 inch high density
 	},
-	{ // 77 1440K 3 1/2 inch high density, 6800 one boot sector
+	{ // 76 1440K 3 1/2 inch high density, 6800 one boot sector
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {0, 26, 15, 4, 29, 18, 7, 32, 21, 10, 35, 24, 13, 2, 27, 16, 5, 30, 19, 8, 33, 22, 11, 36, 25, 14, 3, 28, 17, 6, 31, 20, 9, 34, 23, 12}, 80, 22, 24
 	},
-	{ // 78 1440K 3 1/2 inch high density, 6800 two boot sectors
+	{ // 77 1440K 3 1/2 inch high density, 6800 two boot sectors
 		floppy_image::FF_35,  floppy_image::DSHD, floppy_image::MFM,
 		1000, 36, 80, 2, 256, {}, -1, {0, 26, 15, 4, 29, 18, 7, 32, 21, 10, 35, 24, 13, 1, 27, 16, 5, 30, 19, 8, 33, 22, 11, 36, 25, 14, 3, 28, 17, 6, 31, 20, 9, 34, 23, 12}, 80, 22, 24
 	},
@@ -1114,193 +1086,191 @@ const flex_format::format flex_format::formats_track0[] = {
 };
 
 const flex_format::format flex_format::formats_head1_track0[] = {
-	{ // 0 80.6K 5 1/4 inch single density flex 1.0 format
+	{ // 0 87.5K 5 1/4 inch single density
 	},
-	{ // 1 87.5K 5 1/4 inch single density
+	{ // 1 87.5K 5 1/4 inch single density, 6800 one boot sector
 	},
-	{ // 2 87.5K 5 1/4 inch single density, 6800 one boot sector
+	{ // 2 87.5K 5 1/4 inch single density, 6800 two boot sectors
 	},
-	{ // 3 87.5K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 3 100K 5 1/4 inch single density
 	},
-	{ // 4 100K 5 1/4 inch single density
+	{ // 4 100K 5 1/4 inch single density, 6800 one boot sector
 	},
-	{ // 5 100K 5 1/4 inch single density, 6800 one boot sector
+	{ // 5 100K 5 1/4 inch single density, 6800 two boot sectors
 	},
-	{ // 6 100K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 6 200K 5 1/4 inch single density
 	},
-	{ // 7 200K 5 1/4 inch single density
+	{ // 7 200K 5 1/4 inch single density, 6800 one boot sector
 	},
-	{ // 8 200K 5 1/4 inch single density, 6800 one boot sector
+	{ // 8 200K 5 1/4 inch single density, 6800 two boot sectors
 	},
-	{ // 9 200K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 9 175K 5 1/4 inch single density
 	},
-	{ // 10 175K 5 1/4 inch single density
+	{ // 10 175K 5 1/4 inch single density, 6800 one boot sector
 	},
-	{ // 11 175K 5 1/4 inch single density, 6800 one boot sector
+	{ // 11 175K 5 1/4 inch single density, 6800 two boot sectors
 	},
-	{ // 12 175K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 12 200K 5 1/4 inch single density
 	},
-	{ // 13 200K 5 1/4 inch single density
+	{ // 13 200K 5 1/4 inch single density, 6800 one boot sector
 	},
-	{ // 14 200K 5 1/4 inch single density, 6800 one boot sector
+	{ // 14 200K 5 1/4 inch single density, 6800 two boot sectors
 	},
-	{ // 15 200K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 15 400K 5 1/4 inch single density
 	},
-	{ // 16 400K 5 1/4 inch single density
+	{ // 16 400K 5 1/4 inch single density, 6800 one boot sector
 	},
-	{ // 17 400K 5 1/4 inch single density, 6800 one boot sector
+	{ // 17 400K 5 1/4 inch single density, 6800 two boot sectors
 	},
-	{ // 18 400K 5 1/4 inch single density, 6800 two boot sectors
+	{ // 18 155.5K 5 1/4 inch double density (single density track 0)
 	},
-	{ // 19 155.5K 5 1/4 inch double density (single density track 0)
+	{ // 19 155.5K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 	},
-	{ // 20 155.5K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 20 155.5K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 	},
-	{ // 21 155.5K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 21 157.5K 5 1/4 inch double density
 	},
 	{ // 22 157.5K 5 1/4 inch double density
 	},
 	{ // 23 157.5K 5 1/4 inch double density
 	},
-	{ // 24 157.5K 5 1/4 inch double density
-	},
-	{ // 25 311K 5 1/4 inch double density (single density track 0)
+	{ // 24 311K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 26 311K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 25 311K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 27 311K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 26 311K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 35, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 28 315K 5 1/4 inch double density
+	{ // 27 315K 5 1/4 inch double density
 	},
-	{ // 29 315K 5 1/4 inch double density, 6800 one boot sector
+	{ // 28 315K 5 1/4 inch double density, 6800 one boot sector
 	},
-	{ // 30 315K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 29 315K 5 1/4 inch double density, 6800 two boot sectors
 	},
-	{ // 31 178K 5 1/4 inch double density (single density track 0)
+	{ // 30 178K 5 1/4 inch double density (single density track 0)
 	},
-	{ // 32 178K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 31 178K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 	},
-	{ // 33 178K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 32 178K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 	},
-	{ // 34 180K 5 1/4 inch double density
+	{ // 33 180K 5 1/4 inch double density
 	},
-	{ // 35 180K 5 1/4 inch double density, 6800 one boot sector
+	{ // 34 180K 5 1/4 inch double density, 6800 one boot sector
 	},
-	{ // 36 180K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 35 180K 5 1/4 inch double density, 6800 two boot sectors
 	},
-	{ // 37 356K 5 1/4 inch double density (single density track 0)
+	{ // 36 356K 5 1/4 inch double density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 38 356K 5 1/4 inch double density (single density track 0), 6800 one boot sector
+	{ // 37 356K 5 1/4 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 39 356K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
+	{ // 38 356K 5 1/4 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 40, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 40 360K 5 1/4 inch double density
+	{ // 39 360K 5 1/4 inch double density
 	},
-	{ // 41 360K 5 1/4 inch double density, 6800 one boot sector
+	{ // 40 360K 5 1/4 inch double density, 6800 one boot sector
 	},
-	{ // 42 360K 5 1/4 inch double density, 6800 two boot sectors
+	{ // 41 360K 5 1/4 inch double density, 6800 two boot sectors
 	},
-	{ // 43 358K 5 1/4 inch quad density (single density track 0)
+	{ // 42 358K 5 1/4 inch quad density (single density track 0)
 	},
-	{ // 44 358K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
+	{ // 43 358K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
 	},
-	{ // 45 358K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
+	{ // 44 358K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
 	},
-	{ // 46 360K 5 1/4 inch quad density
+	{ // 45 360K 5 1/4 inch quad density
 	},
-	{ // 47 360K 5 1/4 inch quad density, 6800 one boot sector
+	{ // 46 360K 5 1/4 inch quad density, 6800 one boot sector
 	},
-	{ // 48 360K 5 1/4 inch quad density, 6800 two boot sectors
+	{ // 47 360K 5 1/4 inch quad density, 6800 two boot sectors
 	},
-	{ // 49 716K 5 1/4 inch quad density (single density track 0)
+	{ // 48 716K 5 1/4 inch quad density (single density track 0)
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 50 716K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
+	{ // 49 716K 5 1/4 inch quad density (single density track 0), 6800 one boot sector
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 51 716K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
+	{ // 50 716K 5 1/4 inch quad density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_525, floppy_image::DSSD, floppy_image::FM,
 		4000, 10, 80, 2, 256, {}, -1, {11, 14, 17, 20, 13, 16, 19, 12, 15, 18}, 40, 16, 11
 	},
-	{ // 52 720K 5 1/4 inch quad density
+	{ // 51 720K 5 1/4 inch quad density
 	},
-	{ // 53 720K 5 1/4 inch quad density, 6800 one boot sector
+	{ // 52 720K 5 1/4 inch quad density, 6800 one boot sector
 	},
-	{ // 54 720K 5 1/4 inch quad density, 6800 two boot sectors
+	{ // 53 720K 5 1/4 inch quad density, 6800 two boot sectors
 	},
-	{ // 55 288.75K 8 inch single density
+	{ // 54 288.75K 8 inch single density
 	},
-	{ // 56 288.75K 8 inch single density, 6800 one boot sector
+	{ // 55 288.75K 8 inch single density, 6800 one boot sector
 	},
-	{ // 57 288.75K 8 inch single density, 6800 two boot sectors
+	{ // 56 288.75K 8 inch single density, 6800 two boot sectors
 	},
-	{ // 58 577.5K 8 inch single density
+	{ // 57 577.5K 8 inch single density
 	},
-	{ // 59 577.5K 8 inch single density, 6800 one boot sector
+	{ // 58 577.5K 8 inch single density, 6800 one boot sector
 	},
-	{ // 60 577.5K 8 inch single density, 6800 two boot sectors
+	{ // 59 577.5K 8 inch single density, 6800 two boot sectors
 	},
-	{ // 61 497.75K 8 inch double density (single density track 0)
+	{ // 60 497.75K 8 inch double density (single density track 0)
 	},
-	{ // 62 497.75K 8 inch double density (single density track 0), 6800 one boot sector
+	{ // 61 497.75K 8 inch double density (single density track 0), 6800 one boot sector
 	},
-	{ // 63 497.75K 8 inch double density (single density track 0), 6800 two boot sectors
+	{ // 62 497.75K 8 inch double density (single density track 0), 6800 two boot sectors
 	},
-	{ // 64 500.5K 8 inch double density
+	{ // 63 500.5K 8 inch double density
 	},
-	{ // 65 500.5K 8 inch double density, 6800 one boot sector
+	{ // 64 500.5K 8 inch double density, 6800 one boot sector
 	},
-	{ // 66 500.5K 8 inch double density, 6800 two boot sectors
+	{ // 65 500.5K 8 inch double density, 6800 two boot sectors
 	},
-	{ // 67 995.5K 8 inch double density (single density track 0)
+	{ // 66 995.5K 8 inch double density (single density track 0)
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {16, 18, 20, 22, 24, 26, 28, 30, 17, 19, 21, 23, 25, 27, 29}, 40, 12, 12
 	},
-	{ // 68 995.5K 8 inch double density (single density track 0), 6800 one boot sector
+	{ // 67 995.5K 8 inch double density (single density track 0), 6800 one boot sector
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {16, 18, 20, 22, 24, 26, 28, 30, 17, 19, 21, 23, 25, 27, 29}, 40, 12, 12
 	},
-	{ // 69 995.5K 8 inch double density (single density track 0), 6800 two boot sectors
+	{ // 68 995.5K 8 inch double density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_8, floppy_image::DSSD, floppy_image::FM,
 		2000, 15, 77, 2, 256, {}, -1, {16, 18, 20, 22, 24, 26, 28, 30, 17, 19, 21, 23, 25, 27, 29}, 40, 12, 12
 	},
-	{ // 70 1001K 8 inch double density
+	{ // 69 1001K 8 inch double density
 	},
-	{ // 71 1001K 8 inch double density, 6800 one boot sector
+	{ // 70 1001K 8 inch double density, 6800 one boot sector
 	},
-	{ // 72 1001K 8 inch double density, 6800 two boot sectors
+	{ // 71 1001K 8 inch double density, 6800 two boot sectors
 	},
-	{ // 73 1440K 3 1/2 inch high density (single density track 0)
+	{ // 72 1440K 3 1/2 inch high density (single density track 0)
 		floppy_image::FF_35,  floppy_image::DSSD, floppy_image::FM,
 		2000, 18, 80, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 74 1440K 3 1/2 inch high density (single density track 0), 6800 one boot sector
+	{ // 73 1440K 3 1/2 inch high density (single density track 0), 6800 one boot sector
 		floppy_image::FF_35,  floppy_image::DSSD, floppy_image::FM,
 		2000, 18, 80, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 75 1440K 3 1/2 inch high density (single density track 0), 6800 two boot sectors
+	{ // 74 1440K 3 1/2 inch high density (single density track 0), 6800 two boot sectors
 		floppy_image::FF_35,  floppy_image::DSSD, floppy_image::FM,
 		2000, 18, 80, 2, 256, {}, -1, {19, 24, 29, 34, 21, 26, 31, 36, 23, 28, 33, 20, 25, 30, 35, 22, 27, 32}, 80, 22, 24
 	},
-	{ // 76 1440K 3 1/2 inch high density
+	{ // 75 1440K 3 1/2 inch high density
 	},
-	{ // 77 1440K 3 1/2 inch high density, 6800 one boot sector
+	{ // 76 1440K 3 1/2 inch high density, 6800 one boot sector
 	},
-	{ // 78 1440K 3 1/2 inch high density, 6800 two boot sectors
+	{ // 77 1440K 3 1/2 inch high density, 6800 two boot sectors
 	},
 	{}
 };

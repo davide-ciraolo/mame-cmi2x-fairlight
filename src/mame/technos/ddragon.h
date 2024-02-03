@@ -5,8 +5,8 @@
     Double Dragon & Double Dragon II (but also China Gate)
 
 *************************************************************************/
-#ifndef MAME_TECHNOS_DDRAGON_H
-#define MAME_TECHNOS_DDRAGON_H
+#ifndef MAME_INCLUDES_DDRAGON_H
+#define MAME_INCLUDES_DDRAGON_H
 
 #pragma once
 
@@ -15,7 +15,6 @@
 #include "machine/gen_latch.h"
 #include "machine/timer.h"
 #include "sound/msm5205.h"
-
 #include "emupal.h"
 #include "screen.h"
 #include "tilemap.h"
@@ -55,7 +54,7 @@ public:
 	void init_ddragon();
 	void init_ddragon6809();
 
-	int subcpu_bus_free_r();
+	DECLARE_READ_LINE_MEMBER(subcpu_bus_free_r);
 
 protected:
 	virtual void machine_start() override;
@@ -136,8 +135,8 @@ private:
 	void dd_adpcm_w(offs_t offset, uint8_t data);
 	uint8_t dd_adpcm_status_r();
 	void ddragonba_port_w(uint8_t data);
-	void dd_adpcm_int_1(int state);
-	void dd_adpcm_int_2(int state);
+	DECLARE_WRITE_LINE_MEMBER(dd_adpcm_int_1);
+	DECLARE_WRITE_LINE_MEMBER(dd_adpcm_int_2);
 
 	void dd2_map(address_map &map);
 	void dd2_sound_map(address_map &map);
@@ -203,4 +202,4 @@ private:
 	void toffy_map(address_map &map);
 };
 
-#endif // MAME_TECHNOS_DDRAGON_H
+#endif // MAME_INCLUDES_DDRAGON_H

@@ -16,11 +16,12 @@
 #include "sunsoft_dcs.h"
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-----------------------------------------------
@@ -76,31 +77,32 @@ uint8_t nes_ntb_slot_device::read(offs_t offset)
 }
 
 
-std::pair<std::error_condition, std::string> nes_ntb_slot_device::call_load()
+image_init_result nes_ntb_slot_device::call_load()
 {
 	if (m_cart)
 	{
-		uint8_t *const ROM = m_cart->get_cart_base();
+		uint8_t *ROM = m_cart->get_cart_base();
+
 		if (!ROM)
-			return std::make_pair(image_error::INTERNAL, std::string());
+			return image_init_result::FAIL;
 
 		if (!loaded_through_softlist())
 		{
 			if (length() != 0x4000)
-				return std::make_pair(image_error::INVALIDLENGTH, "Unsupported cartridge size (must be 16K)");
+				return image_init_result::FAIL;
 
-			fread(ROM, 0x4000);
+			fread(&ROM, 0x4000);
 		}
 		else
 		{
 			if (get_software_region_length("rom") != 0x4000)
-				return std::make_pair(image_error::INVALIDLENGTH, "Unsupported cartridge size (must be 16K)");
+				return image_init_result::FAIL;
 
 			memcpy(ROM, get_software_region("rom"), 0x4000);
 		}
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 
@@ -201,7 +203,7 @@ void nes_sunsoft_dcs_device::pcb_reset()
 
 void nes_sunsoft_dcs_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("Sunsoft DCS write_h, offset %04x, data: %02x\n", offset, data);
+	LOG_MMC(("Sunsoft DCS write_h, offset %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x7000)
 	{
@@ -218,7 +220,7 @@ void nes_sunsoft_dcs_device::write_h(offs_t offset, uint8_t data)
 
 uint8_t nes_sunsoft_dcs_device::read_h(offs_t offset)
 {
-	LOG("Sunsoft DCS read_h, offset: %04x\n", offset);
+	LOG_MMC(("Sunsoft DCS read_h, offset: %04x\n", offset));
 
 	if (m_exrom_enable && m_subslot->m_cart && offset < 0x4000)
 	{
@@ -233,7 +235,7 @@ uint8_t nes_sunsoft_dcs_device::read_h(offs_t offset)
 
 void nes_sunsoft_dcs_device::write_m(offs_t offset, uint8_t data)
 {
-	LOG("Sunsoft DCS write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("Sunsoft DCS write_m, offset: %04x, data: %02x\n", offset, data));
 
 	if (!m_battery.empty() && m_wram_enable)
 		m_battery[offset & (m_battery.size() - 1)] = data;
@@ -249,7 +251,7 @@ void nes_sunsoft_dcs_device::write_m(offs_t offset, uint8_t data)
 
 uint8_t nes_sunsoft_dcs_device::read_m(offs_t offset)
 {
-	LOG("Sunsoft DCS read_m, offset: %04x\n", offset);
+	LOG_MMC(("Sunsoft DCS read_m, offset: %04x\n", offset));
 
 	if (!m_battery.empty() && m_wram_enable)
 		return m_battery[offset & (m_battery.size() - 1)];

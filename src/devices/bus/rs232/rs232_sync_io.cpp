@@ -70,13 +70,13 @@ rs232_sync_io_device:: ~rs232_sync_io_device()
 {
 }
 
-void rs232_sync_io_device::input_txd(int state)
+WRITE_LINE_MEMBER(rs232_sync_io_device::input_txd)
 {
 	m_txd = state;
 	LOG("TxD %d %u\n" , state , m_tx_counter);
 }
 
-void rs232_sync_io_device::input_rts(int state)
+WRITE_LINE_MEMBER(rs232_sync_io_device::input_rts)
 {
 	m_rts = state;
 }
@@ -191,7 +191,7 @@ TIMER_CALLBACK_MEMBER(rs232_sync_io_device::clock_tick)
 	}
 }
 
-void rs232_sync_io_device::update_serial(int state)
+WRITE_LINE_MEMBER(rs232_sync_io_device::update_serial)
 {
 	auto baud_rate = convert_baud(m_rs232_baud->read());
 	auto period = attotime::from_hz(baud_rate * 2);

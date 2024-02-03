@@ -366,7 +366,7 @@ uint32_t namcos86_state::screen_update(screen_device &screen, bitmap_ind16 &bitm
 }
 
 
-void namcos86_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(namcos86_state::screen_vblank)
 {
 	// rising edge
 	if (state)

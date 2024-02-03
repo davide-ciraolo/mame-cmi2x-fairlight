@@ -188,7 +188,7 @@ uint8_t special_state::specimx_disk_ctrl_r()
 	return 0xff;
 }
 
-void special_state::fdc_drq(int state)
+WRITE_LINE_MEMBER( special_state::fdc_drq )
 {
 	/* Clears HALT state of CPU when data is ready to read */
 	if(state) {

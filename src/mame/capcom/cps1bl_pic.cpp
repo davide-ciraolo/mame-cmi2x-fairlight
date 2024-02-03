@@ -52,8 +52,6 @@ brightness circuity present on pcb?
 #include "speaker.h"
 
 
-namespace {
-
 #define CPS1_ROWSCROLL_OFFS  (0x20/2)    /* base of row scroll offsets in other RAM */
 #define CODE_SIZE            0x400000
 
@@ -1726,8 +1724,6 @@ ROM_START( wofpic )
 	ROM_REGION( 0x080000, "oki", 0 )
 	ROM_LOAD( "ma12073.4mm", 0x00000, 0x80000, CRC(ac421276) SHA1(56786c23b0d96e1a2540e7269aa20fd390f98b5b) )
 ROM_END
-
-} // anonymous namespace
 
 
 // ************************************************************************* DRIVER MACROS

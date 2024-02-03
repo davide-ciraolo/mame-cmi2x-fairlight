@@ -47,7 +47,7 @@ void prof80_state::motor(int mon)
 }
 
 
-void prof80_state::ready_w(int state)
+WRITE_LINE_MEMBER(prof80_state::ready_w)
 {
 	if (m_ready != state)
 	{
@@ -58,13 +58,13 @@ void prof80_state::ready_w(int state)
 }
 
 
-void prof80_state::inuse_w(int state)
+WRITE_LINE_MEMBER(prof80_state::inuse_w)
 {
 	//m_floppy->inuse_w(state);
 }
 
 
-void prof80_state::motor_w(int state)
+WRITE_LINE_MEMBER(prof80_state::motor_w)
 {
 	if (state)
 	{
@@ -84,7 +84,7 @@ void prof80_state::motor_w(int state)
 }
 
 
-void prof80_state::select_w(int state)
+WRITE_LINE_MEMBER(prof80_state::select_w)
 {
 	if (m_select != state)
 	{
@@ -94,13 +94,13 @@ void prof80_state::select_w(int state)
 }
 
 
-void prof80_state::mini_w(int state)
+WRITE_LINE_MEMBER(prof80_state::mini_w)
 {
 	m_fdc->set_unscaled_clock(16_MHz_XTAL / (state ? 4 : 2));
 }
 
 
-void prof80_state::mstop_w(int state)
+WRITE_LINE_MEMBER(prof80_state::mstop_w)
 {
 	if (!state)
 	{

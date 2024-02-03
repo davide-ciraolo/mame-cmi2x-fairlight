@@ -114,7 +114,7 @@ void cheekyms_state::machine_start()
 	save_item(NAME(m_irq_mask));
 }
 
-void cheekyms_state::vblank_int_w(int state)
+WRITE_LINE_MEMBER(cheekyms_state::vblank_int_w)
 {
 	if (m_irq_mask)
 		m_maincpu->set_input_line(0, ASSERT_LINE);

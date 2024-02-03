@@ -269,7 +269,7 @@ void polepos_state::view16_hscroll_w(offs_t offset, uint16_t data, uint16_t mem_
 	m_bg_tilemap->set_scrollx(0,m_scroll);
 }
 
-void polepos_state::chacl_w(int state)
+WRITE_LINE_MEMBER(polepos_state::chacl_w)
 {
 	m_chacl = state;
 	m_tx_tilemap->mark_all_dirty();

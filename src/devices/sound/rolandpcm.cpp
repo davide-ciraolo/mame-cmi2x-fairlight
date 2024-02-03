@@ -39,6 +39,17 @@ mb87419_mb87420_device::mb87419_mb87420_device(const machine_config &mconfig, co
 }
 
 //-------------------------------------------------
+//  device_resolve_objects - resolve objects that
+//  may be needed for other devices to set
+//  initial conditions at start time
+//-------------------------------------------------
+
+void mb87419_mb87420_device::device_resolve_objects()
+{
+	m_int_callback.resolve_safe();
+}
+
+//-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
 
@@ -62,11 +73,10 @@ void mb87419_mb87420_device::device_reset()
 }
 
 //-------------------------------------------------
-//  rom_bank_pre_change - refresh the stream if the
-//  ROM banking changes
+//  rom_bank_updated - the rom bank has changed
 //-------------------------------------------------
 
-void mb87419_mb87420_device::rom_bank_pre_change()
+void mb87419_mb87420_device::rom_bank_updated()
 {
 	// unused right now
 	m_stream->update();

@@ -74,14 +74,11 @@ To Do / Status:
 - none of my collection of lnw80-specific floppies will work; some crash MAME
 
 *******************************************************************************************************/
-
 #include "emu.h"
 #include "trs80.h"
-#include "trs80_quik.h"
 #include "machine/input_merger.h"
 #include "formats/td0_dsk.h"
 #include "softlist_dev.h"
-#include "utf8.h"
 
 namespace {
 
@@ -611,7 +608,9 @@ void lnw80_state::lnw80(machine_config &config)
 	m_cassette->add_route(ALL_OUTPUTS, "mono", 0.05);
 	m_cassette->set_interface("trs80_cass");
 
-	TRS80_QUICKLOAD(config, "quickload", m_maincpu, attotime::from_seconds(1));
+	quickload_image_device &quickload(QUICKLOAD(config, "quickload", "cmd", attotime::from_seconds(1)));
+	quickload.set_load_callback(FUNC(lnw80_state::quickload_cb));
+	quickload.set_interface("trs80_quik");
 
 	FD1771(config, m_fdc, 4_MHz_XTAL / 4);
 	m_fdc->intrq_wr_callback().set(FUNC(lnw80_state::intrq_w));

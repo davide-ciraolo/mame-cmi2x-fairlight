@@ -89,7 +89,7 @@ void md_keyboard_device::mcu_p1_w(u8 data)
 	m_ls175_clock = BIT(data, 6);
 }
 
-int md_keyboard_device::mcu_t1_r()
+READ_LINE_MEMBER(md_keyboard_device::mcu_t1_r)
 {
 	return m_recv_data;
 }

@@ -30,6 +30,7 @@
 #include "bus/rs232/terminal.h"
 
 #include "imagedev/floppy.h"
+#include "formats/pc_dsk.h"
 
 // video
 #include "video/hd44780.h"
@@ -38,9 +39,6 @@
 
 #define VERBOSE 0
 #include "logmacro.h"
-
-
-namespace {
 
 class emu3_state : public driver_device
 {
@@ -251,7 +249,7 @@ void emu3_state::emu3(machine_config &config)
 	SCC85230(config, m_scc, 16_MHz_XTAL / 4);
 	m_scc->out_int_callback().set(*this, FUNC(emu3_state::irq_w<SCCINT>)).invert();
 
-	HD44780(config, m_lcdc, 270'000); // TODO: clock not measured, datasheet typical clock used
+	HD44780(config, m_lcdc, 0);
 	m_lcdc->set_lcd_size(4, 20);
 
 	PALETTE(config, "palette", FUNC(emu3_state::palette_init), 2);
@@ -294,8 +292,5 @@ ROM_START(emu3)
 	ROM_REGION(0xc00, "scannercpu", 0)
 	ROM_LOAD("im368.ic31", 0x000, 0xc00, NO_DUMP)
 ROM_END
-
-} // anonymous namespace
-
 
 SYST(1987, emu3, 0, 0, emu3, emu3, emu3_state, empty_init, "E-mu Systems", "Emulator Three Digital Sound Production System", MACHINE_IS_SKELETON)

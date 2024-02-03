@@ -14,17 +14,17 @@ nascom_format::nascom_format() : wd177x_format(formats)
 {
 }
 
-const char *nascom_format::name() const noexcept
+const char *nascom_format::name() const
 {
 	return "nascom";
 }
 
-const char *nascom_format::description() const noexcept
+const char *nascom_format::description() const
 {
 	return "Nascom disk image";
 }
 
-const char *nascom_format::extensions() const noexcept
+const char *nascom_format::extensions() const
 {
 	return "dsk";
 }

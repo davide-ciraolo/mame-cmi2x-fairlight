@@ -9,10 +9,10 @@
 //
 //============================================================
 
-#ifndef MAME_RENDER_BGFX_SLIDERUNIFORM_H
-#define MAME_RENDER_BGFX_SLIDERUNIFORM_H
-
 #pragma once
+
+#ifndef __DRAWBGFX_SLIDER_UNIFORM__
+#define __DRAWBGFX_SLIDER_UNIFORM__
 
 #include "entryuniform.h"
 
@@ -23,7 +23,7 @@ class bgfx_slider;
 class bgfx_slider_uniform : public bgfx_entry_uniform
 {
 public:
-	bgfx_slider_uniform(bgfx_uniform* uniform, std::vector<bgfx_slider*> &&sliders);
+	bgfx_slider_uniform(bgfx_uniform* uniform, std::vector<bgfx_slider*> sliders);
 
 	virtual void bind() override;
 
@@ -31,4 +31,4 @@ private:
 	std::vector<bgfx_slider*> m_sliders;
 };
 
-#endif // MAME_RENDER_BGFX_SLIDERUNIFORM_H
+#endif // __DRAWBGFX_SLIDER_UNIFORM__

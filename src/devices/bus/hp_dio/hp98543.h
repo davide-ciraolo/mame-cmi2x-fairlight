@@ -47,11 +47,11 @@ protected:
 	virtual space_config_vector memory_space_config() const override;
 private:
 
-	void vblank_w(int state);
-	void int0_w(int state);
-	void int1_w(int state);
-	void int2_w(int state);
-	void int3_w(int state);
+	WRITE_LINE_MEMBER(vblank_w);
+	WRITE_LINE_MEMBER(int0_w);
+	WRITE_LINE_MEMBER(int1_w);
+	WRITE_LINE_MEMBER(int2_w);
+	WRITE_LINE_MEMBER(int3_w);
 
 	const address_space_config m_space_config;
 	void map(address_map &map);

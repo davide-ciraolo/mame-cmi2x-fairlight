@@ -13,8 +13,9 @@
 #include "imagedev/harddriv.h"
 #include "machine/74259.h"
 
-#define LOG_REGS    (1U << 1)
-#define LOG_DATA    (1U << 2)
+//#define LOG_GENERAL (1U <<  0)
+#define LOG_REGS    (1U <<  1)
+#define LOG_DATA    (1U <<  2)
 
 //#define VERBOSE  (LOG_REGS)
 //#define LOG_OUTPUT_STREAM std::cout
@@ -123,7 +124,7 @@ void apricot_winchester_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void apricot_winchester_device::hdc_intrq_w(int state)
+WRITE_LINE_MEMBER( apricot_winchester_device::hdc_intrq_w )
 {
 	LOGREGS("hdc_intrq_w: %d\n", state);
 
@@ -165,7 +166,7 @@ uint8_t apricot_winchester_device::int_r()
 }
 
 template<int N>
-void apricot_winchester_device::head_w(int state)
+WRITE_LINE_MEMBER( apricot_winchester_device::head_w )
 {
 	m_head = (m_head & ~(1 << N)) | (state << N);
 	LOGREGS("Select head: %d\n", m_head);
@@ -173,7 +174,7 @@ void apricot_winchester_device::head_w(int state)
 }
 
 template<int N>
-void apricot_winchester_device::drive_w(int state)
+WRITE_LINE_MEMBER( apricot_winchester_device::drive_w )
 {
 	m_drive = (m_drive & ~(1 << N)) | (state << N);
 	LOGREGS("Select drive: %d\n", m_drive);
@@ -201,14 +202,14 @@ void apricot_winchester_device::drive_w(int state)
 	m_hdc->drdy_w(drive != nullptr && drive->exists());
 }
 
-void apricot_winchester_device::xferd_w(int state)
+WRITE_LINE_MEMBER( apricot_winchester_device::xferd_w )
 {
 	LOGREGS("xferd_w: %02x\n", state);
 
 	m_hdc->brdy_w(state);
 }
 
-void apricot_winchester_device::hbcr_w(int state)
+WRITE_LINE_MEMBER( apricot_winchester_device::hbcr_w )
 {
 	LOGREGS("hbcr_w: %02x\n", state);
 
@@ -219,7 +220,7 @@ void apricot_winchester_device::hbcr_w(int state)
 	m_hbcr = state;
 }
 
-void apricot_winchester_device::clksel_w(int state)
+WRITE_LINE_MEMBER( apricot_winchester_device::clksel_w )
 {
 	LOGREGS("clksel_w: %02x\n", state);
 

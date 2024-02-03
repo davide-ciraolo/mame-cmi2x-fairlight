@@ -42,11 +42,11 @@ public:
 	void update();
 	void recalibrate();
 
-	void cs_w(int state);
-	void xy_w(int state);
-	void ul_w(int state);
-	void resetx_w(int state);
-	void resety_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(cs_w);
+	DECLARE_WRITE_LINE_MEMBER(xy_w);
+	DECLARE_WRITE_LINE_MEMBER(ul_w);
+	DECLARE_WRITE_LINE_MEMBER(resetx_w);
+	DECLARE_WRITE_LINE_MEMBER(resety_w);
 	u8 reset_x_r();
 	void reset_x_w(u8 data);
 	u8 reset_y_r();
@@ -59,12 +59,12 @@ public:
 	u8 read_y(offs_t offset);
 	u8 read_xy(offs_t offset);
 
-	void left_w(int state);
-	void right_w(int state);
-	void middle_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(left_w);
+	DECLARE_WRITE_LINE_MEMBER(right_w);
+	DECLARE_WRITE_LINE_MEMBER(middle_w);
 
-	int cf_r();
-	int sf_r();
+	DECLARE_READ_LINE_MEMBER(cf_r);
+	DECLARE_READ_LINE_MEMBER(sf_r);
 
 protected:
 	// device-level overrides

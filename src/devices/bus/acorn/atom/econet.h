@@ -37,7 +37,7 @@ protected:
 
 private:
 	uint8_t statid_r();
-	void bus_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(bus_irq_w);
 
 	required_device<mc6854_device> m_adlc;
 	required_device<econet_device> m_econet;

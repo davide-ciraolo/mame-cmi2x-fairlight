@@ -21,6 +21,7 @@
 #include "bus/pc_kbd/pc_kbdc.h"
 #include "bus/rs232/rs232.h"
 #include "cpu/nec/v5x.h"
+#include "formats/pc_dsk.h"
 #include "imagedev/floppy.h"
 #include "machine/ins8250.h"
 #include "machine/ncr5380.h"
@@ -31,9 +32,6 @@
 
 #define VERBOSE 0
 #include "logmacro.h"
-
-
-namespace {
 
 class lbpc_state : public driver_device
 {
@@ -59,7 +57,7 @@ public:
 
 	void lbpc(machine_config &config);
 
-	int hsi_r();
+	DECLARE_READ_LINE_MEMBER(hsi_r);
 
 protected:
 	virtual void machine_start() override;
@@ -68,18 +66,18 @@ protected:
 private:
 	u8 exp_dack1_r();
 	void exp_dack1_w(u8 data);
-	void iochck_w(int state);
-	template <int Line> void dmaak_w(int state);
-	void eop_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(iochck_w);
+	template <int Line> DECLARE_WRITE_LINE_MEMBER(dmaak_w);
+	DECLARE_WRITE_LINE_MEMBER(eop_w);
 
 	void keyboard_shift_in();
-	void kbd_clock_w(int state);
-	void kbd_data_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(kbd_clock_w);
+	DECLARE_WRITE_LINE_MEMBER(kbd_data_w);
 	u8 keyboard_r();
 	u8 port61_r();
 	void port61_w(u8 data);
 	u8 port62_r();
-	void tout2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(tout2_w);
 
 	void mem_map(address_map &map);
 	void io_map(address_map &map);
@@ -129,13 +127,13 @@ void lbpc_state::exp_dack1_w(u8 data)
 	m_expbus->dack_w(0, data);
 }
 
-void lbpc_state::iochck_w(int state)
+WRITE_LINE_MEMBER(lbpc_state::iochck_w)
 {
 	// TODO
 }
 
 template <int Line>
-void lbpc_state::dmaak_w(int state)
+WRITE_LINE_MEMBER(lbpc_state::dmaak_w)
 {
 	m_expbus->dack_line_w(Line + 1, state);
 	if (!state)
@@ -164,7 +162,7 @@ void lbpc_state::dmaak_w(int state)
 	}
 }
 
-void lbpc_state::eop_w(int state)
+WRITE_LINE_MEMBER(lbpc_state::eop_w)
 {
 	m_eop_active = state == ASSERT_LINE;
 	if (m_dma_channel != 0xff)
@@ -198,14 +196,14 @@ void lbpc_state::keyboard_shift_in()
 		LOG("%s: Shifting in 0 bit (%02X)\n", machine().describe_context(), m_kbd_input);
 }
 
-void lbpc_state::kbd_clock_w(int state)
+WRITE_LINE_MEMBER(lbpc_state::kbd_clock_w)
 {
 	if (m_kbd_clock && !state)
 		keyboard_shift_in();
 	m_kbd_clock = state;
 }
 
-void lbpc_state::kbd_data_w(int state)
+WRITE_LINE_MEMBER(lbpc_state::kbd_data_w)
 {
 	m_kbd_data = state;
 }
@@ -262,14 +260,14 @@ u8 lbpc_state::port62_r()
 	return 0;
 }
 
-void lbpc_state::tout2_w(int state)
+WRITE_LINE_MEMBER(lbpc_state::tout2_w)
 {
 	m_speaker_data = state;
 	if (BIT(m_port61, 1))
 		m_speaker->level_w(state);
 }
 
-int lbpc_state::hsi_r()
+READ_LINE_MEMBER(lbpc_state::hsi_r)
 {
 	// TODO
 	return 0;
@@ -412,8 +410,6 @@ ROM_START(lbpc)
 	// "Firmware Version 1.0H  03/08/89"
 	ROM_LOAD("lbpc-bio.rom", 0x0000, 0x8000, CRC(47bddf8b) SHA1(8a04fe34502f9f3bfe1e233762bbd5bbdd1c455d))
 ROM_END
-
-} // anonymous namespace
 
 
 COMP(1989, lbpc, 0, 0, lbpc, lbpc, lbpc_state, empty_init, "Ampro Computers", "Little Board/PC", MACHINE_NOT_WORKING)

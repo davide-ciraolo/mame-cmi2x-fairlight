@@ -18,8 +18,6 @@
 #include "softlist_dev.h"
 #include "speaker.h"
 
-#include <cstdarg>
-
 
 namespace {
 

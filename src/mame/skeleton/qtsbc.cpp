@@ -72,8 +72,6 @@ List of signals on pin headers (from CompuTime manual):
 //#include "bus/s100/s100.h"
 
 
-namespace {
-
 class qtsbc_state : public driver_device
 {
 public:
@@ -100,8 +98,8 @@ private:
 	void memory_w(offs_t offset, u8 data);
 	u8 io_r(offs_t offset);
 	void io_w(offs_t offset, u8 data);
-	void rts_loopback_w(int state);
-	void dtr_loopback_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(rts_loopback_w);
+	DECLARE_WRITE_LINE_MEMBER(dtr_loopback_w);
 
 	virtual void machine_start() override;
 	virtual void machine_reset() override;
@@ -239,7 +237,7 @@ void qtsbc_state::io_w(offs_t offset, u8 data)
 	}
 }
 
-void qtsbc_state::rts_loopback_w(int state)
+WRITE_LINE_MEMBER(qtsbc_state::rts_loopback_w)
 {
 	// Filtered through this routine to avoid infinite loops
 	if (state != bool(m_rts))
@@ -249,7 +247,7 @@ void qtsbc_state::rts_loopback_w(int state)
 	}
 }
 
-void qtsbc_state::dtr_loopback_w(int state)
+WRITE_LINE_MEMBER(qtsbc_state::dtr_loopback_w)
 {
 	// Filtered through this routine to avoid infinite loops
 	if (state != bool(m_dtr))
@@ -550,9 +548,6 @@ ROM_START( qtsbc )
 	ROM_REGION( 0x0800, "maincpu", ROMREGION_ERASEFF )
 	ROM_LOAD( "qtsbc.u23", 0x0000, 0x0800, CRC(823fd942) SHA1(64c4f74dd069ae4d43d301f5e279185f32a1efa0))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

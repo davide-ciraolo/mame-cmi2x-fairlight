@@ -30,7 +30,8 @@ public:
 	virtual ~Instruction() {}
 
 	virtual bool decode(const uint16_t word0, const uint16_t word1) = 0;
-	virtual std::string disassemble() const = 0;
+	virtual void disassemble(std::string& retString) const = 0;
+	virtual void evaluate(dsp56156_core* cpustate) = 0;
 
 	virtual size_t size() const = 0;
 	virtual size_t evalSize() const { return size(); }
@@ -77,10 +78,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "abs " + regIdAsString(m_destination);
+		retString = "abs " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -99,10 +101,11 @@ public:
 						m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "adc " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "adc " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -121,10 +124,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "add " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "add " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -147,10 +151,11 @@ public:
 		// TODO: m_opcode = "add";
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return m_opcode + " " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = m_opcode + " " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -173,10 +178,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "and " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "and " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -196,10 +202,14 @@ public:
 		decode_EE_table(BITSn(word0,0x0600), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("andi #$%x,%s", m_immediate, regIdAsString(m_destination));
+		char temp[32];
+		sprintf(temp, "#$%x,%s", m_immediate, regIdAsString(m_destination).c_str());
+		retString = "andi " + std::string(temp);
+		// NEW // sprintf(opcode_str, "and(i)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -220,10 +230,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "asl " + regIdAsString(m_destination);
+		retString = "asl " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -241,10 +252,11 @@ public:
 		decode_F_table(BITSn(word0,0x0008), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "asl4 " + regIdAsString(m_destination);
+		retString = "asl4 " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -262,10 +274,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "asr " + regIdAsString(m_destination);
+		retString = "asr " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -283,10 +296,11 @@ public:
 		decode_F_table(BITSn(word0,0x0008), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "asr4 " + regIdAsString(m_destination);
+		retString = "asr4 " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -304,10 +318,11 @@ public:
 		decode_F_table(BITSn(word0,0x0008), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "asr16 " + regIdAsString(m_destination);
+		retString = "asr16 " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -357,10 +372,14 @@ public:
 		}
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("%s #$%x,%s", m_opcode, m_iVal, dString);
+		char temp[32];
+		sprintf(temp, "#$%x", m_iVal);
+		retString = m_opcode + " " + std::string(temp) + "," + dString;
+		// NEW // sprintf(temp, "#$%04x", iVal);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 private:
@@ -414,10 +433,19 @@ public:
 		}
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("%s #$%x,X:(%s)", m_opcode, m_iVal, regIdAsString(m_r));
+		char temp[32];
+		sprintf(temp, "#$%x", m_iVal);
+		std::string source = temp;
+
+		sprintf(temp, "X:(%s)", regIdAsString(m_r).c_str());
+		std::string destination = temp;
+
+		retString = m_opcode + " " + source + "," + destination;
+		// NEW // sprintf(temp, "#$%04x", m_iVal);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -471,10 +499,16 @@ public:
 		}
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("%s #$%x,%s", m_opcode, m_iVal, regIdAsString(m_destination));
+		char temp[32];
+		sprintf(temp, "#$%x", m_iVal);
+		std::string source = temp;
+
+		retString = m_opcode + " " + source + "," + regIdAsString(m_destination);
+		// NEW // sprintf(temp, "#$%04x", m_iVal);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -499,10 +533,17 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("b%s >*+$%x", opMnemonicAsString(m_mnem), 2 + m_immediate);
+		std::string opcode = "b" + opMnemonicAsString(m_mnem);
+		// NEW // sprintf(opcode_str, "b.%s", M);
+
+		char temp[32];
+		sprintf(temp, ">*+$%x", 2 + m_immediate);
+		// NEW // sprintf(temp, "$%04x (%d)", pc + 2 + (int16_t)word1, (int16_t)word1);
+		retString = opcode + " " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -527,13 +568,19 @@ public:
 		m_immediate = get_6_bit_signed_value(BITSn(word0,0x003f));
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		if (m_immediate >= 0)
-			return util::string_format("b%s <*+$%x", opMnemonicAsString(m_mnem), m_immediate + 1);
-		else
-			return util::string_format("b%s <*-$%x", opMnemonicAsString(m_mnem), 1 - m_immediate - 2);
+		std::string opcode = "b" + opMnemonicAsString(m_mnem);
+		// NEW // sprintf(opcode_str, "b.%s", M);
+
+		char temp[32];
+		if (m_immediate >= 0) sprintf(temp, "<*+$%x", m_immediate + 1);
+		else                  sprintf(temp, "<*-$%x", 1 - m_immediate - 2);
+		// NEW // sprintf(temp, "$%04x (%d)", pc + 1 + relativeInt, relativeInt);
+
+		retString = opcode + " " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -557,11 +604,13 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string opcode = "b" + opMnemonicAsString(m_mnem);
-		return opcode + " " + regIdAsString(m_destination);
+		retString = opcode + " " + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "b.%s", M);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -583,10 +632,14 @@ public:
 		m_immediate = (int16_t)word1;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("bra >*+$%x", 2 + m_immediate);
+		char temp[32];
+		sprintf(temp, ">*+$%x", 2 + m_immediate);
+		// NEW // sprintf(temp, "$%04x (%d)", pc + 2 + word1, (int16_t)word1);
+		retString = "bra " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -608,13 +661,15 @@ public:
 		m_immediate = (int8_t)BITSn(word0,0x00ff);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		if (m_immediate >= 0)
-			return util::string_format("bra <*+$%x", 1 + m_immediate);
-		else
-			return util::string_format("bra <*-$%x", 1 - m_immediate - 2);
+		char temp[32];
+		if (m_immediate >= 0) sprintf(temp, "<*+$%x", 1 + m_immediate);
+		else                  sprintf(temp, "<*-$%x", 1 - m_immediate - 2);
+		// NEW // sprintf(temp, "$%04x (%d)", pc + 1 + iVal, iVal);
+		retString = "bra " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -635,10 +690,11 @@ public:
 		decode_RR_table(BITSn(word0,0x0003), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "bra " + regIdAsString(m_destination);
+		retString = "bra " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -657,10 +713,13 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "brk" + opMnemonicAsString(m_mnem);
+		std::string opcode = "brk" + opMnemonicAsString(m_mnem);
+		retString = opcode;
+		// NEW // sprintf(opcode_str, "brk.%s", M);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -684,13 +743,19 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		if (m_immediate >= 0)
-			return util::string_format("bs%s >*+$%x", opMnemonicAsString(m_mnem), 2 + m_immediate);
-		else
-			return util::string_format("bs%s >*-$%x", opMnemonicAsString(m_mnem), 1 - m_immediate - 1 - 2);
+		std::string opcode = "bs" + opMnemonicAsString(m_mnem);
+		// NEW // sprintf(opcode_str, "bs.%s", M);
+
+		char temp[32];
+		if (m_immediate >= 0) sprintf(temp, ">*+$%x", 2 + m_immediate);
+		else                  sprintf(temp, ">*-$%x", 1 - m_immediate - 1 - 2);
+		//sprintf(temp, ">*+$%x", 2 + m_immediate);
+		// NEW // sprintf(temp, "$%04x (%d)", pc + 2 + (int16_t)word1, (int16_t)word1);
+		retString = opcode + " " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OVER; }
@@ -715,11 +780,13 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string opcode = "bs" + opMnemonicAsString(m_mnem);
-		return opcode + " " + regIdAsString(m_destination);
+		retString = opcode + " " + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "bs.%s", M);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OVER; }
@@ -742,13 +809,15 @@ public:
 		m_immediate = (int16_t)word1;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		if (m_immediate >= 0)
-			return util::string_format("bsr >*+$%x", 2 + m_immediate);
-		else
-			return util::string_format("bsr >*-$%x", 1 - m_immediate - 1 - 2);
+		char temp[32];
+		if (m_immediate >= 0) sprintf(temp, ">*+$%x", 2 + m_immediate);
+		else                  sprintf(temp, ">*-$%x", 1 - m_immediate - 1 - 2);
+		// NEW // sprintf(temp, "$%04x (%d)", pc + 2 + (int16_t)word1, (int16_t)word1);
+		retString = "bsr " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OVER; }
@@ -770,10 +839,11 @@ public:
 		decode_RR_table(BITSn(word0,0x0003), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "bsr " + regIdAsString(m_destination);
+		retString = "bsr " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OVER; }
@@ -791,10 +861,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "chkaau";
+		retString = "chkaau";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -812,10 +883,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "clr " + regIdAsString(m_destination);
+		retString = "clr " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -833,10 +905,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "clr24 " + regIdAsString(m_destination);
+		retString = "clr24 " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -857,10 +930,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "cmp " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "cmp " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_NONE; }
 };
@@ -881,10 +955,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "cmpm " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "cmpm " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_NONE; }
 };
@@ -901,10 +976,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "debug";
+		retString = "debug";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -923,11 +999,13 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string opcode = "debug" + opMnemonicAsString(m_mnem);
-		return opcode;
+		retString = opcode;
+		// NEW // sprintf(opcode_str, "debug.%s", M);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -948,10 +1026,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "dec " + regIdAsString(m_destination);
+		retString = "dec " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -969,10 +1048,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "dec24 " + regIdAsString(m_destination);
+		retString = "dec24 " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -991,10 +1071,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "div " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "div " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -1018,14 +1099,16 @@ public:
 		if (m_mnem == oINVALID) return false;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string opcode = "dmac" + opMnemonicAsString(m_mnem);
 
-		return opcode + " " +
+		retString = opcode + " " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "dmac(%s)", A);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1049,10 +1132,19 @@ public:
 		decode_RR_table(BITSn(word0,0x0003), m_source);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("do X:(%s),*+$%x", regIdAsString(m_source), 2 + m_immediate);
+		char temp[32];
+		sprintf(temp, "*+$%x", 2 + m_immediate);
+		std::string destination = temp;
+		// NEW // sprintf(temp, "X:(R%d),$%02x", Rnum, pc + 2 + word1);
+
+		sprintf(temp, "X:(%s)", regIdAsString(m_source).c_str());
+		std::string source = temp;
+
+		retString = "do " + source + "," + destination;
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1076,10 +1168,14 @@ public:
 		m_displacement = word1;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("do #<$%x,*+$%x", m_immediate, 2 + m_displacement);
+		char temp[32];
+		sprintf(temp, "#<$%x,*+$%x", m_immediate, 2 + m_displacement);
+		// NEW // sprintf(temp, "#$%02x,$%04x", BITSn(word0,0x00ff), pc + 2 + word1);
+		retString = "do " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1106,10 +1202,14 @@ public:
 		if (m_source == iINVALID) return false;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("do %s,*+$%x", regIdAsString(m_source), 2 + m_displacement);
+		char temp[32];
+		sprintf(temp, "*+$%x", 2 + m_displacement);
+		// NEW // sprintf(temp, "%s,$%04x", S1, pc + 2 + word1);
+		retString = "do " + regIdAsString(m_source) + "," + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1131,10 +1231,15 @@ public:
 		m_displacement = word1;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("do forever, *+$%x", m_displacement + 2);
+		char temp[32];
+		sprintf(temp, "*+$%x", m_displacement + 2);
+		// NEW // sprintf(temp, "*+$%x", pc + word1);
+		// NEW // sprintf(temp, "$%04x", pc + 2 + word1);
+		retString = "do forever, " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1154,10 +1259,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "enddo";
+		retString = "enddo";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -1176,10 +1282,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "eor " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "eor " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -1197,10 +1304,11 @@ public:
 		decode_F_table(BITSn(word0,0x0008), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "ext " + regIdAsString(m_destination);
+		retString = "ext " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -1217,10 +1325,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "illegal";
+		retString = "illegal";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -1240,12 +1349,13 @@ public:
 							m_source, m_source2, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "imac " +
+		retString = "imac " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1268,12 +1378,13 @@ public:
 							m_source, m_source2, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "impy " +
+		retString = "impy " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1294,10 +1405,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "inc " + regIdAsString(m_destination);
+		retString = "inc " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -1315,10 +1427,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "inc24 " + regIdAsString(m_destination);
+		retString = "inc24 " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -1339,10 +1452,17 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("j%s >$%x", opMnemonicAsString(m_mnem), m_displacement);
+		std::string opcode = "j" + opMnemonicAsString(m_mnem);
+		// NEW // sprintf(opcode_str, "j.%s", M);
+
+		char temp[32];
+		sprintf(temp, ">$%x", m_displacement);
+		// NEW // sprintf(temp, "$%04x", word1);
+		retString = opcode + " " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1366,11 +1486,13 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string opcode = "j" + opMnemonicAsString(m_mnem);
-		return opcode + " " + regIdAsString(m_destination);
+		retString = opcode + " " + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "j.%s", M);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1392,9 +1514,19 @@ public:
 		m_displacement = word1;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("jmp >$%x", m_displacement);
+		char temp[32];
+		sprintf(temp, ">$%x", m_displacement);
+		// NEW // sprintf(temp, "$%04x", word1);
+		retString = "jmp " + std::string(temp);
+	}
+	void evaluate(dsp56156_core* cpustate) override
+	{
+		PC = m_displacement;
+
+		/* S L E U N Z V C */
+		/* - - - - - - - - */
 	}
 	size_t size() const override { return 2; }
 	size_t evalSize() const override { return 0; }
@@ -1417,9 +1549,16 @@ public:
 		decode_RR_table(BITSn(word0,0x0003), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "jmp " + regIdAsString(m_destination);
+		retString = "jmp " + regIdAsString(m_destination);
+	}
+	void evaluate(dsp56156_core* cpustate) override
+	{
+		PC = regValue16(cpustate, m_destination);
+
+		/* S L E U N Z V C */
+		/* - - - - - - - - */
 	}
 	size_t size() const override { return 1; }
 	size_t evalSize() const override { return 0; }
@@ -1444,10 +1583,17 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("js%s >$%x", opMnemonicAsString(m_mnem), m_displacement);
+		std::string opcode = "js" + opMnemonicAsString(m_mnem);
+		// NEW // sprintf(opcode_str, "js.%s", M);
+
+		char temp[32];
+		sprintf(temp, ">$%x", m_displacement);
+		// NEW // sprintf(temp, "$%04x", word1);
+		retString = opcode + " " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OVER; }
@@ -1472,11 +1618,13 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string opcode = "js" + opMnemonicAsString(m_mnem);
-		return opcode + " " + regIdAsString(m_destination);
+		retString = opcode + " " + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "js.%s", M);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OVER; }
@@ -1499,10 +1647,14 @@ public:
 		m_displacement = word1;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("jsr >$%x", m_displacement);
+		char temp[32];
+		sprintf(temp, ">$%x", m_displacement);
+		// NEW // sprintf(temp, "$%04x", word1);
+		retString = "jsr " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OVER; }
@@ -1525,10 +1677,14 @@ public:
 		m_bAddr = BITSn(word0,0x00ff);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("jsr <$%x", m_bAddr);
+		char temp[32];
+		sprintf(temp, "<$%x", m_bAddr);
+		// NEW // sprintf(temp, "#$%02x", BITSn(word0,0x00ff));
+		retString = "jsr " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OVER; }
@@ -1550,10 +1706,11 @@ public:
 		decode_RR_table(BITSn(word0,0x0003), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "jsr " + regIdAsString(m_destination);
+		retString = "jsr " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OVER; }
@@ -1570,7 +1727,7 @@ public:
 	}
 	bool decode(const uint16_t word0, const uint16_t word1) override
 	{
-		if ((word0 & 0x000c) == 0) return false;
+		if ((word0 & 0x000c) == 0) return false;  // NEW TODO //
 
 		decode_TT_table(BITSn(word0,0x0030), m_destination);
 
@@ -1579,11 +1736,12 @@ public:
 
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		// HACK
-		return "lea " + m_ea + "," + regIdAsString(m_destination);
+		retString = "lea " + m_ea + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1601,7 +1759,7 @@ public:
 	}
 	bool decode(const uint16_t word0, const uint16_t word1) override
 	{
-		if ((word0 & 0x000c) == 0) return false;
+		if ((word0 & 0x000c) == 0) return false;  // NEW TODO //
 
 		decode_NN_table(BITSn(word0,0x0030), m_destination);
 
@@ -1610,11 +1768,12 @@ public:
 
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		// HACK
-		return "lea " + m_ea + "," + regIdAsString(m_destination);
+		retString = "lea " + m_ea + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1635,10 +1794,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "lsl " + regIdAsString(m_destination);
+		retString = "lsl " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -1656,10 +1816,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "lsr " + regIdAsString(m_destination);
+		retString = "lsr " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -1682,15 +1843,16 @@ public:
 		decode_kSign_table(BITSn(word0,0x40), m_sign);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string ts = m_sign;
 		if (ts.compare("-") != 0) ts = "";
-		return "mac " +
+		retString = "mac " +
 					ts +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1714,12 +1876,13 @@ public:
 							m_source, m_source2, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "mac " +
+		retString = "mac " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1742,12 +1905,13 @@ public:
 							m_source, m_source2, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "mac " +
+		retString = "mac " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1773,15 +1937,16 @@ public:
 		decode_kSign_table(BITSn(word0,0x40), m_sign);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string ts = m_sign;
 		if (ts.compare("-") != 0) ts = "";
-		return "macr " +
+		retString = "macr " +
 					ts +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1805,12 +1970,13 @@ public:
 							m_source, m_source2, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "macr " +
+		retString = "macr " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1837,14 +2003,16 @@ public:
 		decode_s_table(BITSn(word0,0x0004), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string opcode = "mac" + opMnemonicAsString(m_mnem);
 
-		return opcode + " " +
+		retString = opcode + " " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "mac(%s)", A);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1880,13 +2048,14 @@ public:
 
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		if (m_isNop)
-			return "nop";
+			retString = "nop";
 		else
-			return "move";
+			retString = "move";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_NONE; }
 
@@ -1913,10 +2082,11 @@ public:
 
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "move";
+		retString = "move";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -1939,13 +2109,14 @@ public:
 		decode_HHH_table(BITSn(word1,0x0e00), m_SD);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_reg_from_W_table(m_W, 'X', m_SD, m_b, source, destination);
-		return "move " + source + "," + destination;
+		retString = "move " + source + "," + destination;
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -1976,13 +2147,15 @@ public:
 		if (m_SD == iINVALID) return false;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_arguments_from_W_table(m_W, 'X', m_SD, m_ea, source, destination);
-		return "move " + source + "," + destination;
+		retString = "move " + source + "," + destination;
+		// NEW // sprintf(opcode_str, "move(c)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2013,13 +2186,15 @@ public:
 		if (m_SD == iINVALID) return false;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_arguments_from_W_table(m_W, 'X', m_SD, m_ea, source, destination);
-		return "move " + source + "," + destination;
+		retString = "move " + source + "," + destination;
+		// NEW // sprintf(opcode_str, "move(c)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2049,13 +2224,15 @@ public:
 		if (m_SD == iINVALID) return false;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_arguments_from_W_table(m_W, 'X', m_SD, m_ea, source, destination);
-		return "move " + source + "," + destination;
+		retString = "move " + source + "," + destination;
+		// NEW // sprintf(opcode_str, "move(c)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2091,16 +2268,48 @@ public:
 
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string ea;
 		assemble_ea_from_t_table(m_t, m_value, ea);
 
-		std::string retString = "move ";
+		retString = "move ";
 		if (m_W) retString += ea + "," + regIdAsString(m_sd);
 		else     retString += regIdAsString(m_sd) + "," + ea;
+		// NEW // sprintf(opcode_str, "move(c)");
+	}
+	void evaluate(dsp56156_core* cpustate) override
+	{
+		if (m_W)
+		{
+			if (m_t)
+			{
+				setReg16(cpustate, m_value, m_sd);
+			}
+			else
+			{
+				//uint16_t memValue = memory_read_word_16le(cpustate->data, ADDRESS(m_value));
+				//setReg16(cpustate, memValue, m_sd);
+			}
+		}
+		else
+		{
+			if (m_t)
+			{
+				osd_printf_error("DSP561xx|Movec_4: This sure seems like it can't happen.");
+			}
+			else
+			{
+				//uint16_t regValue = regValue16(cpustate, m_sd);
+				//memory_write_word_16le(cpustate->data, m_value, regValue);
+			}
+		}
 
-		return retString;
+		/* S L E U N Z V C */
+		/* * ? ? ? ? ? ? ? */
+		// All ? bits - If SR is specified as a destination operand, set according to the corresponding
+		// bit of the source operand. If SR is not specified as a destination operand, L is set if data
+		// limiting occurred. All ? bits are not affected otherwise.
 	}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
@@ -2129,10 +2338,12 @@ public:
 		if (m_source == iSSH && m_destination == iSSH) return false;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "move " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "move " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "move(c)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -2156,13 +2367,15 @@ public:
 		decode_DDDDD_table(BITSn(word1,0x03e0), m_SD);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_reg_from_W_table(m_W, 'X', m_SD, m_b, source, destination);
-		return "move " + source + "," + destination;
+		retString = "move " + source + "," + destination;
+		// NEW // opcode = "move(c)";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2188,13 +2401,18 @@ public:
 		decode_DD_table(BITSn(word0,0x0300), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		if (m_immediate >= 0)
-			return util::string_format("move #<+$%x,%s", m_immediate, regIdAsString(m_destination));
-		else
-			return util::string_format("move #<-$%x,%s", 1 - m_immediate - 1, regIdAsString(m_destination));
+		char temp[32];
+		if (m_immediate >= 0) sprintf(temp, "#<+$%x", m_immediate);
+		else                  sprintf(temp, "#<-$%x", 1 - m_immediate - 1);
+		// NEW // sprintf(temp, "#$%02x,%s", BITSn(word0,0x00ff), D1);
+
+		retString = "move " +
+			std::string(temp) + "," + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "move(i)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2222,13 +2440,15 @@ public:
 		m_W = BITSn(word0,0x0100);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_arguments_from_W_table(m_W, 'P', m_SD, m_ea, source, destination);
-		return "move " + source + "," + destination;
+		retString = "move " + source + "," + destination;
+		// NEW // sprintf(opcode_str, "move(m)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2255,7 +2475,7 @@ public:
 		assemble_eas_from_mm_table(BITSn(word0,0x000c), BITSn(word0,0x00c0), BITSn(word0,0x0003), m_ea, m_ea2);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
@@ -2269,8 +2489,10 @@ public:
 			source = "P:" + m_ea;
 			destination = "X:" + m_ea2;
 		}
-		return "move " + source + "," + destination;
+		retString = "move " + source + "," + destination;
+		// NEW // sprintf(opcode_str, "move(m)*");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2298,13 +2520,15 @@ public:
 		decode_HHH_table(BITSn(word1,0x0007), m_SD);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_reg_from_W_table(m_W, 'P', m_SD, m_b, source, destination);
-		return "move " + source + "," + destination;
+		retString = "move " + source + "," + destination;
+		// NEW // opcode = "move(m)";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 2; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2336,13 +2560,15 @@ public:
 		m_W = BITSn(word0,0x0100);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_arguments_from_W_table(m_W, 'X', m_SD, m_ea, source, destination);
-		return "movep " + source + "," + destination;
+		retString = "movep " + source + "," + destination;
+		// NEW // sprintf(opcode_str, "move(p)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2374,15 +2600,18 @@ public:
 
 		m_W = BITSn(word0,0x0100);
 		m_SD = "X:<<$" + fullAddy;
+		// NEW // sprintf(SD, "X:$%s", fullAddy);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_arguments_from_W_table(m_W, 'X', m_SD, m_ea, source, destination);
-		return "movep " + source + "," + destination;
+		retString = "movep " + source + "," + destination;
+		// NEW // sprintf(opcode_str, "move(p)*");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2406,17 +2635,23 @@ public:
 	bool decode(const uint16_t word0, const uint16_t word1) override
 	{
 		decode_HH_table(BITSn(word0,0x00c0), m_SD);
-		m_ea = util::string_format("<$%x", BITSn(word0,0x001f));
+
+		char temp[32];
+		sprintf(temp, "<$%x", BITSn(word0,0x001f));
+		m_ea = temp;
+
 		m_W = BITSn(word0,0x0100);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source;
 		std::string destination;
 		assemble_arguments_from_W_table(m_W, 'X', m_SD, m_ea, source, destination);
-		return "moves " + source + "," + destination;
+		retString = "moves " + source + "," + destination;
+		// NEW // sprintf(opcode_str, "move(s)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2446,15 +2681,16 @@ public:
 		decode_kSign_table(BITSn(word0,0x40), m_sign);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string ts = m_sign;
 		if (ts.compare("-")!=0) ts = "";
-		return "mpy " +
+		retString = "mpy " +
 					ts +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2478,12 +2714,13 @@ public:
 							m_source, m_source2, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "mpy " +
+		retString = "mpy " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2506,12 +2743,13 @@ public:
 							m_source, m_source2, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "mpy " +
+		retString = "mpy " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2539,15 +2777,16 @@ public:
 		decode_kSign_table(BITSn(word0,0x40), m_sign);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string ts = m_sign;
 		if (ts.compare("-") != 0) ts = "";
-		return "mpyr " +
+		retString = "mpyr " +
 					ts +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2571,12 +2810,13 @@ public:
 							m_source, m_source2, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "mpyr " +
+		retString = "mpyr " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2602,14 +2842,16 @@ public:
 		decode_s_table(BITSn(word0,0x0004), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string opcode = "mpy" + opMnemonicAsString(m_mnem);
 
-		return opcode + " " +
+		retString = opcode + " " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "mpy(%s)", A);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2631,10 +2873,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "neg " + regIdAsString(m_destination);
+		retString = "neg " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -2652,10 +2895,11 @@ public:
 		decode_F_table(BITSn(word0,0x0008), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "negc " + regIdAsString(m_destination);
+		retString = "negc " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -2672,10 +2916,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "nop";
+		retString = "nop";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -2695,10 +2940,11 @@ public:
 		decode_RR_table(BITSn(word0,0x0003), m_source);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "norm " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "norm " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -2716,10 +2962,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "not " + regIdAsString(m_destination);
+		retString = "not " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -2738,10 +2985,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "or " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "or " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -2761,10 +3009,15 @@ public:
 		decode_EE_table(BITSn(word0,0x0600), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("ori #$%x,%s", m_immediate, regIdAsString(m_destination));
+		char temp[32];
+		sprintf(temp, "#$%x", m_immediate);
+		// NEW // sprintf(temp, "#$%02x", BITSn(word0,0x00ff));
+		retString = "ori " + std::string(temp) + "," + regIdAsString(m_destination);
+		// NEW // sprintf(opcode_str, "or(i)");
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2785,10 +3038,13 @@ public:
 		decode_RR_table(BITSn(word0,0x0003), m_source);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("rep X:(%s)", regIdAsString(m_source));
+		char temp[32];
+		sprintf(temp, "X:(%s)", regIdAsString(m_source).c_str());
+		retString = "rep " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -2807,10 +3063,14 @@ public:
 		m_immediate = BITSn(word0,0x00ff);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return util::string_format("rep #$%x", m_immediate);
+		char temp[32];
+		sprintf(temp, "#$%x", m_immediate);
+		// NEW // sprintf(temp, "#$%02x (%d)", BITSn(word0,0x00ff), BITSn(word0,0x00ff));
+		retString = "rep " + std::string(temp);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2832,10 +3092,11 @@ public:
 		if (m_source == iINVALID) return false;
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "rep " + regIdAsString(m_source);
+		retString = "rep " + regIdAsString(m_source);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -2854,11 +3115,13 @@ public:
 		decode_cccc_table(BITSn(word0,0x000f), m_mnem);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string opcode = "rep" + opMnemonicAsString(m_mnem);
-		return opcode;
+		retString = opcode;
+		// NEW // sprintf(opcode_str, "rep.%s", M);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -2878,10 +3141,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "reset";
+		retString = "reset";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -2899,10 +3163,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "rnd " + regIdAsString(m_destination);
+		retString = "rnd " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -2920,10 +3185,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "rol " + regIdAsString(m_destination);
+		retString = "rol " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -2941,10 +3207,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "ror " + regIdAsString(m_destination);
+		retString = "ror " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE; }
 };
@@ -2961,10 +3228,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "rti";
+		retString = "rti";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OUT; }
@@ -2982,10 +3250,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "rts";
+		retString = "rts";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 	size_t flags() const override { return util::disasm_interface::STEP_OUT; }
@@ -3005,10 +3274,11 @@ public:
 						m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "sbc " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "sbc " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3025,10 +3295,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "stop";
+		retString = "stop";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3047,10 +3318,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "sub " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "sub " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3072,10 +3344,11 @@ public:
 		// TODO // m_opcode = "sub";
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return m_opcode + " " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = m_opcode + " " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -3106,10 +3379,11 @@ public:
 		}
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "subl " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "subl " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3127,10 +3401,11 @@ public:
 		decode_F_table(BITSn(word0,0x0008), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "swap " + regIdAsString(m_destination);
+		retString = "swap " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3147,10 +3422,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "swi";
+		retString = "swi";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3180,17 +3456,19 @@ public:
 
 		return false;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		std::string retString = "t" + opMnemonicAsString(m_mnem);
+		std::string opcode = "t" + opMnemonicAsString(m_mnem);
+		// NEW // sprintf(opcode_str, "t.%s", M);
+
+		retString = opcode;
 		if (m_source != m_destination)
 			retString += std::string(" ") + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 
 		if (m_destination2 != iR0)
 			retString += std::string(" R0,") + regIdAsString(m_destination2);
-
-		return retString;
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -3213,10 +3491,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "tfr " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "tfr " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3235,10 +3514,11 @@ public:
 							m_source, m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "tfr " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "tfr " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3257,10 +3537,11 @@ public:
 						m_destination, m_source);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "tfr2 " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
+		retString = "tfr2 " + regIdAsString(m_source) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3293,15 +3574,16 @@ public:
 		m_W = BITSn(word0,0x0100);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
 		std::string source2;
 		std::string destination2;
 		assemble_arguments_from_W_table(m_W, 'X', m_SD, m_ea, source2, destination2);
-		return "tfr3 " +
+		retString = "tfr3 " +
 					regIdAsString(m_source) + "," + regIdAsString(m_destination) + " " +
 					source2 + "," + destination2;
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -3326,10 +3608,11 @@ public:
 		decode_F_table(BITSn(word0,0x08), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "tst " + regIdAsString(m_destination);
+		retString = "tst " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_NONE; }
 };
@@ -3347,10 +3630,11 @@ public:
 		decode_DD_table(BITSn(word0,0x0003), m_source);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "tst2 " + regIdAsString(m_source);
+		retString = "tst2 " + regIdAsString(m_source);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3367,10 +3651,11 @@ public:
 	{
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "wait";
+		retString = "wait";
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3388,10 +3673,11 @@ public:
 		decode_F_table(BITSn(word0,0x0008), m_destination);
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "zero " + regIdAsString(m_destination);
+		retString = "zero " + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 };
@@ -3426,12 +3712,13 @@ public:
 		}
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "shfl " +
+		retString = "shfl " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 
@@ -3469,12 +3756,13 @@ public:
 		}
 		return true;
 	}
-	std::string disassemble() const override
+	void disassemble(std::string& retString) const override
 	{
-		return "shfr " +
+		retString = "shfr " +
 					regIdAsString(m_source) + "," +
 					regIdAsString(m_source2) + "," + regIdAsString(m_destination);
 	}
+	void evaluate(dsp56156_core* cpustate) override {}
 	size_t size() const override { return 1; }
 	size_t accumulatorBitsModified() const override { return BM_HIGH | BM_MIDDLE | BM_LOW; }
 

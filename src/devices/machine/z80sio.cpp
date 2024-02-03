@@ -72,18 +72,19 @@
 //  MACROS / CONSTANTS
 //**************************************************************************
 
-#define LOG_SETUP   (1U << 1)
-#define LOG_READ    (1U << 2)
-#define LOG_INT     (1U << 3)
-#define LOG_CMD     (1U << 4)
-#define LOG_TX      (1U << 5)
-#define LOG_RCV     (1U << 6)
-#define LOG_CTS     (1U << 7)
-#define LOG_DCD     (1U << 8)
-#define LOG_SYNC    (1U << 9)
-#define LOG_BIT     (1U << 10)
-#define LOG_RTS     (1U << 11)
-#define LOG_BRG     (1U << 12)
+//#define LOG_GENERAL (1U <<  0)
+#define LOG_SETUP   (1U <<  1)
+#define LOG_READ    (1U <<  2)
+#define LOG_INT     (1U <<  3)
+#define LOG_CMD     (1U <<  4)
+#define LOG_TX      (1U <<  5)
+#define LOG_RCV     (1U <<  6)
+#define LOG_CTS     (1U <<  7)
+#define LOG_DCD     (1U <<  8)
+#define LOG_SYNC    (1U <<  9)
+#define LOG_BIT     (1U <<  10)
+#define LOG_RTS     (1U <<  11)
+#define LOG_BRG     (1U <<  12)
 
 //#define VERBOSE  (LOG_CMD | LOG_SETUP | LOG_SYNC | LOG_BIT | LOG_TX )
 //#define LOG_OUTPUT_STREAM std::cout
@@ -452,6 +453,24 @@ void z80sio_device::device_validity_check(validity_checker &valid) const
 {
 	if ((m_hostcpu.finder_tag() != finder_base::DUMMY_TAG) && !m_hostcpu)
 		osd_printf_error("Host CPU configured but not found.\n");
+}
+
+//-------------------------------------------------
+//  device_resolve_objects - device-specific setup
+//-------------------------------------------------
+void z80sio_device::device_resolve_objects()
+{
+	LOG("%s\n", FUNCNAME);
+
+	// resolve callbacks
+	m_out_txd_cb.resolve_all_safe();
+	m_out_dtr_cb.resolve_all_safe();
+	m_out_rts_cb.resolve_all_safe();
+	m_out_wrdy_cb.resolve_all_safe();
+	m_out_sync_cb.resolve_all_safe();
+	m_out_int_cb.resolve_safe();
+	m_out_rxdrq_cb.resolve_all_safe();
+	m_out_txdrq_cb.resolve_all_safe();
 }
 
 //-------------------------------------------------
@@ -2288,7 +2307,7 @@ void z80sio_channel::queue_received(uint16_t data, uint32_t error)
 //-------------------------------------------------
 //  cts_w - clear to send handler
 //-------------------------------------------------
-void z80sio_channel::cts_w(int state)
+WRITE_LINE_MEMBER( z80sio_channel::cts_w )
 {
 	if (bool(m_cts) != bool(state))
 	{
@@ -2306,7 +2325,7 @@ void z80sio_channel::cts_w(int state)
 //-------------------------------------------------
 //  dcd_w - data carrier detected handler
 //-------------------------------------------------
-void z80sio_channel::dcd_w(int state)
+WRITE_LINE_MEMBER( z80sio_channel::dcd_w )
 {
 	if (bool(m_dcd) != bool(state))
 	{
@@ -2326,7 +2345,7 @@ void z80sio_channel::dcd_w(int state)
 //-------------------------------------------------
 //  sh_w - Sync Hunt handler
 //-------------------------------------------------
-void z80sio_channel::sync_w(int state)
+WRITE_LINE_MEMBER( z80sio_channel::sync_w )
 {
 	if (bool(m_sync) != bool(state))
 	{
@@ -2344,7 +2363,7 @@ void z80sio_channel::sync_w(int state)
 //-------------------------------------------------
 //  rxc_w - receive clock
 //-------------------------------------------------
-void z80sio_channel::rxc_w(int state)
+WRITE_LINE_MEMBER( z80sio_channel::rxc_w )
 {
 	//LOG("Z80SIO \"%s\" Channel %c : Receiver Clock Pulse\n", owner()->tag(), m_index + 'A');
 	//if ((receive_allowed() || m_rx_bit != 0) && state && !m_rx_clock)
@@ -2469,7 +2488,7 @@ void z80sio_channel::rxc_w(int state)
 //-------------------------------------------------
 //  txc_w - transmit clock
 //-------------------------------------------------
-void z80sio_channel::txc_w(int state)
+WRITE_LINE_MEMBER( z80sio_channel::txc_w )
 {
 	//LOG("Z80SIO \"%s\" Channel %c : Transmitter Clock Pulse\n", owner()->tag(), m_index + 'A');
 	if (!state && m_tx_clock)

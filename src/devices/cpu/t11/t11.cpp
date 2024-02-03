@@ -42,7 +42,6 @@ DEFINE_DEVICE_TYPE(K1801VM2, k1801vm2_device, "k1801vm2", "K1801VM2")
 k1801vm2_device::k1801vm2_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: t11_device(mconfig, K1801VM2, tag, owner, clock)
 {
-	c_insn_set = IS_LEIS | IS_EIS | IS_MXPS | IS_VM2;
 }
 
 t11_device::t11_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock)
@@ -55,7 +54,7 @@ t11_device::t11_device(const machine_config &mconfig, device_type type, const ch
 	, m_berr_active(false)
 	, m_hlt_active(false)
 	, m_out_reset_func(*this)
-	, m_in_iack_func(*this, 0) // default vector (T-11 User's Guide, p. A-11)
+	, m_in_iack_func(*this)
 {
 	m_program_config.m_is_octal = true;
 	for (auto &reg : m_reg)
@@ -67,7 +66,6 @@ t11_device::t11_device(const machine_config &mconfig, device_type type, const ch
 t11_device::t11_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: t11_device(mconfig, T11, tag, owner, clock)
 {
-	c_insn_set = IS_LEIS | IS_MFPT | IS_MXPS | IS_T11;
 }
 
 device_memory_interface::space_config_vector t11_device::memory_space_config() const
@@ -86,7 +84,8 @@ device_memory_interface::space_config_vector t11_device::memory_space_config() c
 
 int t11_device::ROPCODE()
 {
-	int val = m_cache.read_word(PC & 0xfffe);
+	PC &= 0xfffe;
+	int val = m_cache.read_word(PC);
 	PC += 2;
 	return val;
 }
@@ -242,7 +241,7 @@ void t11_device::t11_check_irqs()
 	if (irq->priority > (PSW & 0340))
 	{
 		// call the callback
-		standard_irq_callback(m_cp_state & 15, PC);
+		standard_irq_callback(m_cp_state & 15);
 
 		// T11 encodes the interrupt level on DAL<12:8>
 		uint8_t iaddr = bitswap<4>(~m_cp_state & 15, 0, 1, 2, 3);
@@ -311,6 +310,8 @@ void t11_device::device_start()
 	m_initial_pc = initial_pc[c_initial_mode >> 13];
 	space(AS_PROGRAM).cache(m_cache);
 	space(AS_PROGRAM).specific(m_program);
+	m_out_reset_func.resolve_safe();
+	m_in_iack_func.resolve_safe(0); // default vector (T-11 User's Guide, p. A-11)
 
 	save_item(NAME(m_ppc.w.l));
 	save_item(NAME(m_reg[0].w.l));

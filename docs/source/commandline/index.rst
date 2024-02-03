@@ -1,11 +1,11 @@
-MAME Command-line Usage and OS-Specific Configuration
------------------------------------------------------
+MAME Commandline Usage and OS-Specific Configuration
+----------------------------------------------------
 
 .. toctree::
-    :titlesonly:
+	:titlesonly:
 
-    commandline-all
-    windowsconfig
-    sdlconfig
+	commandline-all
+	windowsconfig
+	sdlconfig
 
-    commandline-index
+	commandline-index

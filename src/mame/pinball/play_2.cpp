@@ -83,11 +83,11 @@ protected:
 	u8 port05_r();
 	void port06_w(u8 data);
 	void port07_w(u8 data);
-	int clear_r();
-	int ef1_r();
-	int ef4_r();
+	DECLARE_READ_LINE_MEMBER(clear_r);
+	DECLARE_READ_LINE_MEMBER(ef1_r);
+	DECLARE_READ_LINE_MEMBER(ef4_r);
 	void clockcnt_w(u16 data);
-	void clock2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(clock2_w);
 	TIMER_DEVICE_CALLBACK_MEMBER(snd_off_callback) { m_1863->set_output_gain(0, 0.00); }
 
 	void play_2_io(address_map &map);
@@ -360,7 +360,7 @@ void play_2_state::port07_w(u8 data)
 			m_io_outputs[8+i*3+j] = (BIT(t, j) && (data == i)) ? 1 : 0;
 }
 
-int play_2_state::clear_r()
+READ_LINE_MEMBER( play_2_state::clear_r )
 {
 	// A hack to make the machine reset itself on boot
 	if (m_resetcnt < 0xff)
@@ -368,12 +368,12 @@ int play_2_state::clear_r()
 	return (m_resetcnt < 0xf0) ? 0 : 1;
 }
 
-int play_2_state::ef1_r()
+READ_LINE_MEMBER( play_2_state::ef1_r )
 {
 	return (!BIT(m_4020->count(), 10)); // inverted
 }
 
-int play_2_state::ef4_r()
+READ_LINE_MEMBER( play_2_state::ef4_r )
 {
 	return BIT(m_io_keyboard[7]->read(), 0); // inverted test button - doesn't seem to do anything
 }
@@ -384,7 +384,7 @@ void play_2_state::clockcnt_w(u16 data)
 		m_4013b->preset_w(!BIT(data, 10)); // Q10 output
 }
 
-void play_2_state::clock2_w(int state)
+WRITE_LINE_MEMBER( play_2_state::clock2_w )
 {
 	m_4013b->clock_w(state);
 	m_maincpu->ef3_w(state); // inverted

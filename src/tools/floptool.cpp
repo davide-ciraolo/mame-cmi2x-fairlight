@@ -8,11 +8,9 @@
 
 #include "image_handler.h"
 
-#include "formats/fsblk.h"
-
+#include "corefile.h"
 #include "corestr.h"
 #include "ioprocs.h"
-#include "path.h"
 #include "strformat.h"
 
 #include "osdcomm.h"
@@ -214,14 +212,14 @@ static int flopconvert(int argc, char *argv[])
 		return 1;
 	}
 
-	if(ih.floppy_load(*source_format)) {
+	if(ih.floppy_load(source_format)) {
 		fprintf(stderr, "Error: Loading as format '%s' failed\n", source_format->m_format->name());
 		return 1;
 	}
 
 	ih.set_on_disk_path(argv[5]);
 
-	if(ih.floppy_save(*dest_format)) {
+	if(ih.floppy_save(dest_format)) {
 		fprintf(stderr, "Error: Saving as format '%s' failed\n", dest_format->m_format->name());
 		return 1;
 	}
@@ -229,39 +227,8 @@ static int flopconvert(int argc, char *argv[])
 	return 0;
 }
 
-static fs::meta_data extract_meta_data(int &argc, char *argv[])
-{
-	fs::meta_data result;
-
-	int new_argc = 0;
-	for (int i = 0; i < argc; i++)
-	{
-		std::optional<fs::meta_name> attrname;
-		if (argv[i][0] == '-' && i < argc - 1)
-			attrname = fs::meta_data::from_entry_name(&argv[i][1]);
-
-		if (attrname)
-		{
-			// we found a metadata variable; set it
-			result.set(*attrname, argv[i + 1]);
-			i++;
-		}
-		else
-		{
-			// we didn't; update argv
-			argv[new_argc++] = argv[i];
-		}
-	}
-
-	// we're done; update the argument count
-	argc = new_argc;
-	return result;
-}
-
 static int flopcreate(int argc, char *argv[])
 {
-	fs::meta_data meta = extract_meta_data(argc, argv);
-
 	if(argc!=5) {
 		fprintf(stderr, "Incorrect number of arguments.\n\n");
 		display_usage(argv[0]);
@@ -288,11 +255,12 @@ static int flopcreate(int argc, char *argv[])
 		return 1;
 	}
 
+	fs::meta_data meta;
 	image_handler ih;
 	ih.set_on_disk_path(argv[4]);
 
-	ih.floppy_create(*create_fs, meta);
-	return ih.floppy_save(*dest_format);
+	ih.floppy_create(create_fs, meta);
+	return ih.floppy_save(dest_format);
 }
 
 static void dir_scan(fs::filesystem_t *fs, u32 depth, const std::vector<std::string> &path, std::vector<std::vector<std::string>> &entries, const std::unordered_map<fs::meta_name, size_t> &nmap, size_t nc, const std::vector<fs::meta_description> &dmetad, const std::vector<fs::meta_description> &fmetad)
@@ -313,7 +281,7 @@ static void dir_scan(fs::filesystem_t *fs, u32 depth, const std::vector<std::str
 				if(!c.m_meta.has(m.m_name))
 					continue;
 				size_t slot = nmap.find(m.m_name)->second;
-				std::string val = c.m_meta.get(m.m_name).as_string();
+				std::string val = c.m_meta.get(m.m_name).to_string();
 				if(slot == 0)
 					val = head + "dir  " + val;
 				entries[id][slot] = val;
@@ -328,7 +296,7 @@ static void dir_scan(fs::filesystem_t *fs, u32 depth, const std::vector<std::str
 				if(!c.m_meta.has(m.m_name))
 					continue;
 				size_t slot = nmap.find(m.m_name)->second;
-				std::string val = c.m_meta.get(m.m_name).as_string();
+				std::string val = c.m_meta.get(m.m_name).to_string();
 				if(slot == 0)
 					val = head + "file " + val;
 				entries[id][slot] = val;
@@ -350,7 +318,7 @@ static int generic_dir(image_handler &ih)
 	if(!vmeta.empty()) {
 		std::string vinf = "Volume:";
 		for(const auto &e : vmetad)
-			vinf += util::string_format(" %s=%s", fs::meta_data::entry_name(e.m_name), vmeta.get(e.m_name).as_string());
+			vinf += util::string_format(" %s=%s", fs::meta_data::entry_name(e.m_name), vmeta.get(e.m_name).to_string());
 		printf("%s\n\n", vinf.c_str());
 	}
 
@@ -420,12 +388,12 @@ static int flopdir(int argc, char *argv[])
 		return 1;
 	}
 
-	if(ih.floppy_load(*source_format)) {
+	if(ih.floppy_load(source_format)) {
 		fprintf(stderr, "Error: Loading as format '%s' failed\n", source_format->m_format->name());
 		return 1;
 	}
 
-	if(ih.floppy_mount_fs(*fs)) {
+	if(ih.floppy_mount_fs(fs)) {
 		fprintf(stderr, "Error: Parsing as filesystem '%s' failed\n", fs->m_manager->name());
 		return 1;
 	}
@@ -455,7 +423,7 @@ static int hddir(int argc, char *argv[])
 		return 1;
 	}
 
-	if(ih.hd_mount_fs(*fs)) {
+	if(ih.hd_mount_fs(fs)) {
 		fprintf(stderr, "Error: Parsing as filesystem '%s' failed\n", fs->m_manager->name());
 		return 1;
 	}
@@ -467,7 +435,6 @@ static int hddir(int argc, char *argv[])
 static int generic_read(image_handler &ih, const char *srcpath, const char *dstpath)
 {
 	auto [fsm, fs] = ih.get_fs();
-	std::ignore = fsm;
 
 	std::vector<std::string> path = ih.path_split(srcpath);
 	auto [err, dfork] = fs->file_read(path);
@@ -515,12 +482,12 @@ static int flopread(int argc, char *argv[])
 		return 1;
 	}
 
-	if(ih.floppy_load(*source_format)) {
+	if(ih.floppy_load(source_format)) {
 		fprintf(stderr, "Error: Loading as format '%s' failed\n", source_format->m_format->name());
 		return 1;
 	}
 
-	if(ih.floppy_mount_fs(*fs)) {
+	if(ih.floppy_mount_fs(fs)) {
 		fprintf(stderr, "Error: Parsing as filesystem '%s' failed\n", fs->m_manager->name());
 		return 1;
 	}
@@ -550,7 +517,7 @@ static int hdread(int argc, char *argv[])
 		return 1;
 	}
 
-	if(ih.hd_mount_fs(*fs)) {
+	if(ih.hd_mount_fs(fs)) {
 		fprintf(stderr, "Error: Parsing as filesystem '%s' failed\n", fs->m_manager->name());
 		return 1;
 	}
@@ -566,7 +533,6 @@ static int generic_write(image_handler &ih, const char *srcpath, const char *dst
 
 	std::vector<std::string> path = ih.path_split(dstpath);
 	auto [err, meta] = fs->metadata(path);
-	std::ignore = meta;
 
 	if(err) {
 		fs::meta_data meta;
@@ -574,7 +540,7 @@ static int generic_write(image_handler &ih, const char *srcpath, const char *dst
 		auto dpath = path;
 		dpath.pop_back();
 		err = fs->file_create(dpath, meta);
-		if(err) {
+		if(!err) {
 			fprintf(stderr, "File creation failure.\n");
 			return 1;
 		}
@@ -582,7 +548,7 @@ static int generic_write(image_handler &ih, const char *srcpath, const char *dst
 
 	auto dfork = image_handler::fload(srcpath);
 	err = fs->file_write(path, dfork);
-	if(err) {
+	if(!err) {
 		fprintf(stderr, "File writing failure.\n");
 		return 1;
 	}
@@ -630,12 +596,12 @@ static int flopwrite(int argc, char *argv[])
 		return 1;
 	}
 
-	if(ih.floppy_load(*source_format)) {
+	if(ih.floppy_load(source_format)) {
 		fprintf(stderr, "Error: Loading as format '%s' failed\n", source_format->m_format->name());
 		return 1;
 	}
 
-	if(ih.floppy_mount_fs(*fs)) {
+	if(ih.floppy_mount_fs(fs)) {
 		fprintf(stderr, "Error: Parsing as filesystem '%s' failed\n", fs->m_manager->name());
 		return 1;
 	}
@@ -645,7 +611,7 @@ static int flopwrite(int argc, char *argv[])
 		return err;
 
 	ih.fs_to_floppy();
-	if(ih.floppy_save(*source_format))
+	if(ih.floppy_save(source_format))
 		return 1;
 
 	return 0;
@@ -674,7 +640,7 @@ static int hdwrite(int argc, char *argv[])
 		return 1;
 	}
 
-	if(ih.hd_mount_fs(*fs)) {
+	if(ih.hd_mount_fs(fs)) {
 		fprintf(stderr, "Error: Parsing as filesystem '%s' failed\n", fs->m_manager->name());
 		return 1;
 	}

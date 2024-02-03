@@ -1,30 +1,23 @@
 // Common/Lang.h
 
-#ifndef ZIP7_INC_COMMON_LANG_H
-#define ZIP7_INC_COMMON_LANG_H
+#ifndef __COMMON_LANG_H
+#define __COMMON_LANG_H
 
 #include "MyString.h"
 
 class CLang
 {
   wchar_t *_text;
+  CRecordVector<UInt32> _ids;
+  CRecordVector<UInt32> _offsets;
 
   bool OpenFromString(const AString &s);
 public:
-  CRecordVector<UInt32> _ids;
-  CRecordVector<UInt32> _offsets;
-  UStringVector Comments;
-
-  CLang(): _text(NULL) {}
+  CLang(): _text(0) {}
   ~CLang() { Clear(); }
-  bool Open(CFSTR fileName, const char *id);
+  bool Open(CFSTR fileName, const wchar_t *id);
   void Clear() throw();
-  bool IsEmpty() const { return _ids.IsEmpty(); }
   const wchar_t *Get(UInt32 id) const throw();
-  const wchar_t *Get_by_index(unsigned index) const throw()
-  {
-    return _text + (size_t)_offsets[index];
-  }
 };
 
 #endif

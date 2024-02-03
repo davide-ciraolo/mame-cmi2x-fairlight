@@ -9,7 +9,7 @@ void pocketc_state::out_a_w(uint8_t data)
 	m_outa = data;
 }
 
-int pocketc_state::brk_r()
+READ_LINE_MEMBER(pocketc_state::brk_r)
 {
 	return BIT(m_extra->read(), 0);
 }

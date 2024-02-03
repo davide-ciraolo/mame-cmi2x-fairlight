@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "dinetwork.h"
-
 class dp83932c_device
 	: public device_t
 	, public device_network_interface

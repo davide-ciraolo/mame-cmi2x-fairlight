@@ -16,6 +16,7 @@ SMSC FDC37C665GT High Performance Multi-Mode Parallel Port Super I/O Floppy Disk
 // floppy disk controller
 #include "machine/upd765.h"
 #include "imagedev/floppy.h"
+#include "formats/pc_dsk.h"
 // parallel port
 #include "machine/pc_lpt.h"
 // serial port
@@ -47,36 +48,36 @@ public:
 	auto nrts2() { return m_nrts2_callback.bind(); }
 
 	// chip pins for uarts
-	void rxd1_w(int state);
-	void ndcd1_w(int state);
-	void ndsr1_w(int state);
-	void nri1_w(int state);
-	void ncts1_w(int state);
-	void rxd2_w(int state);
-	void ndcd2_w(int state);
-	void ndsr2_w(int state);
-	void nri2_w(int state);
-	void ncts2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(rxd1_w);
+	DECLARE_WRITE_LINE_MEMBER(ndcd1_w);
+	DECLARE_WRITE_LINE_MEMBER(ndsr1_w);
+	DECLARE_WRITE_LINE_MEMBER(nri1_w);
+	DECLARE_WRITE_LINE_MEMBER(ncts1_w);
+	DECLARE_WRITE_LINE_MEMBER(rxd2_w);
+	DECLARE_WRITE_LINE_MEMBER(ndcd2_w);
+	DECLARE_WRITE_LINE_MEMBER(ndsr2_w);
+	DECLARE_WRITE_LINE_MEMBER(nri2_w);
+	DECLARE_WRITE_LINE_MEMBER(ncts2_w);
 
 protected:
 	// device-level overrides
 	virtual void device_start() override;
 
 	// for the internal floppy controller
-	void irq_floppy_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_floppy_w);
 
 	// for the internal parallel port
-	void irq_parallel_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_parallel_w);
 
 	// for the internal uarts
-	void irq_serial1_w(int state);
-	void txd_serial1_w(int state);
-	void dtr_serial1_w(int state);
-	void rts_serial1_w(int state);
-	void irq_serial2_w(int state);
-	void txd_serial2_w(int state);
-	void dtr_serial2_w(int state);
-	void rts_serial2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_serial1_w);
+	DECLARE_WRITE_LINE_MEMBER(txd_serial1_w);
+	DECLARE_WRITE_LINE_MEMBER(dtr_serial1_w);
+	DECLARE_WRITE_LINE_MEMBER(rts_serial1_w);
+	DECLARE_WRITE_LINE_MEMBER(irq_serial2_w);
+	DECLARE_WRITE_LINE_MEMBER(txd_serial2_w);
+	DECLARE_WRITE_LINE_MEMBER(dtr_serial2_w);
+	DECLARE_WRITE_LINE_MEMBER(rts_serial2_w);
 
 private:
 	// put your private members here

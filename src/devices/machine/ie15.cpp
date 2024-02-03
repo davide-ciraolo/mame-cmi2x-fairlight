@@ -19,6 +19,7 @@
 #include "ie15.lh"
 
 
+//#define LOG_GENERAL (1U << 0) //defined in logmacro.h already
 #define LOG_RAM      (1U << 1)
 #define LOG_CPU      (1U << 2)
 #define LOG_KBD      (1U << 3)
@@ -245,7 +246,7 @@ TIMER_CALLBACK_MEMBER(ie15_device::hblank_onoff_tick)
 
 /* serial port */
 
-void ie15_device::rs232_conn_rxd_w(int state)
+WRITE_LINE_MEMBER(ie15_device::rs232_conn_rxd_w)
 {
 	device_serial_interface::rx_w(state);
 }
@@ -301,7 +302,7 @@ void ie15_device::serial_speed_w(uint8_t data)
 	return;
 }
 
-void ie15_device::update_serial(int state)
+WRITE_LINE_MEMBER(ie15_device::update_serial)
 {
 	int startbits = 1;
 	int databits = m_rs232_databits->read();
@@ -465,9 +466,16 @@ void ie15_device::kbd_put(uint16_t data)
 	}
 }
 
-void ie15_device::kbd_sdv(int state)
+WRITE_LINE_MEMBER( ie15_device::kbd_sdv )
 {
 	m_kbd_sdv = state;
+}
+
+void ie15_device::device_resolve_objects()
+{
+	m_rs232_conn_dtr_handler.resolve_safe();
+	m_rs232_conn_rts_handler.resolve_safe();
+	m_rs232_conn_txd_handler.resolve_safe();
 }
 
 void ie15_device::device_start()

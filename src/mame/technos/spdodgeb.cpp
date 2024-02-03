@@ -61,7 +61,7 @@ public:
 
 	void spdodgeb(machine_config &config);
 
-	int mcu_busy_r();
+	DECLARE_READ_LINE_MEMBER(mcu_busy_r);
 
 protected:
 	virtual void machine_start() override;
@@ -95,7 +95,7 @@ private:
 	tilemap_t *m_bg_tilemap = nullptr;
 	uint16_t m_lastscroll = 0;
 
-	template <uint8_t Which> void adpcm_int(int state);
+	template <uint8_t Which> DECLARE_WRITE_LINE_MEMBER(adpcm_int);
 	void adpcm_w(offs_t offset, uint8_t data);
 	uint8_t mcu63701_r(offs_t offset);
 	void mcu_data_w(offs_t offset, uint8_t data);
@@ -356,7 +356,7 @@ void spdodgeb_state::adpcm_w(offs_t offset, uint8_t data)
 }
 
 template <uint8_t Which>
-void spdodgeb_state::adpcm_int(int state)
+WRITE_LINE_MEMBER(spdodgeb_state::adpcm_int)
 {
 	if (m_adpcm_pos[Which] >= m_adpcm_end[Which] || m_adpcm_pos[Which] >= 0x10000)
 	{
@@ -430,12 +430,15 @@ void spdodgeb_state::sound_map(address_map &map)
 
 void spdodgeb_state::mcu_map(address_map &map)
 {
+	map(0x0000, 0x0027).m(m_mcu, FUNC(hd63701y0_cpu_device::hd6301y_io));
+	map(0x0040, 0x013f).ram();
 	map(0x8080, 0x8080).r("mculatch", FUNC(generic_latch_8_device::read));
 	map(0x8081, 0x8085).w(FUNC(spdodgeb_state::mcu_data_w));
+	map(0xc000, 0xffff).rom().region("mcu", 0);
 }
 
 
-int spdodgeb_state::mcu_busy_r()
+READ_LINE_MEMBER(spdodgeb_state::mcu_busy_r)
 {
 	return BIT(m_mcu_status, 7);
 }

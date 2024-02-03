@@ -116,7 +116,7 @@ void einstein_speculator_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void einstein_speculator_device::ic5a_q_w(int state)
+WRITE_LINE_MEMBER( einstein_speculator_device::ic5a_q_w )
 {
 	m_ic5b->a_w(state);
 
@@ -127,7 +127,7 @@ void einstein_speculator_device::ic5a_q_w(int state)
 	}
 }
 
-void einstein_speculator_device::ic5b_q_w(int state)
+WRITE_LINE_MEMBER( einstein_speculator_device::ic5b_q_w )
 {
 	if (m_nmisel == 0)
 	{

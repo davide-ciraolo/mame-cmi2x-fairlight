@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/ep64_dsk.cpp
+    formats/ep64_dsk.c
 
     Enterprise Sixty Four disk image format
 
@@ -14,17 +14,17 @@ ep64_format::ep64_format() : wd177x_format(formats)
 {
 }
 
-const char *ep64_format::name() const noexcept
+const char *ep64_format::name() const
 {
 	return "ep64";
 }
 
-const char *ep64_format::description() const noexcept
+const char *ep64_format::description() const
 {
 	return "Enteprise Sixty Four disk image";
 }
 
-const char *ep64_format::extensions() const noexcept
+const char *ep64_format::extensions() const
 {
 	return "img";
 }

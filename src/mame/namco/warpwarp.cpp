@@ -220,7 +220,7 @@ void warpwarp_state::machine_start()
 }
 
 /* Interrupt Gen */
-void warpwarp_state::vblank_irq(int state)
+WRITE_LINE_MEMBER(warpwarp_state::vblank_irq)
 {
 	if (state && m_ball_on)
 		m_maincpu->set_input_line(0, ASSERT_LINE);
@@ -266,30 +266,30 @@ void warpwarp_state::geebee_out6_w(offs_t offset, uint8_t data)
 	}
 }
 
-void warpwarp_state::counter_w(int state)
+WRITE_LINE_MEMBER(warpwarp_state::counter_w)
 {
 	machine().bookkeeping().coin_counter_w(0, state);
 }
 
-void warpwarp_state::lock_out_w(int state)
+WRITE_LINE_MEMBER(warpwarp_state::lock_out_w)
 {
 	machine().bookkeeping().coin_lockout_global_w(!state);
 }
 
-void warpwarp_state::geebee_bgw_w(int state)
+WRITE_LINE_MEMBER(warpwarp_state::geebee_bgw_w)
 {
 	m_geebee_bgw = state;
 	machine().tilemap().mark_all_dirty();
 }
 
-void warpwarp_state::ball_on_w(int state)
+WRITE_LINE_MEMBER(warpwarp_state::ball_on_w)
 {
 	m_ball_on = state;
 	if (!state)
 		m_maincpu->set_input_line(0, CLEAR_LINE);
 }
 
-void warpwarp_state::inv_w(int state)
+WRITE_LINE_MEMBER(warpwarp_state::inv_w)
 {
 	flip_screen_set(state);
 }
@@ -932,11 +932,11 @@ ROM_END
 
 ROM_START( navarone )
 	ROM_REGION( 0x10000, "maincpu", 0 )
-	ROM_LOAD( "navarone.p1",  0x0000, 0x0800, CRC(5a32016b) SHA1(d856d069eba470a81341de0bf47eca2a629a69a6) )
-	ROM_LOAD( "navarone.p2",  0x0800, 0x0800, CRC(b1c86fe3) SHA1(0293b742806c1517cb126443701115a3427fc60a) )
+	ROM_LOAD( "navalone.p1",  0x0000, 0x0800, CRC(5a32016b) SHA1(d856d069eba470a81341de0bf47eca2a629a69a6) )
+	ROM_LOAD( "navalone.p2",  0x0800, 0x0800, CRC(b1c86fe3) SHA1(0293b742806c1517cb126443701115a3427fc60a) )
 
 	ROM_REGION( 0x800, "gfx1", 0 )
-	ROM_LOAD( "navarone.chr", 0x0000, 0x0800, CRC(b26c6170) SHA1(ae0aec2b60e1fd3b212e311afb1c588b2b286433) )
+	ROM_LOAD( "navalone.chr", 0x0000, 0x0800, CRC(b26c6170) SHA1(ae0aec2b60e1fd3b212e311afb1c588b2b286433) )
 ROM_END
 
 ROM_START( kaitein )

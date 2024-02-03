@@ -140,7 +140,7 @@ void fastfred_state::fastfred_attributes_w(offs_t offset, uint8_t data)
 }
 
 
-void fastfred_state::charbank1_w(int state)
+WRITE_LINE_MEMBER(fastfred_state::charbank1_w)
 {
 	uint16_t new_data = (m_charbank & 0x0200) | (state << 8);
 
@@ -152,7 +152,7 @@ void fastfred_state::charbank1_w(int state)
 	}
 }
 
-void fastfred_state::charbank2_w(int state)
+WRITE_LINE_MEMBER(fastfred_state::charbank2_w)
 {
 	uint16_t new_data = (m_charbank & 0x0100) | (state << 9);
 
@@ -165,7 +165,7 @@ void fastfred_state::charbank2_w(int state)
 }
 
 
-void fastfred_state::colorbank1_w(int state)
+WRITE_LINE_MEMBER(fastfred_state::colorbank1_w)
 {
 	uint8_t new_data = (m_colorbank & 0x10) | (state << 3);
 
@@ -177,7 +177,7 @@ void fastfred_state::colorbank1_w(int state)
 	}
 }
 
-void fastfred_state::colorbank2_w(int state)
+WRITE_LINE_MEMBER(fastfred_state::colorbank2_w)
 {
 	uint8_t new_data = (m_colorbank & 0x08) | (state << 4);
 
@@ -191,14 +191,14 @@ void fastfred_state::colorbank2_w(int state)
 
 
 
-void fastfred_state::flip_screen_x_w(int state)
+WRITE_LINE_MEMBER(fastfred_state::flip_screen_x_w)
 {
 	flip_screen_x_set(state);
 
 	m_bg_tilemap->set_flip((flip_screen_x() ? TILEMAP_FLIPX : 0) | (flip_screen_y() ? TILEMAP_FLIPY : 0));
 }
 
-void fastfred_state::flip_screen_y_w(int state)
+WRITE_LINE_MEMBER(fastfred_state::flip_screen_y_w)
 {
 	flip_screen_y_set(state);
 
@@ -314,7 +314,7 @@ void fastfred_state::imago_fg_videoram_w(offs_t offset, uint8_t data)
 	m_fg_tilemap->mark_tile_dirty(offset);
 }
 
-void fastfred_state::imago_charbank_w(int state)
+WRITE_LINE_MEMBER(fastfred_state::imago_charbank_w)
 {
 	if (m_charbank != state)
 	{

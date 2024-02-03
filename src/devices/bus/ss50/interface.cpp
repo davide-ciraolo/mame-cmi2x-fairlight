@@ -120,6 +120,9 @@ ss50_interface_port_device::ss50_interface_port_device(const machine_config &mco
 
 void ss50_interface_port_device::device_resolve_objects()
 {
+	m_irq_cb.resolve_safe();
+	m_firq_cb.resolve_safe();
+
 	m_card = get_card_device();
 	if (m_card != nullptr)
 		m_card->m_slot = this;
@@ -168,31 +171,31 @@ void ss50_interface_port_device::write(offs_t offset, u8 data)
 //  fN_w - baud rate clocks for serial interfaces
 //-------------------------------------------------
 
-void ss50_interface_port_device::f110_w(int state)
+WRITE_LINE_MEMBER(ss50_interface_port_device::f110_w)
 {
 	if (m_card != nullptr)
 		m_card->f110_w(state);
 }
 
-void ss50_interface_port_device::f150_9600_w(int state)
+WRITE_LINE_MEMBER(ss50_interface_port_device::f150_9600_w)
 {
 	if (m_card != nullptr)
 		m_card->f150_9600_w(state);
 }
 
-void ss50_interface_port_device::f300_w(int state)
+WRITE_LINE_MEMBER(ss50_interface_port_device::f300_w)
 {
 	if (m_card != nullptr)
 		m_card->f300_w(state);
 }
 
-void ss50_interface_port_device::f600_4800_w(int state)
+WRITE_LINE_MEMBER(ss50_interface_port_device::f600_4800_w)
 {
 	if (m_card != nullptr)
 		m_card->f600_4800_w(state);
 }
 
-void ss50_interface_port_device::f600_1200_w(int state)
+WRITE_LINE_MEMBER(ss50_interface_port_device::f600_1200_w)
 {
 	if (m_card != nullptr)
 		m_card->f600_1200_w(state);

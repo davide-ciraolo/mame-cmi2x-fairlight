@@ -260,7 +260,7 @@ TIMER_DEVICE_CALLBACK_MEMBER(ssv_state::interrupt)
 	}
 }
 
-void gdfs_state::adc_int_w(int state)
+WRITE_LINE_MEMBER(gdfs_state::adc_int_w)
 {
 	if (state)
 	{

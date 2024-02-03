@@ -61,7 +61,7 @@ void uts_extw_keyboard_device::device_start()
 	save_item(NAME(m_prog_line));
 }
 
-void uts_extw_keyboard_device::ready_w(int state)
+WRITE_LINE_MEMBER(uts_extw_keyboard_device::ready_w)
 {
 	m_ready_line = bool(state);
 }
@@ -93,12 +93,12 @@ void uts_extw_keyboard_device::t0_clock(u32 clk)
 {
 }
 
-int uts_extw_keyboard_device::t1_r()
+READ_LINE_MEMBER(uts_extw_keyboard_device::t1_r)
 {
 	return BIT(m_shift_register, 7);
 }
 
-void uts_extw_keyboard_device::prog_w(int state)
+WRITE_LINE_MEMBER(uts_extw_keyboard_device::prog_w)
 {
 	if (!m_prog_line && state)
 	{

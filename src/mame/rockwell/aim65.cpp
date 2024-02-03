@@ -50,8 +50,8 @@ void aim65_state::mem_map(address_map &map)
 	map(0x4000, 0x7fff).rom(); /* 4 ROM sockets in 16K PROM/ROM module */
 	map(0x8000, 0x9fff).noprw(); /* User available expansions */
 	map(0xa000, 0xa00f).mirror(0x3f0).m(m_via1, FUNC(via6522_device::map)); // user via
-	map(0xa400, 0xa47f).m(m_riot, FUNC(mos6532_device::ram_map));
-	map(0xa480, 0xa497).m(m_riot, FUNC(mos6532_device::io_map));
+	map(0xa400, 0xa47f).m(m_riot, FUNC(mos6532_new_device::ram_map));
+	map(0xa480, 0xa497).m(m_riot, FUNC(mos6532_new_device::io_map));
 	map(0xa498, 0xa7ff).noprw(); /* Not available */
 	map(0xa800, 0xa80f).mirror(0x3f0).m(m_via0, FUNC(via6522_device::map)); // system via
 	map(0xac00, 0xac03).rw(m_pia, FUNC(pia6821_device::read), FUNC(pia6821_device::write));
@@ -178,28 +178,29 @@ void aim65_state::aim65_palette(palette_device &palette) const
     MACHINE DRIVERS
 ***************************************************************************/
 
-std::pair<std::error_condition, std::string> aim65_state::load_cart(
-		device_image_interface &image,
-		generic_slot_device *slot,
-		const char *slot_tag)
+image_init_result aim65_state::load_cart(device_image_interface &image, generic_slot_device *slot, const char *slot_tag)
 {
 	uint32_t size = slot->common_get_size(slot_tag);
 
 	if (size > 0x1000)
-		return std::make_pair(image_error::INVALIDLENGTH, "Unsupported ROM size (must be no more than 4K)");
+	{
+		image.seterror(image_error::INVALIDIMAGE, "Unsupported ROM size");
+		return image_init_result::FAIL;
+	}
 
 	if (image.loaded_through_softlist() && image.get_software_region(slot_tag) == nullptr)
 	{
-		// FIXME: error message seems to be outdated - actual error seems to be incorrect region name in software item
-		return std::make_pair(
-				image_error::UNSUPPORTED,
-				util::string_format("Unsupported file name extension (socket '%1$s' only accepts files with '.%1$s' extension", slot_tag));
+		std::string errmsg = string_format(
+				"Attempted to load file with wrong extension\nSocket '%s' only accepts files with '.%s' extension",
+				slot_tag, slot_tag);
+		image.seterror(image_error::INVALIDIMAGE, errmsg.c_str());
+		return image_init_result::FAIL;
 	}
 
 	slot->rom_alloc(size, GENERIC_ROM8_WIDTH, ENDIANNESS_LITTLE);
 	slot->common_load_rom(slot->get_rom_base(), size, slot_tag);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 // TTY terminal settings. To use, turn KB/TTY switch to TTY, reset, press DEL. All input to be in UPPERCASE.
@@ -246,7 +247,7 @@ void aim65_state::aim65(machine_config &config)
 	SPEAKER(config, "mono").front_center();
 
 	/* other devices */
-	MOS6532(config, m_riot, AIM65_CLOCK);
+	MOS6532_NEW(config, m_riot, AIM65_CLOCK);
 	m_riot->pa_wr_callback().set([this] (u8 data) { m_riot_port_a = data; });
 	m_riot->pb_rd_callback().set([this] () { return aim65_state::z33_pb_r(); });
 	m_riot->irq_wr_callback().set_inputline(m_maincpu, M6502_IRQ_LINE);
@@ -267,7 +268,7 @@ void aim65_state::aim65(machine_config &config)
 	MOS6522(config, m_via1, AIM65_CLOCK);
 	m_via1->irq_handler().set_inputline(m_maincpu, M6502_IRQ_LINE);
 
-	PIA6821(config, m_pia);
+	PIA6821(config, m_pia, 0);
 	m_pia->writepa_handler().set([this] (u8 data) { aim65_state::u1_pa_w(data); });
 	m_pia->writepb_handler().set([this] (u8 data) { aim65_state::u1_pb_w(data); });
 

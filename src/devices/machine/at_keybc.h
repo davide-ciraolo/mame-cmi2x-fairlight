@@ -36,14 +36,15 @@ public:
 	void command_w(uint8_t data);
 
 	// inputs from keyboard
-	void kbd_clk_w(int state);
-	void kbd_data_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(kbd_clk_w);
+	DECLARE_WRITE_LINE_MEMBER(kbd_data_w);
 
 protected:
 	// trampoline constructor
 	at_kbc_device_base(machine_config const &mconfig, device_type type, char const *tag, device_t *owner, u32 clock);
 
 	// device_t implementation
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 
 	// host outputs - use 1 = asserted, 0 = deasserted
@@ -115,8 +116,8 @@ public:
 	virtual uint8_t status_r() override;
 
 	// inputs from aux
-	void aux_clk_w(int state);
-	void aux_data_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(aux_clk_w);
+	DECLARE_WRITE_LINE_MEMBER(aux_data_w);
 
 	// standard constructor
 	ps2_keyboard_controller_device(machine_config const &mconfig, char const *tag, device_t *owner, u32 clock);
@@ -125,6 +126,7 @@ protected:
 	// device_t implementation
 	virtual tiny_rom_entry const *device_rom_region() const override;
 	virtual void device_add_mconfig(machine_config &config) override;
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 
 private:

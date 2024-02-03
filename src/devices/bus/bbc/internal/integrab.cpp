@@ -157,8 +157,11 @@ uint8_t bbc_integrab_device::romsel_r(offs_t offset)
 
 	switch (offset & 0x0c)
 	{
+	case 0x08:
+		data = m_rtc->read(0);
+		break;
 	case 0x0c:
-		data = m_rtc->data_r();
+		data = m_rtc->read(1);
 		break;
 	}
 
@@ -191,10 +194,10 @@ void bbc_integrab_device::romsel_w(offs_t offset, uint8_t data)
 		m_ramsel = data;
 		break;
 	case 0x08:
-		m_rtc->address_w(data);
+		m_rtc->write(0, data);
 		break;
 	case 0x0c:
-		m_rtc->data_w(data);
+		m_rtc->write(1, data);
 		break;
 	}
 

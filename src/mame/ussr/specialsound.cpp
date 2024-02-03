@@ -66,19 +66,19 @@ void specimx_sound_device::sound_stream_update(sound_stream &stream, std::vector
 //  PIT callbacks
 //-------------------------------------------------
 
-void specimx_sound_device::set_input_ch0(int state)
+WRITE_LINE_MEMBER(specimx_sound_device::set_input_ch0)
 {
 	m_mixer_channel->update();
 	m_specimx_input[0] = state;
 }
 
-void specimx_sound_device::set_input_ch1(int state)
+WRITE_LINE_MEMBER(specimx_sound_device::set_input_ch1)
 {
 	m_mixer_channel->update();
 	m_specimx_input[1] = state;
 }
 
-void specimx_sound_device::set_input_ch2(int state)
+WRITE_LINE_MEMBER(specimx_sound_device::set_input_ch2)
 {
 	m_mixer_channel->update();
 	m_specimx_input[2] = state;

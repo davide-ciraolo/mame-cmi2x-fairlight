@@ -16,9 +16,6 @@
 #include "emu.h"
 #include "screen.h"
 
-
-namespace {
-
 class sealy_fr_state : public driver_device
 {
 public:
@@ -42,8 +39,6 @@ void sealy_fr_state::sealy_fr(machine_config &config)
 {
 	// unemulated Frontrunner1s SOC
 }
-
-} // anonymous namespace
 
 
 ROM_START( snowbwar )

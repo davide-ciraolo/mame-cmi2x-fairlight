@@ -206,20 +206,17 @@ void radio86_state::radio86_romdisk_portc_w(u8 data)
 
 I8275_DRAW_CHARACTER_MEMBER(radio86_state::display_pixels)
 {
-	using namespace i8275_attributes;
-
 	rgb_t const *const palette = m_palette->palette()->entry_list_raw();
 	u8 pixels = m_chargen[(linecount & 7) + (charcode << 3)] ^ 0xff;
-	if (BIT(attrcode, VSP))
+	if (vsp)
 		pixels = 0;
 
-	if (BIT(attrcode, LTEN))
+	if (lten)
 		pixels = 0xff;
 
-	if (BIT(attrcode, RVV))
+	if (rvv)
 		pixels ^= 0xff;
 
-	bool hlgt = BIT(attrcode, HLGT);
 	for (u8 i = 0; i < 6; i++)
 		bitmap.pix(y, x + i) = palette[(pixels >> (5-i)) & 1 ? (hlgt ? 2 : 1) : 0];
 }

@@ -52,7 +52,7 @@ protected:
 
 	void write_portb(uint8_t data);
 	uint8_t read_portc();
-	void write_centronics_busy(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_busy);
 
 private:
 	bool m_centronics_busy;

@@ -31,26 +31,26 @@ public:
 
 	template <typename T> void set_address_space(T &&tag, int no) { m_address_space.set_tag(std::forward<T>(tag), no); }
 
-	// device_image_interface implementation
-	virtual std::pair<std::error_condition, std::string> call_load() override;
+	// image-level overrides
+	virtual image_init_result call_load() override;
 	virtual void call_unload() override;
 
 	virtual bool is_reset_on_load() const noexcept override { return true; }
 	virtual const char *image_interface() const noexcept override { return "a2600_cart"; }
 	virtual const char *file_extensions() const noexcept override { return "bin,a26"; }
 
-	// device_slot_interface implementation
+	// slot interface overrides
 	virtual std::string get_default_card_software(get_default_card_software_hook &hook) const override;
 
 	int get_cart_type() { return m_type; }
 	static int identify_cart_type(const uint8_t *ROM, uint32_t len);
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 
 private:
-	device_vcs_cart_interface *m_cart;
+	device_vcs_cart_interface*       m_cart;
 	int m_type;
 	optional_address_space m_address_space;
 

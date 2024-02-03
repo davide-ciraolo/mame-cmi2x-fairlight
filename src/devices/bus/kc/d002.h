@@ -35,13 +35,13 @@ protected:
 	virtual void write(offs_t offset, uint8_t data) override;
 	virtual void io_read(offs_t offset, uint8_t &data) override;
 	virtual void io_write(offs_t offset, uint8_t data) override;
-	virtual void mei_w(int state) override;
+	virtual DECLARE_WRITE_LINE_MEMBER( mei_w ) override;
 
 private:
 	// interface callbacks
-	void out_irq_w(int state);
-	void out_nmi_w(int state);
-	void out_halt_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( out_irq_w );
+	DECLARE_WRITE_LINE_MEMBER( out_nmi_w );
+	DECLARE_WRITE_LINE_MEMBER( out_halt_w );
 
 	kcexp_slot_device *m_slot;
 

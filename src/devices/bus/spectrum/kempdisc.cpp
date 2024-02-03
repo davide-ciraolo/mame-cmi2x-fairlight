@@ -162,7 +162,7 @@ void spectrum_kempdisc_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-int spectrum_kempdisc_device::romcs()
+READ_LINE_MEMBER(spectrum_kempdisc_device::romcs)
 {
 	return m_romcs | m_exp->romcs();
 }

@@ -14,17 +14,17 @@ rc759_format::rc759_format() : wd177x_format(formats)
 {
 }
 
-const char *rc759_format::name() const noexcept
+const char *rc759_format::name() const
 {
 	return "rc759";
 }
 
-const char *rc759_format::description() const noexcept
+const char *rc759_format::description() const
 {
 	return "RC759 disk image";
 }
 
-const char *rc759_format::extensions() const noexcept
+const char *rc759_format::extensions() const
 {
 	return "img";
 }

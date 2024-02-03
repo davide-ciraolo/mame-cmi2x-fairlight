@@ -35,6 +35,12 @@ protected:
 	{
 	}
 
+	// device_interface overrides
+	virtual void interface_post_start() override
+	{
+		m_out_scb.resolve_safe();
+	}
+
 	devcb_write_line m_out_scb;
 };
 

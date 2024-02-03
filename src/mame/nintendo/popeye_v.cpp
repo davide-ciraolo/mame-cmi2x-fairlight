@@ -362,8 +362,11 @@ void tnx1_state::draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect)
 
 void tnx1_state::draw_field(bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
-	for (int y = (cliprect.min_y & ~1) + m_field; y <= cliprect.max_y; y += 2)
-		for (int x = cliprect.min_x; x <= cliprect.max_x; x++)
+	int x;
+	int y;
+
+	for (y=(cliprect.min_y & ~1) + m_field; y<=cliprect.max_y; y += 2)
+		for (x=cliprect.min_x; x<=cliprect.max_x; x++)
 			bitmap.pix(y, x) = 0;
 }
 

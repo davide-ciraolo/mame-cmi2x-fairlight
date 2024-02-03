@@ -426,7 +426,7 @@ void i82439tx_device::update_smram_mappings()
 	}
 }
 
-void i82439tx_device::smi_act_w(int state)
+WRITE_LINE_MEMBER(i82439tx_device::smi_act_w)
 {
 	// state is 0 when smm is not active
 	// but smiact_n reflects the state of the SMIACT# pin

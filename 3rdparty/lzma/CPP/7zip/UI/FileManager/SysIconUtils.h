@@ -1,11 +1,11 @@
 // SysIconUtils.h
 
-#ifndef ZIP7_INC_SYS_ICON_UTILS_H
-#define ZIP7_INC_SYS_ICON_UTILS_H
+#ifndef __SYS_ICON_UTILS_H
+#define __SYS_ICON_UTILS_H
 
 #include "../../../Common/MyWindows.h"
 
-#include <CommCtrl.h>
+#include <commctrl.h>
 
 #include "../../../Common/MyString.h"
 
@@ -50,6 +50,13 @@ public:
 DWORD_PTR GetRealIconIndex(CFSTR path, DWORD attrib, int &iconIndex);
 int GetIconIndexForCSIDL(int csidl);
 
-HIMAGELIST GetSysImageList(bool smallIcons);
+inline HIMAGELIST GetSysImageList(bool smallIcons)
+{
+  SHFILEINFO shellInfo;
+  return (HIMAGELIST)SHGetFileInfo(TEXT(""),
+      FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY,
+      &shellInfo, sizeof(shellInfo),
+      SHGFI_USEFILEATTRIBUTES | SHGFI_SYSICONINDEX | (smallIcons ? SHGFI_SMALLICON : SHGFI_ICON));
+}
 
 #endif

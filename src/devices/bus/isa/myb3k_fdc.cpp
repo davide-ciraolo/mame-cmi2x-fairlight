@@ -24,7 +24,10 @@
 
 #include "emu.h"
 #include "myb3k_fdc.h"
+#include "formats/pc_dsk.h"
+#include "formats/imd_dsk.h"
 
+//#define LOG_GENERAL (1U << 0) //defined in logmacro.h already
 #define LOG_READ    (1U << 1)
 #define LOG_CMD     (1U << 2)
 
@@ -161,7 +164,7 @@ void isa8_myb3k_fdc471x_device_base::device_start()
 //-------------------------------------------------
 //  irq_w - signal interrupt request to ISA bus
 //-------------------------------------------------
-void isa8_myb3k_fdc471x_device_base::irq_w(int state)
+WRITE_LINE_MEMBER( isa8_myb3k_fdc471x_device_base::irq_w )
 {
 	LOG("%s: %d\n", FUNCNAME, state);
 	m_isa->irq6_w(state ? ASSERT_LINE : CLEAR_LINE);
@@ -170,7 +173,7 @@ void isa8_myb3k_fdc471x_device_base::irq_w(int state)
 //-------------------------------------------------
 //  drq_w - signal dma request to ISA bus
 //-------------------------------------------------
-void isa8_myb3k_fdc471x_device_base::drq_w(int state)
+WRITE_LINE_MEMBER( isa8_myb3k_fdc471x_device_base::drq_w )
 {
 	LOG("%s: %d\n", FUNCNAME, state);
 

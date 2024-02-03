@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <!--
-license:CC0-1.0
-authors:hap
+license:CC0
 -->
 <mamelayout version="2">
 
@@ -12,6 +11,7 @@ authors:hap
 <!-- define lcd indicators -->
 
 	<element name="ind_left" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="&#x25c4;" align="1" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -21,6 +21,7 @@ authors:hap
 	</element>
 
 	<element name="ind_right" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="&#x25ba;" align="2" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -30,6 +31,7 @@ authors:hap
 	</element>
 
 	<element name="ind_shift" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="SHIFT" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -39,6 +41,7 @@ authors:hap
 	</element>
 
 	<element name="ind_ctl" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="CTL" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -48,6 +51,7 @@ authors:hap
 	</element>
 
 	<element name="ind_fn" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="FN" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -57,6 +61,7 @@ authors:hap
 	</element>
 
 	<element name="ind_deg" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="DEG" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -66,6 +71,7 @@ authors:hap
 	</element>
 
 	<element name="ind_rad" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="RAD" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -75,6 +81,7 @@ authors:hap
 	</element>
 
 	<element name="ind_grad" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="GRAD" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -84,6 +91,7 @@ authors:hap
 	</element>
 
 	<element name="ind_io" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="I/O" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -93,6 +101,7 @@ authors:hap
 	</element>
 
 	<element name="ind_ucl" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="UCL" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -102,6 +111,7 @@ authors:hap
 	</element>
 
 	<element name="ind_error" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="ERROR" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -111,6 +121,7 @@ authors:hap
 	</element>
 
 	<element name="ind_user" defstate="0">
+		<rect><color red="0.5412" green="0.57255" blue="0.5804" /></rect>
 		<text string="&#x25bc;" state="0">
 			<color red="0.515" green="0.537" blue="0.548" />
 		</text>
@@ -128,7 +139,6 @@ authors:hap
 	</element>
 
 
-<!-- build screen -->
 
 	<view name="Internal Layout">
 		<bounds left="0" top="1" right="189" bottom="33" />
@@ -137,7 +147,8 @@ authors:hap
 			<bounds x="1" y="11" width="187" height="11" />
 		</screen>
 
-		<!-- draw background around lcd screen matrix part -->
+<!-- draw background around lcd screen matrix part -->
+
 		<element ref="static_bg">
 			<bounds left="0" top="0" right="188" bottom="11.25" />
 		</element>
@@ -151,7 +162,8 @@ authors:hap
 			<bounds left="0" top="21.75" right="188" bottom="33" />
 		</element>
 
-		<!-- draw top row of lcd indicators -->
+<!-- draw top row of lcd indicators -->
+
 		<element name="seg10" ref="ind_left">
 			<bounds x="1.5" y="2.5" width="20" height="5.5" />
 		</element>
@@ -185,7 +197,8 @@ authors:hap
 			<bounds x="161" y="3" width="20" height="5" />
 		</element>
 
-		<!-- draw bottom row of lcd indicators -->
+<!-- draw bottom row of lcd indicators -->
+
 		<element name="seg60" ref="ind_error">
 			<bounds x="7" y="25" width="20" height="5" />
 		</element>

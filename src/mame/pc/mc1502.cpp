@@ -35,8 +35,9 @@
 #include "speaker.h"
 
 
-#define LOG_KEYBOARD  (1U << 1)
-#define LOG_PPI       (1U << 2)
+//#define LOG_GENERAL (1U <<  0) //defined in logmacro.h already
+#define LOG_KEYBOARD  (1U <<  1)
+#define LOG_PPI       (1U <<  2)
 
 //#define VERBOSE (LOG_GENERAL | LOG_VRAM)
 //#define LOG_OUTPUT_STREAM std::cout
@@ -104,10 +105,10 @@ private:
 	uint8_t m_ppi_portc = 0;
 	uint8_t m_spkrdata = 0;
 
-	void mc1502_pit8253_out1_changed(int state);
-	void mc1502_pit8253_out2_changed(int state);
-	void mc1502_speaker_set_spkrdata(int state);
-	void mc1502_i8251_syndet(int state);
+	DECLARE_WRITE_LINE_MEMBER(mc1502_pit8253_out1_changed);
+	DECLARE_WRITE_LINE_MEMBER(mc1502_pit8253_out2_changed);
+	DECLARE_WRITE_LINE_MEMBER(mc1502_speaker_set_spkrdata);
+	DECLARE_WRITE_LINE_MEMBER(mc1502_i8251_syndet);
 
 	void mc1502_ppi_portb_w(uint8_t data);
 	void mc1502_ppi_portc_w(uint8_t data);
@@ -233,26 +234,26 @@ void mc1502_state::mc1502_kppi_portc_w(uint8_t data)
 	LOGPPI("mc1502_kppi_portc_w ( %02X -> %04X )\n", data, m_kbd.mask);
 }
 
-void mc1502_state::mc1502_i8251_syndet(int state)
+WRITE_LINE_MEMBER(mc1502_state::mc1502_i8251_syndet)
 {
 	if (!BIT(m_ppi_portc, 3))
 		m_maincpu->set_input_line(INPUT_LINE_NMI, state ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void mc1502_state::mc1502_pit8253_out1_changed(int state)
+WRITE_LINE_MEMBER(mc1502_state::mc1502_pit8253_out1_changed)
 {
 	m_upd8251->write_txc(state);
 	m_upd8251->write_rxc(state);
 }
 
-void mc1502_state::mc1502_pit8253_out2_changed(int state)
+WRITE_LINE_MEMBER(mc1502_state::mc1502_pit8253_out2_changed)
 {
 	m_pit_out2 = state;
 	m_speaker->level_w(m_spkrdata & m_pit_out2);
 	m_cassette->output(state ? 1 : -1);
 }
 
-void mc1502_state::mc1502_speaker_set_spkrdata(int state)
+WRITE_LINE_MEMBER(mc1502_state::mc1502_speaker_set_spkrdata)
 {
 	m_spkrdata = state ? 1 : 0;
 	m_speaker->level_w(m_spkrdata & m_pit_out2);

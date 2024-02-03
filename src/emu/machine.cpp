@@ -20,7 +20,6 @@
 #include "fileio.h"
 #include "http.h"
 #include "image.h"
-#include "main.h"
 #include "natkeyboard.h"
 #include "network.h"
 #include "render.h"
@@ -60,28 +59,29 @@ osd_interface &running_machine::osd() const
 //-------------------------------------------------
 
 running_machine::running_machine(const machine_config &_config, machine_manager &manager)
-	: m_side_effects_disabled(0)
-	, debug_flags(0)
-	, m_config(_config)
-	, m_system(_config.gamedrv())
-	, m_manager(manager)
-	, m_current_phase(machine_phase::PREINIT)
-	, m_paused(false)
-	, m_hard_reset_pending(false)
-	, m_exit_pending(false)
-	, m_soft_reset_timer(nullptr)
-	, m_rand_seed(0x9d14abd7)
-	, m_basename(_config.gamedrv().name)
-	, m_sample_rate(_config.options().sample_rate())
-	, m_saveload_schedule(saveload_schedule::NONE)
-	, m_saveload_schedule_time(attotime::zero)
-	, m_saveload_searchpath(nullptr)
+	: m_side_effects_disabled(0),
+		debug_flags(0),
+		m_config(_config),
+		m_system(_config.gamedrv()),
+		m_manager(manager),
+		m_current_phase(machine_phase::PREINIT),
+		m_paused(false),
+		m_hard_reset_pending(false),
+		m_exit_pending(false),
+		m_soft_reset_timer(nullptr),
+		m_rand_seed(0x9d14abd7),
+		m_ui_active(_config.options().ui_active()),
+		m_basename(_config.gamedrv().name),
+		m_sample_rate(_config.options().sample_rate()),
+		m_saveload_schedule(saveload_schedule::NONE),
+		m_saveload_schedule_time(attotime::zero),
+		m_saveload_searchpath(nullptr),
 
-	, m_save(*this)
-	, m_memory(*this)
-	, m_ioport(*this)
-	, m_parameters(*this)
-	, m_scheduler(*this)
+		m_save(*this),
+		m_memory(*this),
+		m_ioport(*this),
+		m_parameters(*this),
+		m_scheduler(*this)
 {
 	memset(&m_base_time, 0, sizeof(m_base_time));
 
@@ -124,10 +124,7 @@ std::string running_machine::describe_context() const
 		}
 	}
 
-	if (m_current_phase == machine_phase::RESET)
-		return std::string("(reset phase)");
-	else
-		return std::string("(no context)");
+	return std::string("(no context)");
 }
 
 
@@ -150,13 +147,12 @@ void running_machine::start()
 	// initialize UI input
 	m_ui_input = std::make_unique<ui_input_manager>(*this);
 
-	// init the OSD layer
+	// init the osd layer
 	m_manager.osd().init(*this);
 
-	// create the video manager and UI manager
+	// create the video manager
 	m_video = std::make_unique<video_manager>(*this);
 	m_ui = manager().create_ui(*this);
-	m_ui->set_startup_text("Initializing...", true);
 
 	// initialize the base time (needed for doing record/playback)
 	::time(&m_base_time);
@@ -326,7 +322,7 @@ int running_machine::run(bool quiet)
 		// run the CPUs until a reset or exit
 		while ((!m_hard_reset_pending && !m_exit_pending) || m_saveload_schedule != saveload_schedule::NONE)
 		{
-			auto profile = g_profiler.start(PROFILER_EXTRA);
+			g_profiler.start(PROFILER_EXTRA);
 
 			// execute CPUs if not paused
 			if (!m_paused)
@@ -338,6 +334,8 @@ int running_machine::run(bool quiet)
 			// handle save/load
 			if (m_saveload_schedule != saveload_schedule::NONE)
 				handle_saveload();
+
+			g_profiler.stop();
 		}
 		m_manager.http()->clear();
 
@@ -350,29 +348,29 @@ int running_machine::run(bool quiet)
 			nvram_save();
 		m_configuration->save_settings();
 	}
-	catch (emu_fatalerror const &fatal)
+	catch (emu_fatalerror &fatal)
 	{
 		osd_printf_error("Fatal error: %s\n", fatal.what());
 		error = EMU_ERR_FATALERROR;
 		if (fatal.exitcode() != 0)
 			error = fatal.exitcode();
 	}
-	catch (emu_exception const &)
+	catch (emu_exception &)
 	{
 		osd_printf_error("Caught unhandled emulator exception\n");
 		error = EMU_ERR_FATALERROR;
 	}
-	catch (binding_type_exception const &btex)
+	catch (binding_type_exception &btex)
 	{
 		osd_printf_error("Error performing a late bind of function expecting type %s to instance of type %s\n", btex.target_type().name(), btex.actual_type().name());
 		error = EMU_ERR_FATALERROR;
 	}
-	catch (tag_add_exception const &aex)
+	catch (tag_add_exception &aex)
 	{
 		osd_printf_error("Tag '%s' already exists in tagged map\n", aex.tag());
 		error = EMU_ERR_FATALERROR;
 	}
-	catch (std::exception const &ex)
+	catch (std::exception &ex)
 	{
 		osd_printf_error("Caught unhandled %s exception: %s\n", typeid(ex).name(), ex.what());
 		error = EMU_ERR_FATALERROR;
@@ -1135,7 +1133,7 @@ void running_machine::nvram_load()
 	for (device_nvram_interface &nvram : nvram_interface_enumerator(root_device()))
 	{
 		emu_file file(options().nvram_directory(), OPEN_FLAG_READ);
-		if (nvram.nvram_backup_enabled() && !file.open(nvram_filename(nvram.device())))
+		if (!file.open(nvram_filename(nvram.device())))
 		{
 			if (!nvram.nvram_load(file))
 				osd_printf_error("Error reading NVRAM file %s\n", file.filename());
@@ -1178,7 +1176,7 @@ void running_machine::popup_clear() const
 	ui().popup_time(0, " ");
 }
 
-void running_machine::popup_message(util::format_argument_pack<char> const &args) const
+void running_machine::popup_message(util::format_argument_pack<std::ostream> const &args) const
 {
 	std::string const temp(string_format(args));
 	ui().popup_time(temp.length() / 40 + 2, "%s", temp);
@@ -1300,7 +1298,7 @@ void running_machine::emscripten_main_loop()
 {
 	running_machine *machine = emscripten_running_machine;
 
-	auto profile = g_profiler.start(PROFILER_EXTRA);
+	g_profiler.start(PROFILER_EXTRA);
 
 	// execute CPUs if not paused
 	if (!machine->m_paused)
@@ -1333,6 +1331,8 @@ void running_machine::emscripten_main_loop()
 	{
 		emscripten_cancel_main_loop();
 	}
+
+	g_profiler.stop();
 }
 
 void running_machine::emscripten_set_running_machine(running_machine *machine)

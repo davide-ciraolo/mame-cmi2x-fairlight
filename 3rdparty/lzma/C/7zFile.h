@@ -1,21 +1,17 @@
 /* 7zFile.h -- File IO
-2023-03-05 : Igor Pavlov : Public domain */
+2013-01-18 : Igor Pavlov : Public domain */
 
-#ifndef ZIP7_INC_FILE_H
-#define ZIP7_INC_FILE_H
+#ifndef __7Z_FILE_H
+#define __7Z_FILE_H
 
 #ifdef _WIN32
 #define USE_WINDOWS_FILE
-// #include <windows.h>
 #endif
 
 #ifdef USE_WINDOWS_FILE
-#include "7zWindows.h"
-
+#include <windows.h>
 #else
-// note: USE_FOPEN mode is limited to 32-bit file size
-// #define USE_FOPEN
-// #include <stdio.h>
+#include <stdio.h>
 #endif
 
 #include "7zTypes.h"
@@ -28,10 +24,8 @@ typedef struct
 {
   #ifdef USE_WINDOWS_FILE
   HANDLE handle;
-  #elif defined(USE_FOPEN)
-  FILE *file;
   #else
-  int fd;
+  FILE *file;
   #endif
 } CSzFile;
 
@@ -60,9 +54,8 @@ WRes File_GetLength(CSzFile *p, UInt64 *length);
 
 typedef struct
 {
-  ISeqInStream vt;
+  ISeqInStream s;
   CSzFile file;
-  WRes wres;
 } CFileSeqInStream;
 
 void FileSeqInStream_CreateVTable(CFileSeqInStream *p);
@@ -70,9 +63,8 @@ void FileSeqInStream_CreateVTable(CFileSeqInStream *p);
 
 typedef struct
 {
-  ISeekInStream vt;
+  ISeekInStream s;
   CSzFile file;
-  WRes wres;
 } CFileInStream;
 
 void FileInStream_CreateVTable(CFileInStream *p);
@@ -80,9 +72,8 @@ void FileInStream_CreateVTable(CFileInStream *p);
 
 typedef struct
 {
-  ISeqOutStream vt;
+  ISeqOutStream s;
   CSzFile file;
-  WRes wres;
 } CFileOutStream;
 
 void FileOutStream_CreateVTable(CFileOutStream *p);

@@ -1,7 +1,7 @@
 // ProgressDialog.h
 
-#ifndef ZIP7_INC_PROGRESS_DIALOG_H
-#define ZIP7_INC_PROGRESS_DIALOG_H
+#ifndef __PROGRESS_DIALOG_H
+#define __PROGRESS_DIALOG_H
 
 #include "../../../Windows/Synchronization.h"
 #include "../../../Windows/Thread.h"
@@ -85,27 +85,24 @@ private:
   UInt64 _range;
   NWindows::NControl::CProgressBar m_ProgressBar;
 
-  UInt64 _prevPercentValue;
+  int _prevPercentValue;
 
   bool _wasCreated;
   bool _needClose;
   bool _inCancelMessageBox;
   bool _externalCloseMessageWasReceived;
 
-  virtual bool OnButtonClicked(unsigned buttonID, HWND buttonHWND) Z7_override;
-  virtual bool OnTimer(WPARAM timerID, LPARAM callback) Z7_override;
-  virtual bool OnInit() Z7_override;
-  virtual void OnCancel() Z7_override;
-  virtual void OnOK() Z7_override;
-  virtual bool OnMessage(UINT message, WPARAM wParam, LPARAM lParam) Z7_override;
-
+  bool OnTimer(WPARAM timerID, LPARAM callback);
   void SetRange(UInt64 range);
   void SetPos(UInt64 pos);
-
+  virtual bool OnInit();
+  virtual void OnCancel();
+  virtual void OnOK();
   NWindows::NSynchronization::CManualResetEvent _dialogCreatedEvent;
-  #ifndef Z7_SFX
+  #ifndef _SFX
   void AddToTitle(LPCWSTR string);
   #endif
+  bool OnButtonClicked(int buttonID, HWND buttonHWND);
 
   void WaitCreating() { _dialogCreatedEvent.Lock(); }
   void CheckNeedClose();
@@ -114,7 +111,7 @@ public:
   CProgressSync Sync;
   int IconID;
 
-  #ifndef Z7_SFX
+  #ifndef _SFX
   HWND MainWindow;
   UString MainTitle;
   UString MainAddTitle;
@@ -122,8 +119,8 @@ public:
   #endif
 
   CProgressDialog(): _timer(0)
-    #ifndef Z7_SFX
-    ,MainWindow(NULL)
+    #ifndef _SFX
+    ,MainWindow(0)
     #endif
   {
     IconID = -1;
@@ -136,11 +133,11 @@ public:
       throw 1334987;
   }
 
-  INT_PTR Create(const UString &title, NWindows::CThread &thread, HWND wndParent = NULL)
+  INT_PTR Create(const UString &title, NWindows::CThread &thread, HWND wndParent = 0)
   {
     _title = title;
     INT_PTR res = CModalDialog::Create(IDD_PROGRESS, wndParent);
-    thread.Wait_Close();
+    thread.Wait();
     return res;
   }
 
@@ -149,6 +146,8 @@ public:
     kCloseMessage = WM_APP + 1
   };
 
+  virtual bool OnMessage(UINT message, WPARAM wParam, LPARAM lParam);
+
   void ProcessWasFinished()
   {
     WaitCreating();
@@ -156,7 +155,7 @@ public:
       PostMsg(kCloseMessage);
     else
       _needClose = true;
-  }
+  };
 };
 
 

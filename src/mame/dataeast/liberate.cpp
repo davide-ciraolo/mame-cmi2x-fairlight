@@ -676,7 +676,7 @@ GFXDECODE_END
  *
  *************************************/
 
-void liberate_state::deco16_interrupt(int state)
+WRITE_LINE_MEMBER(liberate_state::deco16_interrupt)
 {
 	if (state)
 	{
@@ -695,7 +695,7 @@ void liberate_state::deco16_interrupt(int state)
 }
 
 #if 0
-void liberate_state::prosport_interrupt(int state)
+WRITE_LINE_MEMBER(liberate_state::prosport_interrupt)
 {
 	/* ??? */
 	if (state)

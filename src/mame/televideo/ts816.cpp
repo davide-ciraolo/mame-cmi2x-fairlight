@@ -26,9 +26,6 @@ TODO:
 #include "machine/z80sio.h"
 #include "machine/z80dma.h"
 
-
-namespace {
-
 class ts816_state : public driver_device
 {
 public:
@@ -323,9 +320,6 @@ ROM_START( ts816 )
 
 	ROM_REGION(0x20000, "rams", ROMREGION_ERASEFF)
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

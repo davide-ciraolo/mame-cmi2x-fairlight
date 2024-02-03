@@ -29,8 +29,8 @@ public:
 		return m_horz_to_go * 8 + m_horz_steps;
 	}
 
-	void vsync_changed(int state);
-	void hsync_changed(int state);
+	DECLARE_WRITE_LINE_MEMBER( vsync_changed );
+	DECLARE_WRITE_LINE_MEMBER( hsync_changed );
 
 	static const uint16_t HUC6270_SPRITE     = 0x0100;    // sprite colour information
 	static const uint16_t HUC6270_BACKGROUND = 0x0000;    // background colour information

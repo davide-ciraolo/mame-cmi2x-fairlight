@@ -287,7 +287,6 @@ Notes:
 #include "emu.h"
 
 #include "cpu/m68000/m68000.h"
-#include "cpu/m68000/m68020.h"
 #include "machine/gen_latch.h"
 #include "sound/es5506.h"
 
@@ -396,10 +395,10 @@ private:
 	virtual void machine_reset() override;
 	virtual void video_start() override;
 	uint32_t screen_update_macrossp(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	void screen_vblank_macrossp(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank_macrossp);
 	void draw_sprites(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 	void draw_layer(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect, int layer, int linem, int pri);
-	void irqhandler(int state);
+	DECLARE_WRITE_LINE_MEMBER(irqhandler);
 
 	void macrossp_map(address_map &map);
 	void macrossp_es5506_bank1_map(address_map &map);
@@ -857,7 +856,7 @@ uint32_t macrossp_state::screen_update_macrossp(screen_device &screen, bitmap_rg
 	return 0;
 }
 
-void macrossp_state::screen_vblank_macrossp(int state)
+WRITE_LINE_MEMBER(macrossp_state::screen_vblank_macrossp)
 {
 	// rising edge
 	if (state)
@@ -1098,7 +1097,7 @@ GFXDECODE_END
 
 /*** MACHINE DRIVER **********************************************************/
 
-void macrossp_state::irqhandler(int state)
+WRITE_LINE_MEMBER(macrossp_state::irqhandler)
 {
 	logerror("ES5506 irq %d\n", state);
 

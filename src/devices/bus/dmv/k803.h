@@ -38,7 +38,7 @@ protected:
 	void update_int();
 
 private:
-	void rtc_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(rtc_irq_w);
 
 	required_device<mm58167_device> m_rtc;
 	required_ioport m_dsw;

@@ -5,11 +5,18 @@
     Luxor ABC-80 keyboard emulation
 
 **********************************************************************/
-#ifndef MAME_LUXOR_ABC80KB_H
-#define MAME_LUXOR_ABC80KB_H
+#ifndef MAME_MACHINE_ABC80KB_H
+#define MAME_MACHINE_ABC80KB_H
 
 #pragma once
 
+
+
+//**************************************************************************
+//  MACROS / CONSTANTS
+//**************************************************************************
+
+#define ABC80_KEYBOARD_TAG  "abc80kb"
 
 
 //**************************************************************************
@@ -28,9 +35,7 @@ public:
 
 	uint8_t data_r();
 
-	void keyboard_mem(address_map &map);
-	void keyboard_io(address_map &map);
-
+	void abc80_keyboard_io(address_map &map);
 protected:
 	// device-level overrides
 	virtual void device_start() override;
@@ -53,4 +58,4 @@ DECLARE_DEVICE_TYPE(ABC80_KEYBOARD, abc80_keyboard_device)
 
 
 
-#endif // MAME_LUXOR_ABC80KB_H
+#endif // MAME_MACHINE_ABC80KB_H

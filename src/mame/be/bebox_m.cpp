@@ -101,12 +101,9 @@
 #include "bus/ata/ataintf.h"
 #include "bus/lpci/pci.h"
 
-#define LOG_CPUIMASK   (1U << 1)
-#define LOG_INTERRUPTS (1U << 2)
-
-#define VERBOSE (LOG_CPUIMASK | LOG_INTERRUPTS)
-#include "logmacro.h"
-
+#define LOG_CPUIMASK    1
+#define LOG_UART        1
+#define LOG_INTERRUPTS  1
 
 /*************************************
  *
@@ -154,8 +151,11 @@ void bebox_state::bebox_cpu0_imask_w(offs_t offset, uint64_t data, uint64_t mem_
 
 	if (old_imask != m_cpu_imask[0])
 	{
-		LOGMASKED(LOG_CPUIMASK, "%s BeBox CPU #0 imask=0x%08x\n",
-			machine().describe_context(), m_cpu_imask[0]);
+		if (LOG_CPUIMASK)
+		{
+			logerror("%s BeBox CPU #0 imask=0x%08x\n",
+				machine().describe_context(), m_cpu_imask[0]);
+		}
 		bebox_update_interrupts();
 	}
 }
@@ -168,8 +168,11 @@ void bebox_state::bebox_cpu1_imask_w(offs_t offset, uint64_t data, uint64_t mem_
 
 	if (old_imask != m_cpu_imask[1])
 	{
-		LOGMASKED(LOG_CPUIMASK, "%s BeBox CPU #1 imask=0x%08x\n",
-			machine().describe_context(), m_cpu_imask[1]);
+		if (LOG_CPUIMASK)
+		{
+			logerror("%s BeBox CPU #1 imask=0x%08x\n",
+				machine().describe_context(), m_cpu_imask[1]);
+		}
 		bebox_update_interrupts();
 	}
 }
@@ -217,9 +220,14 @@ void bebox_state::bebox_crossproc_interrupts_w(offs_t offset, uint64_t data, uin
 			else
 				line = crossproc_map[i].active_high ? CLEAR_LINE : ASSERT_LINE;
 
-			LOGMASKED(LOG_INTERRUPTS, "bebox_crossproc_interrupts_w(): CPU #%d %s %s\n",
-				crossproc_map[i].cpunum, line ? "Asserting" : "Clearing",
-				(crossproc_map[i].inputline == 0/*PPC_INPUT_LINE_SMI*/) ? "SMI" : "TLBISYNC");
+			if (LOG_INTERRUPTS)
+			{
+/*
+                logerror("bebox_crossproc_interrupts_w(): CPU #%d %s %s\n",
+                    crossproc_map[i].cpunum, line ? "Asserting" : "Clearing",
+                    (crossproc_map[i].inputline == PPC_INPUT_LINE_SMI) ? "SMI" : "TLBISYNC");
+                    */
+			}
 
 			m_ppc[crossproc_map[i].cpunum]->set_input_line(crossproc_map[i].inputline, line);
 		}
@@ -245,8 +253,11 @@ void bebox_state::bebox_update_interrupts()
 	{
 		interrupt = m_interrupts & m_cpu_imask[cpunum];
 
-		LOGMASKED(LOG_INTERRUPTS, "\tbebox_update_interrupts(): CPU #%d [%08X|%08X] IRQ %s\n", cpunum,
-			m_interrupts, m_cpu_imask[cpunum], interrupt ? "on" : "off");
+		if (LOG_INTERRUPTS)
+		{
+			logerror("\tbebox_update_interrupts(): CPU #%d [%08X|%08X] IRQ %s\n", cpunum,
+				m_interrupts, m_cpu_imask[cpunum], interrupt ? "on" : "off");
+		}
 
 		m_ppc[cpunum]->set_input_line(INPUT_LINE_IRQ0, interrupt ? ASSERT_LINE : CLEAR_LINE);
 	}
@@ -292,15 +303,18 @@ void bebox_state::bebox_set_irq_bit(unsigned int interrupt_bit, int val)
 	};
 	uint32_t old_interrupts;
 
-	/* make sure that we don't shoot ourself in the foot */
-	if ((interrupt_bit >= std::size(interrupt_names)) || !interrupt_names[interrupt_bit])
-		throw emu_fatalerror("bebox_state::bebox_set_irq_bit: Raising invalid interrupt");
+	if (LOG_INTERRUPTS)
+	{
+		/* make sure that we don't shoot ourself in the foot */
+		if ((interrupt_bit >= std::size(interrupt_names)) || !interrupt_names[interrupt_bit])
+			throw emu_fatalerror("bebox_state::bebox_set_irq_bit: Raising invalid interrupt");
 
-	LOGMASKED(LOG_INTERRUPTS, "bebox_set_irq_bit(): pc[0]=0x%08x pc[1]=0x%08x %s interrupt #%u (%s)\n",
-		unsigned(m_ppc[0]->pc()),
-		unsigned(m_ppc[1]->pc()),
-		val ? "Asserting" : "Clearing",
-		interrupt_bit, interrupt_names[interrupt_bit]);
+		logerror("bebox_set_irq_bit(): pc[0]=0x%08x pc[1]=0x%08x %s interrupt #%u (%s)\n",
+			unsigned(m_ppc[0]->pc()),
+			unsigned(m_ppc[1]->pc()),
+			val ? "Asserting" : "Clearing",
+			interrupt_bit, interrupt_names[interrupt_bit]);
+	}
 
 	old_interrupts = m_interrupts;
 	if (val)
@@ -319,7 +333,7 @@ void bebox_state::bebox_set_irq_bit(unsigned int interrupt_bit, int val)
  *
  *************************************/
 
-void bebox_state::fdc_interrupt(int state)
+WRITE_LINE_MEMBER( bebox_state::fdc_interrupt )
 {
 	bebox_set_irq_bit(13, state);
 	m_pic8259[0]->ir6_w(state);
@@ -346,12 +360,12 @@ uint64_t bebox_state::bebox_interrupt_ack_r()
  *
  *************************************************************/
 
-void bebox_state::bebox_pic8259_master_set_int_line(int state)
+WRITE_LINE_MEMBER(bebox_state::bebox_pic8259_master_set_int_line)
 {
 	bebox_set_irq_bit(5, state);
 }
 
-void bebox_state::bebox_pic8259_slave_set_int_line(int state)
+WRITE_LINE_MEMBER(bebox_state::bebox_pic8259_slave_set_int_line)
 {
 	m_pic8259[0]->ir2_w(state);
 }
@@ -362,7 +376,7 @@ void bebox_state::bebox_pic8259_slave_set_int_line(int state)
  *
  *************************************/
 
-void bebox_state::bebox_ide_interrupt(int state)
+WRITE_LINE_MEMBER(bebox_state::bebox_ide_interrupt)
 {
 	bebox_set_irq_bit(7, state);
 	m_pic8259[0]->ir6_w(state);
@@ -507,7 +521,7 @@ uint8_t bebox_state::bebox_80000480_r()
 }
 
 
-void bebox_state::bebox_dma_hrq_changed(int state)
+WRITE_LINE_MEMBER(bebox_state::bebox_dma_hrq_changed)
 {
 	m_ppc[0]->set_input_line(INPUT_LINE_HALT, state ? ASSERT_LINE : CLEAR_LINE);
 
@@ -533,8 +547,7 @@ void bebox_state::bebox_dma_write_byte(offs_t offset, uint8_t data)
 	prog_space.write_byte(page_offset + offset, data);
 }
 
-void bebox_state::bebox_dma8237_out_eop(int state)
-{
+WRITE_LINE_MEMBER(bebox_state::bebox_dma8237_out_eop){
 	m_smc37c78->tc_w(state);
 }
 
@@ -543,10 +556,10 @@ inline void bebox_state::set_dma_channel(int channel, int state)
 	if (!state) m_dma_channel = channel;
 }
 
-void bebox_state::pc_dack0_w(int state) { set_dma_channel(0, state); }
-void bebox_state::pc_dack1_w(int state) { set_dma_channel(1, state); }
-void bebox_state::pc_dack2_w(int state) { set_dma_channel(2, state); }
-void bebox_state::pc_dack3_w(int state) { set_dma_channel(3, state); }
+WRITE_LINE_MEMBER(bebox_state::pc_dack0_w){ set_dma_channel(0, state); }
+WRITE_LINE_MEMBER(bebox_state::pc_dack1_w){ set_dma_channel(1, state); }
+WRITE_LINE_MEMBER(bebox_state::pc_dack2_w){ set_dma_channel(2, state); }
+WRITE_LINE_MEMBER(bebox_state::pc_dack3_w){ set_dma_channel(3, state); }
 
 /*************************************
  *
@@ -554,7 +567,7 @@ void bebox_state::pc_dack3_w(int state) { set_dma_channel(3, state); }
  *
  *************************************/
 
-void bebox_state::bebox_timer0_w(int state)
+WRITE_LINE_MEMBER(bebox_state::bebox_timer0_w)
 {
 	m_pic8259[0]->ir0_w(state);
 }

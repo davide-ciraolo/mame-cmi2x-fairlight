@@ -2,7 +2,7 @@
  * jdcoefct.c
  *
  * Copyright (C) 1994-1997, Thomas G. Lane.
- * Modified 2002-2020 by Guido Vollbeding.
+ * Modified 2002-2011 by Guido Vollbeding.
  * This file is part of the Independent JPEG Group's software.
  * For conditions of distribution and use, see the accompanying README file.
  *
@@ -19,12 +19,10 @@
 #include "jinclude.h"
 #include "jpeglib.h"
 
-
 /* Block smoothing is only applicable for progressive JPEG, so: */
 #ifndef D_PROGRESSIVE_SUPPORTED
 #undef BLOCK_SMOOTHING_SUPPORTED
 #endif
-
 
 /* Private buffer controller object */
 
@@ -40,8 +38,11 @@ typedef struct {
   /* The output side's location is represented by cinfo->output_iMCU_row. */
 
   /* In single-pass modes, it's sufficient to buffer just one MCU.
-   * We append a workspace of D_MAX_BLOCKS_IN_MCU coefficient blocks,
+   * We allocate a workspace of D_MAX_BLOCKS_IN_MCU coefficient blocks,
    * and let the entropy decoder write into that workspace each time.
+   * (On 80x86, the workspace is FAR even though it's not really very big;
+   * this is to keep the module interfaces unchanged when a large coefficient
+   * buffer is necessary.)
    * In multi-pass modes, this array points to the current MCU's blocks
    * within the virtual arrays; it is used only by the input side.
    */
@@ -57,13 +58,9 @@ typedef struct {
   int * coef_bits_latch;
 #define SAVED_COEFS  6		/* we save coef_bits[0..5] */
 #endif
-
-  /* Workspace for single-pass modes (omitted otherwise). */
-  JBLOCK blk_buffer[D_MAX_BLOCKS_IN_MCU];
 } my_coef_controller;
 
 typedef my_coef_controller * my_coef_ptr;
-
 
 /* Forward declarations */
 METHODDEF(int) decompress_onepass
@@ -154,8 +151,7 @@ decompress_onepass (j_decompress_ptr cinfo, JSAMPIMAGE output_buf)
   JDIMENSION MCU_col_num;	/* index of current MCU within row */
   JDIMENSION last_MCU_col = cinfo->MCUs_per_row - 1;
   JDIMENSION last_iMCU_row = cinfo->total_iMCU_rows - 1;
-  int ci, xindex, yindex, yoffset, useful_width;
-  JBLOCKROW blkp;
+  int blkn, ci, xindex, yindex, yoffset, useful_width;
   JSAMPARRAY output_ptr;
   JDIMENSION start_col, output_col;
   jpeg_component_info *compptr;
@@ -166,10 +162,10 @@ decompress_onepass (j_decompress_ptr cinfo, JSAMPIMAGE output_buf)
        yoffset++) {
     for (MCU_col_num = coef->MCU_ctr; MCU_col_num <= last_MCU_col;
 	 MCU_col_num++) {
-      blkp = coef->blk_buffer;	/* pointer to current DCT block within MCU */
       /* Try to fetch an MCU.  Entropy decoder expects buffer to be zeroed. */
       if (cinfo->lim_Se)	/* can bypass in DC only case */
-	MEMZERO(blkp, cinfo->blocks_in_MCU * SIZEOF(JBLOCK));
+	FMEMZERO((void FAR *) coef->MCU_buffer[0],
+		 (size_t) (cinfo->blocks_in_MCU * SIZEOF(JBLOCK)));
       if (! (*cinfo->entropy->decode_mcu) (cinfo, coef->MCU_buffer)) {
 	/* Suspension forced; update state counters and exit */
 	coef->MCU_vert_offset = yoffset;
@@ -177,34 +173,37 @@ decompress_onepass (j_decompress_ptr cinfo, JSAMPIMAGE output_buf)
 	return JPEG_SUSPENDED;
       }
       /* Determine where data should go in output_buf and do the IDCT thing.
-       * We skip dummy blocks at the right and bottom edges (but blkp gets
-       * incremented past them!).
+       * We skip dummy blocks at the right and bottom edges (but blkn gets
+       * incremented past them!).  Note the inner loop relies on having
+       * allocated the MCU_buffer[] blocks sequentially.
        */
+      blkn = 0;			/* index of current DCT block within MCU */
       for (ci = 0; ci < cinfo->comps_in_scan; ci++) {
 	compptr = cinfo->cur_comp_info[ci];
 	/* Don't bother to IDCT an uninteresting component. */
 	if (! compptr->component_needed) {
-	  blkp += compptr->MCU_blocks;
+	  blkn += compptr->MCU_blocks;
 	  continue;
 	}
 	inverse_DCT = cinfo->idct->inverse_DCT[compptr->component_index];
-	output_ptr = output_buf[compptr->component_index] +
-	  yoffset * compptr->DCT_v_scaled_size;
 	useful_width = (MCU_col_num < last_MCU_col) ? compptr->MCU_width
 						    : compptr->last_col_width;
+	output_ptr = output_buf[compptr->component_index] +
+	  yoffset * compptr->DCT_v_scaled_size;
 	start_col = MCU_col_num * compptr->MCU_sample_width;
 	for (yindex = 0; yindex < compptr->MCU_height; yindex++) {
 	  if (cinfo->input_iMCU_row < last_iMCU_row ||
-	      yoffset + yindex < compptr->last_row_height) {
+	      yoffset+yindex < compptr->last_row_height) {
 	    output_col = start_col;
 	    for (xindex = 0; xindex < useful_width; xindex++) {
-	      (*inverse_DCT) (cinfo, compptr, (JCOEFPTR) (blkp + xindex),
+	      (*inverse_DCT) (cinfo, compptr,
+			      (JCOEFPTR) coef->MCU_buffer[blkn+xindex],
 			      output_ptr, output_col);
 	      output_col += compptr->DCT_h_scaled_size;
 	    }
-	    output_ptr += compptr->DCT_v_scaled_size;
 	  }
-	  blkp += compptr->MCU_width;
+	  blkn += compptr->MCU_width;
+	  output_ptr += compptr->DCT_v_scaled_size;
 	}
       }
     }
@@ -213,7 +212,7 @@ decompress_onepass (j_decompress_ptr cinfo, JSAMPIMAGE output_buf)
   }
   /* Completed the iMCU row, advance counters for next one */
   cinfo->output_iMCU_row++;
-  if (++(cinfo->input_iMCU_row) <= last_iMCU_row) {
+  if (++(cinfo->input_iMCU_row) < cinfo->total_iMCU_rows) {
     start_iMCU_row(cinfo);
     return JPEG_ROW_COMPLETED;
   }
@@ -248,9 +247,8 @@ consume_data (j_decompress_ptr cinfo)
 {
   my_coef_ptr coef = (my_coef_ptr) cinfo->coef;
   JDIMENSION MCU_col_num;	/* index of current MCU within row */
-  int ci, xindex, yindex, yoffset;
+  int blkn, ci, xindex, yindex, yoffset;
   JDIMENSION start_col;
-  JBLOCKARRAY blkp;
   JBLOCKARRAY buffer[MAX_COMPS_IN_SCAN];
   JBLOCKROW buffer_ptr;
   jpeg_component_info *compptr;
@@ -274,16 +272,15 @@ consume_data (j_decompress_ptr cinfo)
     for (MCU_col_num = coef->MCU_ctr; MCU_col_num < cinfo->MCUs_per_row;
 	 MCU_col_num++) {
       /* Construct list of pointers to DCT blocks belonging to this MCU */
-      blkp = coef->MCU_buffer;	/* pointer to current DCT block within MCU */
+      blkn = 0;			/* index of current DCT block within MCU */
       for (ci = 0; ci < cinfo->comps_in_scan; ci++) {
 	compptr = cinfo->cur_comp_info[ci];
 	start_col = MCU_col_num * compptr->MCU_width;
 	for (yindex = 0; yindex < compptr->MCU_height; yindex++) {
-	  buffer_ptr = buffer[ci][yoffset + yindex] + start_col;
-	  xindex = compptr->MCU_width;
-	  do {
-	    *blkp++ = buffer_ptr++;
-	  } while (--xindex);
+	  buffer_ptr = buffer[ci][yindex+yoffset] + start_col;
+	  for (xindex = 0; xindex < compptr->MCU_width; xindex++) {
+	    coef->MCU_buffer[blkn++] = buffer_ptr++;
+	  }
 	}
       }
       /* Try to fetch the MCU. */
@@ -373,7 +370,7 @@ decompress_data (j_decompress_ptr cinfo, JSAMPIMAGE output_buf)
     }
   }
 
-  if (++(cinfo->output_iMCU_row) <= last_iMCU_row)
+  if (++(cinfo->output_iMCU_row) < cinfo->total_iMCU_rows)
     return JPEG_ROW_COMPLETED;
   return JPEG_SCAN_COMPLETED;
 }
@@ -422,9 +419,10 @@ smoothing_ok (j_decompress_ptr cinfo)
 
   /* Allocate latch area if not already done */
   if (coef->coef_bits_latch == NULL)
-    coef->coef_bits_latch = (int *) (*cinfo->mem->alloc_small)
-      ((j_common_ptr) cinfo, JPOOL_IMAGE,
-       cinfo->num_components * (SAVED_COEFS * SIZEOF(int)));
+    coef->coef_bits_latch = (int *)
+      (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_IMAGE,
+				  cinfo->num_components *
+				  (SAVED_COEFS * SIZEOF(int)));
   coef_bits_latch = coef->coef_bits_latch;
 
   for (ci = 0, compptr = cinfo->comp_info; ci < cinfo->num_components;
@@ -664,7 +662,7 @@ decompress_smooth_data (j_decompress_ptr cinfo, JSAMPIMAGE output_buf)
     }
   }
 
-  if (++(cinfo->output_iMCU_row) <= last_iMCU_row)
+  if (++(cinfo->output_iMCU_row) < cinfo->total_iMCU_rows)
     return JPEG_ROW_COMPLETED;
   return JPEG_SCAN_COMPLETED;
 }
@@ -681,6 +679,17 @@ jinit_d_coef_controller (j_decompress_ptr cinfo, boolean need_full_buffer)
 {
   my_coef_ptr coef;
 
+  coef = (my_coef_ptr)
+    (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_IMAGE,
+				SIZEOF(my_coef_controller));
+  cinfo->coef = (struct jpeg_d_coef_controller *) coef;
+  coef->pub.start_input_pass = start_input_pass;
+  coef->pub.start_output_pass = start_output_pass;
+#ifdef BLOCK_SMOOTHING_SUPPORTED
+  coef->coef_bits_latch = NULL;
+#endif
+
+  /* Create the coefficient buffer. */
   if (need_full_buffer) {
 #ifdef D_MULTISCAN_FILES_SUPPORTED
     /* Allocate a full-image virtual array for each component, */
@@ -689,9 +698,6 @@ jinit_d_coef_controller (j_decompress_ptr cinfo, boolean need_full_buffer)
     int ci, access_rows;
     jpeg_component_info *compptr;
 
-    coef = (my_coef_ptr) (*cinfo->mem->alloc_small)
-      ((j_common_ptr) cinfo, JPOOL_IMAGE,
-       SIZEOF(my_coef_controller) - SIZEOF(coef->blk_buffer));
     for (ci = 0, compptr = cinfo->comp_info; ci < cinfo->num_components;
 	 ci++, compptr++) {
       access_rows = compptr->v_samp_factor;
@@ -716,29 +722,20 @@ jinit_d_coef_controller (j_decompress_ptr cinfo, boolean need_full_buffer)
 #endif
   } else {
     /* We only need a single-MCU buffer. */
-    JBLOCKARRAY blkp;
-    JBLOCKROW buffer_ptr;
-    int bi;
+    JBLOCKROW buffer;
+    int i;
 
-    coef = (my_coef_ptr) (*cinfo->mem->alloc_small)
-      ((j_common_ptr) cinfo, JPOOL_IMAGE, SIZEOF(my_coef_controller));
-    buffer_ptr = coef->blk_buffer;
+    buffer = (JBLOCKROW)
+      (*cinfo->mem->alloc_large) ((j_common_ptr) cinfo, JPOOL_IMAGE,
+				  D_MAX_BLOCKS_IN_MCU * SIZEOF(JBLOCK));
+    for (i = 0; i < D_MAX_BLOCKS_IN_MCU; i++) {
+      coef->MCU_buffer[i] = buffer + i;
+    }
     if (cinfo->lim_Se == 0)	/* DC only case: want to bypass later */
-      MEMZERO(buffer_ptr, SIZEOF(coef->blk_buffer));
-    blkp = coef->MCU_buffer;
-    bi = D_MAX_BLOCKS_IN_MCU;
-    do {
-      *blkp++ = buffer_ptr++;
-    } while (--bi);
+      FMEMZERO((void FAR *) buffer,
+	       (size_t) (D_MAX_BLOCKS_IN_MCU * SIZEOF(JBLOCK)));
     coef->pub.consume_data = dummy_consume_data;
     coef->pub.decompress_data = decompress_onepass;
     coef->pub.coef_arrays = NULL; /* flag for no virtual arrays */
   }
-
-  coef->pub.start_input_pass = start_input_pass;
-  coef->pub.start_output_pass = start_output_pass;
-#ifdef BLOCK_SMOOTHING_SUPPORTED
-  coef->coef_bits_latch = NULL;
-#endif
-  cinfo->coef = &coef->pub;
 }

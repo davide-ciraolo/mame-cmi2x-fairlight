@@ -31,13 +31,10 @@ this reason.
 */
 
 #include "emu.h"
-#include "megadriv.h"
-
 #include "cpu/z80/z80.h"
 #include "machine/cxd1095.h"
 
-
-namespace {
+#include "megadriv.h"
 
 #define MASTER_CLOCK        53693100
 
@@ -45,11 +42,11 @@ namespace {
 #define MP_GAME 0
 
 
-class mplay_state : public md_ctrl_state
+class mplay_state : public md_base_state
 {
 public:
 	mplay_state(const machine_config &mconfig, device_type type, const char *tag) :
-		md_ctrl_state(mconfig, type, tag),
+		md_base_state(mconfig, type, tag),
 		m_ic3_ram(*this, "ic3_ram"),
 		m_vdp1(*this, "vdp1"),
 		m_bioscpu(*this, "mtbios")
@@ -59,8 +56,8 @@ public:
 
 	void init_megaplay();
 
-	int start1_r();
-	int start2_r();
+	DECLARE_READ_LINE_MEMBER(start1_r);
+	DECLARE_READ_LINE_MEMBER(start2_r);
 
 protected:
 	virtual void machine_reset() override;
@@ -71,8 +68,8 @@ private:
 	void extra_ram_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	void bios_banksel_w(uint8_t data);
 	void bios_gamesel_w(uint8_t data);
-	void mp_io_exp_out(uint8_t data, uint8_t mem_mask);
-	uint8_t mp_io_exp_in();
+	void mp_io_write(offs_t offset, uint16_t data);
+	uint16_t mp_io_read(offs_t offset);
 	uint8_t bank_r(offs_t offset);
 	void bank_w(offs_t offset, uint8_t data);
 	uint8_t bios_6402_r();
@@ -102,8 +99,6 @@ private:
 	uint8_t m_bios_6600 = 0;
 	uint8_t m_bios_6403 = 0;
 	uint8_t m_bios_6404 = 0;
-
-	uint8_t m_io_exp_data = 0;
 
 	std::unique_ptr<uint16_t[]> m_ic36_ram;
 	std::unique_ptr<uint8_t[]> m_ic37_ram;
@@ -396,12 +391,12 @@ INPUT_PORTS_END
 
 // MEGAPLAY specific
 
-int mplay_state::start1_r()
+READ_LINE_MEMBER(mplay_state::start1_r)
 {
 	return BIT(m_bios_bank, 4);
 }
 
-int mplay_state::start2_r()
+READ_LINE_MEMBER(mplay_state::start2_r)
 {
 	return BIT(m_bios_bank, 5);
 }
@@ -430,15 +425,20 @@ void mplay_state::bios_gamesel_w(uint8_t data)
 	m_bios_mode = BIT(data, 4);
 }
 
-void mplay_state::mp_io_exp_out(uint8_t data, uint8_t mem_mask)
+void mplay_state::mp_io_write(offs_t offset, uint16_t data)
 {
-	// TODO: TH (bit 6) is configured as an output and seems to be used for something, too
-	m_io_exp_data = (data & 0x07) | (m_io_exp_data & 0xf8);
+	if (offset == 0x03)
+		m_megadrive_io_data_regs[2] = (data & m_megadrive_io_ctrl_regs[2]) | (m_megadrive_io_data_regs[2] & ~m_megadrive_io_ctrl_regs[2]);
+	else
+		megadriv_68k_io_write(offset & 0x1f, data);
 }
 
-uint8_t mplay_state::mp_io_exp_in()
+uint16_t mplay_state::mp_io_read(offs_t offset)
 {
-	return m_io_exp_data;
+	if (offset == 0x03)
+		return m_megadrive_io_data_regs[2];
+	else
+		return megadriv_68k_io_read(offset & 0x1f);
 }
 
 uint8_t mplay_state::bank_r(offs_t offset)
@@ -467,7 +467,7 @@ uint8_t mplay_state::bank_r(offs_t offset)
 	}
 	else if (fulladdress >= 0xa10000 && fulladdress <= 0xa1001f) // IO access
 	{
-		return m_maincpu->space(AS_PROGRAM).read_byte(fulladdress);
+		return mp_io_read((offset & 0x1f) / 2);
 	}
 	else
 	{
@@ -490,7 +490,7 @@ void mplay_state::bank_w(offs_t offset, uint8_t data)
 	}
 	else if (fulladdress >= 0xa10000 && fulladdress <=0xa1001f) // IO Access
 	{
-		m_maincpu->space(AS_PROGRAM).write_byte(fulladdress, data);
+		mp_io_write((offset & 0x1f) / 2, data);
 	}
 	else
 	{
@@ -504,25 +504,25 @@ void mplay_state::bank_w(offs_t offset, uint8_t data)
 
 uint8_t mplay_state::bios_6402_r()
 {
-	return m_io_exp_data;// & 0xfe;
+	return m_megadrive_io_data_regs[2];// & 0xfe;
 }
 
 void mplay_state::bios_6402_w(uint8_t data)
 {
-	m_io_exp_data = (m_io_exp_data & 0x07) | ((data & 0x70) >> 1);
+	m_megadrive_io_data_regs[2] = (m_megadrive_io_data_regs[2] & 0x07) | ((data & 0x70) >> 1);
 //  logerror("BIOS: 0x6402 write: 0x%02x\n", data);
 }
 
 uint8_t mplay_state::bios_6204_r()
 {
-	return m_io_exp_data;
+	return m_megadrive_io_data_regs[2];
 //  return (m_bios_width & 0xf8) + (m_bios_6204 & 0x07);
 }
 
 void mplay_state::bios_width_w(uint8_t data)
 {
 	m_bios_width = data;
-	m_io_exp_data = (m_io_exp_data & 0x07) | ((data & 0xf8));
+	m_megadrive_io_data_regs[2] = (m_megadrive_io_data_regs[2] & 0x07) | ((data & 0xf8));
 //  logerror("BIOS: 0x6204 - Width write: %02x\n", data);
 }
 
@@ -654,7 +654,7 @@ void mplay_state::machine_reset()
 	m_bios_mode = MP_ROM;
 	m_bios_bank_addr = 0;
 	m_readpos = 1;
-	md_ctrl_state::machine_reset();
+	md_base_state::machine_reset();
 }
 
 void mplay_state::megaplay(machine_config &config)
@@ -662,15 +662,8 @@ void mplay_state::megaplay(machine_config &config)
 	// basic machine hardware
 	md_ntsc(config);
 
-	// integrated 3-button controllers
-	ctrl1_3button(config);
-	ctrl2_3button(config);
-
-	// for now ...
-	m_ioports[2]->set_in_handler(FUNC(mplay_state::mp_io_exp_in));
-	m_ioports[2]->set_out_handler(FUNC(mplay_state::mp_io_exp_out));
-
-	// The Megaplay has an extra BIOS CPU which drives an SMS VDP which includes an SN76496 for sound
+	/* The Megaplay has an extra BIOS CPU which drives an SMS VDP
+	   which includes an SN76496 for sound */
 	Z80(config, m_bioscpu, MASTER_CLOCK / 15); // ??
 	m_bioscpu->set_addrmap(AS_PROGRAM, &mplay_state::megaplay_bios_map);
 	m_bioscpu->set_addrmap(AS_IO, &mplay_state::megaplay_bios_io_map);
@@ -969,8 +962,12 @@ void mplay_state::init_megaplay()
 	m_ic36_ram = std::make_unique<uint16_t[]>(0x10000 / 2);
 	m_ic37_ram = std::make_unique<uint8_t[]>(0x10000);
 
-	// use Export NTSC init, as MegaPlay was apparently only intended for export markets.
-	init_megadriv();
+	init_megadrij();
+	m_megadrive_io_read_data_port_ptr = read8sm_delegate(*this, FUNC(md_base_state::megadrive_io_read_data_port_3button));
+	m_megadrive_io_write_data_port_ptr = write16sm_delegate(*this, FUNC(md_base_state::megadrive_io_write_data_port_3button));
+
+	// for now ...
+	m_maincpu->space(AS_PROGRAM).install_readwrite_handler(0xa10000, 0xa1001f, read16sm_delegate(*this, FUNC(mplay_state::mp_io_read)), write16sm_delegate(*this, FUNC(mplay_state::mp_io_write)));
 
 	// megaplay has ram shared with the bios cpu here
 	m_z80snd->space(AS_PROGRAM).install_ram(0x2000, 0x3fff, &m_ic36_ram[0]);
@@ -979,9 +976,6 @@ void mplay_state::init_megaplay()
 	m_maincpu->space(AS_PROGRAM).install_read_handler(0xa02000, 0xa03fff, read16sm_delegate(*this, FUNC(mplay_state::extra_ram_r)));
 	m_maincpu->space(AS_PROGRAM).install_write_handler(0xa02000, 0xa03fff, write16s_delegate(*this, FUNC(mplay_state::extra_ram_w)));
 }
-
-} // anonymous namespace
-
 
 /*
 Sega Mega Play Cartridges

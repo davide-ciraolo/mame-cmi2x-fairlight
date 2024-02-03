@@ -32,7 +32,7 @@ public:
 	void map_video(address_map &map);
 
 	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	void vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank);
 
 	void spg110_201c_w(uint16_t data);
 	void spg110_2020_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);

@@ -1,33 +1,26 @@
 // license:LGPL-2.1+
 // copyright-holders:Angelo Salese, Tomasz Slanina
-/**************************************************************************************************
+/************************************************************************************
 
  Super Crowns Golf (c) 1989 Nasco Japan
 
  driver by Tomasz Slanina & Angelo Salese
 
  TODO:
- - framebuffer handling is exotic and definitely not right, it is unknown how the HW really
-   arranges for RMW drawing, and how the pens really mix/if they are readable:
- \- Polygons won't fill properly without a ROM patch (which actually sets up BG bank & 0x08,
-    readback correction?). Note that wrong handling of the area will make the game to crash.
- \- Uneven vertical gaps with some object, namely the green and the trees (RMW extension? Wrong
-    readback?)
- \- Map display arrow direction (transparency) and ball plot tracing;
- \- Mixing, map display may as well go above tilemap but that normally breaks club / ball
- \- Color of the ball (green) during attract mode how to play screen;
- \- Display in cocktail mode;
+ - remove the patch and understand what needs to be modified for the gfxs, game
+   doesn't crash anymore (note: I suspect it's actually a ppi port C bug);
+ - Some weird framebuffer vertical gaps with some object, namely the green and the
+   trees (zooming?)
  - not sure if the analog inputs are handled correctly;
- - Confirm ADPCM hookup.
+ - Fix the framebuffer display in cocktail mode;
  - Albatross: controls.
-
 
  Notes:
  - The game uses special control panel with 1 golf club shaped device to select shot
    strength (0,1,2,3), and 6 buttons (direction L&R, select angle of club head, club
    select, shot, and power to use items). -YO
 
-**************************************************************************************************/
+************************************************************************************/
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
@@ -45,21 +38,18 @@ namespace {
 class suprgolf_state : public driver_device
 {
 public:
-	suprgolf_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag)
-		, m_maincpu(*this, "maincpu")
-		, m_msm(*this, "msm")
-		, m_gfxdecode(*this, "gfxdecode")
-		, m_palette(*this, "palette")
-		, m_videoram(*this, "videoram")
-		, m_paletteram(*this, "paletteram")
-		, m_vram_palette_view(*this, "vram_palette_view")
+	suprgolf_state(const machine_config &mconfig, device_type type, const char *tag) :
+		driver_device(mconfig, type, tag),
+		m_maincpu(*this, "maincpu"),
+		m_msm(*this, "msm"),
+		m_gfxdecode(*this, "gfxdecode"),
+		m_palette(*this, "palette"),
+		m_videoram(*this, "videoram")
 	{ }
 
 	void suprgolf(machine_config &config);
 
 	void init_suprgolf();
-	void init_suprgolfj();
 
 protected:
 	virtual void machine_start() override;
@@ -73,34 +63,39 @@ private:
 	required_device<palette_device> m_palette;
 
 	required_shared_ptr<uint8_t> m_videoram;
-	required_shared_ptr<uint8_t> m_paletteram;
-
-	memory_view m_vram_palette_view;
 
 	tilemap_t *m_tilemap = nullptr;
+	std::unique_ptr<uint8_t[]> m_paletteram;
 	std::unique_ptr<uint8_t[]> m_bg_vram;
 	std::unique_ptr<uint16_t[]> m_bg_fb;
 	std::unique_ptr<uint16_t[]> m_fg_fb;
+	uint8_t m_rom_bank = 0;
 	uint8_t m_bg_bank = 0;
+	uint8_t m_vreg_bank = 0;
+	uint8_t m_msm5205next = 0;
+	uint8_t m_msm_nmi_mask = 0;
 	uint8_t m_vreg_pen = 0;
+	uint8_t m_palette_switch = 0;
+	uint8_t m_bg_vreg_test = 0;
+	uint8_t m_toggle = 0;
 
-	uint8_t m_adpcm_data = 0;
-	bool m_adpcm_nmi_enable = 0;
-	uint8_t m_adpcm_available_data = 0;
-
-	void paletteram_w(offs_t offset, uint8_t data);
+	uint8_t videoram_r(offs_t offset);
 	void videoram_w(offs_t offset, uint8_t data);
 	uint8_t bg_vram_r(offs_t offset);
 	void bg_vram_w(offs_t offset, uint8_t data);
 	void pen_w(uint8_t data);
 	void adpcm_data_w(uint8_t data);
 	void rom2_bank_select_w(uint8_t data);
+	uint8_t vregs_r();
 	void vregs_w(uint8_t data);
+	uint8_t rom_bank_select_r();
 	void rom_bank_select_w(uint8_t data);
 	uint8_t pedal_extra_bits_r();
 	uint8_t p1_r();
 	uint8_t p2_r();
-	void adpcm_int(int state);
+	void writeA(uint8_t data);
+	void writeB(uint8_t data);
+	DECLARE_WRITE_LINE_MEMBER(adpcm_int);
 
 	TILE_GET_INFO_MEMBER(get_tile_info);
 
@@ -122,15 +117,20 @@ TILE_GET_INFO_MEMBER(suprgolf_state::get_tile_info)
 
 void suprgolf_state::video_start()
 {
-	m_tilemap = &machine().tilemap().create(*m_gfxdecode, tilemap_get_info_delegate(*this, FUNC(suprgolf_state::get_tile_info)), TILEMAP_SCAN_ROWS, 8, 8, 32, 32 );
+	m_tilemap = &machine().tilemap().create(*m_gfxdecode, tilemap_get_info_delegate(*this, FUNC(suprgolf_state::get_tile_info)), TILEMAP_SCAN_ROWS,8,8,32,32 );
+	m_paletteram = std::make_unique<uint8_t[]>(0x1000);
 	m_bg_vram = std::make_unique<uint8_t[]>(0x2000*0x20);
 	m_bg_fb = std::make_unique<uint16_t[]>(0x2000*0x20);
 	m_fg_fb = std::make_unique<uint16_t[]>(0x2000*0x20);
 
-	m_tilemap->set_transparent_pen(0xf);
+	m_tilemap->set_transparent_pen(15);
 
 	save_item(NAME(m_bg_bank));
+	save_item(NAME(m_vreg_bank));
 	save_item(NAME(m_vreg_pen));
+	save_item(NAME(m_palette_switch));
+	save_item(NAME(m_bg_vreg_test));
+	save_pointer(NAME(m_paletteram), 0x1000);
 	save_pointer(NAME(m_bg_vram), 0x2000*0x20);
 	save_pointer(NAME(m_bg_fb), 0x2000*0x20);
 	save_pointer(NAME(m_fg_fb), 0x2000*0x20);
@@ -175,35 +175,51 @@ uint32_t suprgolf_state::screen_update(screen_device &screen, bitmap_ind16 &bitm
 	return 0;
 }
 
-void suprgolf_state::videoram_w(offs_t offset, uint8_t data)
+uint8_t suprgolf_state::videoram_r(offs_t offset)
 {
-	m_videoram[offset] = data;
-	m_tilemap->mark_tile_dirty((offset & 0x7fe) >> 1);
+	if (m_palette_switch)
+		return m_paletteram[offset];
+	else
+		return m_videoram[offset];
 }
 
-void suprgolf_state::paletteram_w(offs_t offset, uint8_t data)
+void suprgolf_state::videoram_w(offs_t offset, uint8_t data)
 {
-	u16 datax;
-	u16 r, g, b;
+	if(m_palette_switch)
+	{
+		int r,g,b,datax;
+		m_paletteram[offset] = data;
+		offset>>=1;
+		datax = m_paletteram[offset*2] + 256*m_paletteram[offset*2 + 1];
 
-	m_paletteram[offset] = data;
-	offset >>= 1;
-	datax = m_paletteram[offset * 2] + (m_paletteram[offset*2 + 1] << 8);
+		b = (datax & 0x8000) ? 0 : ((datax)&0x001f)>>0;
+		g = (datax & 0x8000) ? 0 : ((datax)&0x03e0)>>5;
+		r = (datax & 0x8000) ? 0 : ((datax)&0x7c00)>>10;
 
-	b = (datax & 0x8000) ? 0 : ((datax)&0x001f)>>0;
-	g = (datax & 0x8000) ? 0 : ((datax)&0x03e0)>>5;
-	r = (datax & 0x8000) ? 0 : ((datax)&0x7c00)>>10;
+		m_palette->set_pen_color(offset, pal5bit(r), pal5bit(g), pal5bit(b));
+	}
+	else
+	{
+		m_videoram[offset] = data;
+		m_tilemap->mark_tile_dirty((offset & 0x7fe) >> 1);
+	}
+}
 
-	m_palette->set_pen_color(offset, pal5bit(r), pal5bit(g), pal5bit(b));
+uint8_t suprgolf_state::vregs_r()
+{
+	return m_vreg_bank;
 }
 
 void suprgolf_state::vregs_w(uint8_t data)
 {
 	//printf("%02x\n",data);
 
-	m_vram_palette_view.select(BIT(data, 7));
 	//bits 0,1,2 and probably 3 controls the background vram banking
+	m_vreg_bank = data;
+	m_palette_switch = (data & 0x80);
 	m_bg_bank = (data & 0x1f);
+
+	m_bg_vreg_test = data & 0x20;
 
 	//if(data & 0x60)
 	//  printf("Video regs with data %02x activated\n",data);
@@ -259,6 +275,17 @@ void suprgolf_state::bg_vram_w(offs_t offset, uint8_t data)
 	}
 }
 
+void suprgolf_state::machine_start()
+{
+	membank("bank1")->configure_entries(0, 16, memregion("user2")->base(), 0x4000);
+	membank("bank2")->configure_entries(0, 64, memregion("user1")->base(), 0x4000);
+
+	save_item(NAME(m_rom_bank));
+	save_item(NAME(m_msm5205next));
+	save_item(NAME(m_msm_nmi_mask));
+	save_item(NAME(m_toggle));
+}
+
 void suprgolf_state::pen_w(uint8_t data)
 {
 	m_vreg_pen = data;
@@ -266,23 +293,33 @@ void suprgolf_state::pen_w(uint8_t data)
 
 void suprgolf_state::adpcm_data_w(uint8_t data)
 {
-	m_adpcm_data = data;
-	m_adpcm_available_data = 2;
+	m_msm5205next = data;
+}
+
+uint8_t suprgolf_state::rom_bank_select_r()
+{
+	return m_rom_bank;
 }
 
 void suprgolf_state::rom_bank_select_w(uint8_t data)
 {
+	m_rom_bank = data;
+
+	//popmessage("%08x %02x",((data & 0x3f) * 0x4000),data);
+	//osd_printf_debug("ROM_BANK 0x8000 - %X @%X\n",data,m_maincpu->pcbase());
 	membank("bank2")->set_entry(data & 0x3f);
 
-	m_adpcm_nmi_enable = bool(BIT(data, 6));
-	flip_screen_set(BIT(data, 7));
-	// assuming a reset is triggered if NMI is off
-	m_msm->reset_w(!m_adpcm_nmi_enable);
+	m_msm_nmi_mask = data & 0x40;
+	flip_screen_set(data & 0x80);
 }
 
 void suprgolf_state::rom2_bank_select_w(uint8_t data)
 {
+	//osd_printf_debug("ROM_BANK 0x4000 - %X @%X\n",data,m_maincpu->pcbase());
 	membank("bank1")->set_entry(data & 0x0f);
+
+	if(data & 0xf0)
+		printf("Rom bank select 2 with data %02x activated\n",data);
 }
 
 uint8_t suprgolf_state::pedal_extra_bits_r()
@@ -312,9 +349,7 @@ void suprgolf_state::suprgolf_map(address_map &map)
 	map(0x4000, 0x4000).w(FUNC(suprgolf_state::rom2_bank_select_w));
 	map(0x8000, 0xbfff).bankr("bank2");
 	map(0xc000, 0xdfff).rw(FUNC(suprgolf_state::bg_vram_r), FUNC(suprgolf_state::bg_vram_w)); // banked background vram
-	map(0xe000, 0xefff).view(m_vram_palette_view);
-	m_vram_palette_view[0](0xe000, 0xefff).ram().w(FUNC(suprgolf_state::videoram_w)).share("videoram");
-	m_vram_palette_view[1](0xe000, 0xefff).ram().w(FUNC(suprgolf_state::paletteram_w)).share("paletteram");
+	map(0xe000, 0xefff).rw(FUNC(suprgolf_state::videoram_r), FUNC(suprgolf_state::videoram_w)).share("videoram"); //foreground vram + paletteram
 	map(0xf000, 0xf000).w(FUNC(suprgolf_state::pen_w));
 	map(0xf800, 0xffff).ram();
 }
@@ -326,7 +361,7 @@ void suprgolf_state::io_map(address_map &map)
 	map(0x04, 0x07).rw("ppi8255_1", FUNC(i8255_device::read), FUNC(i8255_device::write));
 	map(0x08, 0x09).rw("ymsnd", FUNC(ym2203_device::read), FUNC(ym2203_device::write));
 	map(0x0c, 0x0c).w(FUNC(suprgolf_state::adpcm_data_w));
-}
+	}
 
 static INPUT_PORTS_START( suprgolf )
 	PORT_START("P1")
@@ -413,41 +448,38 @@ static INPUT_PORTS_START( suprgolf )
 	PORT_DIPUNUSED_DIPLOC( 0x80, 0x00, "SW2:8" )
 INPUT_PORTS_END
 
-// guesswork, assume played back from VCLK control
-// 0 -> 1 clocks NMI, 1 -> 0 pushes data to the ADPCM if available from the bus.
-void suprgolf_state::adpcm_int(int state)
+void suprgolf_state::writeA(uint8_t data)
 {
-	if(!state && m_adpcm_available_data)
-	{
-		m_msm->data_w(m_adpcm_data >> 4);
-		m_adpcm_data <<= 4;
-		m_adpcm_available_data--;
-		return;
-	}
+	osd_printf_debug("ymwA\n");
+}
 
-	if(state && m_adpcm_available_data == 0 && m_adpcm_nmi_enable)
-		m_maincpu->pulse_input_line(INPUT_LINE_NMI, attotime::zero);
+void suprgolf_state::writeB(uint8_t data)
+{
+	osd_printf_debug("ymwA\n");
+}
+
+WRITE_LINE_MEMBER(suprgolf_state::adpcm_int)
+{
+	m_msm->reset_w(0);
+	m_toggle ^= 1;
+	if(m_toggle)
+	{
+		m_msm->data_w((m_msm5205next & 0xf0) >> 4);
+		if(m_msm_nmi_mask) { m_maincpu->pulse_input_line(INPUT_LINE_NMI, attotime::zero); }
+	}
+	else
+	{
+		m_msm->data_w((m_msm5205next & 0x0f) >> 0);
+	}
 }
 
 static GFXDECODE_START( gfx_suprgolf )
 	GFXDECODE_ENTRY( "gfx1", 0, gfx_8x8x4_packed_lsb,   0, 0x80 )
 GFXDECODE_END
 
-void suprgolf_state::machine_start()
-{
-	membank("bank1")->configure_entries(0, 16, memregion("user2")->base(), 0x4000);
-	membank("bank2")->configure_entries(0, 64, memregion("user1")->base(), 0x4000);
-
-	save_item(NAME(m_adpcm_data));
-	save_item(NAME(m_adpcm_nmi_enable));
-	save_item(NAME(m_adpcm_available_data));
-}
-
 void suprgolf_state::machine_reset()
 {
-	m_adpcm_nmi_enable = 0;
-	m_adpcm_available_data = 0;
-	m_vram_palette_view.select(0);
+	m_msm_nmi_mask = 0;
 }
 
 #define MASTER_CLOCK XTAL(12'000'000)
@@ -467,7 +499,9 @@ void suprgolf_state::suprgolf(machine_config &config)
 
 	i8255_device &ppi1(I8255A(config, "ppi8255_1"));
 	ppi1.in_pa_callback().set_ioport("SYSTEM");
+	ppi1.in_pb_callback().set(FUNC(suprgolf_state::rom_bank_select_r));
 	ppi1.out_pb_callback().set(FUNC(suprgolf_state::rom_bank_select_w));
+	ppi1.in_pc_callback().set(FUNC(suprgolf_state::vregs_r));
 	ppi1.out_pc_callback().set(FUNC(suprgolf_state::vregs_w));
 
 	/* video hardware */
@@ -489,11 +523,13 @@ void suprgolf_state::suprgolf(machine_config &config)
 	//ymsnd.irq_handler().set_inputline(m_maincpu, INPUT_LINE_NMI);
 	ymsnd.port_a_read_callback().set_ioport("DSW0");
 	ymsnd.port_b_read_callback().set_ioport("DSW1");
-	ymsnd.add_route(ALL_OUTPUTS, "mono", 0.25);
+	ymsnd.port_a_write_callback().set(FUNC(suprgolf_state::writeA));
+	ymsnd.port_b_write_callback().set(FUNC(suprgolf_state::writeB));
+	ymsnd.add_route(ALL_OUTPUTS, "mono", 0.5);
 
 	MSM5205(config, m_msm, XTAL(384'000)); /* guess */
-	m_msm->vck_callback().set(FUNC(suprgolf_state::adpcm_int));
-	m_msm->set_prescaler_selector(msm5205_device::S48_4B);
+	m_msm->vck_legacy_callback().set(FUNC(suprgolf_state::adpcm_int));  /* interrupt function */
+	m_msm->set_prescaler_selector(msm5205_device::S48_4B);  /* 4KHz 4-bit */
 	m_msm->add_route(ALL_OUTPUTS, "mono", 1.0);
 }
 
@@ -627,27 +663,20 @@ ROM_START( albatross )
 ROM_END
 
 
+
+
 void suprgolf_state::init_suprgolf()
 {
 	uint8_t *ROM = memregion("user2")->base();
 
 	ROM[0x74f4-0x4000] = 0x00;
 	ROM[0x74f5-0x4000] = 0x00;
-	ROM[0x74fa+(0x4000*3)-0x4000] = 0x20; // patch ROM check
-}
-
-void suprgolf_state::init_suprgolfj()
-{
-	uint8_t *ROM = memregion("user2")->base();
-
-	ROM[0x74f4-0x4000] = 0x00;
-	ROM[0x74f5-0x4000] = 0x00;
-	ROM[0x6d72+(0x4000*3)-0x4000] = 0x20; // patch ROM check
+	ROM[0x6d72+(0x4000*3)-0x4000] = 0x20; //patch ROM check
 }
 
 } // Anonymous namespace
 
 
-GAME( 1989, suprgolf,  0,         suprgolf,  suprgolf, suprgolf_state, init_suprgolf,  ROT0, "Nasco", "Super Crowns Golf (World)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_NO_COCKTAIL | MACHINE_SUPPORTS_SAVE )
-GAME( 1989, suprgolfj, suprgolf,  suprgolf,  suprgolf, suprgolf_state, init_suprgolfj, ROT0, "Nasco", "Super Crowns Golf (Japan)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_NO_COCKTAIL | MACHINE_SUPPORTS_SAVE )
-GAME( 1989, albatross, suprgolf,  suprgolf,  suprgolf, suprgolf_state, init_suprgolf,  ROT0, "Nasco (Technos license)", "Albatross (US prototype?)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_GRAPHICS | MACHINE_NO_COCKTAIL| MACHINE_SUPPORTS_SAVE )
+GAME( 1989, suprgolf,  0,         suprgolf,  suprgolf, suprgolf_state, empty_init,    ROT0, "Nasco", "Super Crowns Golf (World)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_NO_COCKTAIL | MACHINE_SUPPORTS_SAVE )
+GAME( 1989, suprgolfj, suprgolf,  suprgolf,  suprgolf, suprgolf_state, init_suprgolf, ROT0, "Nasco", "Super Crowns Golf (Japan)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_NO_COCKTAIL | MACHINE_SUPPORTS_SAVE )
+GAME( 1989, albatross, suprgolf,  suprgolf,  suprgolf, suprgolf_state, empty_init,    ROT0, "Nasco", "Albatross (US Prototype?)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_GRAPHICS | MACHINE_NO_COCKTAIL| MACHINE_SUPPORTS_SAVE )

@@ -224,7 +224,7 @@ void v3021_device::write(u8 data)
 //  cs_w - CS pin handler
 //-------------------------------------------------
 
-void v3021_device::cs_w(int state)
+WRITE_LINE_MEMBER(v3021_device::cs_w)
 {
 	if (m_cs != state)
 	{
@@ -275,7 +275,7 @@ void v3021_device::cs_w(int state)
 //  io_w - I/O pin write handler
 //-------------------------------------------------
 
-void v3021_device::io_w(int state)
+WRITE_LINE_MEMBER(v3021_device::io_w)
 {
 	m_io = state;
 }
@@ -284,7 +284,7 @@ void v3021_device::io_w(int state)
 //  io_r - I/O pin read handler
 //-------------------------------------------------
 
-int v3021_device::io_r()
+READ_LINE_MEMBER(v3021_device::io_r)
 {
 	return m_data & 1;
 }

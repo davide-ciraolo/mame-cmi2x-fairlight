@@ -25,9 +25,6 @@ Etched in copper on top of board:
 #include "netlist/nl_setup.h"
 #include "nl_flyball.h"
 
-
-namespace {
-
 static constexpr XTAL MASTER_CLOCK  = 12.096_MHz_XTAL;
 static constexpr XTAL PIXEL_CLOCK   = MASTER_CLOCK / 2;
 
@@ -64,7 +61,7 @@ private:
 	void pitcher_vert_w(uint8_t data);
 	void pitcher_horz_w(uint8_t data);
 	void misc_w(offs_t offset, uint8_t data);
-	void lamp_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(lamp_w);
 
 	TILEMAP_MAPPER_MEMBER(get_memory_offset);
 	TILE_GET_INFO_MEMBER(get_tile_info);
@@ -282,7 +279,7 @@ void flyball_state::misc_w(offs_t offset, uint8_t data)
 	m_outlatch->write_d0(~offset, ~data);
 }
 
-void flyball_state::lamp_w(int state)
+WRITE_LINE_MEMBER(flyball_state::lamp_w)
 {
 	m_lamp = state ? 1 : 0;
 }
@@ -550,8 +547,6 @@ ROM_START( flyball1 )
 	ROM_LOAD16_BYTE( "6137.e2", 0x0000, 0x0200, CRC(68961fda) SHA1(a06c7b453cce04716f49bd65ecfe1ba67cb8681e) )
 	ROM_LOAD16_BYTE( "6138.f2", 0x0001, 0x0200, CRC(aab314f6) SHA1(6625c719fdc000d6af94bc9474de8f7e977cee97) )
 ROM_END
-
-} // anonymous namespace
 
 
 /*************************************

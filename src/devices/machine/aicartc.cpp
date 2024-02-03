@@ -151,7 +151,7 @@ void aicartc_device::write(offs_t offset, uint16_t data, uint16_t mem_mask)
 			if(m_we)
 			{
 				COMBINE_DATA(&m_rtc_reg_hi);
-				m_we = 0;
+				// clear write enable here?
 			}
 
 			break;

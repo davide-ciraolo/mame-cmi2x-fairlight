@@ -52,10 +52,11 @@ protected:
 	required_ioport m_io_kbdc;
 
 private:
-	required_region_ptr<uint8_t> m_rom;
+	bool m_ruslat;
+	uint8_t *m_rom;
+
 	devcb_write16 m_keyboard_cb;
 	devcb_write_line m_sdv_cb;
-	bool m_ruslat;
 };
 
 DECLARE_DEVICE_TYPE(IE15_KEYBOARD, ie15_keyboard_device)

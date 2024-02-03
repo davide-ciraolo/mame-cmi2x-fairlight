@@ -17,7 +17,7 @@
 #include "../../Common/StreamUtils.h"
 #include "../Common/ExtractingFilePath.h"
 
-#ifndef Z7_SFX
+#ifndef _SFX
 #include "../Common/ZipRegistry.h"
 #endif
 
@@ -28,7 +28,7 @@
 #include "FormatUtils.h"
 #include "LangUtils.h"
 #include "OverwriteDialog.h"
-#ifndef Z7_NO_CRYPTO
+#ifndef _NO_CRYPTO
 #include "PasswordDialog.h"
 #endif
 #include "PropertyName.h"
@@ -44,11 +44,10 @@ void CExtractCallbackImp::Init()
   _lang_Extracting = LangString(IDS_PROGRESS_EXTRACTING);
   _lang_Testing = LangString(IDS_PROGRESS_TESTING);
   _lang_Skipping = LangString(IDS_PROGRESS_SKIPPING);
-  _lang_Reading = "Reading";
 
   NumArchiveErrors = 0;
   ThereAreMessageErrors = false;
-  #ifndef Z7_SFX
+  #ifndef _SFX
   NumFolders = NumFiles = 0;
   NeedAddFile = false;
   #endif
@@ -60,27 +59,29 @@ void CExtractCallbackImp::AddError_Message(LPCWSTR s)
   ProgressDialog->Sync.AddError_Message(s);
 }
 
-#ifndef Z7_SFX
+#ifndef _SFX
 
-Z7_COM7F_IMF(CExtractCallbackImp::SetNumFiles(UInt64 numFiles))
+STDMETHODIMP CExtractCallbackImp::SetNumFiles(UInt64
+  #ifndef _SFX
+  numFiles
+  #endif
+  )
 {
- #ifdef Z7_SFX
-  UNUSED_VAR(numFiles)
- #else
+  #ifndef _SFX
   ProgressDialog->Sync.Set_NumFilesTotal(numFiles);
- #endif
+  #endif
   return S_OK;
 }
 
 #endif
 
-Z7_COM7F_IMF(CExtractCallbackImp::SetTotal(UInt64 total))
+STDMETHODIMP CExtractCallbackImp::SetTotal(UInt64 total)
 {
   ProgressDialog->Sync.Set_NumBytesTotal(total);
   return S_OK;
 }
 
-Z7_COM7F_IMF(CExtractCallbackImp::SetCompleted(const UInt64 *value))
+STDMETHODIMP CExtractCallbackImp::SetCompleted(const UInt64 *value)
 {
   return ProgressDialog->Sync.Set_NumBytesCur(value);
 }
@@ -137,7 +138,7 @@ HRESULT CExtractCallbackImp::Open_Finished()
   return ProgressDialog->Sync.CheckStop();
 }
 
-#ifndef Z7_NO_CRYPTO
+#ifndef _NO_CRYPTO
 
 HRESULT CExtractCallbackImp::Open_CryptoGetTextPassword(BSTR *password)
 {
@@ -166,8 +167,8 @@ void CExtractCallbackImp::Open_Clear_PasswordWasAsked_Flag()
 #endif
 
 
-#ifndef Z7_SFX
-Z7_COM7F_IMF(CExtractCallbackImp::SetRatioInfo(const UInt64 *inSize, const UInt64 *outSize))
+#ifndef _SFX
+STDMETHODIMP CExtractCallbackImp::SetRatioInfo(const UInt64 *inSize, const UInt64 *outSize)
 {
   ProgressDialog->Sync.Set_Ratio(inSize, outSize);
   return S_OK;
@@ -175,13 +176,13 @@ Z7_COM7F_IMF(CExtractCallbackImp::SetRatioInfo(const UInt64 *inSize, const UInt6
 #endif
 
 /*
-Z7_COM7F_IMF(CExtractCallbackImp::SetTotalFiles(UInt64 total)
+STDMETHODIMP CExtractCallbackImp::SetTotalFiles(UInt64 total)
 {
   ProgressDialog->Sync.SetNumFilesTotal(total);
   return S_OK;
 }
 
-Z7_COM7F_IMF(CExtractCallbackImp::SetCompletedFiles(const UInt64 *value)
+STDMETHODIMP CExtractCallbackImp::SetCompletedFiles(const UInt64 *value)
 {
   if (value != NULL)
     ProgressDialog->Sync.SetNumFilesCur(*value);
@@ -189,10 +190,10 @@ Z7_COM7F_IMF(CExtractCallbackImp::SetCompletedFiles(const UInt64 *value)
 }
 */
 
-Z7_COM7F_IMF(CExtractCallbackImp::AskOverwrite(
+STDMETHODIMP CExtractCallbackImp::AskOverwrite(
     const wchar_t *existName, const FILETIME *existTime, const UInt64 *existSize,
     const wchar_t *newName, const FILETIME *newTime, const UInt64 *newSize,
-    Int32 *answer))
+    Int32 *answer)
 {
   COverwriteDialog dialog;
 
@@ -221,7 +222,7 @@ Z7_COM7F_IMF(CExtractCallbackImp::AskOverwrite(
 }
 
 
-Z7_COM7F_IMF(CExtractCallbackImp::PrepareOperation(const wchar_t *name, Int32 isFolder, Int32 askExtractMode, const UInt64 * /* position */))
+STDMETHODIMP CExtractCallbackImp::PrepareOperation(const wchar_t *name, Int32 isFolder, Int32 askExtractMode, const UInt64 * /* position */)
 {
   _isFolder = IntToBool(isFolder);
   _currentFilePath = name;
@@ -232,14 +233,13 @@ Z7_COM7F_IMF(CExtractCallbackImp::PrepareOperation(const wchar_t *name, Int32 is
     case NArchive::NExtract::NAskMode::kExtract: msg = &_lang_Extracting; break;
     case NArchive::NExtract::NAskMode::kTest:    msg = &_lang_Testing; break;
     case NArchive::NExtract::NAskMode::kSkip:    msg = &_lang_Skipping; break;
-    case NArchive::NExtract::NAskMode::kReadExternal: msg = &_lang_Reading; break;
     // default: s = "Unknown operation";
   }
 
   return ProgressDialog->Sync.Set_Status2(*msg, name, IntToBool(isFolder));
 }
 
-Z7_COM7F_IMF(CExtractCallbackImp::MessageError(const wchar_t *s))
+STDMETHODIMP CExtractCallbackImp::MessageError(const wchar_t *s)
 {
   AddError_Message(s);
   return S_OK;
@@ -252,9 +252,9 @@ HRESULT CExtractCallbackImp::MessageError(const char *message, const FString &pa
   return S_OK;
 }
 
-#ifndef Z7_SFX
+#ifndef _SFX
 
-Z7_COM7F_IMF(CExtractCallbackImp::ShowMessage(const wchar_t *s))
+STDMETHODIMP CExtractCallbackImp::ShowMessage(const wchar_t *s)
 {
   AddError_Message(s);
   return S_OK;
@@ -262,7 +262,6 @@ Z7_COM7F_IMF(CExtractCallbackImp::ShowMessage(const wchar_t *s))
 
 #endif
 
-void SetExtractErrorMessage(Int32 opRes, Int32 encrypted, const wchar_t *fileName, UString &s);
 void SetExtractErrorMessage(Int32 opRes, Int32 encrypted, const wchar_t *fileName, UString &s)
 {
   s.Empty();
@@ -270,33 +269,25 @@ void SetExtractErrorMessage(Int32 opRes, Int32 encrypted, const wchar_t *fileNam
   if (opRes == NArchive::NExtract::NOperationResult::kOK)
     return;
 
- #ifndef Z7_SFX
   UINT messageID = 0;
- #endif
   UINT id = 0;
 
   switch (opRes)
   {
     case NArchive::NExtract::NOperationResult::kUnsupportedMethod:
-     #ifndef Z7_SFX
       messageID = IDS_EXTRACT_MESSAGE_UNSUPPORTED_METHOD;
-     #endif
       id = IDS_EXTRACT_MSG_UNSUPPORTED_METHOD;
       break;
     case NArchive::NExtract::NOperationResult::kDataError:
-     #ifndef Z7_SFX
       messageID = encrypted ?
           IDS_EXTRACT_MESSAGE_DATA_ERROR_ENCRYPTED:
           IDS_EXTRACT_MESSAGE_DATA_ERROR;
-     #endif
       id = IDS_EXTRACT_MSG_DATA_ERROR;
       break;
     case NArchive::NExtract::NOperationResult::kCRCError:
-     #ifndef Z7_SFX
       messageID = encrypted ?
           IDS_EXTRACT_MESSAGE_CRC_ERROR_ENCRYPTED:
           IDS_EXTRACT_MESSAGE_CRC_ERROR;
-     #endif
       id = IDS_EXTRACT_MSG_CRC_ERROR;
       break;
     case NArchive::NExtract::NOperationResult::kUnavailable:
@@ -325,19 +316,18 @@ void SetExtractErrorMessage(Int32 opRes, Int32 encrypted, const wchar_t *fileNam
   }
 
   UString msg;
-
- #ifndef Z7_SFX
   UString msgOld;
- #ifdef Z7_LANG
+
+  #ifndef _SFX
   if (id != 0)
     LangString_OnlyFromLangFile(id, msg);
   if (messageID != 0 && msg.IsEmpty())
     LangString_OnlyFromLangFile(messageID, msgOld);
- #endif
+  #endif
+
   if (msg.IsEmpty() && !msgOld.IsEmpty())
     s = MyFormatNew(msgOld, fileName);
   else
- #endif
   {
     if (msg.IsEmpty() && id != 0)
       LangString(id, msg);
@@ -345,23 +335,25 @@ void SetExtractErrorMessage(Int32 opRes, Int32 encrypted, const wchar_t *fileNam
       s += msg;
     else
     {
-      s += "Error #";
-      s.Add_UInt32((UInt32)opRes);
+      char temp[16];
+      ConvertUInt32ToString(opRes, temp);
+      s.AddAscii("Error #");
+      s.AddAscii(temp);
     }
 
     if (encrypted && opRes != NArchive::NExtract::NOperationResult::kWrongPassword)
     {
-      // s += " : ";
+      // s.AddAscii(" : ");
       // AddLangString(s, IDS_EXTRACT_MSG_ENCRYPTED);
-      s += " : ";
+      s.AddAscii(" : ");
       AddLangString(s, IDS_EXTRACT_MSG_WRONG_PSW_GUESS);
     }
-    s += " : ";
+    s.AddAscii(" : ");
     s += fileName;
   }
 }
 
-Z7_COM7F_IMF(CExtractCallbackImp::SetOperationResult(Int32 opRes, Int32 encrypted))
+STDMETHODIMP CExtractCallbackImp::SetOperationResult(Int32 opRes, Int32 encrypted)
 {
   switch (opRes)
   {
@@ -376,7 +368,7 @@ Z7_COM7F_IMF(CExtractCallbackImp::SetOperationResult(Int32 opRes, Int32 encrypte
     }
   }
   
-  #ifndef Z7_SFX
+  #ifndef _SFX
   if (_isFolder)
     NumFolders++;
   else
@@ -387,7 +379,7 @@ Z7_COM7F_IMF(CExtractCallbackImp::SetOperationResult(Int32 opRes, Int32 encrypte
   return S_OK;
 }
 
-Z7_COM7F_IMF(CExtractCallbackImp::ReportExtractResult(Int32 opRes, Int32 encrypted, const wchar_t *name))
+STDMETHODIMP CExtractCallbackImp::ReportExtractResult(Int32 opRes, Int32 encrypted, const wchar_t *name)
 {
   if (opRes != NArchive::NExtract::NOperationResult::kOK)
   {
@@ -404,8 +396,8 @@ Z7_COM7F_IMF(CExtractCallbackImp::ReportExtractResult(Int32 opRes, Int32 encrypt
 
 HRESULT CExtractCallbackImp::BeforeOpen(const wchar_t *name, bool /* testMode */)
 {
-  #ifndef Z7_SFX
-  RINOK(ProgressDialog->Sync.CheckStop())
+  #ifndef _SFX
+  RINOK(ProgressDialog->Sync.CheckStop());
   ProgressDialog->Sync.Set_TitleFileName(name);
   #endif
   _currentArchivePath = name;
@@ -415,17 +407,17 @@ HRESULT CExtractCallbackImp::BeforeOpen(const wchar_t *name, bool /* testMode */
 HRESULT CExtractCallbackImp::SetCurrentFilePath2(const wchar_t *path)
 {
   _currentFilePath = path;
-  #ifndef Z7_SFX
+  #ifndef _SFX
   ProgressDialog->Sync.Set_FilePath(path);
   #endif
   return S_OK;
 }
 
-#ifndef Z7_SFX
+#ifndef _SFX
 
-Z7_COM7F_IMF(CExtractCallbackImp::SetCurrentFilePath(const wchar_t *path))
+HRESULT CExtractCallbackImp::SetCurrentFilePath(const wchar_t *path)
 {
-  #ifndef Z7_SFX
+  #ifndef _SFX
   if (NeedAddFile)
     NumFiles++;
   NeedAddFile = true;
@@ -459,12 +451,11 @@ static void AddNewLineString(UString &s, const UString &m)
   s.Add_LF();
 }
 
-UString GetOpenArcErrorMessage(UInt32 errorFlags);
 UString GetOpenArcErrorMessage(UInt32 errorFlags)
 {
   UString s;
 
-  for (unsigned i = 0; i < Z7_ARRAY_SIZE(k_ErrorFlagsIds); i++)
+  for (unsigned i = 0; i < ARRAY_SIZE(k_ErrorFlagsIds); i++)
   {
     UInt32 f = ((UInt32)1 << i);
     if ((errorFlags & f) == 0)
@@ -475,7 +466,7 @@ UString GetOpenArcErrorMessage(UInt32 errorFlags)
       continue;
     if (f == kpv_ErrorFlags_EncryptedHeadersError)
     {
-      m += " : ";
+      m.AddAscii(" : ");
       AddLangString(m, IDS_EXTRACT_MSG_WRONG_PSW_GUESS);
     }
     if (!s.IsEmpty())
@@ -492,7 +483,7 @@ UString GetOpenArcErrorMessage(UInt32 errorFlags)
     ConvertUInt32ToHex(errorFlags, sz + 2);
     if (!s.IsEmpty())
       s.Add_LF();
-    s += sz;
+    s.AddAscii(sz);
   }
   
   return s;
@@ -512,7 +503,7 @@ static void ErrorInfo_Print(UString &s, const CArcErrorInfo &er)
   if (warningFlags != 0)
   {
     s += GetNameOfProperty(kpidWarningFlags, L"Warnings");
-    s += ":";
+    s.AddAscii(":");
     s.Add_LF();
     AddNewLineString(s, GetOpenArcErrorMessage(warningFlags));
   }
@@ -520,7 +511,7 @@ static void ErrorInfo_Print(UString &s, const CArcErrorInfo &er)
   if (!er.WarningMessage.IsEmpty())
   {
     s += GetNameOfProperty(kpidWarning, L"Warning");
-    s += ": ";
+    s.AddAscii(": ");
     s += er.WarningMessage;
     s.Add_LF();
   }
@@ -528,13 +519,12 @@ static void ErrorInfo_Print(UString &s, const CArcErrorInfo &er)
 
 static UString GetBracedType(const wchar_t *type)
 {
-  UString s ('[');
+  UString s = L'[';
   s += type;
-  s += ']';
+  s += L']';
   return s;
 }
 
-void OpenResult_GUI(UString &s, const CCodecs *codecs, const CArchiveLink &arcLink, const wchar_t *name, HRESULT result);
 void OpenResult_GUI(UString &s, const CCodecs *codecs, const CArchiveLink &arcLink, const wchar_t *name, HRESULT result)
 {
   FOR_VECTOR (level, arcLink.Arcs)
@@ -644,9 +634,7 @@ HRESULT CExtractCallbackImp::ExtractResult(HRESULT result)
   if (result == S_OK)
     return result;
   NumArchiveErrors++;
-  if (result == E_ABORT
-      || result == HRESULT_FROM_WIN32(ERROR_DISK_FULL)
-      )
+  if (result == E_ABORT || result == ERROR_DISK_FULL)
     return result;
 
   Add_ArchiveName_Error();
@@ -656,7 +644,7 @@ HRESULT CExtractCallbackImp::ExtractResult(HRESULT result)
   return S_OK;
 }
 
-#ifndef Z7_NO_CRYPTO
+#ifndef _NO_CRYPTO
 
 HRESULT CExtractCallbackImp::SetPassword(const UString &password)
 {
@@ -665,14 +653,14 @@ HRESULT CExtractCallbackImp::SetPassword(const UString &password)
   return S_OK;
 }
 
-Z7_COM7F_IMF(CExtractCallbackImp::CryptoGetTextPassword(BSTR *password))
+STDMETHODIMP CExtractCallbackImp::CryptoGetTextPassword(BSTR *password)
 {
   PasswordWasAsked = true;
   if (!PasswordIsDefined)
   {
     CPasswordDialog dialog;
-    #ifndef Z7_SFX
-    const bool showPassword = NExtract::Read_ShowPassword();
+    #ifndef _SFX
+    bool showPassword = NExtract::Read_ShowPassword();
     dialog.ShowPassword = showPassword;
     #endif
     ProgressDialog->WaitCreating();
@@ -680,7 +668,7 @@ Z7_COM7F_IMF(CExtractCallbackImp::CryptoGetTextPassword(BSTR *password))
       return E_ABORT;
     Password = dialog.Password;
     PasswordIsDefined = true;
-    #ifndef Z7_SFX
+    #ifndef _SFX
     if (dialog.ShowPassword != showPassword)
       NExtract::Save_ShowPassword(dialog.ShowPassword);
     #endif
@@ -690,24 +678,24 @@ Z7_COM7F_IMF(CExtractCallbackImp::CryptoGetTextPassword(BSTR *password))
 
 #endif
 
-#ifndef Z7_SFX
+#ifndef _SFX
 
-Z7_COM7F_IMF(CExtractCallbackImp::AskWrite(
+STDMETHODIMP CExtractCallbackImp::AskWrite(
     const wchar_t *srcPath, Int32 srcIsFolder,
     const FILETIME *srcTime, const UInt64 *srcSize,
     const wchar_t *destPath,
     BSTR *destPathResult,
-    Int32 *writeAnswer))
+    Int32 *writeAnswer)
 {
   UString destPathResultTemp = destPath;
 
   // RINOK(StringToBstr(destPath, destPathResult));
 
-  *destPathResult = NULL;
+  *destPathResult = 0;
   *writeAnswer = BoolToInt(false);
 
   FString destPathSys = us2fs(destPath);
-  const bool srcIsFolderSpec = IntToBool(srcIsFolder);
+  bool srcIsFolderSpec = IntToBool(srcIsFolder);
   CFileInfo destFileInfo;
   
   if (destFileInfo.Find(destPathSys))
@@ -716,7 +704,7 @@ Z7_COM7F_IMF(CExtractCallbackImp::AskWrite(
     {
       if (!destFileInfo.IsDir())
       {
-        RINOK(MessageError("Cannot replace file with folder with same name", destPathSys))
+        RINOK(MessageError("can not replace file with folder with same name", destPathSys));
         return E_ABORT;
       }
       *writeAnswer = BoolToInt(false);
@@ -725,12 +713,12 @@ Z7_COM7F_IMF(CExtractCallbackImp::AskWrite(
   
     if (destFileInfo.IsDir())
     {
-      RINOK(MessageError("Cannot replace folder with file with same name", destPathSys))
+      RINOK(MessageError("can not replace folder with file with same name", destPathSys));
       *writeAnswer = BoolToInt(false);
       return S_OK;
     }
 
-    switch ((int)OverwriteMode)
+    switch (OverwriteMode)
     {
       case NExtract::NOverwriteMode::kSkip:
         return S_OK;
@@ -738,8 +726,8 @@ Z7_COM7F_IMF(CExtractCallbackImp::AskWrite(
       {
         Int32 overwriteResult;
         UString destPathSpec = destPath;
-        const int slashPos = destPathSpec.ReverseFind_PathSepar();
-        destPathSpec.DeleteFrom((unsigned)(slashPos + 1));
+        int slashPos = destPathSpec.ReverseFind_PathSepar();
+        destPathSpec.DeleteFrom(slashPos + 1);
         destPathSpec += fs2us(destFileInfo.Name);
 
         RINOK(AskOverwrite(
@@ -747,7 +735,7 @@ Z7_COM7F_IMF(CExtractCallbackImp::AskWrite(
             &destFileInfo.MTime, &destFileInfo.Size,
             srcPath,
             srcTime, srcSize,
-            &overwriteResult))
+            &overwriteResult));
         
         switch (overwriteResult)
         {
@@ -760,38 +748,31 @@ Z7_COM7F_IMF(CExtractCallbackImp::AskWrite(
           default:
             return E_FAIL;
         }
-        break;
       }
-      default:
-        break;
     }
     
     if (OverwriteMode == NExtract::NOverwriteMode::kRename)
     {
       if (!AutoRenamePath(destPathSys))
       {
-        RINOK(MessageError("Cannot create name for file", destPathSys))
+        RINOK(MessageError("can not create name for file", destPathSys));
         return E_ABORT;
       }
       destPathResultTemp = fs2us(destPathSys);
     }
     else
-    {
-      if (NFind::DoesFileExist_Raw(destPathSys))
       if (!NDir::DeleteFileAlways(destPathSys))
-      if (GetLastError() != ERROR_FILE_NOT_FOUND)
       {
-        RINOK(MessageError("Cannot delete output file", destPathSys))
+        RINOK(MessageError("can not delete output file", destPathSys));
         return E_ABORT;
       }
-    }
   }
   *writeAnswer = BoolToInt(true);
   return StringToBstr(destPathResultTemp, destPathResult);
 }
 
 
-Z7_COM7F_IMF(CExtractCallbackImp::UseExtractToStream(Int32 *res))
+STDMETHODIMP CExtractCallbackImp::UseExtractToStream(Int32 *res)
 {
   *res = BoolToInt(StreamMode);
   return S_OK;
@@ -801,7 +782,7 @@ static HRESULT GetTime(IGetProp *getProp, PROPID propID, FILETIME &ft, bool &ftD
 {
   ftDefined = false;
   NCOM::CPropVariant prop;
-  RINOK(getProp->GetProp(propID, &prop))
+  RINOK(getProp->GetProp(propID, &prop));
   if (prop.vt == VT_FILETIME)
   {
     ft = prop.filetime;
@@ -817,7 +798,7 @@ static HRESULT GetItemBoolProp(IGetProp *getProp, PROPID propID, bool &result)
 {
   NCOM::CPropVariant prop;
   result = false;
-  RINOK(getProp->GetProp(propID, &prop))
+  RINOK(getProp->GetProp(propID, &prop));
   if (prop.vt == VT_BOOL)
     result = VARIANT_BOOLToBool(prop.boolVal);
   else if (prop.vt != VT_EMPTY)
@@ -826,13 +807,13 @@ static HRESULT GetItemBoolProp(IGetProp *getProp, PROPID propID, bool &result)
 }
 
 
-Z7_COM7F_IMF(CExtractCallbackImp::GetStream7(const wchar_t *name,
+STDMETHODIMP CExtractCallbackImp::GetStream7(const wchar_t *name,
     Int32 isDir,
     ISequentialOutStream **outStream, Int32 askExtractMode,
-    IGetProp *getProp))
+    IGetProp *getProp)
 {
   COM_TRY_BEGIN
-  *outStream = NULL;
+  *outStream = 0;
   _newVirtFileWasAdded = false;
   _hashStreamWasUsed = false;
   _needUpdateStat = false;
@@ -848,20 +829,20 @@ Z7_COM7F_IMF(CExtractCallbackImp::GetStream7(const wchar_t *name,
   _filePath = name;
   _isFolder = IntToBool(isDir);
   _curSize = 0;
-  _curSize_Defined = false;
+  _curSizeDefined = false;
 
   UInt64 size = 0;
   bool sizeDefined;
   {
     NCOM::CPropVariant prop;
-    RINOK(getProp->GetProp(kpidSize, &prop))
+    RINOK(getProp->GetProp(kpidSize, &prop));
     sizeDefined = ConvertPropVariantToUInt64(prop, size);
   }
 
   if (sizeDefined)
   {
     _curSize = size;
-    _curSize_Defined = true;
+    _curSizeDefined = true;
   }
 
   if (askExtractMode != NArchive::NExtract::NAskMode::kExtract &&
@@ -881,12 +862,12 @@ Z7_COM7F_IMF(CExtractCallbackImp::GetStream7(const wchar_t *name,
     file.IsAltStream = _isAltStream;
     file.Size = 0;
 
-    RINOK(GetTime(getProp, kpidCTime, file.CTime, file.CTimeDefined))
-    RINOK(GetTime(getProp, kpidATime, file.ATime, file.ATimeDefined))
-    RINOK(GetTime(getProp, kpidMTime, file.MTime, file.MTimeDefined))
+    RINOK(GetTime(getProp, kpidCTime, file.CTime, file.CTimeDefined));
+    RINOK(GetTime(getProp, kpidATime, file.ATime, file.ATimeDefined));
+    RINOK(GetTime(getProp, kpidMTime, file.MTime, file.MTimeDefined));
 
     NCOM::CPropVariant prop;
-    RINOK(getProp->GetProp(kpidAttrib, &prop))
+    RINOK(getProp->GetProp(kpidAttrib, &prop));
     if (prop.vt == VT_UI4)
     {
       file.Attrib = prop.ulVal;
@@ -916,14 +897,12 @@ Z7_COM7F_IMF(CExtractCallbackImp::GetStream7(const wchar_t *name,
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CExtractCallbackImp::PrepareOperation7(Int32 askExtractMode))
+STDMETHODIMP CExtractCallbackImp::PrepareOperation7(Int32 askExtractMode)
 {
   COM_TRY_BEGIN
   _needUpdateStat = (
-         askExtractMode == NArchive::NExtract::NAskMode::kExtract
-      || askExtractMode == NArchive::NExtract::NAskMode::kTest
-      || askExtractMode == NArchive::NExtract::NAskMode::kReadExternal
-      );
+      askExtractMode == NArchive::NExtract::NAskMode::kExtract ||
+      askExtractMode == NArchive::NExtract::NAskMode::kTest);
 
   /*
   _extractMode = false;
@@ -941,27 +920,27 @@ Z7_COM7F_IMF(CExtractCallbackImp::PrepareOperation7(Int32 askExtractMode))
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CExtractCallbackImp::SetOperationResult8(Int32 opRes, Int32 encrypted, UInt64 size))
+STDMETHODIMP CExtractCallbackImp::SetOperationResult7(Int32 opRes, Int32 encrypted)
 {
   COM_TRY_BEGIN
   if (VirtFileSystem && _newVirtFileWasAdded)
   {
     // FIXME: probably we must request file size from VirtFileSystem
     // _curSize = VirtFileSystem->GetLastFileSize()
-    // _curSize_Defined = true;
-    RINOK(VirtFileSystemSpec->CloseMemFile())
+    // _curSizeDefined = true;
+    RINOK(VirtFileSystemSpec->CloseMemFile());
   }
   if (_hashStream && _hashStreamWasUsed)
   {
     _hashStreamSpec->_hash->Final(_isFolder, _isAltStream, _filePath);
     _curSize = _hashStreamSpec->GetSize();
-    _curSize_Defined = true;
+    _curSizeDefined = true;
     _hashStreamSpec->ReleaseStream();
     _hashStreamWasUsed = false;
   }
   else if (_hashCalc && _needUpdateStat)
   {
-    _hashCalc->SetSize(size); // (_curSize) before 21.04
+    _hashCalc->SetSize(_curSize);
     _hashCalc->Final(_isFolder, _isAltStream, _filePath);
   }
   return SetOperationResult(opRes, encrypted);
@@ -969,10 +948,11 @@ Z7_COM7F_IMF(CExtractCallbackImp::SetOperationResult8(Int32 opRes, Int32 encrypt
 }
 
 
+static const size_t k_SizeT_MAX = (size_t)((size_t)0 - 1);
 
-// static const UInt32 kBlockSize = ((UInt32)1 << 31);
+static const UInt32 kBlockSize = ((UInt32)1 << 31);
 
-Z7_COM7F_IMF(CVirtFileSystem::Write(const void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CVirtFileSystem::Write(const void *data, UInt32 size, UInt32 *processedSize)
 {
   if (processedSize)
     *processedSize = 0;
@@ -995,9 +975,8 @@ Z7_COM7F_IMF(CVirtFileSystem::Write(const void *data, UInt32 size, UInt32 *proce
       if (b < a)
         b = a;
       useMem = false;
-      const size_t b_sizet = (size_t)b;
-      if (b == b_sizet && b <= MaxTotalAllocSize)
-        useMem = file.Data.ReAlloc_KeepData(b_sizet, (size_t)file.Size);
+      if (b <= k_SizeT_MAX && b <= MaxTotalAllocSize)
+        useMem = file.Data.ReAlloc_KeepData((size_t)b, (size_t)file.Size);
     }
     if (useMem)
     {
@@ -1009,7 +988,7 @@ Z7_COM7F_IMF(CVirtFileSystem::Write(const void *data, UInt32 size, UInt32 *proce
     }
     _fileMode = true;
   }
-  RINOK(FlushToDisk(false))
+  RINOK(FlushToDisk(false));
   return _outFileStream->Write(data, size, processedSize);
 }
 
@@ -1030,10 +1009,10 @@ HRESULT CVirtFileSystem::FlushToDisk(bool closeLast)
       {
         _outFileStream.Release();
         return E_FAIL;
-        // MessageBoxMyError(UString("Can't create file ") + fs2us(tempFilePath));
+        // MessageBoxMyError(UString(L"Can't create file ") + fs2us(tempFilePath));
       }
       _fileIsOpen = true;
-      RINOK(WriteStream(_outFileStream, file.Data, (size_t)file.Size))
+      RINOK(WriteStream(_outFileStream, file.Data, (size_t)file.Size));
     }
     if (_numFlushed == Files.Size() - 1 && !closeLast)
       break;
@@ -1048,7 +1027,7 @@ HRESULT CVirtFileSystem::FlushToDisk(bool closeLast)
     _numFlushed++;
     _fileIsOpen = false;
     if (file.AttribDefined)
-      NDir::SetFileAttrib_PosixHighDetect(path, file.Attrib);
+      NDir::SetFileAttrib(path, file.Attrib);
   }
   return S_OK;
 }

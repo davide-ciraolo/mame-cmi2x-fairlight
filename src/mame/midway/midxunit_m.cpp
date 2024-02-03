@@ -9,10 +9,10 @@
 #include "emu.h"
 #include "midxunit.h"
 
-#define LOG_IO      (1U << 1)
-#define LOG_UART    (1U << 2)
-#define LOG_UNKNOWN (1U << 3)
-#define LOG_SOUND   (1U << 4)
+#define LOG_IO      (1 << 0)
+#define LOG_UART    (1 << 1)
+#define LOG_UNKNOWN (1 << 2)
+#define LOG_SOUND   (1 << 3)
 
 #define VERBOSE     (0)
 #include "logmacro.h"
@@ -87,7 +87,7 @@ void midxunit_state::midxunit_unknown_w(offs_t offset, uint16_t data, uint16_t m
 }
 
 
-void midxunit_state::adc_int_w(int state)
+WRITE_LINE_MEMBER(midxunit_state::adc_int_w)
 {
 	m_adc_int = (state != CLEAR_LINE);
 }
@@ -114,7 +114,7 @@ uint32_t midxunit_state::midxunit_status_r()
  *
  *************************************/
 
-void midxunit_state::midxunit_dcs_output_full(int state)
+WRITE_LINE_MEMBER(midxunit_state::midxunit_dcs_output_full)
 {
 	/* only signal if not in loopback state */
 	if (m_uart[1] != 0x66)

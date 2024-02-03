@@ -62,10 +62,10 @@ public:
 	auto in_handler() { return m_in_handler.bind(); }
 
 	// called from keyboard
-	void in_w(int state) { m_in_handler(state); }
+	DECLARE_WRITE_LINE_MEMBER( in_w ) { m_in_handler(state); }
 
 	// called from host
-	void out_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( out_w );
 
 protected:
 	// device-level overrides

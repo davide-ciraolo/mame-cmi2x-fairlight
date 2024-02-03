@@ -24,7 +24,6 @@
 
 #include "imgtool.h"
 
-#include "multibyte.h"
 #include "opresolv.h"
 
 #include <cstdio>
@@ -59,23 +58,24 @@ static psion_pack *get_psion_pack(imgtool::image &image)
 	return (psion_pack*)image.extra_bytes();
 }
 
-uint16_t head_checksum(const uint8_t* data)
+uint16_t head_checksum(uint8_t* data)
 {
 	uint16_t checksum = 0;
 
 	for (int i=0; i<6; i+=2)
-		checksum += get_u16be(&data[i]);
+		checksum += (data[i]<<8 | data[i+1]);
 
 	return checksum;
 }
 
 uint16_t get_long_rec_size(imgtool::stream &stream)
 {
-	uint8_t size[2];
+	uint8_t size_h, size_l;
 
-	stream.read(size, 2);
+	stream.read(&size_h, 1);
+	stream.read(&size_l, 1);
 
-	return get_u16be(size);
+	return (size_h<<8) | size_l;
 }
 
 uint32_t update_pack_index(psion_pack *pack)
@@ -488,7 +488,7 @@ static imgtoolerr_t datapack_next_enum(imgtool::directory &enumeration, imgtool_
 		return IMGTOOLERR_SUCCESS;
 	}
 	memcpy(ent.filename, pack->pack_index[iter->index].filename, 8);
-	snprintf(ent.attr, std::size(ent.attr), "Type: %02x ID: %02x", pack->pack_index[iter->index].type, pack->pack_index[iter->index].id);
+	sprintf(ent.attr, "Type: %02x ID: %02x", pack->pack_index[iter->index].type, pack->pack_index[iter->index].id);
 
 	if (pack->pack_index[iter->index].data_rec)
 	{

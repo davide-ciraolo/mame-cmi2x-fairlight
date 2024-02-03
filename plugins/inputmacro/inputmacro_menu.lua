@@ -160,8 +160,6 @@ local function handle_edit_items(index, event)
 				end
 				edit_name_buffer = nil
 				return true
-			elseif event == 'back' then
-				return true -- swallow back while editing text
 			elseif event == 'cancel' then
 				edit_name_buffer = nil
 				return true
@@ -436,7 +434,7 @@ local function handle_add(index, event)
 	local handled, selection = handle_edit_items(index, event)
 	if handled then
 		return true, selection
-	elseif event == 'back' then
+	elseif event == 'cancel' then
 		edit_current_macro = nil
 		edit_menu_active = false
 		edit_items = nil
@@ -460,7 +458,7 @@ local function handle_edit(index, event)
 	local handled, selection = handle_edit_items(index, event)
 	if handled then
 		return true, selection
-	elseif (event == 'back') or ((index == edit_item_exit) and (event == 'select')) then
+	elseif (event == 'cancel') or ((index == edit_item_exit) and (event == 'select')) then
 		edit_current_macro = nil
 		edit_menu_active = false
 		edit_items = nil

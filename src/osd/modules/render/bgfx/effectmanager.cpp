@@ -11,11 +11,8 @@
 
 #include "effectmanager.h"
 
-#include "effect.h"
 #include "effectreader.h"
-#include "shadermanager.h"
-
-#include "path.h"
+#include "effect.h"
 
 #include "osdfile.h"
 #include "modules/lib/osdobj_common.h"
@@ -28,75 +25,66 @@
 
 #include <bgfx/bgfx.h>
 
-#include <utility>
-
-
-static bool prepare_effect_document(const std::string &name, const osd_options &options, rapidjson::Document &document)
+static bool prepare_effect_document(std::string &name, osd_options &options, rapidjson::Document &document)
 {
 	std::string full_name = name;
 	if (full_name.length() < 5 || (full_name.compare(full_name.length() - 5, 5, ".json") != 0))
 	{
-		full_name += ".json";
+		full_name = full_name + ".json";
 	}
 
-	const std::string path = util::path_concat(options.bgfx_path(), "effects", full_name);
+	std::string path = osd_subst_env(util::string_format("%s" PATH_SEPARATOR "effects" PATH_SEPARATOR, options.bgfx_path()));
+	path += full_name;
 
 	bx::FileReader reader;
 	if (!bx::open(&reader, path.c_str()))
 	{
-		osd_printf_error("Unable to open effect file %s\n", path);
+		osd_printf_error("Unable to open effect file %s\n", path.c_str());
 		return false;
 	}
 
-	const int32_t size = bx::getSize(&reader);
-	std::unique_ptr<char []> data(new (std::nothrow) char [size + 1]);
-	if (!data)
-	{
-		osd_printf_error("Out of memory reading effect file %s\n", path);
-		bx::close(&reader);
-		return false;
-	}
-
-	bx::ErrorAssert err;
-	bx::read(&reader, reinterpret_cast<void*>(data.get()), size, &err);
+	int32_t size (bx::getSize(&reader));
+	char* data = new char[size + 1];
+	bx::read(&reader, reinterpret_cast<void*>(data), size);
 	bx::close(&reader);
 	data[size] = 0;
 
-	document.Parse<rapidjson::kParseCommentsFlag>(data.get());
-	data.reset();
+	document.Parse<rapidjson::kParseCommentsFlag>(data);
+
+	delete [] data;
 
 	if (document.HasParseError())
 	{
 		std::string error(rapidjson::GetParseError_En(document.GetParseError()));
-		osd_printf_error("Unable to parse effect %s. Errors returned:\n%s\n", path, error);
+		osd_printf_error("Unable to parse effect %s. Errors returned:\n", path.c_str());
+		osd_printf_error("%s\n", error.c_str());
 		return false;
 	}
 
 	return true;
 }
 
-
-// keep constructor and destructor out-of-line so the header works with forward declarations
-
-effect_manager::effect_manager(shader_manager& shaders) : m_shaders(shaders)
-{
-}
-
 effect_manager::~effect_manager()
 {
-	// the map will automatically dispose of the effects
+	for (std::pair<std::string, bgfx_effect*> effect : m_effects)
+	{
+		delete effect.second;
+	}
+	m_effects.clear();
 }
 
-bgfx_effect* effect_manager::get_or_load_effect(const osd_options &options, const std::string &name)
+bgfx_effect* effect_manager::get_or_load_effect(osd_options &options, std::string name)
 {
-	const auto iter = m_effects.find(name);
+	std::map<std::string, bgfx_effect*>::iterator iter = m_effects.find(name);
 	if (iter != m_effects.end())
-		return iter->second.get();
+	{
+		return iter->second;
+	}
 
 	return load_effect(options, name);
 }
 
-bgfx_effect* effect_manager::load_effect(const osd_options &options, const std::string &name)
+bgfx_effect* effect_manager::load_effect(osd_options &options, std::string name)
 {
 	rapidjson::Document document;
 	if (!prepare_effect_document(name, options, document))
@@ -104,18 +92,20 @@ bgfx_effect* effect_manager::load_effect(const osd_options &options, const std::
 		return nullptr;
 	}
 
-	std::unique_ptr<bgfx_effect> effect = effect_reader::read_from_value(name, document, "Effect '" + name + "': ", options, m_shaders);
+	bgfx_effect* effect = effect_reader::read_from_value(document, "Effect '" + name + "': ", options, m_shaders);
 
-	if (!effect)
+	if (effect == nullptr)
 	{
-		osd_printf_error("Unable to load effect %s\n", name);
+		osd_printf_error("Unable to load effect %s\n", name.c_str());
 		return nullptr;
 	}
 
-	return m_effects.emplace(name, std::move(effect)).first->second.get();
+	m_effects[name] = effect;
+
+	return effect;
 }
 
-bool effect_manager::validate_effect(const osd_options &options, const std::string &name)
+bool effect_manager::validate_effect(osd_options &options, std::string name)
 {
 	rapidjson::Document document;
 	if (!prepare_effect_document(name, options, document))

@@ -52,12 +52,12 @@ private:
 
 	void ppi1_o_c(uint8_t data);
 
-	void d8253_out0(int state);
-	void d8253_out1(int state);
+	DECLARE_WRITE_LINE_MEMBER( d8253_out0 );
+	DECLARE_WRITE_LINE_MEMBER( d8253_out1 );
 
-	void write_usart_clock(int state);
+	DECLARE_WRITE_LINE_MEMBER( write_usart_clock );
 
-	void ibm_mfc_ym_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER( ibm_mfc_ym_irq );
 
 	uint8_t ibm_mfc_r(offs_t offset);
 	void ibm_mfc_w(offs_t offset, uint8_t data);

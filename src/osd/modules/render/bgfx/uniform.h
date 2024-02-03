@@ -6,10 +6,10 @@
 //
 //============================================================
 
-#ifndef MAME_RENDER_BGFX_UNIFORM_H
-#define MAME_RENDER_BGFX_UNIFORM_H
-
 #pragma once
+
+#ifndef __DRAWBGFX_UNIFORM__
+#define __DRAWBGFX_UNIFORM__
 
 #include <bgfx/bgfx.h>
 
@@ -18,7 +18,7 @@
 class bgfx_uniform
 {
 public:
-	bgfx_uniform(std::string &&name, bgfx::UniformType::Enum type);
+	bgfx_uniform(std::string name, bgfx::UniformType::Enum type);
 	virtual ~bgfx_uniform();
 
 	virtual void upload();
@@ -26,7 +26,7 @@ public:
 	void create();
 
 	// Getters
-	const std::string &name() { return m_name; }
+	std::string name() { return m_name; }
 	bgfx::UniformType::Enum type() const { return m_type; }
 	bgfx::UniformHandle handle() const { return m_handle; }
 
@@ -47,4 +47,4 @@ protected:
 	size_t                  m_data_size;
 };
 
-#endif // MAME_RENDER_BGFX_UNIFORM_H
+#endif // __DRAWBGFX_UNIFORM__

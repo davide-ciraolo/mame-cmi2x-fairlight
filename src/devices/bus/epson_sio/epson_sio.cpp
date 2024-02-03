@@ -79,16 +79,19 @@ epson_sio_device::~epson_sio_device()
 void epson_sio_device::device_start()
 {
 	m_cart = get_card_device();
+
+	m_write_rx.resolve_safe();
+	m_write_pin.resolve_safe();
 }
 
 
-void epson_sio_device::tx_w(int state)
+WRITE_LINE_MEMBER( epson_sio_device::tx_w )
 {
 	if (m_cart != nullptr)
 		m_cart->tx_w(state);
 }
 
-void epson_sio_device::pout_w(int state)
+WRITE_LINE_MEMBER( epson_sio_device::pout_w )
 {
 	if (m_cart != nullptr)
 		m_cart->pout_w(state);

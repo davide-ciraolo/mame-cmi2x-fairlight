@@ -1,7 +1,7 @@
 // 7zAes.h
 
-#ifndef ZIP7_INC_CRYPTO_7Z_AES_H
-#define ZIP7_INC_CRYPTO_7Z_AES_H
+#ifndef __CRYPTO_7Z_AES_H
+#define __CRYPTO_7Z_AES_H
 
 #include "../../Common/MyBuffer.h"
 #include "../../Common/MyCom.h"
@@ -37,20 +37,6 @@ public:
     for (unsigned i = 0; i < sizeof(Salt); i++)
       Salt[i] = 0;
   }
-
-  void Wipe()
-  {
-    Password.Wipe();
-    NumCyclesPower = 0;
-    SaltSize = 0;
-    Z7_memset_0_ARRAY(Salt);
-    Z7_memset_0_ARRAY(Key);
-  }
-
-#ifdef Z7_CPP_IS_SUPPORTED_default
-  CKeyInfo(const CKeyInfo &) = default;
-#endif
-  ~CKeyInfo() { Wipe(); }
 };
 
 class CKeyInfoCache
@@ -82,46 +68,48 @@ class CBaseCoder:
   public CMyUnknownImp,
   public CBase
 {
-  Z7_IFACE_COM7_IMP(ICompressFilter)
-  Z7_IFACE_COM7_IMP(ICryptoSetPassword)
 protected:
-  virtual ~CBaseCoder() {}
   CMyComPtr<ICompressFilter> _aesFilter;
+
+public:
+  INTERFACE_ICompressFilter(;)
+  
+  STDMETHOD(CryptoSetPassword)(const Byte *data, UInt32 size);
 };
 
-#ifndef Z7_EXTRACT_ONLY
+#ifndef EXTRACT_ONLY
 
-class CEncoder Z7_final:
+class CEncoder:
   public CBaseCoder,
   public ICompressWriteCoderProperties,
   // public ICryptoResetSalt,
   public ICryptoResetInitVector
 {
-  Z7_COM_UNKNOWN_IMP_4(
+public:
+  MY_UNKNOWN_IMP4(
       ICompressFilter,
       ICryptoSetPassword,
       ICompressWriteCoderProperties,
       // ICryptoResetSalt,
       ICryptoResetInitVector)
-  Z7_IFACE_COM7_IMP(ICompressWriteCoderProperties)
-  // Z7_IFACE_COM7_IMP(ICryptoResetSalt)
-  Z7_IFACE_COM7_IMP(ICryptoResetInitVector)
-public:
+  STDMETHOD(WriteCoderProperties)(ISequentialOutStream *outStream);
+  // STDMETHOD(ResetSalt)();
+  STDMETHOD(ResetInitVector)();
   CEncoder();
 };
 
 #endif
 
-class CDecoder Z7_final:
+class CDecoder:
   public CBaseCoder,
   public ICompressSetDecoderProperties2
 {
-  Z7_COM_UNKNOWN_IMP_3(
+public:
+  MY_UNKNOWN_IMP3(
       ICompressFilter,
       ICryptoSetPassword,
       ICompressSetDecoderProperties2)
-  Z7_IFACE_COM7_IMP(ICompressSetDecoderProperties2)
-public:
+  STDMETHOD(SetDecoderProperties2)(const Byte *data, UInt32 size);
   CDecoder();
 };
 

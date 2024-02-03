@@ -87,7 +87,7 @@ uint32_t avalnche_state::screen_update_avalnche(screen_device &screen, bitmap_rg
  *
  *************************************/
 
-void avalnche_state::video_invert_w(int state)
+WRITE_LINE_MEMBER(avalnche_state::video_invert_w)
 {
 	m_avalance_video_inverted = state;
 }

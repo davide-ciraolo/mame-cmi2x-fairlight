@@ -64,12 +64,9 @@ Current status:
 #include "emu.h"
 #include "cpu/mcs51/mcs51.h"
 #include "sound/tms5220.h"
-#include "bus/rs232/terminal.h"
-#include "bus/rs232/rs232.h"
+#include "machine/terminal.h"
 #include "speaker.h"
 
-
-namespace {
 
 class pes_state : public driver_device
 {
@@ -77,7 +74,7 @@ public:
 	pes_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag)
 		, m_maincpu(*this, "maincpu")
-		, m_serial(*this, "serial")
+		, m_terminal(*this, "terminal")
 		, m_speech(*this, "tms5220")
 	{ }
 
@@ -85,25 +82,34 @@ public:
 
 private:
 
+	u8 m_term_data = 0U;
 	u8 m_port3 = 0U;
 	virtual void machine_reset() override;
 	void port3_w(u8 data);
 	u8 port3_r();
-	void rx_w(int state);
+	void kbd_put(u8 data);
 	void io_map(address_map &map);
 	void prg_map(address_map &map);
 	required_device<i80c31_device> m_maincpu;
-	required_device<rs232_port_device> m_serial;
+	required_device<generic_terminal_device> m_terminal;
 	required_device<tms5220_device> m_speech;
 };
 
 
 
+/* Devices */
+void pes_state::kbd_put(u8 data)
+{
+	m_maincpu->set_input_line(MCS51_RX_LINE, ASSERT_LINE);
+	m_maincpu->set_input_line(MCS51_RX_LINE, CLEAR_LINE);
+	m_term_data = data;
+}
+
+
 /* Port Handlers */
 void pes_state::port3_w(u8 data)
 {
-	// preserve RXD
-	m_port3 = (m_port3 & 0x01) | (data & ~0x01);
+	m_port3 = data;
 #if 0
 	logerror("port3 write: control data written: %02X; ", data);
 	logerror("RXD: %d; ", BIT(data,0));
@@ -115,7 +121,7 @@ void pes_state::port3_w(u8 data)
 	logerror("WR: %d; ", BIT(data,6));
 	logerror("RD: %d;\n", BIT(data,7));
 #endif
-	m_serial->write_txd(BIT(data, 1));
+	// todo: poke serial handler here somehow?
 }
 
 u8 pes_state::port3_r()
@@ -126,14 +132,6 @@ u8 pes_state::port3_r()
 	data |= (m_speech->intq_r()<<2);
 	data |= (m_speech->readyq_r()<<3);
 	return data;
-}
-
-void pes_state::rx_w(int state)
-{
-	if (state)
-		m_port3 |= 1;
-	else
-		m_port3 &= ~1;
 }
 
 
@@ -171,11 +169,6 @@ INPUT_PORTS_END
  Machine Drivers
 ******************************************************************************/
 
-static void serial_devices(device_slot_interface &device)
-{
-	device.option_add("terminal", SERIAL_TERMINAL);
-}
-
 void pes_state::pes(machine_config &config)
 {
 	/* basic machine hardware */
@@ -186,14 +179,16 @@ void pes_state::pes(machine_config &config)
 	m_maincpu->port_out_cb<1>().set(m_speech, FUNC(tms5220_device::data_w));
 	m_maincpu->port_in_cb<3>().set(FUNC(pes_state::port3_r));
 	m_maincpu->port_out_cb<3>().set(FUNC(pes_state::port3_w));
+	m_maincpu->serial_tx_cb().set(m_terminal, FUNC(generic_terminal_device::write));
+	m_maincpu->serial_rx_cb().set([this] () { return m_term_data; });
 
 	/* sound hardware */
 	SPEAKER(config, "mono").front_center();
 	TMS5220C(config, m_speech, 720000); /* 720Khz clock, 9khz sample-rate, adjustable with 10-turn trimpot */
 	m_speech->add_route(ALL_OUTPUTS, "mono", 1.0);
 
-	RS232_PORT(config, m_serial, serial_devices, "terminal");
-	m_serial->rxd_handler().set(FUNC(pes_state::rx_w));
+	GENERIC_TERMINAL(config, m_terminal, 0);
+	m_terminal->set_keyboard_callback(FUNC(pes_state::kbd_put));
 }
 
 /******************************************************************************
@@ -207,9 +202,6 @@ ROM_START( pes )
 	ROM_SYSTEM_BIOS( 1, "kevbios", "PES box with kevtris' rewritten firmware")
 	ROMX_LOAD( "pes.bin",   0x0000, 0x2000, CRC(22c1c4ec) SHA1(042e139cd0cf6ffafcd88904f1636c6fa1b38f25), ROM_BIOS(1)) // rewritten firmware by kevtris, 4800bps serial, RTS/CTS plus XON/XOFF flow control, 64 byte buffer
 ROM_END
-
-} // anonymous namespace
-
 
 /******************************************************************************
  Drivers

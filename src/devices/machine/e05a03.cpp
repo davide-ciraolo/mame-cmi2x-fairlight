@@ -16,22 +16,22 @@
 
 DEFINE_DEVICE_TYPE(E05A03, e05a03_device, "e05a03", "Epson E05A03 Gate Array")
 
-e05a03_device::e05a03_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
-	device_t(mconfig, E05A03, tag, owner, clock),
+e05a03_device::e05a03_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: device_t(mconfig, E05A03, tag, owner, clock),
 	m_write_nlq_lp(*this),
 	m_write_pe_lp(*this),
 	m_write_reso(*this),
 	m_write_pe(*this),
-	m_read_data(*this, 0),
+	m_read_data(*this),
 	m_shift(0),
 	m_busy_leading(0),
 	m_busy_software(0),
 	m_nlqlp(0),
 	m_cndlp(0),
-#if 0
+	#if 0
 	m_pe(0),
 	m_pelp(0),
-#endif
+	#endif
 	m_printhead(0),
 	m_pf_motor(0),
 	m_cr_motor(0)
@@ -44,16 +44,23 @@ e05a03_device::e05a03_device(const machine_config &mconfig, const char *tag, dev
 
 void e05a03_device::device_start()
 {
+	/* resolve callbacks */
+	m_write_nlq_lp.resolve_safe();
+	m_write_pe_lp.resolve_safe();
+	m_write_reso.resolve_safe();
+	m_write_pe.resolve_safe();
+	m_read_data.resolve_safe(0);
+
 	/* register for state saving */
 	save_item(NAME(m_shift));
 	save_item(NAME(m_busy_leading));
 	save_item(NAME(m_busy_software));
 	save_item(NAME(m_nlqlp));
 	save_item(NAME(m_cndlp));
-#if 0
+	#if 0
 	save_item(NAME(m_pe));
 	save_item(NAME(m_pelp));
-#endif
+	#endif
 	save_item(NAME(m_printhead));
 	save_item(NAME(m_pf_motor));
 	save_item(NAME(m_cr_motor));
@@ -148,25 +155,25 @@ uint8_t e05a03_device::read(offs_t offset)
 }
 
 /* home position signal */
-void e05a03_device::home_w(int state)
+WRITE_LINE_MEMBER( e05a03_device::home_w )
 {
 }
 
 /* printhead solenoids trigger */
-void e05a03_device::fire_w(int state)
+WRITE_LINE_MEMBER( e05a03_device::fire_w )
 {
 }
 
-void e05a03_device::strobe_w(int state)
+WRITE_LINE_MEMBER( e05a03_device::strobe_w )
 {
 }
 
-int e05a03_device::busy_r()
+READ_LINE_MEMBER( e05a03_device::busy_r )
 {
 	return 1;
 }
 
-void e05a03_device::resi_w(int state)
+WRITE_LINE_MEMBER( e05a03_device::resi_w )
 {
 	if (!state)
 	{
@@ -175,7 +182,7 @@ void e05a03_device::resi_w(int state)
 	}
 }
 
-void e05a03_device::init_w(int state)
+WRITE_LINE_MEMBER( e05a03_device::init_w )
 {
 	resi_w(state);
 }

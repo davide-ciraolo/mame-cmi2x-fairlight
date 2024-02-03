@@ -71,6 +71,9 @@ void i8089_channel_device::device_start()
 	// get parent device
 	m_iop = downcast<i8089_device *>(owner());
 
+	// resolve callbacks
+	m_write_sintr.resolve_safe();
+
 	// register for save states
 	save_item(NAME(m_xfer_pending));
 	save_item(NAME(m_dma_value));
@@ -842,7 +845,7 @@ void i8089_channel_device::ca()
 	m_prio = PRIO_CHAN_ATTN;
 }
 
-void i8089_channel_device::ext_w(int state)
+WRITE_LINE_MEMBER( i8089_channel_device::ext_w )
 {
 	if (VERBOSE)
 		logerror("%s('%s'): ext_w: %d\n", shortname(), tag(), state);
@@ -851,7 +854,7 @@ void i8089_channel_device::ext_w(int state)
 		terminate_dma((CC_TX - 1) * 4);
 }
 
-void i8089_channel_device::drq_w(int state)
+WRITE_LINE_MEMBER( i8089_channel_device::drq_w )
 {
 	if (VERBOSE_DMA)
 		logerror("%s('%s'): drq_w: %d\n", shortname(), tag(), state);

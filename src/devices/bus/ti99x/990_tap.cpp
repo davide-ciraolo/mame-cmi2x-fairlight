@@ -35,9 +35,6 @@
 
 #include "imagedev/magtape.h"
 
-#include <algorithm>
-#include <iterator>
-
 enum
 {
 	w0_offline          = 0x8000,
@@ -898,14 +895,14 @@ public:
 	// construction/destruction
 	ti990_tape_image_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
-	// device_image_interface implementation
+	// image-level overrides
 	virtual const char *file_extensions() const noexcept override { return "tap"; }
 
-	virtual std::pair<std::error_condition, std::string> call_load() override;
+	virtual image_init_result call_load() override;
 	virtual void call_unload() override;
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 
 private:
@@ -938,12 +935,12 @@ int ti990_tape_image_device::tape_get_id()
 /*
     Open a tape image
 */
-std::pair<std::error_condition, std::string> ti990_tape_image_device::call_load()
+image_init_result ti990_tape_image_device::call_load()
 {
 	tap_990_device* tpc = downcast<tap_990_device*>(owner());
 	tpc->set_tape(tape_get_id(), this, true, false, is_readonly());
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 /*
@@ -971,7 +968,8 @@ tap_990_device::tap_990_device(const machine_config &mconfig, const char *tag, d
 
 void tap_990_device::device_start()
 {
-	std::fill(std::begin(m_w), std::end(m_w), 0);
+	m_int_line.resolve();
+	memset(m_w, 0, sizeof(m_w));
 
 	// The PE bit is always set for the MT3200 (but not MT1600)
 	// According to MT3200 manual, w7 bit #4 (reserved) is always set

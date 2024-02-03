@@ -74,12 +74,12 @@ void vsgongf_state::machine_start()
 	save_item(NAME(m_vsgongf_sound_nmi_enabled));
 }
 
-void tsamurai_state::nmi_enable_w(int state)
+WRITE_LINE_MEMBER(tsamurai_state::nmi_enable_w)
 {
 	m_nmi_enabled = state;
 }
 
-void tsamurai_state::vblank_irq(int state)
+WRITE_LINE_MEMBER(tsamurai_state::vblank_irq)
 {
 	if (state && m_nmi_enabled)
 		m_maincpu->pulse_input_line(INPUT_LINE_NMI, attotime::zero);
@@ -128,17 +128,17 @@ void m660_state::m660_sound_command3_w(uint8_t data)
 	m_audio3->set_input_line(0, HOLD_LINE );
 }
 
-void tsamurai_state::flip_screen_w(int state)
+WRITE_LINE_MEMBER(tsamurai_state::flip_screen_w)
 {
 	flip_screen_set(state);
 }
 
-void tsamurai_state::coin1_counter_w(int state)
+WRITE_LINE_MEMBER(tsamurai_state::coin1_counter_w)
 {
 	machine().bookkeeping().coin_counter_w(0, state);
 }
 
-void tsamurai_state::coin2_counter_w(int state)
+WRITE_LINE_MEMBER(tsamurai_state::coin2_counter_w)
 {
 	machine().bookkeeping().coin_counter_w(1, state);
 }

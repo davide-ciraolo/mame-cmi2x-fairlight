@@ -20,7 +20,6 @@
 #include "debugger.h"
 #include "emuopts.h"
 #include "fileio.h"
-#include "main.h"
 #include "screen.h"
 #include "uiinput.h"
 
@@ -48,7 +47,6 @@ debugger_cpu::debugger_cpu(running_machine &machine)
 	, m_bpindex(1)
 	, m_wpindex(1)
 	, m_rpindex(1)
-	, m_epindex(1)
 	, m_wpdata(0)
 	, m_wpaddr(0)
 	, m_wpsize(0)
@@ -94,7 +92,7 @@ debugger_cpu::debugger_cpu(running_machine &machine)
 	for (int regnum = 0; regnum < NUM_TEMP_VARIABLES; regnum++)
 	{
 		char symname[10];
-		snprintf(symname, 10, "temp%d", regnum);
+		sprintf(symname, "temp%d", regnum);
 		m_symtable->add(symname, symbol_table::READ_WRITE, &m_tempvar[regnum]);
 	}
 }
@@ -388,7 +386,7 @@ void debugger_cpu::go_vblank()
 	m_execution_state = exec_state::RUNNING;
 }
 
-void debugger_cpu::halt_on_next_instruction(device_t *device, util::format_argument_pack<char> &&args)
+void debugger_cpu::halt_on_next_instruction(device_t *device, util::format_argument_pack<std::ostream> &&args)
 {
 	// if something is pending on this CPU already, ignore this request
 	if (device == m_breakcpu)
@@ -426,6 +424,7 @@ device_debug::device_debug(device_t &device)
 	, m_disasm(nullptr)
 	, m_flags(0)
 	, m_symtable(std::make_unique<symbol_table>(device.machine(), &device.machine().debugger().cpu().global_symtable(), &device))
+	, m_instrhook(nullptr)
 	, m_stepaddr(0)
 	, m_stepsleft(0)
 	, m_delay_steps(0)
@@ -439,8 +438,7 @@ device_debug::device_debug(device_t &device)
 	, m_pc_history_index(0)
 	, m_pc_history_valid(0)
 	, m_bplist()
-	, m_rplist()
-	, m_eplist()
+	, m_rplist(std::make_unique<std::forward_list<debug_registerpoint>>())
 	, m_triggered_breakpoint(nullptr)
 	, m_triggered_watchpoint(nullptr)
 	, m_trace(nullptr)
@@ -551,7 +549,6 @@ device_debug::~device_debug()
 	breakpoint_clear_all();
 	watchpoint_clear_all();
 	registerpoint_clear_all();
-	exceptionpoint_clear_all();
 }
 
 void device_debug::write_tracking(address_space &space, offs_t address, u64 data)
@@ -637,45 +634,14 @@ void device_debug::stop_hook()
 //  acknowledged
 //-------------------------------------------------
 
-void device_debug::interrupt_hook(int irqline, offs_t pc)
+void device_debug::interrupt_hook(int irqline)
 {
 	// see if this matches a pending interrupt request
 	if ((m_flags & DEBUG_FLAG_STOP_INTERRUPT) != 0 && (m_stopirq == -1 || m_stopirq == irqline))
 	{
 		m_device.machine().debugger().cpu().set_execution_stopped();
-		const address_space &space = m_memory->space(AS_PROGRAM);
-		if (space.is_octal())
-			m_device.machine().debugger().console().printf("Stopped on interrupt (CPU '%s', IRQ %d, PC=%0*o)\n", m_device.tag(), irqline, (space.logaddr_width() + 2) / 3, pc);
-		else
-			m_device.machine().debugger().console().printf("Stopped on interrupt (CPU '%s', IRQ %d, PC=%0*X)\n", m_device.tag(), irqline, space.logaddrchars(), pc);
+		m_device.machine().debugger().console().printf("Stopped on interrupt (CPU '%s', IRQ %d)\n", m_device.tag(), irqline);
 		compute_debug_flags();
-	}
-
-	if (m_trace != nullptr)
-		m_trace->interrupt_update(irqline, pc);
-
-	if ((m_flags & (DEBUG_FLAG_STEPPING_OVER | DEBUG_FLAG_STEPPING_OUT | DEBUG_FLAG_STEPPING_BRANCH)) != 0)
-	{
-		if ((m_flags & DEBUG_FLAG_CALL_IN_PROGRESS) == 0)
-		{
-			if ((m_flags & DEBUG_FLAG_TEST_IN_PROGRESS) != 0)
-			{
-				if ((m_stepaddr == pc && (m_flags & DEBUG_FLAG_STEPPING_BRANCH_FALSE) != 0) ||
-					(m_stepaddr != pc && m_delay_steps == 1 && (m_flags & (DEBUG_FLAG_STEPPING_OUT | DEBUG_FLAG_STEPPING_BRANCH_TRUE)) != 0))
-				{
-					// step over the interrupt and then call it finished
-					m_flags = (m_flags & ~(DEBUG_FLAG_TEST_IN_PROGRESS | DEBUG_FLAG_STEPPING_ANY)) | DEBUG_FLAG_STEPPING_OVER;
-					m_stepsleft = 1;
-				}
-			}
-
-			// remember the interrupt return address
-			m_flags |= DEBUG_FLAG_CALL_IN_PROGRESS;
-			m_stepaddr = pc;
-		}
-
-		m_flags &= ~DEBUG_FLAG_TEST_IN_PROGRESS;
-		m_delay_steps = 0;
 	}
 }
 
@@ -706,37 +672,8 @@ void device_debug::exception_hook(int exception)
 		if (matched)
 		{
 			m_device.machine().debugger().cpu().set_execution_stopped();
-			m_device.machine().debugger().console().printf("Stopped on exception (CPU '%s', exception %X, PC=%s)\n", m_device.tag(), exception, m_state->state_string(STATE_GENPC));
+			m_device.machine().debugger().console().printf("Stopped on exception (CPU '%s', exception %d, PC=%X)\n", m_device.tag(), exception, m_state->pcbase());
 			compute_debug_flags();
-		}
-	}
-
-	// see if any exception points match
-	if (!m_eplist.empty())
-	{
-		auto epitp = m_eplist.equal_range(exception);
-		for (auto epit = epitp.first; epit != epitp.second; ++epit)
-		{
-			debug_exceptionpoint &ep = *epit->second;
-			if (ep.hit(exception))
-			{
-				// halt in the debugger by default
-				debugger_cpu &debugcpu = m_device.machine().debugger().cpu();
-				debugcpu.set_execution_stopped();
-
-				// if we hit, evaluate the action
-				if (!ep.m_action.empty())
-					m_device.machine().debugger().console().execute_command(ep.m_action, false);
-
-				// print a notification, unless the action made us go again
-				if (debugcpu.is_stopped())
-				{
-					debugcpu.set_execution_stopped();
-					m_device.machine().debugger().console().printf("Stopped at exception point %X (CPU '%s', PC=%s)\n", ep.m_index, m_device.tag(), m_state->state_string(STATE_GENPC));
-					compute_debug_flags();
-				}
-				break;
-			}
 		}
 	}
 }
@@ -807,6 +744,10 @@ void device_debug::instruction_hook(offs_t curpc)
 	if (m_trace != nullptr)
 		m_trace->update(curpc);
 
+	// per-instruction hook?
+	if (!debugcpu.is_stopped() && (m_flags & DEBUG_FLAG_HOOKED) != 0 && (*m_instrhook)(m_device, curpc))
+		debugcpu.set_execution_stopped();
+
 	// handle single stepping
 	if (!debugcpu.is_stopped() && (m_flags & DEBUG_FLAG_STEPPING_ANY) != 0)
 	{
@@ -830,7 +771,7 @@ void device_debug::instruction_hook(offs_t curpc)
 				m_delay_steps--;
 				if (m_delay_steps == 0)
 				{
-					// branch taken or subroutine entered (TODO: interleaved multithreading can falsely trigger this)
+					// branch taken or subroutine entered (TODO: interrupt acknowledgment or interleaved multithreading can falsely trigger this)
 					if ((m_flags & DEBUG_FLAG_TEST_IN_PROGRESS) != 0 && (m_flags & (DEBUG_FLAG_STEPPING_OUT | DEBUG_FLAG_STEPPING_BRANCH_TRUE)) != 0)
 					{
 						debugcpu.set_execution_stopped();
@@ -878,10 +819,7 @@ void device_debug::instruction_hook(offs_t curpc)
 		// check the temp running breakpoint and break if we hit it
 		else if ((m_flags & DEBUG_FLAG_STOP_PC) != 0 && m_stopaddr == curpc)
 		{
-			if (is_octal())
-				machine.debugger().console().printf("Stopped at temporary breakpoint %o on CPU '%s'\n", m_stopaddr, m_device.tag());
-			else
-				machine.debugger().console().printf("Stopped at temporary breakpoint %X on CPU '%s'\n", m_stopaddr, m_device.tag());
+			machine.debugger().console().printf("Stopped at temporary breakpoint %X on CPU '%s'\n", m_stopaddr, m_device.tag());
 			debugcpu.set_execution_stopped();
 		}
 
@@ -955,6 +893,22 @@ void device_debug::instruction_hook(offs_t curpc)
 
 
 //-------------------------------------------------
+//  set_instruction_hook - set a hook to be
+//  called on each instruction for a given device
+//-------------------------------------------------
+
+void device_debug::set_instruction_hook(debug_instruction_hook_func hook)
+{
+	// set the hook and also the CPU's flag for fast knowledge of the hook
+	m_instrhook = hook;
+	if (hook != nullptr)
+		m_flags |= DEBUG_FLAG_HOOKED;
+	else
+		m_flags &= ~DEBUG_FLAG_HOOKED;
+}
+
+
+//-------------------------------------------------
 //  ignore - ignore/observe a given device
 //-------------------------------------------------
 
@@ -1011,7 +965,6 @@ void device_debug::single_step(int numsteps)
 	m_stepsleft = numsteps;
 	m_delay_steps = 0;
 	m_flags |= DEBUG_FLAG_STEPPING;
-	m_flags &= ~(DEBUG_FLAG_CALL_IN_PROGRESS | DEBUG_FLAG_TEST_IN_PROGRESS);
 	m_device.machine().debugger().cpu().set_execution_running();
 }
 
@@ -1029,7 +982,6 @@ void device_debug::single_step_over(int numsteps)
 	m_stepsleft = numsteps;
 	m_delay_steps = 0;
 	m_flags |= DEBUG_FLAG_STEPPING_OVER;
-	m_flags &= ~(DEBUG_FLAG_CALL_IN_PROGRESS | DEBUG_FLAG_TEST_IN_PROGRESS);
 	m_device.machine().debugger().cpu().set_execution_running();
 }
 
@@ -1048,7 +1000,6 @@ void device_debug::single_step_out()
 	m_stepsleft = 100;
 	m_delay_steps = 0;
 	m_flags |= DEBUG_FLAG_STEPPING_OUT;
-	m_flags &= ~(DEBUG_FLAG_CALL_IN_PROGRESS | DEBUG_FLAG_TEST_IN_PROGRESS);
 	m_device.machine().debugger().cpu().set_execution_running();
 }
 
@@ -1164,7 +1115,6 @@ void device_debug::go_branch(bool sense, const char *condition)
 	m_stepsleft = 100;
 	m_delay_steps = 0;
 	m_flags |= sense ? DEBUG_FLAG_STEPPING_BRANCH_TRUE : DEBUG_FLAG_STEPPING_BRANCH_FALSE;
-	m_flags &= ~(DEBUG_FLAG_CALL_IN_PROGRESS | DEBUG_FLAG_TEST_IN_PROGRESS);
 	m_device.machine().debugger().cpu().set_execution_running();
 }
 
@@ -1176,7 +1126,7 @@ void device_debug::go_branch(bool sense, const char *condition)
 //  to templates in C++ being janky as all get out
 //-------------------------------------------------
 
-void device_debug::halt_on_next_instruction_impl(util::format_argument_pack<char> &&args)
+void device_debug::halt_on_next_instruction_impl(util::format_argument_pack<std::ostream> &&args)
 {
 	assert(m_exec != nullptr);
 	m_device.machine().debugger().cpu().halt_on_next_instruction(&m_device, std::move(args));
@@ -1201,7 +1151,7 @@ const debug_breakpoint *device_debug::breakpoint_find(offs_t address) const
 //  returning its index
 //-------------------------------------------------
 
-int device_debug::breakpoint_set(offs_t address, const char *condition, std::string_view action)
+int device_debug::breakpoint_set(offs_t address, const char *condition, const char *action)
 {
 	// allocate a new one and hook it into our list
 	u32 id = m_device.machine().debugger().cpu().get_breakpoint_index();
@@ -1288,7 +1238,7 @@ void device_debug::breakpoint_enable_all(bool enable)
 //  returning its index
 //-------------------------------------------------
 
-int device_debug::watchpoint_set(address_space &space, read_or_write type, offs_t address, offs_t length, const char *condition, std::string_view action)
+int device_debug::watchpoint_set(address_space &space, read_or_write type, offs_t address, offs_t length, const char *condition, const char *action)
 {
 	if (space.spacenum() >= int(m_wplist.size()))
 		m_wplist.resize(space.spacenum()+1);
@@ -1375,15 +1325,15 @@ void device_debug::watchpoint_enable_all(bool enable)
 //  returning its index
 //-------------------------------------------------
 
-int device_debug::registerpoint_set(const char *condition, std::string_view action)
+int device_debug::registerpoint_set(const char *condition, const char *action)
 {
 	// allocate a new one
 	u32 id = m_device.machine().debugger().cpu().get_registerpoint_index();
-	m_rplist.emplace_front(*m_symtable, id, condition, action);
+	m_rplist->emplace_front(*m_symtable, id, condition, action);
 
 	// update the flags and return the index
 	breakpoint_update_flags();
-	return m_rplist.front().m_index;
+	return m_rplist->front().m_index;
 }
 
 
@@ -1395,10 +1345,10 @@ int device_debug::registerpoint_set(const char *condition, std::string_view acti
 bool device_debug::registerpoint_clear(int index)
 {
 	// scan the list to see if we own this registerpoint
-	for (auto brp = m_rplist.before_begin(); std::next(brp) != m_rplist.end(); ++brp)
+	for (auto brp = m_rplist->before_begin(); std::next(brp) != m_rplist->end(); ++brp)
 		if (std::next(brp)->m_index == index)
 		{
-			m_rplist.erase_after(brp);
+			m_rplist->erase_after(brp);
 			breakpoint_update_flags();
 			return true;
 		}
@@ -1415,7 +1365,7 @@ bool device_debug::registerpoint_clear(int index)
 void device_debug::registerpoint_clear_all()
 {
 	// clear the list
-	m_rplist.clear();
+	m_rplist->clear();
 	breakpoint_update_flags();
 }
 
@@ -1428,7 +1378,7 @@ void device_debug::registerpoint_clear_all()
 bool device_debug::registerpoint_enable(int index, bool enable)
 {
 	// scan the list to see if we own this conditionpoint
-	for (debug_registerpoint &rp : m_rplist)
+	for (debug_registerpoint &rp : *m_rplist)
 		if (rp.m_index == index)
 		{
 			rp.m_enabled = enable;
@@ -1449,93 +1399,8 @@ bool device_debug::registerpoint_enable(int index, bool enable)
 void device_debug::registerpoint_enable_all(bool enable)
 {
 	// apply the enable to all registerpoints we own
-	for (debug_registerpoint &rp : m_rplist)
+	for (debug_registerpoint &rp : *m_rplist)
 		registerpoint_enable(rp.index(), enable);
-}
-
-
-//-------------------------------------------------
-//  exceptionpoint_set - set a new exception
-//  point, returning its index
-//-------------------------------------------------
-
-int device_debug::exceptionpoint_set(int exception, const char *condition, std::string_view action)
-{
-	// allocate a new one and hook it into our list
-	u32 id = m_device.machine().debugger().cpu().get_exceptionpoint_index();
-	m_eplist.emplace(exception, std::make_unique<debug_exceptionpoint>(this, *m_symtable, id, exception, condition, action));
-
-	// return the index
-	return id;
-}
-
-
-//-------------------------------------------------
-//  exceptionpoint_clear - clear an exception
-//  point by index, returning true if we found it
-//-------------------------------------------------
-
-bool device_debug::exceptionpoint_clear(int index)
-{
-	// scan the list to see if we own this breakpoint
-	for (auto epit = m_eplist.begin(); epit != m_eplist.end(); ++epit)
-		if (epit->second->m_index == index)
-		{
-			m_eplist.erase(epit);
-			return true;
-		}
-
-	// we don't own it, return false
-	return false;
-}
-
-
-//-------------------------------------------------
-//  exceptionpoint_clear_all - clear all exception
-//  points
-//-------------------------------------------------
-
-void device_debug::exceptionpoint_clear_all()
-{
-	// clear the list
-	m_eplist.clear();
-}
-
-
-//-------------------------------------------------
-//  exceptionpoint_enable - enable/disable an
-//  exception point by index, returning true if we
-//  found it
-//-------------------------------------------------
-
-bool device_debug::exceptionpoint_enable(int index, bool enable)
-{
-	// scan the list to see if we own this exception point
-	for (auto &epp : m_eplist)
-	{
-		debug_exceptionpoint &ep = *epp.second;
-		if (ep.m_index == index)
-		{
-			ep.m_enabled = enable;
-			return true;
-		}
-	}
-
-	// we don't own it, return false
-	return false;
-}
-
-
-//-------------------------------------------------
-//  exceptionpoint_enable_all - enable/disable all
-//  exception points
-//-------------------------------------------------
-
-void device_debug::exceptionpoint_enable_all(bool enable)
-{
-	// apply the enable to all exception points we own
-	for (auto &epp : m_eplist)
-		exceptionpoint_enable(epp.second->index(), enable);
 }
 
 
@@ -1735,14 +1600,31 @@ u32 device_debug::compute_opcode_crc32(offs_t pc) const
 //  trace - trace execution of a given device
 //-------------------------------------------------
 
-void device_debug::trace(std::unique_ptr<std::ostream> &&file, bool trace_over, bool detect_loops, bool logerror, std::string_view action)
+void device_debug::trace(FILE *file, bool trace_over, bool detect_loops, bool logerror, const char *action)
 {
 	// delete any existing tracers
 	m_trace = nullptr;
 
 	// if we have a new file, make a new tracer
 	if (file != nullptr)
-		m_trace = std::make_unique<tracer>(*this, std::move(file), trace_over, detect_loops, logerror, action);
+		m_trace = std::make_unique<tracer>(*this, *file, trace_over, detect_loops, logerror, action);
+}
+
+
+//-------------------------------------------------
+//  trace_printf - output data into the given
+//  device's tracefile, if tracing
+//-------------------------------------------------
+
+void device_debug::trace_printf(const char *fmt, ...)
+{
+	if (m_trace != nullptr)
+	{
+		va_list va;
+		va_start(va, fmt);
+		m_trace->vprintf(fmt, va);
+		va_end(va);
+	}
 }
 
 
@@ -1770,7 +1652,7 @@ void device_debug::compute_debug_flags()
 
 	// if we're tracking history, or we're hooked, or stepping, or stopping at a breakpoint
 	// make sure we call the hook
-	if ((m_flags & (DEBUG_FLAG_HISTORY | DEBUG_FLAG_STEPPING_ANY | DEBUG_FLAG_STOP_PC | DEBUG_FLAG_LIVE_BP)) != 0)
+	if ((m_flags & (DEBUG_FLAG_HISTORY | DEBUG_FLAG_HOOKED | DEBUG_FLAG_STEPPING_ANY | DEBUG_FLAG_STOP_PC | DEBUG_FLAG_LIVE_BP)) != 0)
 		machine.debug_flags |= DEBUG_FLAG_CALL_HOOK;
 
 	// also call if we are tracing
@@ -1871,7 +1753,7 @@ void device_debug::breakpoint_update_flags()
 	if (!(m_flags & DEBUG_FLAG_LIVE_BP))
 	{
 		// see if there are any enabled registerpoints
-		for (debug_registerpoint &rp : m_rplist)
+		for (debug_registerpoint &rp : *m_rplist)
 		{
 			if (rp.m_enabled)
 			{
@@ -1921,7 +1803,7 @@ void device_debug::breakpoint_check(offs_t pc)
 	}
 
 	// see if we have any matching registerpoints
-	for (debug_registerpoint &rp : m_rplist)
+	for (debug_registerpoint &rp : *m_rplist)
 	{
 		if (rp.hit())
 		{
@@ -1954,10 +1836,10 @@ void device_debug::breakpoint_check(offs_t pc)
 //  tracer - constructor
 //-------------------------------------------------
 
-device_debug::tracer::tracer(device_debug &debug, std::unique_ptr<std::ostream> &&file, bool trace_over, bool detect_loops, bool logerror, std::string_view action)
+device_debug::tracer::tracer(device_debug &debug, FILE &file, bool trace_over, bool detect_loops, bool logerror, const char *action)
 	: m_debug(debug)
-	, m_file(std::move(file))
-	, m_action(action)
+	, m_file(file)
+	, m_action((action != nullptr) ? action : "")
 	, m_detect_loops(detect_loops)
 	, m_logerror(logerror)
 	, m_loops(0)
@@ -1976,7 +1858,7 @@ device_debug::tracer::tracer(device_debug &debug, std::unique_ptr<std::ostream> 
 device_debug::tracer::~tracer()
 {
 	// make sure we close the file if we can
-	m_file.reset();
+	fclose(&m_file);
 }
 
 
@@ -2012,7 +1894,7 @@ void device_debug::tracer::update(offs_t pc)
 
 		// if we just finished looping, indicate as much
 		if (m_loops != 0)
-			util::stream_format(*m_file, "\n   (loops for %d instructions)\n\n", m_loops);
+			fprintf(&m_file, "\n   (loops for %d instructions)\n\n", m_loops);
 		m_loops = 0;
 	}
 
@@ -2027,7 +1909,7 @@ void device_debug::tracer::update(offs_t pc)
 	buffer.disassemble(pc, instruction, next_pc, size, dasmresult);
 
 	// output the result
-	util::stream_format(*m_file, "%s: %s\n", buffer.pc_to_string(pc), instruction);
+	fprintf(&m_file, "%s: %s\n", buffer.pc_to_string(pc).c_str(), instruction.c_str());
 
 	// do we need to step the trace over this instruction?
 	if (m_trace_over && (dasmresult & util::disasm_interface::SUPPORTED) != 0 && (dasmresult & util::disasm_interface::STEP_OVER) != 0)
@@ -2045,33 +1927,7 @@ void device_debug::tracer::update(offs_t pc)
 	// log this PC
 	m_nextdex = (m_nextdex + 1) % TRACE_LOOPS;
 	m_history[m_nextdex] = pc;
-	m_file->flush();
-}
-
-
-//-------------------------------------------------
-//  interrupt_update - log interrupt to tracefile
-//-------------------------------------------------
-
-void device_debug::tracer::interrupt_update(int irqline, offs_t pc)
-{
-	if (m_trace_over)
-	{
-		if (m_trace_over_target != ~0)
-			return;
-		m_trace_over_target = pc;
-	}
-
-	// if we just finished looping, indicate as much
-	*m_file << "\n";
-	if (m_detect_loops && m_loops != 0)
-	{
-		util::stream_format(*m_file, "   (loops for %d instructions)\n", m_loops);
-		m_loops = 0;
-	}
-
-	util::stream_format(*m_file, "   (interrupted at %s, IRQ %d)\n\n", debug_disasm_buffer(m_debug.device()).pc_to_string(pc), irqline);
-	m_file->flush();
+	fflush(&m_file);
 }
 
 
@@ -2079,11 +1935,11 @@ void device_debug::tracer::interrupt_update(int irqline, offs_t pc)
 //  vprintf - generic print to the trace file
 //-------------------------------------------------
 
-void device_debug::tracer::vprintf(util::format_argument_pack<char> const &args)
+void device_debug::tracer::vprintf(const char *format, va_list va)
 {
 	// pass through to the file
-	util::stream_format(*m_file, args);
-	m_file->flush();
+	vfprintf(&m_file, format, va);
+	fflush(&m_file);
 }
 
 
@@ -2094,7 +1950,7 @@ void device_debug::tracer::vprintf(util::format_argument_pack<char> const &args)
 
 void device_debug::tracer::flush()
 {
-	m_file->flush();
+	fflush(&m_file);
 }
 
 

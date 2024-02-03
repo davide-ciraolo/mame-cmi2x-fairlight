@@ -32,17 +32,13 @@ HRESULT COpenCallbackConsole::Open_SetTotal(const UInt64 *files, const UInt64 *b
 
     if (bytes)
     {
-      // _totalBytesDefined = true;
-      _totalBytes = *bytes;
+      _totalBytesDefined = true;
+      // _totalBytes = *bytes;
       if (!files)
         _percent.Total = *bytes;
     }
     else
-    {
-      // _totalBytesDefined = false;
-      if (!files)
-        _percent.Total = _totalBytes;
-    }
+      _totalBytesDefined = false;
   }
 
   return CheckBreak2();
@@ -77,17 +73,17 @@ HRESULT COpenCallbackConsole::Open_Finished()
 }
 
 
-#ifndef Z7_NO_CRYPTO
+#ifndef _NO_CRYPTO
 
 HRESULT COpenCallbackConsole::Open_CryptoGetTextPassword(BSTR *password)
 {
   *password = NULL;
-  RINOK(CheckBreak2())
+  RINOK(CheckBreak2());
 
   if (!PasswordIsDefined)
   {
     ClosePercents();
-    RINOK(GetPassword_HRESULT(_so, Password))
+    Password = GetPassword(_so);
     PasswordIsDefined = true;
   }
   return StringToBstr(Password, password);

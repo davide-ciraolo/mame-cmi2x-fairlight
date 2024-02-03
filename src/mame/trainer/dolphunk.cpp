@@ -96,8 +96,6 @@ Thanks to Amigan site for various documents.
 #include "dolphunk.lh"
 
 
-namespace {
-
 class dauphin_state : public driver_device
 {
 public:
@@ -112,7 +110,7 @@ public:
 	void dauphin(machine_config &config);
 
 private:
-	int cass_r();
+	DECLARE_READ_LINE_MEMBER(cass_r);
 	u8 port07_r();
 	void port00_w(offs_t offset, u8 data);
 	void port06_w(u8 data);
@@ -132,7 +130,7 @@ private:
 	required_device<pwm_display_device> m_display;
 };
 
-int dauphin_state::cass_r()
+READ_LINE_MEMBER( dauphin_state::cass_r )
 {
 	return (m_cass->input() > 0.03) ? 1 : 0;
 }
@@ -283,9 +281,6 @@ ROM_START( dauphin )
 	// This the original
 	//ROM_LOAD( "reflexes.bin", 0x0c00, 0x0072, CRC(c4bed94b) SHA1(cf525755a1dbce6a4681353be692ddf0346f323b) )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

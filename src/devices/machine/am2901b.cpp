@@ -93,6 +93,18 @@ void am2901b_device::device_start()
 	save_item(NAME(m_f0_out));
 	save_item(NAME(m_f3_out));
 	save_item(NAME(m_co_out));
+
+	m_y.resolve_safe();
+	m_g.resolve_safe();
+	m_p.resolve_safe();
+	m_q0.resolve_safe();
+	m_q3.resolve_safe();
+	m_ram0.resolve_safe();
+	m_ram3.resolve_safe();
+	m_ovr.resolve_safe();
+	m_f0.resolve_safe();
+	m_f3.resolve_safe();
+	m_co.resolve_safe();
 }
 
 void am2901b_device::device_reset()
@@ -148,32 +160,32 @@ void am2901b_device::i_w(uint16_t data)
 	m_i = data;
 }
 
-void am2901b_device::q0_w(int state)
+WRITE_LINE_MEMBER(am2901b_device::q0_w)
 {
 	m_q0_in = (bool)state;
 }
 
-void am2901b_device::q3_w(int state)
+WRITE_LINE_MEMBER(am2901b_device::q3_w)
 {
 	m_q3_in = (bool)state;
 }
 
-void am2901b_device::ram0_w(int state)
+WRITE_LINE_MEMBER(am2901b_device::ram0_w)
 {
 	m_ram0_in = (bool)state;
 }
 
-void am2901b_device::ram3_w(int state)
+WRITE_LINE_MEMBER(am2901b_device::ram3_w)
 {
 	m_ram3_in = (bool)state;
 }
 
-void am2901b_device::ci_w(int state)
+WRITE_LINE_MEMBER(am2901b_device::ci_w)
 {
 	m_ci = (bool)state;
 }
 
-void am2901b_device::cp_w(int state)
+WRITE_LINE_MEMBER(am2901b_device::cp_w)
 {
 	bool old = m_cp;
 	m_cp = (bool)state;

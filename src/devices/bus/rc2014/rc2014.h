@@ -60,10 +60,6 @@
 
 #include "machine/z80daisy.h"
 
-#include <functional>
-#include <vector>
-
-
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
@@ -73,7 +69,6 @@
 //**************************************************************************
 
 // ======================> rc2014_bus_device
-class device_rc2014_card_interface;
 
 class rc2014_bus_device : public device_t
 {
@@ -82,14 +77,23 @@ public:
 	rc2014_bus_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 	virtual ~rc2014_bus_device();
 
-	void clk_w(int state);
-	void int_w(int state);
-	void tx_w(int state);
-	void rx_w(int state);
-	void user1_w(int state);
-	void user2_w(int state);
-	void user3_w(int state);
-	void user4_w(int state);
+	auto clk_callback() { return m_clk.bind(); }
+	auto int_callback() { return m_int.bind(); }
+	auto tx_callback() { return m_tx.bind(); }
+	auto rx_callback() { return m_rx.bind(); }
+	auto user1_callback() { return m_user1.bind(); }
+	auto user2_callback() { return m_user2.bind(); }
+	auto user3_callback() { return m_user3.bind(); }
+	auto user4_callback() { return m_user4.bind(); }
+
+	DECLARE_WRITE_LINE_MEMBER( clk_w ) { m_clk(state); }
+	DECLARE_WRITE_LINE_MEMBER( int_w ) { m_int(state); }
+	DECLARE_WRITE_LINE_MEMBER( tx_w ) { m_tx(state); }
+	DECLARE_WRITE_LINE_MEMBER( rx_w ) { m_rx(state); }
+	DECLARE_WRITE_LINE_MEMBER( user1_w ) { m_user1(state); }
+	DECLARE_WRITE_LINE_MEMBER( user2_w ) { m_user2(state); }
+	DECLARE_WRITE_LINE_MEMBER( user3_w ) { m_user3(state); }
+	DECLARE_WRITE_LINE_MEMBER( user4_w ) { m_user4(state); }
 
 	void set_bus_clock(u32 clock);
 	void set_bus_clock(const XTAL &xtal) { set_bus_clock(xtal.value()); }
@@ -98,21 +102,24 @@ public:
 	void add_to_daisy_chain(std::string tag) { m_daisy.push_back(tag); }
 	const z80_daisy_config* get_daisy_chain();
 
-	void add_card(device_rc2014_card_interface &card);
 protected:
 	rc2014_bus_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
-
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
 private:
-	using card_vector = std::vector<std::reference_wrapper<device_rc2014_card_interface> >;
-
 	address_space_installer *m_installer[4];
+	devcb_write_line m_clk;
+	devcb_write_line m_int;
+	devcb_write_line m_tx;
+	devcb_write_line m_rx;
+	devcb_write_line m_user1;
+	devcb_write_line m_user2;
+	devcb_write_line m_user3;
+	devcb_write_line m_user4;
 	std::vector<std::string> m_daisy;
 	char **m_daisy_chain;
-	card_vector m_device_list;
 };
 
 // ======================> device_rc2014_card_interface
@@ -122,22 +129,13 @@ class rc2014_slot_device;
 class device_rc2014_card_interface : public device_interface
 {
 	friend class rc2014_slot_device;
-	friend class rc2014_bus_device;
 
 public:
 	// construction/destruction
 	device_rc2014_card_interface(const machine_config &mconfig, device_t &device);
-
-	virtual void card_clk_w(int state) { }
-	virtual void card_int_w(int state) { }
-	virtual void card_tx_w(int state) { }
-	virtual void card_rx_w(int state) { }
-	virtual void card_user1_w(int state) { }
-	virtual void card_user2_w(int state) { }
-	virtual void card_user3_w(int state) { }
-	virtual void card_user4_w(int state) { }
-
 protected:
+	void set_bus_device(rc2014_bus_device *bus_device);
+
 	rc2014_bus_device  *m_bus;
 };
 
@@ -161,8 +159,7 @@ public:
 
 protected:
 	rc2014_slot_device(machine_config const &mconfig, device_type type, char const *tag, device_t *owner, u32 clock);
-
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 	virtual void device_resolve_objects() override;
 
@@ -174,7 +171,6 @@ protected:
 //**************************************************************************
 
 // ======================> rc2014_ext_bus_device
-class device_rc2014_ext_card_interface;
 
 class rc2014_ext_bus_device : public rc2014_bus_device
 {
@@ -182,48 +178,57 @@ public:
 	// construction/destruction
 	rc2014_ext_bus_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
-	void clk2_w(int state);
-	void page_w(int state);
-	void nmi_w(int state);
-	void tx2_w(int state);
-	void rx2_w(int state);
-	void user5_w(int state);
-	void user6_w(int state);
-	void user7_w(int state);
-	void user8_w(int state);
+	auto clk2_callback() { return m_clk2.bind(); }
+	auto page_callback() { return m_page.bind(); }
+	auto nmi_callback() { return m_nmi.bind(); }
+	auto tx2_callback() { return m_tx2.bind(); }
+	auto rx2_callback() { return m_rx2.bind(); }
+	auto user5_callback() { return m_user5.bind(); }
+	auto user6_callback() { return m_user6.bind(); }
+	auto user7_callback() { return m_user7.bind(); }
+	auto user8_callback() { return m_user8.bind(); }
 
-	void add_card(device_rc2014_ext_card_interface &card);
+	DECLARE_WRITE_LINE_MEMBER( clk2_w ) { m_clk2(state); }
+	DECLARE_WRITE_LINE_MEMBER( page_w ) { m_page(state); }
+	DECLARE_WRITE_LINE_MEMBER( nmi_w ) { m_nmi(state); }
+	DECLARE_WRITE_LINE_MEMBER( tx2_w ) { m_tx2(state); }
+	DECLARE_WRITE_LINE_MEMBER( rx2_w ) { m_rx2(state); }
+	DECLARE_WRITE_LINE_MEMBER( user5_w ) { m_user5(state); }
+	DECLARE_WRITE_LINE_MEMBER( user6_w ) { m_user6(state); }
+	DECLARE_WRITE_LINE_MEMBER( user7_w ) { m_user7(state); }
+	DECLARE_WRITE_LINE_MEMBER( user8_w ) { m_user8(state); }
 
 protected:
 	rc2014_ext_bus_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
+	// device-level overrides
+	virtual void device_start() override;
 
 private:
-	using card_vector = std::vector<std::reference_wrapper<device_rc2014_ext_card_interface> >;
-	card_vector m_device_list;
+	devcb_write_line m_clk2;
+	devcb_write_line m_page;
+	devcb_write_line m_nmi;
+	devcb_write_line m_tx2;
+	devcb_write_line m_rx2;
+	devcb_write_line m_user5;
+	devcb_write_line m_user6;
+	devcb_write_line m_user7;
+	devcb_write_line m_user8;
 };
 
 // ======================> device_rc2014_ext_card_interface
 
+class rc2014_ext_slot_device;
+
 class device_rc2014_ext_card_interface : public device_rc2014_card_interface
 {
-	friend class rc2014_ext_bus_device;
+	friend class rc2014_ext_slot_device;
 
 protected:
 	// construction/destruction
 	device_rc2014_ext_card_interface(const machine_config &mconfig, device_t &device);
 
-public:
-	virtual void card_clk2_w(int state) { }
-	virtual void card_page_w(int state) { }
-	virtual void card_nmi_w(int state) { }
-	virtual void card_tx2_w(int state) { }
-	virtual void card_rx2_w(int state) { }
-	virtual void card_user5_w(int state) { }
-	virtual void card_user6_w(int state) { }
-	virtual void card_user7_w(int state) { }
-	virtual void card_user8_w(int state) { }
+	void set_bus_device(rc2014_ext_bus_device *bus_device);
 
-protected:
 	rc2014_ext_bus_device  *m_bus;
 };
 
@@ -247,8 +252,7 @@ public:
 
 protected:
 	rc2014_ext_slot_device(machine_config const &mconfig, device_type type, char const *tag, device_t *owner, u32 clock);
-
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 	virtual void device_resolve_objects() override;
 };
@@ -258,7 +262,6 @@ protected:
 //**************************************************************************
 
 // ======================> rc2014_rc80_bus_device
-class device_rc2014_rc80_card_interface;
 
 class rc2014_rc80_bus_device : public rc2014_ext_bus_device
 {
@@ -266,28 +269,25 @@ public:
 	// construction/destruction
 	rc2014_rc80_bus_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
-	void add_card(device_rc2014_rc80_card_interface &card);
-
 protected:
 	rc2014_rc80_bus_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
-
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
-
-private:
-	using card_vector = std::vector<std::reference_wrapper<device_rc2014_rc80_card_interface> >;
-	card_vector m_device_list;
 };
 
 // ======================> device_rc2014_rc80_card_interface
 
+class rc2014_rc80_slot_device;
+
 class device_rc2014_rc80_card_interface : public device_rc2014_ext_card_interface
 {
-	friend class rc2014_rc80_bus_device;
+	friend class rc2014_rc80_slot_device;
 
 protected:
 	// construction/destruction
 	device_rc2014_rc80_card_interface(const machine_config &mconfig, device_t &device);
+
+	void set_bus_device(rc2014_rc80_bus_device *bus_device);
 
 	rc2014_rc80_bus_device  *m_bus;
 };
@@ -311,13 +311,12 @@ public:
 	}
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 	virtual void device_resolve_objects() override;
 };
 
-
-// device type declarations
+// device type definition
 DECLARE_DEVICE_TYPE(RC2014_BUS,  rc2014_bus_device)
 DECLARE_DEVICE_TYPE(RC2014_SLOT, rc2014_slot_device)
 

@@ -14,17 +14,17 @@ cgenie_format::cgenie_format() : wd177x_format(formats)
 {
 }
 
-const char *cgenie_format::name() const noexcept
+const char *cgenie_format::name() const
 {
 	return "cgenie";
 }
 
-const char *cgenie_format::description() const noexcept
+const char *cgenie_format::description() const
 {
 	return "Colour Genie disk image";
 }
 
-const char *cgenie_format::extensions() const noexcept
+const char *cgenie_format::extensions() const
 {
 	return "dsk";
 }

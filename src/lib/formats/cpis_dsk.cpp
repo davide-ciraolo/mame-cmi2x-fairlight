@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/cpis_dsk.cpp
+    formats/cpis_dsk.c
 
     Telenova Compis disk images
 
@@ -14,17 +14,17 @@ cpis_format::cpis_format() : upd765_format(formats)
 {
 }
 
-const char *cpis_format::name() const noexcept
+const char *cpis_format::name() const
 {
 	return "cpis";
 }
 
-const char *cpis_format::description() const noexcept
+const char *cpis_format::description() const
 {
 	return "COMPIS disk image";
 }
 
-const char *cpis_format::extensions() const noexcept
+const char *cpis_format::extensions() const
 {
 	return "dsk,img";
 }

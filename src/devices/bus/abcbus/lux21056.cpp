@@ -198,7 +198,7 @@ void luxor_55_21056_device::io_write_byte(offs_t offset, uint8_t data)
 }
 
 
-void luxor_55_21056_device::write_sasi_bsy(int state)
+WRITE_LINE_MEMBER( luxor_55_21056_device::write_sasi_bsy )
 {
 	m_sasi_bsy = state;
 
@@ -208,7 +208,7 @@ void luxor_55_21056_device::write_sasi_bsy(int state)
 	}
 }
 
-void luxor_55_21056_device::write_sasi_io(int state)
+WRITE_LINE_MEMBER( luxor_55_21056_device::write_sasi_io )
 {
 	m_sasi_io = state;
 
@@ -222,7 +222,7 @@ void luxor_55_21056_device::write_sasi_io(int state)
 	}
 }
 
-void luxor_55_21056_device::write_sasi_req(int state)
+WRITE_LINE_MEMBER( luxor_55_21056_device::write_sasi_req )
 {
 	m_sasi_req = state;
 
@@ -233,12 +233,12 @@ void luxor_55_21056_device::write_sasi_req(int state)
 	}
 }
 
-void luxor_55_21056_device::write_sasi_cd(int state)
+WRITE_LINE_MEMBER( luxor_55_21056_device::write_sasi_cd )
 {
 	m_sasi_cd = state;
 }
 
-void luxor_55_21056_device::write_sasi_msg(int state)
+WRITE_LINE_MEMBER( luxor_55_21056_device::write_sasi_msg )
 {
 	m_sasi_msg = state;
 }

@@ -50,7 +50,7 @@ void device_bbc_rom_interface::rom_alloc(uint32_t size, const char *tag)
 {
 	if (m_rom == nullptr)
 	{
-		m_rom = device().machine().memory().region_alloc(std::string(tag).append(BBC_ROM_REGION_TAG), size, 1, ENDIANNESS_LITTLE)->base();
+		m_rom = device().machine().memory().region_alloc(std::string(tag).append(BBC_ROM_REGION_TAG).c_str(), size, 1, ENDIANNESS_LITTLE)->base();
 		m_rom_size = size;
 	}
 }
@@ -114,14 +114,17 @@ void bbc_romslot_device::device_start()
 //  call load
 //-------------------------------------------------
 
-std::pair<std::error_condition, std::string> bbc_romslot_device::call_load()
+image_init_result bbc_romslot_device::call_load()
 {
 	if (m_cart)
 	{
-		uint32_t const size = !loaded_through_softlist() ? length() : get_software_region_length("rom");
+		uint32_t size = !loaded_through_softlist() ? length() : get_software_region_length("rom");
 
 		if (size % 0x2000)
-			return std::make_pair(image_error::INVALIDLENGTH, "Invalid ROM size (must be a multiple of 8K)");
+		{
+			seterror(image_error::INVALIDIMAGE, "Invalid ROM size");
+			return image_init_result::FAIL;
+		}
 
 		m_cart->rom_alloc(size, tag());
 
@@ -139,7 +142,7 @@ std::pair<std::error_condition, std::string> bbc_romslot_device::call_load()
 			m_cart->nvram_alloc(get_software_region_length("nvram"));
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 //-------------------------------------------------
@@ -210,7 +213,6 @@ void bbc_romslot_device::write(offs_t offset, uint8_t data)
 #include "datagem.h"
 #include "dfs.h"
 #include "genie.h"
-//#include "gommc.h"
 #include "pal.h"
 //#include "ramagic.h"
 #include "rtc.h"
@@ -232,10 +234,8 @@ void bbc_rom_devices(device_slot_interface &device)
 	device.option_add_internal("palmo2", BBC_PALMO2);
 	device.option_add_internal("datagem", BBC_DATAGEM);
 	device.option_add_internal("genie", BBC_PMSGENIE);
-	//device.option_add_internal("gommc", BBC_GOMMC);
 	device.option_add_internal("dfse00", BBC_DFSE00);
 	//device.option_add_internal("ramagic", BBC_RAMAGIC);
 	device.option_add_internal("stlrtc",  BBC_STLRTC);
 	device.option_add_internal("pmsrtc", BBC_PMSRTC);
-	device.option_add_internal("trilogy", BBC_TRILOGY);
 }

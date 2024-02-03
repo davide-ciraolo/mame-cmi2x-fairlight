@@ -83,7 +83,7 @@ void hp82937_io_card_device::clear_service()
 	m_translator->clear_service();
 }
 
-void hp82937_io_card_device::reset_w(int state)
+WRITE_LINE_MEMBER(hp82937_io_card_device::reset_w)
 {
 	m_cpu->set_input_line(INPUT_LINE_RESET , state);
 	if (state) {
@@ -92,7 +92,7 @@ void hp82937_io_card_device::reset_w(int state)
 	}
 }
 
-int hp82937_io_card_device::t0_r()
+READ_LINE_MEMBER(hp82937_io_card_device::t0_r)
 {
 	return m_iatn;
 }
@@ -179,7 +179,7 @@ void hp82937_io_card_device::latch_w(uint8_t data)
 	update_data_out();
 }
 
-void hp82937_io_card_device::ieee488_ctrl_w(int state)
+WRITE_LINE_MEMBER(hp82937_io_card_device::ieee488_ctrl_w)
 {
 	update_signals();
 	update_data_out();

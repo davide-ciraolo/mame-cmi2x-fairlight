@@ -18,6 +18,7 @@
 
 #include "screen.h"
 
+#define LOG_GENERAL      (1U << 0)
 #define LOG_CONTROL_REGS (1U << 1)
 #define LOG_GRAPHICS_OPS (1U << 2)
 
@@ -690,15 +691,15 @@ void tms340x0_device::check_interrupt()
 	/* if we took something, generate it */
 	if (vector)
 	{
-		/* call the callback for externals */
-		if (irqline >= 0)
-			standard_irq_callback(irqline, m_pc);
-
 		PUSH(m_pc);
 		PUSH(m_st);
 		RESET_ST();
 		m_pc = RLONG(vector);
 		COUNT_CYCLES(16);
+
+		/* call the callback for externals */
+		if (irqline >= 0)
+			standard_irq_callback(irqline);
 	}
 }
 
@@ -712,6 +713,8 @@ void tms340x0_device::device_start()
 {
 	m_scanline_ind16_cb.resolve();
 	m_scanline_rgb32_cb.resolve();
+	m_output_int_cb.resolve();
+	m_ioreg_pre_write_cb.resolve();
 	m_to_shiftreg_cb.resolve();
 	m_from_shiftreg_cb.resolve();
 
@@ -970,14 +973,14 @@ void tms340x0_device::set_pixel_function()
 
 const tms340x0_device::raster_op_func tms340x0_device::s_raster_ops[32] =
 {
-	nullptr,                        &tms340x0_device::raster_op_1,  &tms340x0_device::raster_op_2,  &tms340x0_device::raster_op_3,
-	&tms340x0_device::raster_op_4,  &tms340x0_device::raster_op_5,  &tms340x0_device::raster_op_6,  &tms340x0_device::raster_op_7,
-	&tms340x0_device::raster_op_8,  &tms340x0_device::raster_op_9,  &tms340x0_device::raster_op_10, &tms340x0_device::raster_op_11,
+				nullptr, &tms340x0_device::raster_op_1 , &tms340x0_device::raster_op_2 , &tms340x0_device::raster_op_3,
+	&tms340x0_device::raster_op_4 , &tms340x0_device::raster_op_5 , &tms340x0_device::raster_op_6 , &tms340x0_device::raster_op_7,
+	&tms340x0_device::raster_op_8 , &tms340x0_device::raster_op_9 , &tms340x0_device::raster_op_10, &tms340x0_device::raster_op_11,
 	&tms340x0_device::raster_op_12, &tms340x0_device::raster_op_13, &tms340x0_device::raster_op_14, &tms340x0_device::raster_op_15,
 	&tms340x0_device::raster_op_16, &tms340x0_device::raster_op_17, &tms340x0_device::raster_op_18, &tms340x0_device::raster_op_19,
-	&tms340x0_device::raster_op_20, &tms340x0_device::raster_op_21, nullptr,                        nullptr,
-	nullptr,                        nullptr,                        nullptr,                        nullptr,
-	nullptr,                        nullptr,                        nullptr,                        nullptr,
+	&tms340x0_device::raster_op_20, &tms340x0_device::raster_op_21,            nullptr,            nullptr,
+				nullptr,            nullptr,            nullptr,            nullptr,
+				nullptr,            nullptr,            nullptr,            nullptr,
 };
 
 
@@ -1242,7 +1245,7 @@ static const char *const ioreg_name[] =
 
 void tms34010_device::io_register_w(offs_t offset, u16 data, u16 mem_mask)
 {
-	if (!m_ioreg_pre_write_cb.isunset())
+	if (!m_ioreg_pre_write_cb.isnull())
 		m_ioreg_pre_write_cb(offset, data, mem_mask);
 
 	int oldreg, newreg;
@@ -1317,9 +1320,15 @@ void tms34010_device::io_register_w(offs_t offset, u16 data, u16 mem_mask)
 
 				/* the TMS34010 can set output interrupt? */
 				if (!(oldreg & 0x0080) && (newreg & 0x0080))
-					m_output_int_cb(1);
+				{
+					if (!m_output_int_cb.isnull())
+						m_output_int_cb(1);
+				}
 				else if ((oldreg & 0x0080) && !(newreg & 0x0080))
-					m_output_int_cb(0);
+				{
+					if (!m_output_int_cb.isnull())
+						m_output_int_cb(0);
+				}
 
 				/* input interrupt? (should really be state-based, but the functions don't exist!) */
 				if (!(oldreg & 0x0008) && (newreg & 0x0008))
@@ -1387,7 +1396,7 @@ static const char *const ioreg020_name[] =
 
 void tms34020_device::io_register_w(offs_t offset, u16 data, u16 mem_mask)
 {
-	if (!m_ioreg_pre_write_cb.isunset())
+	if (!m_ioreg_pre_write_cb.isnull())
 		m_ioreg_pre_write_cb(offset, data, mem_mask);
 
 	int oldreg, newreg;
@@ -1463,9 +1472,15 @@ void tms34020_device::io_register_w(offs_t offset, u16 data, u16 mem_mask)
 
 			/* the TMS34010 can set output interrupt? */
 			if (!(oldreg & 0x0080) && (newreg & 0x0080))
-				m_output_int_cb(1);
+			{
+				if (!m_output_int_cb.isnull())
+					m_output_int_cb(1);
+			}
 			else if ((oldreg & 0x0080) && !(newreg & 0x0080))
-				m_output_int_cb(0);
+			{
+				if (!m_output_int_cb.isnull())
+					m_output_int_cb(0);
+			}
 
 			/* input interrupt? (should really be state-based, but the functions don't exist!) */
 			if (!(oldreg & 0x0008) && (newreg & 0x0008))

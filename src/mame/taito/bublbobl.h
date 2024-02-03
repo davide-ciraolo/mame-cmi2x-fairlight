@@ -120,6 +120,7 @@ public:
 	void bootleg_map(address_map &map);
 	void bublbobl_maincpu_map(address_map &map);
 	void common_maincpu_map(address_map &map);
+	void mcu_map(address_map &map);
 	void sound_map(address_map &map);
 	void subcpu_map(address_map &map);
 	void tokio_map(address_map &map);

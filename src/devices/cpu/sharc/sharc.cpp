@@ -976,7 +976,7 @@ void adsp21062_device::set_flag_input(int flag_num, int state)
 	}
 }
 
-void adsp21062_device::write_stall(int state)
+WRITE_LINE_MEMBER(adsp21062_device::write_stall)
 {
 	m_core->write_stalled = (state == 0) ? false : true;
 

@@ -34,8 +34,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 class multi8_state : public driver_device
 {
 public:
@@ -71,7 +69,7 @@ private:
 	uint8_t ay8912_1_r();
 	TIMER_DEVICE_CALLBACK_MEMBER(keyboard_callback);
 	TIMER_DEVICE_CALLBACK_MEMBER(kansas_r);
-	void kansas_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(kansas_w);
 	MC6845_UPDATE_ROW(crtc_update_row);
 
 	void io_map(address_map &map);
@@ -303,7 +301,7 @@ void multi8_state::kanji_w(offs_t offset, uint8_t data)
 	m_knj_addr = (offset == 0) ? (m_knj_addr & 0xff00) | (data & 0xff) : (m_knj_addr & 0x00ff) | (data << 8);
 }
 
-void multi8_state::kansas_w(int state)
+WRITE_LINE_MEMBER( multi8_state::kansas_w )
 {
 	// incoming @19200Hz
 	u8 twobit = m_cass_data[3] & 3;
@@ -694,9 +692,6 @@ ROM_START( multi8 )
 
 	ROM_REGION( 0x4000, "wram", ROMREGION_ERASEFF )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

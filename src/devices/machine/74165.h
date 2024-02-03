@@ -39,9 +39,9 @@ public:
 	auto data_callback() { return m_data_cb.bind(); }
 	auto qh_callback() { return m_qh_cb.bind(); }
 
-	void serial_w(int state);
-	void clock_w(int state);
-	void shift_load_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(serial_w);
+	DECLARE_WRITE_LINE_MEMBER(clock_w);
+	DECLARE_WRITE_LINE_MEMBER(shift_load_w);
 
 protected:
 	// device-level overrides

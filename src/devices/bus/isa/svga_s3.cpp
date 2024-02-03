@@ -1,13 +1,10 @@
 // license:BSD-3-Clause
 // copyright-holders:Barry Rodewald
-/**************************************************************************************************
+/***************************************************************************
 
   ISA SVGA S3 wrapper
 
-  TODO:
-  - All these cards are really PCI and needs to be moved to video/virge_pci.cpp.
-
-**************************************************************************************************/
+***************************************************************************/
 
 #include "emu.h"
 #include "svga_s3.h"
@@ -89,11 +86,6 @@ isa16_svga_s3_device::isa16_svga_s3_device(const machine_config &mconfig, const 
 {
 }
 
-void isa16_svga_s3_device::io_isa_map(address_map &map)
-{
-	map(0x00, 0x2f).m(m_vga, FUNC(s3_vga_device::io_map));
-}
-
 //-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
@@ -105,8 +97,9 @@ void isa16_svga_s3_device::device_start()
 
 	m_isa->install_rom(this, 0xc0000, 0xc7fff, "s3_764");
 
-	m_isa->install_device(0x03b0, 0x03df, *this, &isa16_svga_s3_device::io_isa_map);
-
+	m_isa->install_device(0x03b0, 0x03bf, read8sm_delegate(*m_vga, FUNC(s3_vga_device::port_03b0_r)), write8sm_delegate(*m_vga, FUNC(s3_vga_device::port_03b0_w)));
+	m_isa->install_device(0x03c0, 0x03cf, read8sm_delegate(*m_vga, FUNC(s3_vga_device::port_03c0_r)), write8sm_delegate(*m_vga, FUNC(s3_vga_device::port_03c0_w)));
+	m_isa->install_device(0x03d0, 0x03df, read8sm_delegate(*m_vga, FUNC(s3_vga_device::port_03d0_r)), write8sm_delegate(*m_vga, FUNC(s3_vga_device::port_03d0_w)));
 	m_isa->install16_device(0x82e8, 0x82eb, read16smo_delegate(*m_8514, FUNC(ibm8514a_device::ibm8514_currenty_r)), write16smo_delegate(*m_8514, FUNC(ibm8514a_device::ibm8514_currenty_w)));
 	m_isa->install16_device(0x86e8, 0x86eb, read16smo_delegate(*m_8514, FUNC(ibm8514a_device::ibm8514_currentx_r)), write16smo_delegate(*m_8514, FUNC(ibm8514a_device::ibm8514_currentx_w)));
 	m_isa->install16_device(0x8ae8, 0x8aeb, read16smo_delegate(*m_8514, FUNC(ibm8514a_device::ibm8514_desty_r)), write16smo_delegate(*m_8514, FUNC(ibm8514a_device::ibm8514_desty_w)));
@@ -181,7 +174,7 @@ void isa16_s3virge_device::device_add_mconfig(machine_config &config)
 //  framebuffer configuration.
 //-------------------------------------------------
 
-void isa16_s3virge_device::linear_config_changed_w(int state)
+WRITE_LINE_MEMBER(isa16_s3virge_device::linear_config_changed_w)
 {
 }
 
@@ -209,11 +202,6 @@ isa16_s3virge_device::isa16_s3virge_device(const machine_config &mconfig, const 
 {
 }
 
-void isa16_s3virge_device::io_isa_map(address_map &map)
-{
-	map(0x00, 0x2f).m(m_vga, FUNC(s3virge_vga_device::io_map));
-}
-
 //-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
@@ -225,7 +213,9 @@ void isa16_s3virge_device::device_start()
 
 	m_isa->install_rom(this, 0xc0000, 0xc7fff, "s3virge");
 
-	m_isa->install_device(0x03b0, 0x03df, *this, &isa16_s3virge_device::io_isa_map);
+	m_isa->install_device(0x03b0, 0x03bf, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03b0_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03b0_w)));
+	m_isa->install_device(0x03c0, 0x03cf, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03c0_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03c0_w)));
+	m_isa->install_device(0x03d0, 0x03df, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03d0_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03d0_w)));
 
 	m_isa->install_memory(0xa0000, 0xbffff, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::mem_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::mem_w)));
 }
@@ -276,7 +266,7 @@ void isa16_s3virgedx_device::device_add_mconfig(machine_config &config)
 //  framebuffer configuration.
 //-------------------------------------------------
 
-void isa16_s3virgedx_device::linear_config_changed_w(int state)
+WRITE_LINE_MEMBER(isa16_s3virgedx_device::linear_config_changed_w)
 {
 	const bool old = m_lfb_enable;
 	m_lfb_enable = state;
@@ -320,12 +310,6 @@ isa16_s3virgedx_device::isa16_s3virgedx_device(const machine_config &mconfig, co
 {
 }
 
-void isa16_s3virgedx_device::io_isa_map(address_map &map)
-{
-	map(0x00, 0x2f).m(m_vga, FUNC(s3virgedx_vga_device::io_map));
-}
-
-
 //-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
@@ -337,9 +321,11 @@ void isa16_s3virgedx_device::device_start()
 
 	m_isa->install_rom(this, 0xc0000, 0xc7fff, "s3virgedx");
 
-	m_isa->install_device(0x03b0, 0x03df, *this, &isa16_s3virgedx_device::io_isa_map);
+	m_isa->install_device(0x03b0, 0x03bf, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03b0_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03b0_w)));
+	m_isa->install_device(0x03c0, 0x03cf, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03c0_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03c0_w)));
+	m_isa->install_device(0x03d0, 0x03df, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03d0_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03d0_w)));
 
-	m_isa->install_memory(0xa0000, 0xbffff, read8sm_delegate(*m_vga, FUNC(s3virgedx_vga_device::mem_r)), write8sm_delegate(*m_vga, FUNC(s3virgedx_vga_device::mem_w)));
+	m_isa->install_memory(0xa0000, 0xbffff, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::mem_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::mem_w)));
 
 	save_item(NAME(m_lfb_enable));
 	save_item(NAME(m_lfb_start));
@@ -396,7 +382,7 @@ void isa16_stealth3d2kpro_device::device_add_mconfig(machine_config &config)
 //  framebuffer configuration.
 //-------------------------------------------------
 
-void isa16_stealth3d2kpro_device::linear_config_changed_w(int state)
+WRITE_LINE_MEMBER(isa16_stealth3d2kpro_device::linear_config_changed_w)
 {
 }
 
@@ -424,11 +410,6 @@ isa16_stealth3d2kpro_device::isa16_stealth3d2kpro_device(const machine_config &m
 {
 }
 
-void isa16_stealth3d2kpro_device::io_isa_map(address_map &map)
-{
-	map(0x00, 0x2f).m(m_vga, FUNC(s3virgedx_vga_device::io_map));
-}
-
 //-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
@@ -440,9 +421,11 @@ void isa16_stealth3d2kpro_device::device_start()
 
 	m_isa->install_rom(this, 0xc0000, 0xc7fff, "stealth3d");
 
-	m_isa->install_device(0x03b0, 0x03df, *this, &isa16_stealth3d2kpro_device::io_isa_map);
+	m_isa->install_device(0x03b0, 0x03bf, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03b0_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03b0_w)));
+	m_isa->install_device(0x03c0, 0x03cf, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03c0_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03c0_w)));
+	m_isa->install_device(0x03d0, 0x03df, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03d0_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::port_03d0_w)));
 
-	m_isa->install_memory(0xa0000, 0xbffff, read8sm_delegate(*m_vga, FUNC(s3virgedx_vga_device::mem_r)), write8sm_delegate(*m_vga, FUNC(s3virgedx_vga_device::mem_w)));
+	m_isa->install_memory(0xa0000, 0xbffff, read8sm_delegate(*m_vga, FUNC(s3virge_vga_device::mem_r)), write8sm_delegate(*m_vga, FUNC(s3virge_vga_device::mem_w)));
 }
 
 //-------------------------------------------------

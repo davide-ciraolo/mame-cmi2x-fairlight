@@ -78,7 +78,8 @@ public:
 	void bctb_w(u8 data);
 
 protected:
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 

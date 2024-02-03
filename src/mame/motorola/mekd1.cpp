@@ -93,9 +93,6 @@ References:
 #include "bus/rs232/rs232.h"
 #include "machine/terminal.h"
 
-
-namespace {
-
 class mekd1_state : public driver_device
 {
 public:
@@ -134,18 +131,18 @@ private:
 	uint8_t pia0_pb_r();
 	void pia0_pa_w(uint8_t data);
 	void pia0_pb_w(uint8_t data);
-	void pia0_cb2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pia0_cb2_w);
 
 	// Clocks
-	void write_f1_clock(int state);
-	void write_f2_clock(int state);
-	void write_f4_clock(int state);
-	void write_f5_clock(int state);
-	void write_f7_clock(int state);
-	void write_f8_clock(int state);
-	void write_f9_clock(int state);
-	void write_f11_clock(int state);
-	void write_f13_clock(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_f1_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f2_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f4_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f5_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f7_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f8_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f9_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f11_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f13_clock);
 
 	TIMER_CALLBACK_MEMBER(bit_rate);
 	TIMER_CALLBACK_MEMBER(bit_rate_half);
@@ -270,7 +267,7 @@ void mekd1_state::pia0_pb_w(uint8_t data)
 	}
 }
 
-void mekd1_state::pia0_cb2_w(int state)
+WRITE_LINE_MEMBER(mekd1_state::pia0_cb2_w)
 {
 	// This is a tape reader control line.
 }
@@ -285,7 +282,7 @@ TIMER_CALLBACK_MEMBER(mekd1_state::bit_rate_half)
 	m_bit_rate_half_out = 1;
 }
 
-void mekd1_state::write_f1_clock(int state)
+WRITE_LINE_MEMBER(mekd1_state::write_f1_clock)
 {
 	if (m_acia_baud_rate->read() == 1)
 	{
@@ -294,7 +291,7 @@ void mekd1_state::write_f1_clock(int state)
 	}
 }
 
-void mekd1_state::write_f2_clock(int state)
+WRITE_LINE_MEMBER(mekd1_state::write_f2_clock)
 {
 	if (m_acia_baud_rate->read() == 2)
 	{
@@ -303,7 +300,7 @@ void mekd1_state::write_f2_clock(int state)
 	}
 }
 
-void mekd1_state::write_f4_clock(int state)
+WRITE_LINE_MEMBER(mekd1_state::write_f4_clock)
 {
 	if (m_acia_baud_rate->read() == 4)
 	{
@@ -312,7 +309,7 @@ void mekd1_state::write_f4_clock(int state)
 	}
 }
 
-void mekd1_state::write_f5_clock(int state)
+WRITE_LINE_MEMBER(mekd1_state::write_f5_clock)
 {
 	if (m_acia_baud_rate->read() == 5)
 	{
@@ -321,7 +318,7 @@ void mekd1_state::write_f5_clock(int state)
 	}
 }
 
-void mekd1_state::write_f7_clock(int state)
+WRITE_LINE_MEMBER(mekd1_state::write_f7_clock)
 {
 	if (m_acia_baud_rate->read() == 7)
 	{
@@ -330,7 +327,7 @@ void mekd1_state::write_f7_clock(int state)
 	}
 }
 
-void mekd1_state::write_f8_clock(int state)
+WRITE_LINE_MEMBER(mekd1_state::write_f8_clock)
 {
 	if (m_acia_baud_rate->read() == 8)
 	{
@@ -339,7 +336,7 @@ void mekd1_state::write_f8_clock(int state)
 	}
 }
 
-void mekd1_state::write_f9_clock(int state)
+WRITE_LINE_MEMBER(mekd1_state::write_f9_clock)
 {
 	if (m_acia_baud_rate->read() == 9)
 	{
@@ -348,7 +345,7 @@ void mekd1_state::write_f9_clock(int state)
 	}
 }
 
-void mekd1_state::write_f11_clock(int state)
+WRITE_LINE_MEMBER(mekd1_state::write_f11_clock)
 {
 	if (m_acia_baud_rate->read() == 11)
 	{
@@ -357,7 +354,7 @@ void mekd1_state::write_f11_clock(int state)
 	}
 }
 
-void mekd1_state::write_f13_clock(int state)
+WRITE_LINE_MEMBER(mekd1_state::write_f13_clock)
 {
 	if (m_acia_baud_rate->read() == 13)
 	{
@@ -419,7 +416,7 @@ void mekd1_state::mekd1(machine_config &config)
 	// PB7 input from the bit rate timer that goes high after the timer period elapses.
 	// CB2 "reader control" output
 	// IRQA and IRQB are NC.
-	PIA6821(config, m_pia0);
+	PIA6821(config, m_pia0, 0);
 	m_pia0->readpa_handler().set(FUNC(mekd1_state::pia0_pa_r));
 	m_pia0->readpb_handler().set(FUNC(mekd1_state::pia0_pb_r));
 	m_pia0->writepa_handler().set(FUNC(mekd1_state::pia0_pa_w));
@@ -427,7 +424,7 @@ void mekd1_state::mekd1(machine_config &config)
 	m_pia0->cb2_handler().set(FUNC(mekd1_state::pia0_cb2_w));
 
 	// User PIA. All the I/O lines are available at P2.
-	PIA6821(config, m_pia1);
+	PIA6821(config, m_pia1, 0);
 	m_pia1->irqa_handler().set("mainirq", FUNC(input_merger_device::in_w<0>));
 	m_pia1->irqb_handler().set("mainirq", FUNC(input_merger_device::in_w<1>));
 
@@ -459,9 +456,6 @@ ROM_START( mekd1 )
 	ROM_REGION( 0x0200, "mcm6830l7", 0 )
 	ROM_LOAD("mikbugv9.bin", 0x0000, 0x0200, CRC(f5ff896f) SHA1(32990115ad9eebe7a1a5a03b4b1ea83360b1820f))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

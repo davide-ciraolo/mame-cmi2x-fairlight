@@ -26,8 +26,6 @@
 #include "akkaarrh.lh"
 
 
-namespace {
-
 class akkaarrh_state : public driver_device
 {
 public:
@@ -439,7 +437,6 @@ ROM_START( akkaarrh )
 	 ROM_LOAD( "akka_mo3.b11", 0x3000, 0x1000, CRC(adcf6a36) SHA1(0555a252ba39400d2c533add6ac492926674d6ad) )
 ROM_END
 
-} // anonymous namespace
 
 
 /*************************************

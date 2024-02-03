@@ -68,18 +68,18 @@ protected:
 	virtual void video_start() override;
 
 private:
-	void nmi_enable_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(nmi_enable_w);
 	void nmi_ack_w(u8 data);
 	void sound_nmi_ack_w(u8 data);
 
 	template <u8 Which> u8 ayreset_r();
 
-	void palette_bank_0_w(int state);
-	void palette_bank_1_w(int state);
-	void flipscreen_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(palette_bank_0_w);
+	DECLARE_WRITE_LINE_MEMBER(palette_bank_1_w);
+	DECLARE_WRITE_LINE_MEMBER(flipscreen_w);
 
 	void palette(palette_device &palette) const;
-	void vblank_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank_irq);
 
 	IRQ_CALLBACK_MEMBER(generic_irq_ack);
 
@@ -150,17 +150,17 @@ void munchmo_state::palette(palette_device &palette) const
 	}
 }
 
-void munchmo_state::palette_bank_0_w(int state)
+WRITE_LINE_MEMBER(munchmo_state::palette_bank_0_w)
 {
 	m_palette_bank = (state ? 1 : 0) | (m_palette_bank & 2);
 }
 
-void munchmo_state::palette_bank_1_w(int state)
+WRITE_LINE_MEMBER(munchmo_state::palette_bank_1_w)
 {
 	m_palette_bank = (state ? 2 : 0) | (m_palette_bank & 1);
 }
 
-void munchmo_state::flipscreen_w(int state)
+WRITE_LINE_MEMBER(munchmo_state::flipscreen_w)
 {
 	m_flipscreen = state;
 }
@@ -277,13 +277,13 @@ u32 munchmo_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap, co
  *
  *************************************/
 
-void munchmo_state::nmi_enable_w(int state)
+WRITE_LINE_MEMBER(munchmo_state::nmi_enable_w)
 {
 	m_nmi_enable = state;
 }
 
 // trusted through schematics, NMI and IRQ triggers at vblank, at the same time (!)
-void munchmo_state::vblank_irq(int state)
+WRITE_LINE_MEMBER(munchmo_state::vblank_irq)
 {
 	if (state)
 	{

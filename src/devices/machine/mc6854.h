@@ -38,18 +38,18 @@ public:
 	uint8_t dma_r(){ return read(2); }
 
 	/* low-level, bit-based interface */
-	void set_rx(int state);
+	DECLARE_WRITE_LINE_MEMBER( set_rx );
 
 	/* high-level, frame-based interface */
 	int send_frame( uint8_t* data, int length ); /* ret -1 if busy */
 
 	/* control lines */
-	void set_cts(int state); /* 1 = clear-to-send, 0 = busy */
-	void set_dcd(int state); /* 1 = carrier, 0 = no carrier */
+	DECLARE_WRITE_LINE_MEMBER( set_cts ); /* 1 = clear-to-send, 0 = busy */
+	DECLARE_WRITE_LINE_MEMBER( set_dcd ); /* 1 = carrier, 0 = no carrier */
 
 	/* clock */
-	void rxc_w(int state);
-	void txc_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( rxc_w );
+	DECLARE_WRITE_LINE_MEMBER( txc_w );
 
 protected:
 	// device-level overrides

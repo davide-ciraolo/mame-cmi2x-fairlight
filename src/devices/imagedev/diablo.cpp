@@ -35,12 +35,12 @@ DEFINE_DEVICE_TYPE(DIABLO, diablo_image_device, "diablo_image", "Diablo")
 //-------------------------------------------------
 
 diablo_image_device::diablo_image_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
-	: harddisk_image_base_device(mconfig, DIABLO, tag, owner, clock)
-	, m_chd(nullptr)
-	, m_hard_disk_handle()
-	, m_device_image_load(*this)
-	, m_device_image_unload(*this)
-	, m_interface(nullptr)
+	: harddisk_image_base_device(mconfig, DIABLO, tag, owner, clock),
+		m_chd(nullptr),
+		m_hard_disk_handle(nullptr),
+		m_device_image_load(*this),
+		m_device_image_unload(*this),
+		m_interface(nullptr)
 {
 }
 
@@ -81,20 +81,25 @@ void diablo_image_device::device_start()
 
 	// try to locate the CHD from a DISK_REGION
 	chd_file *handle = machine().rom_load().get_disk_handle(tag());
-	if (handle)
-		m_hard_disk_handle.reset(new hard_disk_file(handle));
+	if (handle != nullptr)
+	{
+		m_hard_disk_handle = new hard_disk_file(handle);
+	}
 	else
-		m_hard_disk_handle.reset();
+	{
+		m_hard_disk_handle = nullptr;
+	}
 }
 
 void diablo_image_device::device_stop()
 {
-	m_hard_disk_handle.reset();
+	if (m_hard_disk_handle)
+		delete m_hard_disk_handle;
 }
 
-std::pair<std::error_condition, std::string> diablo_image_device::call_load()
+image_init_result diablo_image_device::call_load()
 {
-	std::error_condition our_result;
+	image_init_result our_result;
 
 	our_result = internal_load_dsk();
 	/* Check if there is an image_load callback defined */
@@ -103,11 +108,11 @@ std::pair<std::error_condition, std::string> diablo_image_device::call_load()
 		/* Let the override do some additional work/checks */
 		our_result = m_device_image_load(*this);
 	}
-	return std::make_pair(our_result, std::string());
+	return our_result;
 
 }
 
-std::pair<std::error_condition, std::string> diablo_image_device::call_create(int create_format, util::option_resolution *create_args)
+image_init_result diablo_image_device::call_create(int create_format, util::option_resolution *create_args)
 {
 	if (!create_args)
 		throw emu_fatalerror("diablo_image_device::call_create: Expected create_args to not be nullptr");
@@ -127,25 +132,31 @@ std::pair<std::error_condition, std::string> diablo_image_device::call_create(in
 	if (!err)
 		m_origchd.create(std::move(proxy), uint64_t(totalsectors) * uint64_t(sectorsize), hunksize, sectorsize, compression);
 	if (err)
-		return std::make_pair(err, std::string());
+		return image_init_result::FAIL;
 
 	/* if we created the image and hence, have metadata to set, set the metadata */
 	err = m_origchd.write_metadata(HARD_DISK_METADATA_TAG, 0, string_format(HARD_DISK_METADATA_FORMAT, cylinders, heads, sectors, sectorsize));
 	m_origchd.close();
 
 	if (err)
-		return std::make_pair(err, std::string());
+		return image_init_result::FAIL;
 
-	return std::make_pair(internal_load_dsk(), std::string());
+	return internal_load_dsk();
 }
 
 void diablo_image_device::call_unload()
 {
-	// Check if there is an image_unload callback defined
-	if (!m_device_image_unload.isnull())
+	/* Check if there is an image_unload callback defined */
+	if ( !m_device_image_unload.isnull() )
+	{
 		m_device_image_unload(*this);
+	}
 
-	m_hard_disk_handle.reset();
+	if (m_hard_disk_handle != nullptr)
+	{
+		delete m_hard_disk_handle;
+		m_hard_disk_handle = nullptr;
+	}
 
 	m_origchd.close();
 	m_diffchd.close();
@@ -195,15 +206,16 @@ static std::error_condition open_disk_diff(emu_options &options, const char *nam
 	return std::errc::no_such_file_or_directory;
 }
 
-std::error_condition diablo_image_device::internal_load_dsk()
+image_init_result diablo_image_device::internal_load_dsk()
 {
 	std::error_condition err;
 
 	m_chd = nullptr;
 
-	m_hard_disk_handle.reset();
+	if (m_hard_disk_handle)
+		delete m_hard_disk_handle;
 
-	// open the CHD file
+	/* open the CHD file */
 	if (loaded_through_softlist())
 	{
 		m_chd = device().machine().rom_load().get_disk_handle(device().subtag("harddriv").c_str());
@@ -234,18 +246,19 @@ std::error_condition diablo_image_device::internal_load_dsk()
 		}
 	}
 
-	if (m_chd)
+	if (m_chd != nullptr)
 	{
-		// open the hard disk file
-		m_hard_disk_handle.reset(new hard_disk_file(m_chd));
-		if (m_hard_disk_handle)
-			return std::error_condition();
+		/* open the hard disk file */
+		m_hard_disk_handle = new hard_disk_file(m_chd);
+		if (m_hard_disk_handle != nullptr)
+			return image_init_result::PASS;
 	}
 
-	// if we had an error, close out the CHD
+	/* if we had an error, close out the CHD */
 	m_origchd.close();
 	m_diffchd.close();
 	m_chd = nullptr;
+	seterror(err, nullptr);
 
-	return err ? err : image_error::UNSPECIFIED;
+	return image_init_result::FAIL;
 }

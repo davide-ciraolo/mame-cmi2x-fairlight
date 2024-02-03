@@ -33,7 +33,7 @@ public:
 	// optional information overrides
 	virtual ioport_constructor device_input_ports() const override;
 
-	void nmi_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( nmi_w );
 
 protected:
 	// device-level overrides

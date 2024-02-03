@@ -41,7 +41,7 @@ private:
 	required_device<output_latch_device> m_data_out;
 	required_device<centronics_device> m_centronics;
 
-	void centronics_busy_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(centronics_busy_w);
 
 	int m_print;
 	int m_busy;

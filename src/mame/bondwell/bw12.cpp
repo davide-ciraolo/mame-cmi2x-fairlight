@@ -32,7 +32,6 @@
 #include "screen.h"
 #include "softlist_dev.h"
 #include "speaker.h"
-#include "utf8.h"
 
 /*
 
@@ -78,8 +77,8 @@ void bw12_state::floppy_motor_on_off()
 	if (m_motor0 || m_motor1)
 	{
 		m_motor_on = 1;
-		m_floppy[0]->mon_w(0);
-		m_floppy[1]->mon_w(0);
+		m_floppy0->mon_w(0);
+		m_floppy1->mon_w(0);
 		m_floppy_timer->adjust(attotime::never);
 	}
 	else
@@ -90,35 +89,35 @@ TIMER_DEVICE_CALLBACK_MEMBER(bw12_state::floppy_motor_off_tick)
 {
 	if (m_motor0 || m_motor1)
 		return;
-	m_floppy[0]->mon_w(1);
-	m_floppy[1]->mon_w(1);
+	m_floppy0->mon_w(1);
+	m_floppy1->mon_w(1);
 
 	m_motor_on = 0;
 }
 
-void bw12_state::ls138_a0_w(int state)
+WRITE_LINE_MEMBER(bw12_state::ls138_a0_w)
 {
 	m_curbank = (m_curbank & 0x02) | state;
 	bankswitch();
 }
 
-void bw12_state::ls138_a1_w(int state)
+WRITE_LINE_MEMBER(bw12_state::ls138_a1_w)
 {
 	m_curbank = (state << 1) | (m_curbank & 0x01);
 	bankswitch();
 }
 
-void bw12_state::init_w(int state)
+WRITE_LINE_MEMBER(bw12_state::init_w)
 {
 }
 
-void bw12_state::motor0_w(int state)
+WRITE_LINE_MEMBER(bw12_state::motor0_w)
 {
 	m_motor0 = state;
 	floppy_motor_on_off();
 }
 
-void bw12_state::motor1_w(int state)
+WRITE_LINE_MEMBER(bw12_state::motor1_w)
 {
 	m_motor1 = state;
 	floppy_motor_on_off();
@@ -330,17 +329,17 @@ MC6845_UPDATE_ROW( bw12_state::crtc_update_row )
 
 /* PIA6821 Interface */
 
-void bw12_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER( bw12_state::write_centronics_busy )
 {
 	m_centronics_busy = state;
 }
 
-void bw12_state::write_centronics_fault(int state)
+WRITE_LINE_MEMBER( bw12_state::write_centronics_fault )
 {
 	m_centronics_fault = state;
 }
 
-void bw12_state::write_centronics_perror(int state)
+WRITE_LINE_MEMBER( bw12_state::write_centronics_perror )
 {
 	m_centronics_perror = state;
 }
@@ -376,7 +375,7 @@ uint8_t bw12_state::pia_pa_r()
 	return data;
 }
 
-void bw12_state::pia_cb2_w(int state)
+WRITE_LINE_MEMBER( bw12_state::pia_cb2_w )
 {
 	if (state)
 	{
@@ -392,24 +391,24 @@ void bw12_state::pia_cb2_w(int state)
 
 /* PIT8253 Interface */
 
-void bw12_state::pit_out2_w(int state)
+WRITE_LINE_MEMBER( bw12_state::pit_out2_w )
 {
 	m_pit_out2 = state;
 }
 
 /* AY-5-3600-PRO-002 Interface */
 
-int bw12_state::ay3600_shift_r()
+READ_LINE_MEMBER( bw12_state::ay3600_shift_r )
 {
 	return BIT(m_modifiers->read(), 0);
 }
 
-int bw12_state::ay3600_control_r()
+READ_LINE_MEMBER( bw12_state::ay3600_control_r )
 {
 	return BIT(m_modifiers->read(), 1);
 }
 
-void bw12_state::ay3600_data_ready_w(int state)
+WRITE_LINE_MEMBER( bw12_state::ay3600_data_ready_w )
 {
 	m_key_stb = state;
 
@@ -550,7 +549,7 @@ void bw12_state::common(machine_config &config)
 	TIMER(config, FLOPPY_TIMER_TAG).configure_generic(FUNC(bw12_state::floppy_motor_off_tick));
 	UPD765A(config, m_fdc, 16_MHz_XTAL / 4, false, true);
 
-	PIA6821(config, m_pia);
+	PIA6821(config, m_pia, 0);
 	m_pia->readpa_handler().set(FUNC(bw12_state::pia_pa_r));
 	m_pia->writepb_handler().set("cent_data_out", FUNC(output_latch_device::write));
 	m_pia->ca2_handler().set(CENTRONICS_TAG, FUNC(centronics_device::write_strobe));

@@ -34,9 +34,6 @@
 #include "sound/mos6581.h"
 #include "video/mos6566.h"
 
-
-namespace {
-
 #define MOS6567_TAG     "u19"
 #define MOS6569_TAG     "u19"
 #define MOS6581_TAG     "u18"
@@ -74,9 +71,7 @@ public:
 		m_hiram(1),
 		m_charen(1),
 		m_va14(1),
-		m_va15(1),
-		m_cass_rd(1),
-		m_iec_srq(1)
+		m_va15(1)
 	{ }
 
 	// ROM
@@ -105,7 +100,7 @@ public:
 	virtual void machine_start() override;
 	virtual void machine_reset() override;
 
-	[[maybe_unused]] void check_interrupts();
+	void check_interrupts();
 	int read_pla(offs_t offset, offs_t va, int rw, int aec, int ba);
 	uint8_t read_memory(offs_t offset, offs_t va, int aec, int ba);
 	void write_memory(offs_t offset, uint8_t data, int aec, int ba);
@@ -130,28 +125,24 @@ public:
 	uint8_t cpu_r();
 	void cpu_w(uint8_t data);
 
-	void write_restore(int state);
-	void exp_dma_w(int state);
-	void exp_reset_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( write_restore );
+	DECLARE_WRITE_LINE_MEMBER( exp_dma_w );
+	DECLARE_WRITE_LINE_MEMBER( exp_reset_w );
 
 	DECLARE_QUICKLOAD_LOAD_MEMBER(quickload_c64);
 
 	uint8_t cia2_pb_r();
 	void cia2_pb_w(uint8_t data);
 
-	void write_user_pa2(int state) { m_user_pa2 = state; }
-	void write_user_pb0(int state) { if (state) m_user_pb |= 1; else m_user_pb &= ~1; }
-	void write_user_pb1(int state) { if (state) m_user_pb |= 2; else m_user_pb &= ~2; }
-	void write_user_pb2(int state) { if (state) m_user_pb |= 4; else m_user_pb &= ~4; }
-	void write_user_pb3(int state) { if (state) m_user_pb |= 8; else m_user_pb &= ~8; }
-	void write_user_pb4(int state) { if (state) m_user_pb |= 16; else m_user_pb &= ~16; }
-	void write_user_pb5(int state) { if (state) m_user_pb |= 32; else m_user_pb &= ~32; }
-	void write_user_pb6(int state) { if (state) m_user_pb |= 64; else m_user_pb &= ~64; }
-	void write_user_pb7(int state) { if (state) m_user_pb |= 128; else m_user_pb &= ~128; }
-
-	void update_cia1_flag() { m_cia1->flag_w(m_cass_rd & m_iec_srq); }
-	void cass_rd_w(int state) { m_cass_rd = state; update_cia1_flag(); }
-	void iec_srq_w(int state) { m_iec_srq = state; update_cia1_flag(); }
+	DECLARE_WRITE_LINE_MEMBER( write_user_pa2 ) { m_user_pa2 = state; }
+	DECLARE_WRITE_LINE_MEMBER( write_user_pb0 ) { if (state) m_user_pb |= 1; else m_user_pb &= ~1; }
+	DECLARE_WRITE_LINE_MEMBER( write_user_pb1 ) { if (state) m_user_pb |= 2; else m_user_pb &= ~2; }
+	DECLARE_WRITE_LINE_MEMBER( write_user_pb2 ) { if (state) m_user_pb |= 4; else m_user_pb &= ~4; }
+	DECLARE_WRITE_LINE_MEMBER( write_user_pb3 ) { if (state) m_user_pb |= 8; else m_user_pb &= ~8; }
+	DECLARE_WRITE_LINE_MEMBER( write_user_pb4 ) { if (state) m_user_pb |= 16; else m_user_pb &= ~16; }
+	DECLARE_WRITE_LINE_MEMBER( write_user_pb5 ) { if (state) m_user_pb |= 32; else m_user_pb &= ~32; }
+	DECLARE_WRITE_LINE_MEMBER( write_user_pb6 ) { if (state) m_user_pb |= 64; else m_user_pb &= ~64; }
+	DECLARE_WRITE_LINE_MEMBER( write_user_pb7 ) { if (state) m_user_pb |= 128; else m_user_pb &= ~128; }
 
 	// memory state
 	int m_loram;
@@ -164,12 +155,9 @@ public:
 
 	// interrupt state
 	int m_exp_dma;
-	int m_cass_rd;
-	int m_iec_srq;
 
 	int m_user_pa2;
 	int m_user_pb;
-
 	void pal(machine_config &config);
 	void ntsc(machine_config &config);
 	void pet64(machine_config &config);
@@ -752,7 +740,7 @@ void c64_state::vic_colorram_map(address_map &map)
 //  INPUT_PORTS( c64 )
 //-------------------------------------------------
 
-void c64_state::write_restore(int state)
+WRITE_LINE_MEMBER( c64_state::write_restore )
 {
 	m_nmi->in_w<1>(!state);
 }
@@ -1368,7 +1356,7 @@ void c64gs_state::cpu_w(uint8_t data)
 //  C64_EXPANSION_INTERFACE( expansion_intf )
 //-------------------------------------------------
 
-void c64_state::exp_dma_w(int state)
+WRITE_LINE_MEMBER( c64_state::exp_dma_w )
 {
 	if (m_exp_dma != state)
 	{
@@ -1378,7 +1366,7 @@ void c64_state::exp_dma_w(int state)
 	}
 }
 
-void c64_state::exp_reset_w(int state)
+WRITE_LINE_MEMBER( c64_state::exp_reset_w )
 {
 	if (!state)
 	{
@@ -1437,10 +1425,8 @@ void c64_state::machine_start()
 	save_item(NAME(m_va14));
 	save_item(NAME(m_va15));
 	save_item(NAME(m_exp_dma));
-	save_item(NAME(m_cass_rd));
-	save_item(NAME(m_iec_srq));
-	save_item(NAME(m_user_pa2));
 	save_item(NAME(m_user_pb));
+	save_item(NAME(m_user_pa2));
 }
 
 
@@ -1532,10 +1518,10 @@ void c64_state::ntsc(machine_config &config)
 	m_cia2->pc_wr_callback().set(m_user, FUNC(pet_user_port_device::write_8));
 
 	PET_DATASSETTE_PORT(config, m_cassette, cbm_datassette_devices, "c1530");
-	m_cassette->read_handler().set(FUNC(c64_state::cass_rd_w));
+	m_cassette->read_handler().set(m_cia1, FUNC(mos6526_device::flag_w));
 
 	cbm_iec_slot_device::add(config, m_iec, "c1541");
-	m_iec->srq_callback().set(FUNC(c64_state::iec_srq_w));
+	m_iec->srq_callback().set(m_cia1, FUNC(mos6526_device::flag_w));
 	m_iec->data_callback().set(m_user, FUNC(pet_user_port_device::write_9));
 
 	VCS_CONTROL_PORT(config, m_joy1, vcs_control_port_devices, nullptr);
@@ -1705,10 +1691,10 @@ void c64_state::pal(machine_config &config)
 	m_cia2->pc_wr_callback().set(m_user, FUNC(pet_user_port_device::write_8));
 
 	PET_DATASSETTE_PORT(config, m_cassette, cbm_datassette_devices, "c1530");
-	m_cassette->read_handler().set(FUNC(c64_state::cass_rd_w));
+	m_cassette->read_handler().set(m_cia1, FUNC(mos6526_device::flag_w));
 
 	cbm_iec_slot_device::add(config, m_iec, "c1541");
-	m_iec->srq_callback().set(FUNC(c64_state::iec_srq_w));
+	m_iec->srq_callback().set(m_cia1, FUNC(mos6526_device::flag_w));
 	m_iec->data_callback().set(m_user, FUNC(pet_user_port_device::write_9));
 
 	VCS_CONTROL_PORT(config, m_joy1, vcs_control_port_devices, nullptr);
@@ -2260,7 +2246,6 @@ ROM_START( clipper )
 	ROM_LOAD( "thdr5.bin", 0x0000, 0x1000, CRC(b4296e62) SHA1(4b6edadbb810c409ece77d5834568fcc2e0bbd61) )
 ROM_END
 
-} // anonymous namespace
 
 
 //**************************************************************************

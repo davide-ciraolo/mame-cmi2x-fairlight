@@ -150,7 +150,7 @@ void supbtime_state::sound_map(address_map &map)
 //  VIDEO
 //**************************************************************************
 
-void supbtime_state::vblank_w(int state)
+WRITE_LINE_MEMBER( supbtime_state::vblank_w )
 {
 	if (state)
 		m_maincpu->set_input_line(M68K_IRQ_6, ASSERT_LINE);

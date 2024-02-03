@@ -210,7 +210,7 @@ void c64_buscard_device::ppi_pc_w(uint8_t data)
 //  Centronics interface
 //-------------------------------------------------
 
-void c64_buscard_device::busy_w(int state)
+WRITE_LINE_MEMBER( c64_buscard_device::busy_w )
 {
 	m_busy = state;
 }

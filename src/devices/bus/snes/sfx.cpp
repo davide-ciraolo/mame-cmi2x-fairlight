@@ -90,7 +90,7 @@ void sns_rom_superfx_device::sfx_map(address_map &map)
 }
 
 
-void sns_rom_superfx_device::snes_extern_irq_w(int state)
+WRITE_LINE_MEMBER(sns_rom_superfx_device::snes_extern_irq_w)
 {
 	write_irq(state);
 }

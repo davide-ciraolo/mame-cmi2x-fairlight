@@ -4,54 +4,19 @@
 
 Photo Play (c) 199? Funworld
 
-TODO (old notes, to be resorted with new PCI conversion):
+Preliminary driver by Angelo Salese
+
+TODO:
 - BIOS CMOS doesn't save at all (needed for setting up the Hard Disk);
 - DISK BOOT FAILURE after EEPROM checking (many unknown IDE cs1 reads/writes);
 - Partition boot sector is missing from the CHD dump, protection?
-- Detects CPU type as "-S 16 MHz"? Sometimes it detects it as 486SX, unknown repro
-  (after fiddling with CMOS settings anyway)
+- Detects CPU type as "-S 16 MHz"? Sometimes it detects it as 486SX, unknown repro (after fiddling with CMOS settings anyway)
 - VGA BIOS reports being a Cirrus Logic GD5436 / 5446, it is unknown what exactly this game uses.
-- PCI hookups (SiS496/SiS497 according to POST), and improve/device-ify SiS85C49x;
+- PCI hookups (no idea about what this uses), and improve/device-ify SiS85C49x;
 - ISA bus cards are completely guessworked;
 - EEPROM timings are hacked (writes mostly fail otherwise);
-- Eventually needs AudioDrive ES688 / ES1688 / ES1788 & ES1868 devices and serial ports "for linking"
-  before actually booting;
+- Eventually needs AudioDrive ES688 / ES1688 / ES1788 & ES1868 devices and serial ports "for linking" before actually booting;
 
-INFO ABOUT SECURITY DONGLES:
-
-Photo Play machines were found with different types of security dongles. They weren't really
-dependant on the version, and you can find the same game version with different dongle type.
-
-Dongle types found on 486 machines:
-
-Blue parallel (without passthrough) dongle with the following components under expoxy resin:
- -Atmel AT89C2051 MCU
- -Xtal 11.05MHz
- -24C08W6 SEEPROM
- -HC132
-
-Blue or black Aladdin parallel dongle (with passthrough) with the following components:
- -Aladdin Marvin2 MCU (unknown core)
- -Custom Aladdin chip marked as ALDN1 V28 (serial EEPROM?)
-
-Yellow Marx CBN/CBV parallel dongle (with passthrough) with the following components:
- -Marx CBN/CBV/CBS MCU (unknown core)
- -74HC00
-
-Yellow serial dongle (with passthrough) with the following components:
- -Smartcard (SAM, ID-000 size), with ATR "3B8281317643C002C5" (probably Siemens CardOS/M2 V2.01 with SLE44CxxS MCU)
- -AT90S2313 MCU
- -3.6864 Xtal
- -3 x 74HC14D
-
-On newer models (Pentium and better), other kinds of dongles can also be found:
-
-Parallel (without passthrough) dongle with the following components:
- -SX28AC/DP MCU (different manufacturers: Parallax, Ubicom, etc.)
- -On some versions there's also a SEEPROM (93C46LN, etc.)
-
-USB Dongle
- -GNT FNW USB Token (http://www.softidea.sk/doc/gnt_datasheet_en.pdf)
 
 *******************************************************************************************************/
 
@@ -64,7 +29,7 @@ USB Dongle
 #include "machine/lpci.h"
 #include "machine/pckeybrd.h"
 #include "machine/idectrl.h"
-#include "video/pc_vga_cirrus.h"
+#include "video/clgd542x.h"
 
 namespace {
 
@@ -254,7 +219,9 @@ void photoply_state::photoply_io(address_map &map)
 //  map(0x0278, 0x027f).ram(); //parallel port 2
 	map(0x0370, 0x0377).rw("ide2", FUNC(ide_controller_32_device::cs1_r), FUNC(ide_controller_32_device::cs1_w));
 //  map(0x0378, 0x037f).ram(); //parallel port
-	map(0x03b0, 0x03df).m("vga", FUNC(cirrus_gd5446_device::io_map));
+	map(0x03b0, 0x03bf).rw("vga", FUNC(cirrus_gd5446_device::port_03b0_r), FUNC(cirrus_gd5446_device::port_03b0_w));
+	map(0x03c0, 0x03cf).rw("vga", FUNC(cirrus_gd5446_device::port_03c0_r), FUNC(cirrus_gd5446_device::port_03c0_w));
+	map(0x03d0, 0x03df).rw("vga", FUNC(cirrus_gd5446_device::port_03d0_r), FUNC(cirrus_gd5446_device::port_03d0_w));
 
 	map(0x03f0, 0x03f7).rw("ide", FUNC(ide_controller_32_device::cs1_r), FUNC(ide_controller_32_device::cs1_w));
 
@@ -350,7 +317,7 @@ ROM_START(photoply98sp)
 	// Seagate ST31722A
 	// 3303 CYL 1704MB 16 HEADS 63 SECTORS
 	// Funworld label: Feb 1998
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "photoplay98sp", 0, BAD_DUMP SHA1(c0d7964edaff6b99184ca64e76c41eaa07abe019) ) // From an operated HDD. A clean one must be recreated from the CDs
 ROM_END
 
@@ -421,7 +388,7 @@ ROM_START(photoply99sp)
 	// Quantum Fireball EX3.2A
 	// C/H/S: 3.2 - 6256/16/63
 	// Funworld label: 09.02.1999
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "photoplay99sp", 0, BAD_DUMP SHA1(887e5b8c931d6122a1c3a8eda5cb919eb162eced) ) // From an operated HDD. A clean one must be recreated from the CDs
 ROM_END
 
@@ -436,7 +403,7 @@ ROM_START(photoply99nl)
 	ROM_REGION(0x8000, "video_bios", 0 )
 	ROM_LOAD("cl-gd5446_pci_vga_bios_version_1.31.u2", 0x0000, 0x8000, CRC(61f8cac7) SHA1(6e54aadfe10dfa5c7e417a054e9a64499a99083c) ) // Cirrus Logic/Quadtel CL-GD5446 PCI VGA BIOS v1.31 , AT27C256R
 
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "photoplay99nl", 0, BAD_DUMP SHA1(e3ff2a64f51e0ba07d08cd49cd56cdc866401b4f) ) // Recreated from the CDs using a VM
 ROM_END
 
@@ -453,7 +420,7 @@ ROM_START(photoply2k)
 	ROM_REGION(0x8000, "video_bios", 0 )
 	ROM_LOAD("cl-gd5446_pci_vga_bios_version_1.25.u2", 0x000000, 0x8000, CRC(7a859659) SHA1(ff667218261969c48082ec12aa91088a01b0cb2a) ) // Cirrus Logic/Quadtel CL-GD5436/46 PCI VGA BIOS v1.25
 
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "pp201", 0, SHA1(23e1940d485d19401e7d0ad912ddad2cf2ea10b4) )
 ROM_END
 
@@ -475,7 +442,7 @@ ROM_START(photoply2ksp)
 
 	// Western Digital PhD1000-00H
 	// CHS: 2100,16,63
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "photoplay2ksp", 0, BAD_DUMP SHA1(2b4b837d85bf8a41d832533afb9363fdb16f7a30) ) // From an operated HDD. A clean one must be recreated from the CDs
 ROM_END
 
@@ -496,7 +463,7 @@ ROM_START(photoply2knl)
 	ROM_REGION(0x800, "dongle", 0)
 	ROM_LOAD("marx_cbn-v-s.bin", 0x000, 0x800, NO_DUMP ) // Size unknown
 
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "photoplay2knl", 0, BAD_DUMP SHA1(75aa190913e798d04db88325006c61965f5034ef) ) // Recreated from the CDs using a VM
 ROM_END
 
@@ -511,7 +478,7 @@ ROM_START(photoply2k1it)
 	ROM_REGION(0x8000, "video_bios", 0 )
 	ROM_LOAD("cl-gd5446_pci_vga_bios_version_1.31.u2", 0x0000, 0x8000, CRC(61f8cac7) SHA1(6e54aadfe10dfa5c7e417a054e9a64499a99083c) ) // Cirrus Logic/Quadtel CL-GD5446 PCI VGA BIOS v1.31 , AT27C256R
 
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "photoplay2k1it", 0, BAD_DUMP SHA1(274ea0ebc051d0f4846bc58a039d342241b4cc28) ) // Manually rebuilded by adding the resources for the folder C:\QP_MSTR from the 2001_NL version
 
 	// Recovery discs for Photo Play 2001
@@ -557,7 +524,7 @@ ROM_START(photoply2k1nl)
 	ROM_REGION(0x8000, "video_bios", 0 )
 	ROM_LOAD("cl-gd5446_pci_vga_bios_version_1.31.u2", 0x0000, 0x8000, CRC(61f8cac7) SHA1(6e54aadfe10dfa5c7e417a054e9a64499a99083c) ) // Cirrus Logic/Quadtel CL-GD5446 PCI VGA BIOS v1.31 , AT27C256R
 
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "photoplay2k1nl", 0, BAD_DUMP SHA1(87c9417119e9566f65db0f1b0f2182db7712c634) ) // Recreated from the CDs using a VM
 
 	// Recovery discs for Photo Play 2001
@@ -603,7 +570,7 @@ ROM_START(photoply2k1mtnl)
 	ROM_REGION(0x8000, "video_bios", 0 )
 	ROM_LOAD("cl-gd5446_pci_vga_bios_version_1.31.u2", 0x0000, 0x8000, CRC(61f8cac7) SHA1(6e54aadfe10dfa5c7e417a054e9a64499a99083c) ) // Cirrus Logic/Quadtel CL-GD5446 PCI VGA BIOS v1.31 , AT27C256R
 
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "photoplay2k1mtnl", 0, BAD_DUMP SHA1(cfa25ce036be9c2379a104a3b50d2aefd851ceeb) ) // Recreated from the CDs using a VM
 ROM_END
 
@@ -618,7 +585,7 @@ ROM_START(photoply2k2be)
 	ROM_REGION(0x8000, "video_bios", 0 )
 	ROM_LOAD("cl-gd5446_pci_vga_bios_version_1.31.u2", 0x0000, 0x8000, CRC(61f8cac7) SHA1(6e54aadfe10dfa5c7e417a054e9a64499a99083c) ) // Cirrus Logic/Quadtel CL-GD5446 PCI VGA BIOS v1.31 , AT27C256R
 
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	DISK_IMAGE( "photoplay2k2be", 0, BAD_DUMP SHA1(29719b5db60f4cc3787a3a9f6a5937226e282d46) ) // Recreated from the CDs using a VM
 ROM_END
 
@@ -636,7 +603,7 @@ ROM_START(photoply2k4)
 	ROM_REGION(0x8000, "video_bios", 0 )
 	ROM_LOAD("cl-gd5446_pci_vga_bios_version_1.31.u2", 0x000000, 0x8000, BAD_DUMP CRC(7a859659) SHA1(ff667218261969c48082ec12aa91088a01b0cb2a) ) // Cirrus Logic/Quadtel CL-GD5436/46 PCI VGA BIOS v1.25
 
-	DISK_REGION( "ide:0:hdd" )
+	DISK_REGION( "ide:0:hdd:image" )
 	// CYLS:1023,HEADS:64,SECS:63,BPS:512.
 	DISK_IMAGE( "pp2004", 0, SHA1(a3f8861cf91cf7e7446ec931f812e774ada20802) )
 ROM_END
@@ -644,15 +611,14 @@ ROM_END
 } // anonymous namespace
 
 
-// QA status from testing with pcipc (shutms11 too new for this)
-GAME( 1998, photoply98sp,    0,             photoply,         photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 1998 (Spain)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // "Non system disk or I/O error"
-GAME( 1999, photoply99sp,    0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 1999 (Spain)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // "CON device not opened. System halted" before PTS-DOS
-GAME( 1999, photoply99nl,    photoply99sp,  photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 1999 (Netherlands)",         MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // Boots to funworld logo, enter into an EULA screen that needs trackball inputs to accept
-GAME( 2000, photoply2k,      0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2000 (v2.01)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // Fails PTS-DOS bootstrap around PC=7dc5, likely bad dump
-GAME( 2000, photoply2ksp,    photoply2k,    photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2000 (Spain)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // Fails PTS-DOS bootstrap with various memory management errors (in German), likely bad dump
-GAME( 2000, photoply2knl,    photoply2k,    photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2000 (Netherlands)",         MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // Punts in PTS-DOS after failing ES1868 detection, keyboard is unresponsive
-GAME( 2001, photoply2k1it,   0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2001 (Italy)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // Boots to funworld logo, draws a "TouchScreen Error" with countdown that will hard reset the machine
-GAME( 2001, photoply2k1nl,   photoply2k1it, photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2001 (Netherlands)",         MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // "Non system disk or I/O error"
-GAME( 2001, photoply2k1mtnl, photoply2k1it, photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play Masters 2001 (Netherlands)", MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // Fails LOGO display at boot (bad dump?), fails touchscreen and ES1868 detection, draws a "TouchScreen Error" with countdown that will hard reset the machine
-GAME( 2002, photoply2k2be,   0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2002 (Belgium)",             MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // Boots to funworld logo, draws a "TouchScreen Error" with countdown that will hard reset the machine
-GAME( 2004, photoply2k4,     0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2004",                       MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION ) // Boots to funworld logo, draws a "TouchScreen Error" with countdown that will hard reset the machine
+GAME( 1998, photoply98sp,    0,             photoply,         photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 1998 (Spain)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 1999, photoply99sp,    0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 1999 (Spain)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 1999, photoply99nl,    photoply99sp,  photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 1999 (Netherlands)",         MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 2000, photoply2k,      0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2000 (v2.01)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 2000, photoply2ksp,    photoply2k,    photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2000 (Spain)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 2000, photoply2knl,    photoply2k,    photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2000 (Netherlands)",         MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 2001, photoply2k1it,   0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2001 (Italy)",               MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 2001, photoply2k1nl,   photoply2k1it, photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2001 (Netherlands)",         MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 2001, photoply2k1mtnl, photoply2k1it, photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play Masters 2001 (Netherlands)", MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 2002, photoply2k2be,   0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2002 (Belgium)",             MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )
+GAME( 2004, photoply2k4,     0,             photoply_dx4_100, photoply, photoply_state, empty_init, ROT0, "Funworld", "Photo Play 2004",                       MACHINE_NOT_WORKING|MACHINE_NO_SOUND|MACHINE_UNEMULATED_PROTECTION )

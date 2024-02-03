@@ -54,6 +54,8 @@ private:
 	void p3_w(uint8_t data);
 	uint8_t p4_r();
 	void p4_w(uint8_t data);
+
+	void adam_kb_mem(address_map &map);
 };
 
 

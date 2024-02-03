@@ -46,9 +46,7 @@
 
     A few derived OPRs not mentioned in M-5001-27 are documented in
     the listing of the updated vocabulary table for the TRA-patched
-    version of UT3 and in a listing of "Macro ii-a=part 2" dated
-    3-61 (though this also includes some OPRs which were probably
-    added after 1960).
+    version of UT3.
 
     Mnemonics and relative timing of operate class micro-instructions
     after 1960 (as given in M-5001-27-3 and M-5001-27-4):
@@ -85,8 +83,8 @@
 
     Previously supported Input-Output Stop group codes were unchanged.
     However, the old semantics of R1L cycling AC left after reading one
-    line are no longer obtainable because AMB now occurs before rather than
-    after IOS. Anticipation of this incompatibity (q.v. M-5001-16) is
+    line are no longer obtainable because AMB now occurs after rather than
+    before IOS. Anticipation of this incompatibity (q.v. M-5001-16) is
     likely why R1L is unlisted in M-5001-27.
 
 ***************************************************************************/
@@ -164,10 +162,6 @@ void tx0_64kw_disassembler::dasm_opr(std::ostream &stream, u32 inst)
 
 	case 0600051:
 		stream << "amz";
-		break;
-
-	case 0600072:
-		stream << "lcd";
 		break;
 
 	case 0600100:
@@ -286,10 +280,6 @@ void tx0_64kw_disassembler::dasm_opr(std::ostream &stream, u32 inst)
 		stream << "lcc";
 		break;
 
-	case 0740072:
-		stream << "laz";
-		break;
-
 	case 0740200:
 		stream << "cal";
 		break;
@@ -315,7 +305,10 @@ void tx0_64kw_disassembler::dasm_opr(std::ostream &stream, u32 inst)
 		break;
 
 	default:
-		util::stream_format(stream, "opr %o", inst & 0177777);
+		if (inst >= 0760000)
+			util::stream_format(stream, "ios %o", inst & 017777);
+		else
+			util::stream_format(stream, "opr %o", inst & 0177777);
 		break;
 	}
 }
@@ -852,11 +845,11 @@ offs_t tx0_8kw_disassembler::disassemble(std::ostream &stream, offs_t pc, const 
 			break;
 
 		case 0140065:
-			stream << "orc"; // as in M-5001-19-1
+			stream << "oraUcom";  // M-5001-19-1 names this 'orc'
 			break;
 
 		case 0140067:
-			stream << "anc"; // as in M-5001-19-1
+			stream << "anaUcom";  // M-5001-19-1 names this 'anc'
 			break;
 
 		case 0140205:

@@ -40,9 +40,6 @@
 #include "emu.h"
 #include "opus3.h"
 
-#include "formats/acorn_dsk.h"
-#include "formats/fsd_dsk.h"
-
 
 //**************************************************************************
 //  DEVICE DEFINITIONS

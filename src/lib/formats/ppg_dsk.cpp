@@ -2,7 +2,7 @@
 // copyright-holders:Sergey Svishchev
 /*********************************************************************
 
-    formats/ppg_dsk.cpp
+    formats/ppg_dsk.c
 
     PPG Waveterm formats
 
@@ -14,17 +14,17 @@ ppg_format::ppg_format() : wd177x_format(formats)
 {
 }
 
-const char *ppg_format::name() const noexcept
+const char *ppg_format::name() const
 {
 	return "ppg";
 }
 
-const char *ppg_format::description() const noexcept
+const char *ppg_format::description() const
 {
 	return "PPG Waveterm disk image";
 }
 
-const char *ppg_format::extensions() const noexcept
+const char *ppg_format::extensions() const
 {
 	return "wta";
 }

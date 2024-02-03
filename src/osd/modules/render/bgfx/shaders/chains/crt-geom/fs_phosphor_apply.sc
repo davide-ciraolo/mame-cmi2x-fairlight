@@ -28,15 +28,15 @@ void main()
   vec4 screen   = texture2D(s_screen, v_texCoord);
   vec4 phosphor = texture2D(s_phosphor, v_texCoord);
 
-  vec4 cscrn = pow(screen, vec4(vec3_splat(u_gamma.x), 1.0));
-  vec4 cphos = pow(phosphor, vec4(vec3_splat(u_gamma.x), 1.0));
+  vec3 cscrn = pow(screen.rgb, vec3_splat(u_gamma.x));
+  vec3 cphos = pow(phosphor.rgb, vec3_splat(u_gamma.x));
 
   // encode the upper 2 bits of the time elapsed in the lower 2 bits of b
   float t = 255.0*phosphor.a + fract(phosphor.b*255.0/4.0)*1024.0;
 
-  cphos *= vec4_splat( u_phosphor_amplitude.x * decay(t) );
+  cphos *= vec3_splat( u_phosphor_amplitude.x * decay(t) );
 
-  vec4 col = pow(cscrn + cphos, vec4(vec3_splat(1.0/u_gamma.x), 1.0));
+  vec3 col = pow(cscrn + cphos, vec3_splat(1.0/u_gamma.x));
 
-  gl_FragColor = col;
+  gl_FragColor = vec4(col, 1.0);
 }

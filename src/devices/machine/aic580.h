@@ -34,10 +34,11 @@ public:
 	void mpu_map(address_map &map);
 
 	// port B DMA interface
-	void breq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(breq_w);
 
 protected:
-	// device_t implementation
+	// device-specific overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 

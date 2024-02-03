@@ -43,7 +43,7 @@ protected:
 
 private:
 	MC6845_UPDATE_ROW( crtc_update_row );
-	void vsync_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( vsync_w );
 
 	inline void set_irq(int state);
 

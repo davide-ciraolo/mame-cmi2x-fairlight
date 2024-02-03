@@ -5,9 +5,7 @@
 
 #include "fs_prodos.h"
 #include "ap_dsk35.h"
-#include "fsblk.h"
 
-#include "multibyte.h"
 #include "strformat.h"
 
 #include <stdexcept>
@@ -88,10 +86,12 @@ const u8 prodos_impl::boot[512] = {
 	0xf0, 0xf5, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-void prodos_image::enumerate_f(floppy_enumerator &fe) const
+void prodos_image::enumerate_f(floppy_enumerator &fe, u32 form_factor, const std::vector<u32> &variants) const
 {
-	fe.add(FLOPPY_APPLE_GCR_FORMAT, floppy_image::FF_35, floppy_image::DSDD, 819200, "prodos_800k", "Apple ProDOS 800K");
-	fe.add(FLOPPY_APPLE_GCR_FORMAT, floppy_image::FF_35, floppy_image::SSDD, 409600, "prodos_400k", "Apple ProDOS 400K");
+	if(has(form_factor, variants, floppy_image::FF_35, floppy_image::DSDD))
+		fe.add(FLOPPY_APPLE_GCR_FORMAT, 819200, "prodos_800k", "Apple ProDOS 800K");
+	if(has(form_factor, variants, floppy_image::FF_35, floppy_image::SSDD))
+		fe.add(FLOPPY_APPLE_GCR_FORMAT, 409600, "prodos_400k", "Apple ProDOS 400K");
 }
 
 std::unique_ptr<filesystem_t> prodos_image::mount(fsblk_t &blockdev) const
@@ -361,21 +361,21 @@ std::pair<err_t, meta_data> prodos_impl::metadata(const std::vector<std::string>
 
 	meta_data res;
 	if(dir) {
-		u8 type = entry[0];
-		std::string_view name = rstr(entry+1, type & 0xf);
+		u8 type = r8(entry);
+		std::string name = rstr(entry+1, type & 0xf);
 		res.set(meta_name::name, name);
 	} else {
-		u8 type = entry[0];
-		std::string_view name = rstr(entry+1, type & 0xf);
+		u8 type = r8(entry);
+		std::string name = rstr(entry+1, type & 0xf);
 		type >>= 4;
 		res.set(meta_name::name, name);
 		if(type == 5) {
-			auto rootblk = m_blockdev.get(get_u16le(entry+0x11));
+			auto rootblk = m_blockdev.get(r16l(entry+0x11));
 			res.set(meta_name::length, rootblk.r24l(0x005));
 			res.set(meta_name::rsrc_length, rootblk.r24l(0x105));
 
 		} else if(type >= 1 && type <= 3)
-			res.set(meta_name::length, get_u24le(entry + 0x15));
+			res.set(meta_name::length, r24l(entry + 0x15));
 
 		else
 			return std::make_pair(ERR_UNSUPPORTED, meta_data());
@@ -442,13 +442,13 @@ std::pair<err_t, std::vector<u8>> prodos_impl::file_read(const std::vector<std::
 		return std::make_pair(ERR_NOT_FOUND, std::vector<u8>());
 
 	const u8 *entry = blk.rodata() + off;
-	u8 type = entry[0] >> 4;
+	u8 type = r8(entry) >> 4;
 
 	if(type >= 1 && type <= 3)
-		return any_read(type, get_u16le(entry+0x11), get_u24le(entry + 0x15));
+		return any_read(type, r16l(entry+0x11), r24l(entry + 0x15));
 
 	else if(type == 5) {
-		auto kblk = m_blockdev.get(get_u16le(entry+0x11));
+		auto kblk = m_blockdev.get(r16l(entry+0x11));
 		return any_read(kblk.r8(0x000), kblk.r16l(0x001), kblk.r24l(0x005));
 
 	} else
@@ -462,10 +462,10 @@ std::pair<err_t, std::vector<u8>> prodos_impl::file_rsrc_read(const std::vector<
 		return std::make_pair(ERR_NOT_FOUND, std::vector<u8>());
 
 	const u8 *entry = blk.rodata() + off;
-	u8 type = entry[0] >> 4;
+	u8 type = r8(entry) >> 4;
 
 	if(type == 5) {
-		auto kblk = m_blockdev.get(get_u16le(entry+0x11));
+		auto kblk = m_blockdev.get(r16l(entry+0x11));
 		return any_read(kblk.r8(0x100), kblk.r16l(0x101), kblk.r24l(0x105));
 
 	} else

@@ -129,11 +129,6 @@ References:
 ****************************************************************************/
 
 #include "emu.h"
-#include "bus/rs232/exorterm.h"
-#include "bus/rs232/null_modem.h"
-#include "bus/rs232/pty.h"
-#include "bus/rs232/rs232.h"
-#include "bus/rs232/terminal.h"
 #include "cpu/m6800/m6800.h"
 #include "machine/bankdev.h"
 #include "machine/input_merger.h"
@@ -142,12 +137,10 @@ References:
 #include "machine/mc14411.h"
 #include "machine/m68sfdc.h"
 
+#include "bus/rs232/rs232.h"
 #include "imagedev/printer.h"
 
 #include "formats/mdos_dsk.h"
-
-
-namespace {
 
 class exorciser_state : public driver_device
 {
@@ -169,13 +162,16 @@ public:
 		, m_printer(*this, "printer")
 		, m_acia_prn(*this, "acia_prn")
 		, m_fdc(*this, "fdc")
-		, m_floppy(*this, "floppy%u", 0U)
+		, m_floppy0(*this, "floppy0")
+		, m_floppy1(*this, "floppy1")
+		, m_floppy2(*this, "floppy2")
+		, m_floppy3(*this, "floppy3")
 	{ }
 
 	void exorciser(machine_config &config);
 
 	DECLARE_INPUT_CHANGED_MEMBER(maincpu_clock_change);
-	void abort_key_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(abort_key_w);
 
 protected:
 	virtual void machine_reset() override;
@@ -185,7 +181,7 @@ private:
 	void dbg_map(address_map &map);
 	void mem_map(address_map &map);
 
-	void irq_line_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_line_w);
 	u8 m_irq;
 	address_space *m_banked_space;
 	u8 main_r(offs_t offset);
@@ -207,17 +203,16 @@ private:
 	required_device<printer_image_device> m_printer;
 	required_device<acia6850_device> m_acia_prn;
 	required_device<m68sfdc_device> m_fdc;
-	required_device_array<floppy_connector, 4> m_floppy;
 
 	// RS232 bit rate generator clocks
-	void write_f1_clock(int state);
-	void write_f3_clock(int state);
-	[[maybe_unused]] void write_f5_clock(int state);
-	void write_f7_clock(int state);
-	void write_f8_clock(int state);
-	void write_f9_clock(int state);
-	[[maybe_unused]] void write_f11_clock(int state);
-	void write_f13_clock(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_f1_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f3_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f5_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f7_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f8_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f9_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f11_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f13_clock);
 
 	u8 m_restart_count;
 
@@ -225,10 +220,10 @@ private:
 	TIMER_CALLBACK_MEMBER(assert_trace);
 
 	void pia_dbg_pa_w(u8 data);
-	int pia_dbg_ca1_r();
+	DECLARE_READ_LINE_MEMBER(pia_dbg_ca1_r);
 	void pia_dbg_pb_w(u8 data);
-	void pia_dbg_ca2_w(int state);
-	void pia_dbg_cb2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pia_dbg_ca2_w);
+	DECLARE_WRITE_LINE_MEMBER(pia_dbg_cb2_w);
 	u16 m_stop_address;
 	u8 m_stop_enabled;
 
@@ -241,6 +236,10 @@ private:
 	static void exorciser_rs232_devices(device_slot_interface &device);
 
 	static void floppy_formats(format_registration &fr);
+	required_device<floppy_connector> m_floppy0;
+	required_device<floppy_connector> m_floppy1;
+	required_device<floppy_connector> m_floppy2;
+	required_device<floppy_connector> m_floppy3;
 };
 
 void exorciser_state::dbg_map(address_map &map)
@@ -322,7 +321,7 @@ INPUT_CHANGED_MEMBER(exorciser_state::maincpu_clock_change)
 }
 
 
-void exorciser_state::write_f1_clock(int state)
+WRITE_LINE_MEMBER(exorciser_state::write_f1_clock)
 {
 	if (BIT(m_rs232_baud->read(), 0))
 	{
@@ -334,7 +333,7 @@ void exorciser_state::write_f1_clock(int state)
 	m_acia_prn->write_rxc(state);
 }
 
-void exorciser_state::write_f3_clock(int state)
+WRITE_LINE_MEMBER(exorciser_state::write_f3_clock)
 {
 	if (BIT(m_rs232_baud->read(), 1))
 	{
@@ -343,7 +342,7 @@ void exorciser_state::write_f3_clock(int state)
 	}
 }
 
-void exorciser_state::write_f5_clock(int state)
+WRITE_LINE_MEMBER(exorciser_state::write_f5_clock)
 {
 	if (BIT(m_rs232_baud->read(), 2))
 	{
@@ -352,7 +351,7 @@ void exorciser_state::write_f5_clock(int state)
 	}
 }
 
-void exorciser_state::write_f7_clock(int state)
+WRITE_LINE_MEMBER(exorciser_state::write_f7_clock)
 {
 	if (BIT(m_rs232_baud->read(), 3))
 	{
@@ -361,7 +360,7 @@ void exorciser_state::write_f7_clock(int state)
 	}
 }
 
-void exorciser_state::write_f8_clock(int state)
+WRITE_LINE_MEMBER(exorciser_state::write_f8_clock)
 {
 	if (BIT(m_rs232_baud->read(), 4))
 	{
@@ -370,7 +369,7 @@ void exorciser_state::write_f8_clock(int state)
 	}
 }
 
-void exorciser_state::write_f9_clock(int state)
+WRITE_LINE_MEMBER(exorciser_state::write_f9_clock)
 {
 	if (BIT(m_rs232_baud->read(), 5))
 	{
@@ -379,7 +378,7 @@ void exorciser_state::write_f9_clock(int state)
 	}
 }
 
-void exorciser_state::write_f11_clock(int state)
+WRITE_LINE_MEMBER(exorciser_state::write_f11_clock)
 {
 	if (BIT(m_rs232_baud->read(), 6))
 	{
@@ -388,7 +387,7 @@ void exorciser_state::write_f11_clock(int state)
 	}
 }
 
-void exorciser_state::write_f13_clock(int state)
+WRITE_LINE_MEMBER(exorciser_state::write_f13_clock)
 {
 	if (BIT(m_rs232_baud->read(), 7))
 	{
@@ -484,13 +483,13 @@ void exorciser_state::pia_dbg_pa_w(u8 data)
 	m_stop_address = (m_stop_address & 0xff00) | data;
 }
 
-void exorciser_state::abort_key_w(int state)
+WRITE_LINE_MEMBER(exorciser_state::abort_key_w)
 {
 	m_pia_dbg->ca1_w(!state);
 	m_mainnmi->input_merger_device::in_w<2>(state);
 }
 
-int exorciser_state::pia_dbg_ca1_r()
+READ_LINE_MEMBER(exorciser_state::pia_dbg_ca1_r)
 {
 	return !m_abort_key->read();
 }
@@ -500,7 +499,7 @@ void exorciser_state::pia_dbg_pb_w(u8 data)
 	m_stop_address = (m_stop_address & 0x00ff) | (data << 8);
 }
 
-void exorciser_state::pia_dbg_ca2_w(int state)
+WRITE_LINE_MEMBER(exorciser_state::pia_dbg_ca2_w)
 {
 	m_stop_enabled = !state;
 }
@@ -515,7 +514,7 @@ TIMER_CALLBACK_MEMBER(exorciser_state::assert_trace)
 // cycles here to get it working. This is necessary because of inaccurate
 // cycle timing in the 6800 emulation, so change the delay to 11 cycles when
 // the cycle emulation is more accurate.
-void exorciser_state::pia_dbg_cb2_w(int state)
+WRITE_LINE_MEMBER(exorciser_state::pia_dbg_cb2_w)
 {
 	if (state)
 	{
@@ -578,7 +577,7 @@ static void mdos_floppies(device_slot_interface &device)
 }
 
 
-void exorciser_state::irq_line_w(int state)
+WRITE_LINE_MEMBER(exorciser_state::irq_line_w)
 {
 	m_maincpu->set_input_line(M6800_IRQ_LINE, state);
 	m_irq = state;
@@ -595,7 +594,7 @@ void exorciser_state::machine_reset()
 
 	m_restart_count = 0;
 
-	m_fdc->set_floppies_4(m_floppy[0], m_floppy[1], m_floppy[2], m_floppy[3]);
+	m_fdc->set_floppies_4(m_floppy0, m_floppy1, m_floppy2, m_floppy3);
 
 	m_irq = 1;
 	m_stop_address = 0x0000;
@@ -637,6 +636,11 @@ static DEVICE_INPUT_DEFAULTS_START(printer)
 	DEVICE_INPUT_DEFAULTS("RS232_STOPBITS", 0xff, RS232_STOPBITS_1)
 DEVICE_INPUT_DEFAULTS_END
 
+#include "bus/rs232/exorterm.h"
+#include "bus/rs232/null_modem.h"
+#include "bus/rs232/pty.h"
+#include "bus/rs232/terminal.h"
+
 void exorciser_state::exorciser_rs232_devices(device_slot_interface &device)
 {
 	device.option_add("exorterm155", SERIAL_TERMINAL_EXORTERM155);
@@ -676,7 +680,7 @@ void exorciser_state::exorciser(machine_config &config)
 	rs232.rxd_handler().set(m_acia, FUNC(acia6850_device::write_rxd));
 	rs232.set_option_device_input_defaults("exorterm155", DEVICE_INPUT_DEFAULTS_NAME(exorterm));
 
-	PIA6821(config, m_pia_dbg);
+	PIA6821(config, m_pia_dbg, 0);
 	m_pia_dbg->writepa_handler().set(FUNC(exorciser_state::pia_dbg_pa_w));
 	m_pia_dbg->readca1_handler().set(FUNC(exorciser_state::pia_dbg_ca1_r));
 	m_pia_dbg->writepb_handler().set(FUNC(exorciser_state::pia_dbg_pb_w));
@@ -684,7 +688,7 @@ void exorciser_state::exorciser(machine_config &config)
 	m_pia_dbg->cb2_handler().set(FUNC(exorciser_state::pia_dbg_cb2_w));
 
 	// MEX68PI Parallel printer port
-	PIA6821(config, m_pia_lpt);
+	PIA6821(config, m_pia_lpt, 0);
 	m_pia_lpt->writepa_handler().set(FUNC(exorciser_state::pia_lpt_pa_w));
 	m_pia_lpt->ca1_w(0); // External parallel printer busy input.
 	m_pia_lpt->ca2_handler().set(FUNC(exorciser_state::pia_lpt_ca2_w));
@@ -704,8 +708,11 @@ void exorciser_state::exorciser(machine_config &config)
 	m_fdc->irq_handler().set(m_mainirq, FUNC(input_merger_device::in_w<0>));
 	m_fdc->nmi_handler().set(m_mainnmi, FUNC(input_merger_device::in_w<3>));
 
-	for (auto &floppy : m_floppy)
-		FLOPPY_CONNECTOR(config, floppy, mdos_floppies, "8dssd", exorciser_state::floppy_formats).enable_sound(true);
+	FLOPPY_CONNECTOR(config, m_floppy0, mdos_floppies, "8dssd", exorciser_state::floppy_formats).enable_sound(true);
+	FLOPPY_CONNECTOR(config, m_floppy1, mdos_floppies, "8dssd", exorciser_state::floppy_formats).enable_sound(true);
+	FLOPPY_CONNECTOR(config, m_floppy2, mdos_floppies, "8dssd", exorciser_state::floppy_formats).enable_sound(true);
+	FLOPPY_CONNECTOR(config, m_floppy3, mdos_floppies, "8dssd", exorciser_state::floppy_formats).enable_sound(true);
+
 }
 
 /* ROM definition */
@@ -797,9 +804,6 @@ ROM_START( exorciser )
 	ROMX_LOAD("exbug11.bin", 0x0000, 0x0c00, CRC(5a5db110) SHA1(14f3e14ed809f9ec30b8189e5506ed911127de34), ROM_BIOS(1))
 
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

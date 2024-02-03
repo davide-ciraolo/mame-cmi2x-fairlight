@@ -52,7 +52,7 @@ void isa8_lpt_device::device_reset()
 		m_isa->install_device(0x0278, 0x027b, read8sm_delegate(lpt, FUNC(pc_lpt_device::read)), write8sm_delegate(lpt, FUNC(pc_lpt_device::write)));
 }
 
-void isa8_lpt_device::pc_cpu_line(int state)
+WRITE_LINE_MEMBER(isa8_lpt_device::pc_cpu_line)
 {
 	if (is_primary())
 		m_isa->irq7_w(state);

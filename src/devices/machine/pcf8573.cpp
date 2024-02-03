@@ -12,8 +12,8 @@
 #include "emu.h"
 #include "pcf8573.h"
 
-#define LOG_DATA (1U << 1)
-#define LOG_LINE (1U << 2)
+#define LOG_DATA (1 << 1)
+#define LOG_LINE (1 << 2)
 
 #define VERBOSE (0)
 #include "logmacro.h"
@@ -56,6 +56,10 @@ pcf8573_device::pcf8573_device(const machine_config &mconfig, const char *tag, d
 
 void pcf8573_device::device_start()
 {
+	m_comp_cb.resolve_safe();
+	m_min_cb.resolve_safe();
+	m_sec_cb.resolve_safe();
+
 	// allocate timers
 	m_clock_timer = timer_alloc(FUNC(pcf8573_device::clock_tick), this);
 	m_clock_timer->adjust(attotime::from_hz(clock() / 32768), 0, attotime::from_hz(clock() / 32768));
@@ -119,7 +123,7 @@ void pcf8573_device::rtc_clock_updated(int year, int month, int day, int day_of_
 //  READ/WRITE HANDLERS
 //**************************************************************************
 
-void pcf8573_device::a0_w(int state)
+WRITE_LINE_MEMBER(pcf8573_device::a0_w)
 {
 	state &= 1;
 	if (BIT(m_slave_address, 1) != state)
@@ -129,7 +133,7 @@ void pcf8573_device::a0_w(int state)
 	}
 }
 
-void pcf8573_device::a1_w(int state)
+WRITE_LINE_MEMBER(pcf8573_device::a1_w)
 {
 	state &= 1;
 	if (BIT(m_slave_address, 2) != state)
@@ -139,7 +143,7 @@ void pcf8573_device::a1_w(int state)
 	}
 }
 
-void pcf8573_device::scl_w(int state)
+WRITE_LINE_MEMBER(pcf8573_device::scl_w)
 {
 	if (m_scl != state)
 	{
@@ -319,7 +323,7 @@ void pcf8573_device::scl_w(int state)
 	}
 }
 
-void pcf8573_device::sda_w(int state)
+WRITE_LINE_MEMBER(pcf8573_device::sda_w)
 {
 	state &= 1;
 	if (m_sdaw != state)
@@ -346,7 +350,7 @@ void pcf8573_device::sda_w(int state)
 	}
 }
 
-int pcf8573_device::sda_r()
+READ_LINE_MEMBER(pcf8573_device::sda_r)
 {
 	int res = m_sdar & 1;
 

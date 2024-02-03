@@ -70,6 +70,8 @@
 #include "sound/spkrdev.h"
 #include "speaker.h"
 #include "imagedev/floppy.h"
+#include "formats/imd_dsk.h"
+#include "formats/pc_dsk.h"
 #include "bus/rs232/rs232.h"
 
 #define LOG_PPI     (1U << 1)
@@ -102,9 +104,6 @@
 #define LOGBITS(...) LOGMASKED(LOG_BITS, __VA_ARGS__)
 #define LOGFPU(...)  LOGMASKED(LOG_FPU,  __VA_ARGS__)
 #define LOGCOM(...)  LOGMASKED(LOG_COM,  __VA_ARGS__)
-
-
-namespace {
 
 class epc_state : public driver_device
 {
@@ -145,15 +144,15 @@ private:
 	required_device<isa8_device> m_isabus;
 
 	// DMA
-	void dma_tc_w(int state);
-	void dreq0_ck_w(int state);
-	void epc_dma_hrq_changed(int state);
-	void epc_dma8237_out_eop(int state);
+	DECLARE_WRITE_LINE_MEMBER(dma_tc_w);
+	DECLARE_WRITE_LINE_MEMBER(dreq0_ck_w);
+	DECLARE_WRITE_LINE_MEMBER( epc_dma_hrq_changed );
+	DECLARE_WRITE_LINE_MEMBER( epc_dma8237_out_eop );
 	uint8_t epc_dma_read_byte(offs_t offset);
 	void epc_dma_write_byte(offs_t offset, uint8_t data);
 	template <int Channel> uint8_t epc_dma8237_io_r(offs_t offset);
 	template <int Channel> void epc_dma8237_io_w(offs_t offset, uint8_t data);
-	template <int Channel> void epc_dack_w(int state);
+	template <int Channel> DECLARE_WRITE_LINE_MEMBER(epc_dack_w);
 	required_device<am9517a_device> m_dma8237a;
 	uint8_t m_dma_segment[4];
 	uint8_t m_dma_active;
@@ -188,7 +187,7 @@ private:
 
 	// Interrupt Controller
 	required_device<pic8259_device> m_pic8259;
-	void int_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(int_w);
 	uint8_t m_nmi_enabled;
 	uint8_t m_8087_int = 0;
 	uint8_t m_parer_int = 0;
@@ -199,7 +198,7 @@ private:
 	required_device<pit8253_device> m_pit8253;
 
 	// Speaker
-	void speaker_ck_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(speaker_ck_w);
 	required_device<speaker_sound_device> m_speaker;
 	bool m_pc4;
 	bool m_pc5;
@@ -581,7 +580,7 @@ void epc_state::epc_dma8237_io_w(offs_t offset, uint8_t data)
 }
 
 template <int Channel>
-void epc_state::epc_dack_w(int state)
+WRITE_LINE_MEMBER(epc_state::epc_dack_w)
 {
 	LOGDMA("epc_dack_w: %d - %d\n", Channel, state);
 
@@ -603,7 +602,7 @@ void epc_state::epc_dack_w(int state)
 	}
 }
 
-void epc_state::dma_tc_w(int state)
+WRITE_LINE_MEMBER(epc_state::dma_tc_w)
 {
 	m_tc = (state == ASSERT_LINE);
 	for (int channel = 0; channel < 4; channel++)
@@ -626,7 +625,7 @@ void epc_state::dma_tc_w(int state)
 	}
 }
 
-void epc_state::dreq0_ck_w(int state)
+WRITE_LINE_MEMBER(epc_state::dreq0_ck_w)
 {
 	if (state && !m_dreq0_ck && !BIT(m_dma_active, 0))
 		m_dma8237a->dreq0_w(1);
@@ -634,7 +633,7 @@ void epc_state::dreq0_ck_w(int state)
 	m_dreq0_ck = state;
 }
 
-void epc_state::speaker_ck_w(int state)
+WRITE_LINE_MEMBER(epc_state::speaker_ck_w)
 {
 	m_pc5 = state;
 	m_pc4 = (m_ppi_portb & 0x02) && state ? 1 : 0;
@@ -751,7 +750,7 @@ void epc_state::ppi_portb_w(uint8_t data)
 	}
 }
 
-void epc_state::int_w(int state)
+WRITE_LINE_MEMBER(epc_state::int_w)
 {
 	if (m_int != state)
 	{
@@ -971,7 +970,7 @@ void epc_state::update_nmi()
 	}
 }
 
-void epc_state::epc_dma_hrq_changed(int state)
+WRITE_LINE_MEMBER( epc_state::epc_dma_hrq_changed )
 {
 	LOGDMA("epc_dma_hrq_changed %d\n", state);
 
@@ -1066,9 +1065,6 @@ ROM_START( epc )
 	ROMX_LOAD("epcbios2.bin",  0xa000, 0x02000, CRC(3ca764ca) SHA1(02232fedef22d31a641f4b65933b9e269afce19e), ROM_BIOS(1))
 	ROMX_LOAD("epcbios3.bin",  0xc000, 0x02000, CRC(70483280) SHA1(b44b09da94d77b0269fc48f07d130b2d74c4bb8f), ROM_BIOS(1))
 ROM_END
-
-} // anonymous namespace
-
 
 COMP( 1985, epc,     0,      0,      epc,     epc_ports, epc_state, init_epc,    "Ericsson Information System",     "Ericsson PC" ,          0)
 //COMP( 1985, eppc,   ibm5150, 0,  pccga,         pccga,  pc_state, empty_init,    "Ericsson Information System",     "Ericsson Portable PC",  MACHINE_NOT_WORKING )

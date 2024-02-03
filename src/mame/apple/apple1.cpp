@@ -84,9 +84,6 @@
 #include "screen.h"
 #include "softlist_dev.h"
 
-
-namespace {
-
 #define A1_CPU_TAG  "maincpu"
 #define A1_PIA_TAG  "pia6821"
 #define A1_BUS_TAG  "a1bus"
@@ -143,7 +140,7 @@ private:
 	void ram_w(offs_t offset, uint8_t data);
 	uint8_t pia_keyboard_r();
 	void pia_display_w(uint8_t data);
-	void pia_display_gate_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pia_display_gate_w);
 	DECLARE_SNAPSHOT_LOAD_MEMBER(snapshot_cb);
 	TIMER_CALLBACK_MEMBER(ready_start_cb);
 	TIMER_CALLBACK_MEMBER(ready_end_cb);
@@ -184,17 +181,29 @@ SNAPSHOT_LOAD_MEMBER(apple1_state::snapshot_cb)
 	uint64_t snapsize = image.length();
 
 	if (snapsize < 12)
-		return std::make_pair(image_error::INVALIDLENGTH, "Snapshot is too short");
+	{
+		logerror("Snapshot is too short\n");
+		return image_init_result::FAIL;
+	}
 
 	if ((snapsize - 12) > 65535)
-		return std::make_pair(image_error::INVALIDLENGTH, "Snapshot is too long");
+	{
+		logerror("Snapshot is too long\n");
+		return image_init_result::FAIL;
+	}
 
 	auto data = std::make_unique<uint8_t []>(snapsize);
 	if (image.fread(data.get(), snapsize) != snapsize)
-		return std::make_pair(image_error::UNSPECIFIED, "Internal error loading snapshot");
+	{
+		logerror("Internal error loading snapshot\n");
+		return image_init_result::FAIL;
+	}
 
 	if ((memcmp(hd1, &data[0], 5)) || (memcmp(hd2, &data[7], 5)))
-		return std::make_pair(image_error::INVALIDIMAGE, "Snapshot is invalid");
+	{
+		logerror("Snapshot is invalid\n");
+		return image_init_result::FAIL;
+	}
 
 	uint16_t start = (data[5]<<8) | data[6];
 	uint16_t end = (snapsize - 12) + start;
@@ -202,7 +211,10 @@ SNAPSHOT_LOAD_MEMBER(apple1_state::snapshot_cb)
 	// check if this fits in RAM; load below 0xe000 must fit in RAMSIZE,
 	// load at 0xe000 must fit in 4K
 	if (((start < 0xe000) && (end > (m_ram_size - 1))) || (end > 0xefff))
-		return std::make_pair(image_error::UNSUPPORTED, "Snapshot can't fit in RAM");
+	{
+		logerror("Snapshot can't fit in RAM\n");
+		return image_init_result::FAIL;
+	}
 
 	if (start < 0xe000)
 	{
@@ -214,12 +226,11 @@ SNAPSHOT_LOAD_MEMBER(apple1_state::snapshot_cb)
 	}
 	else
 	{
-		return std::make_pair(
-				image_error::INVALIDIMAGE,
-				util::string_format("Snapshot has invalid load address %04x", start));
+		logerror("Snapshot has invalid load address %04x\n", start);
+		return image_init_result::FAIL;
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void apple1_state::poll_keyboard()
@@ -475,7 +486,7 @@ void apple1_state::pia_display_w(uint8_t data)
 
 // CB2 here is connected two places: Port B bit 7 for CPU readback,
 // and to the display hardware
-void apple1_state::pia_display_gate_w(int state)
+WRITE_LINE_MEMBER(apple1_state::pia_display_gate_w)
 {
 	m_pia->portb_w((state << 7) ^ 0x80);
 
@@ -590,7 +601,7 @@ void apple1_state::apple1(machine_config &config)
 
 	PALETTE(config, "palette", palette_device::MONOCHROME);
 
-	PIA6821(config, m_pia);
+	PIA6821(config, m_pia, 0);
 	m_pia->readpa_handler().set(FUNC(apple1_state::pia_keyboard_r));
 	m_pia->writepb_handler().set(FUNC(apple1_state::pia_display_w));
 	m_pia->cb2_handler().set(FUNC(apple1_state::pia_display_gate_w));
@@ -612,9 +623,6 @@ ROM_START(apple1)
 	ROM_REGION(0x0200, "gfx1",0)
 	ROM_LOAD("s2513.d2", 0x0000, 0x0200, CRC(a7e567fc) SHA1(b18aae0a2d4f92f5a7e22640719bbc4652f3f4ee)) // apple1.vid
 ROM_END
-
-} // anonymous namespace
-
 
 /*    YEAR  NAME    PARENT  COMPAT  MACHINE  INPUT   CLASS         INIT        COMPANY           FULLNAME */
 COMP( 1976, apple1, 0,      0,      apple1,  apple1, apple1_state, empty_init, "Apple Computer", "Apple I", MACHINE_NO_SOUND_HW | MACHINE_SUPPORTS_SAVE )

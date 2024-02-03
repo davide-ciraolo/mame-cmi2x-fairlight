@@ -10,8 +10,6 @@ local exports = {
 
 local timecode = exports
 
-local frame_subscription, stop_subscription
-
 function timecode.startplugin()
 	local file                  -- the timecode log file
 	local write                 -- whether to record a timecode on the next emulated frame
@@ -36,7 +34,7 @@ function timecode.startplugin()
 
 
 	local function get_settings_path()
-		return manager.machine.options.entries.homepath:value():match('([^;]+)') .. '/timecode'
+		return emu.subst_env(manager.machine.options.entries.homepath:value():match('([^;]+)')) .. '/timecode'
 	end
 
 
@@ -340,10 +338,10 @@ function timecode.startplugin()
 	end
 
 
-	frame_subscription = emu.add_machine_frame_notifier(process_frame)
+	emu.register_frame(process_frame)
 	emu.register_frame_done(process_frame_done)
 	emu.register_prestart(start)
-	stop_subscription = emu.add_machine_stop_notifier(stop)
+	emu.register_stop(stop)
 	emu.register_menu(menu_callback, menu_populate, _p('plugin-timecode', 'Timecode Recorder'))
 end
 

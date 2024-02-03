@@ -6,10 +6,9 @@
 
 **********************************************************************/
 
+
 #include "emu.h"
 #include "ams.h"
-
-#include "formats/acorn_dsk.h"
 
 
 //**************************************************************************
@@ -123,14 +122,14 @@ void bbc_ams3_device::write(offs_t offset, uint8_t data)
 	}
 }
 
-void bbc_ams3_device::motor_w(int state)
+WRITE_LINE_MEMBER(bbc_ams3_device::motor_w)
 {
 	if (m_floppy[0]->get_device()) m_floppy[0]->get_device()->mon_w(!state);
 	if (m_floppy[1]->get_device()) m_floppy[1]->get_device()->mon_w(!state);
 	m_fdc->ready_w(!state);
 }
 
-void bbc_ams3_device::side_w(int state)
+WRITE_LINE_MEMBER(bbc_ams3_device::side_w)
 {
 	if (m_floppy[0]->get_device()) m_floppy[0]->get_device()->ss_w(state);
 	if (m_floppy[1]->get_device()) m_floppy[1]->get_device()->ss_w(state);

@@ -103,9 +103,6 @@ Chips:
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
-
 /***************************************************************************
 
                                  General
@@ -129,18 +126,18 @@ public:
 	void tm(machine_config &config);
 	void tmds1204(machine_config &config);
 
-	int read_rand();
+	DECLARE_READ_LINE_MEMBER(read_rand);
 
-	void write_oki_bank0(int state);
-	void write_oki_bank1(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_oki_bank0);
+	DECLARE_WRITE_LINE_MEMBER(write_oki_bank1);
 
 private:
-	void blitter_irq_callback(int state);
+	DECLARE_WRITE_LINE_MEMBER(blitter_irq_callback);
 
 	TIMER_DEVICE_CALLBACK_MEMBER(scanline_interrupt);
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
-	void duart_irq_handler(int state);
+	DECLARE_WRITE_LINE_MEMBER(duart_irq_handler);
 
 	uint16_t rtc_r(offs_t offset);
 	void rtc_w(offs_t offset, uint16_t data);
@@ -161,7 +158,7 @@ private:
 	uint8_t m_rtc_ram[8]{};
 };
 
-void tmaster_state::blitter_irq_callback(int state)
+WRITE_LINE_MEMBER(tmaster_state::blitter_irq_callback)
 {
 //  logerror("%s: Blitter IRQ callback state = %x\n", machine().describe_context(), state);
 	m_maincpu->set_input_line(2, state);
@@ -185,7 +182,7 @@ uint32_t tmaster_state::screen_update(screen_device &screen, bitmap_ind16 &bitma
 
 ***************************************************************************/
 
-void tmaster_state::write_oki_bank0(int state)
+WRITE_LINE_MEMBER(tmaster_state::write_oki_bank0)
 {
 	if (state)
 		m_okibank |= 1;
@@ -195,7 +192,7 @@ void tmaster_state::write_oki_bank0(int state)
 	m_oki->set_rom_bank(m_okibank);
 }
 
-void tmaster_state::write_oki_bank1(int state)
+WRITE_LINE_MEMBER(tmaster_state::write_oki_bank1)
 {
 	if (state)
 		m_okibank |= 2;
@@ -217,7 +214,7 @@ void tmaster_state::cpu_space_map(address_map &map)
 	map(0xfffff8, 0xfffff9).lr16(NAME([this] () -> u16 { return m_duart->get_irq_vector(); }));
 }
 
-void tmaster_state::duart_irq_handler(int state)
+WRITE_LINE_MEMBER(tmaster_state::duart_irq_handler)
 {
 	m_maincpu->set_input_line(4, state);
 }
@@ -264,7 +261,7 @@ void tmaster_state::rtc_w(offs_t offset, uint16_t data)
 
 ***************************************************************************/
 
-int tmaster_state::read_rand()
+READ_LINE_MEMBER(tmaster_state::read_rand)
 {
 	return machine().rand() & 1;
 }
@@ -1217,9 +1214,6 @@ ROM_START( tm8k902 )
 	ROM_REGION( 0x100000, "oki", 0 ) // Samples
 	ROM_LOAD( "9.0_touchmaster_8000_u8_sound.u8", 0x00000, 0x100000, CRC(c6070a60) SHA1(2dc20bf2217a36374b5a691133ad43f53dbe29ca) ) /* Mask rom labeled 5341-16513-03 U8 SOUND */
 ROM_END
-
-} // anonymous namespace
-
 
 GAME( 1996, tm,         0,        tm,       tm,   tmaster_state, empty_init, ROT0, "Midway Games Inc. / CES Inc.", "Touchmaster (v3.00 Euro)",                          0 )
 GAME( 1996, tmdo,       tm,       tm,       tm,   tmaster_state, empty_init, ROT0, "Midway Games Inc. / CES Inc.", "Touchmaster (v2.2-01 Standard)",                    0 )

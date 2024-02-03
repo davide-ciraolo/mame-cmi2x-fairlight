@@ -2,12 +2,12 @@
 // copyright-holders:Sandro Ronco
 /***************************************************************************
 
-        Kosmos CP1
+        Kosmos CP-1
 
         06/03/2012 Skeleton driver.
 
         on board there is also 8155
-        KEYBOARD Membrane keyboard, 20+10 keys
+        KEYBOARD Membrane keyboard, 57 keys
         6 * 7 seg led display
 
 ****************************************************************************/
@@ -22,9 +22,6 @@
 
 #include "speaker.h"
 #include "cp1.lh"
-
-
-namespace {
 
 class cp1_state : public driver_device
 {
@@ -41,13 +38,11 @@ public:
 	{ }
 
 	void cp1(machine_config &config);
-
-protected:
-	virtual void machine_start() override;
-	virtual void machine_reset() override;
-
 private:
 	void cp1_io(address_map &map);
+
+	virtual void machine_start() override;
+	virtual void machine_reset() override;
 
 	uint8_t port1_r();
 	uint8_t port2_r();
@@ -70,8 +65,9 @@ private:
 	required_ioport_array<5> m_io_lines;
 	required_ioport m_io_config;
 
-	uint8_t m_port2 = 0;
-	uint8_t m_matrix = 0;
+	uint8_t   m_7seg;
+	uint8_t   m_port2;
+	uint8_t   m_matrix;
 };
 
 uint8_t cp1_state::port1_r()
@@ -104,8 +100,8 @@ uint8_t cp1_state::port2_r()
 
 	uint8_t data = 0;
 
-	for (int i = 0; i < 5; i++)
-		if (BIT(m_matrix, i))
+	for(int i=0; i<5; i++)
+		if (!(m_matrix & (1<<i)))
 			data |= m_io_lines[i]->read();
 
 	return (data & 0x0f) | (m_port2 & 0xf0);
@@ -160,7 +156,8 @@ void cp1_state::i8155_write(offs_t offset, uint8_t data)
 
 void cp1_state::i8155_porta_w(uint8_t data)
 {
-	m_display->write_mx(data | 0x80); // PA7 is not connected
+	m_7seg = data & 0x7f; // PA7 is not connected
+	m_display->matrix(~m_matrix, m_7seg);
 }
 
 uint8_t cp1_state::i8155_portb_r()
@@ -177,8 +174,8 @@ void cp1_state::i8155_portb_w(uint8_t data)
 void cp1_state::i8155_portc_w(uint8_t data)
 {
 	// --xx xxxx   keyboard matrix, 7seg select
-	m_matrix = ~data & 0x3f;
-	m_display->write_my(m_matrix);
+	m_matrix = data & 0x3f;
+	m_display->matrix(~m_matrix, m_7seg);
 }
 
 
@@ -227,12 +224,13 @@ INPUT_PORTS_END
 
 void cp1_state::machine_start()
 {
-	save_item(NAME(m_port2));
-	save_item(NAME(m_matrix));
 }
 
 void cp1_state::machine_reset()
 {
+	m_port2 = 0;
+	m_matrix = 0;
+	m_7seg = 0;
 	m_cassette->change_state(CASSETTE_STOPPED, CASSETTE_MASK_UISTATE);
 }
 
@@ -261,11 +259,11 @@ QUICKLOAD_LOAD_MEMBER(cp1_state::quickload_cb)
 		}
 		else
 		{
-			return std::make_pair(image_error::INVALIDIMAGE, std::string());
+			return image_init_result::FAIL;
 		}
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void cp1_state::cp1(machine_config &config)
@@ -277,6 +275,10 @@ void cp1_state::cp1(machine_config &config)
 	maincpu.p1_out_cb().set(FUNC(cp1_state::port1_w));
 	maincpu.p2_in_cb().set(FUNC(cp1_state::port2_r));
 	maincpu.p2_out_cb().set(FUNC(cp1_state::port2_w));
+	maincpu.bus_in_cb().set_log("getbus");
+	maincpu.bus_out_cb().set_log("putbus");
+	maincpu.t0_in_cb().set_log("t0_r");
+	maincpu.t1_in_cb().set_log("t1_r");
 
 	i8155_device &i8155(I8155(config, "i8155", 0));
 	i8155.out_pa_callback().set(FUNC(cp1_state::i8155_porta_w));
@@ -286,9 +288,8 @@ void cp1_state::cp1(machine_config &config)
 
 	I8155(config, "i8155_cp3", 0);
 
-	PWM_DISPLAY(config, m_display).set_size(6, 8);
+	PWM_DISPLAY(config, m_display).set_size(6, 7);
 	m_display->set_segmask(0x3f, 0x7f);
-	m_display->set_segmask(0x08, 0xff); // 3rd digit DP is always on
 	config.set_default_layout(layout_cp1);
 
 	SPEAKER(config, "mono").front_center();
@@ -316,10 +317,7 @@ ROM_START( cp1 )
 	ROMX_LOAD( "cp1-2716.bin",     0x0000, 0x0800, CRC(3a2caf0e) SHA1(ff4befcf82a664950186d3af1843fdef70d2209f), ROM_BIOS(1))
 ROM_END
 
-} // anonymous namespace
-
-
 /* Driver */
 
 //    YEAR  NAME  PARENT  COMPAT  MACHINE  INPUT  CLASS      INIT        COMPANY   FULLNAME                 FLAGS
-COMP( 1980, cp1,  0,      0,      cp1,     cp1,   cp1_state, empty_init, "Kosmos", "CP1 / Computer-Praxis", MACHINE_NOT_WORKING | MACHINE_SUPPORTS_SAVE )
+COMP( 1980, cp1,  0,      0,      cp1,     cp1,   cp1_state, empty_init, "Kosmos", "CP1 / Computer Praxis", MACHINE_NOT_WORKING | MACHINE_NO_SOUND )

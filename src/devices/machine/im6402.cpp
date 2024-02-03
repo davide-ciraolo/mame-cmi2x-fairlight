@@ -89,6 +89,12 @@ im6402_device::im6402_device(const machine_config &mconfig, const char *tag, dev
 
 void im6402_device::device_start()
 {
+	// resolve callbacks
+	m_write_tro.resolve_safe();
+	m_write_dr.resolve_safe();
+	m_write_tbre.resolve_safe();
+	m_write_tre.resolve_safe();
+
 	// create the timers
 	if (m_rrc > 0)
 	{
@@ -170,6 +176,15 @@ void im6402_device::tra_complete()
 		set_tbre(ASSERT_LINE);
 		set_tre(CLEAR_LINE);
 	}
+}
+
+
+//-------------------------------------------------
+//  rcv_callback -
+//-------------------------------------------------
+
+void im6402_device::rcv_callback()
+{
 }
 
 
@@ -376,12 +391,10 @@ void im6402_device::epe_w(int state)
 	m_epe = state;
 }
 
-
-//-------------------------------------------------
-//  rri_w - receiver register input
-//-------------------------------------------------
-
-void im6402_device::rri_w(int state)
+void im6402_device::write_rri(int state)
 {
-	rx_w(state);
+	// HACK derive clock from data line as wangpckb sends bytes instantly to make up for mcs51 serial implementation
+	receive_register_update_bit(state);
+	rx_clock_w(1);
+	rx_clock_w(0);
 }

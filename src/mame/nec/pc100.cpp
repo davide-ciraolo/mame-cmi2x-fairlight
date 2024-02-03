@@ -72,8 +72,6 @@
 #include "formats/mfi_dsk.h"
 
 
-namespace {
-
 class pc100_state : public driver_device
 {
 public:
@@ -127,8 +125,8 @@ private:
 	void rtc_porta_w(uint8_t data);
 	uint8_t rtc_portc_r();
 	void rtc_portc_w(uint8_t data);
-	void irqnmi_w(int state);
-	void drqnmi_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irqnmi_w);
+	DECLARE_WRITE_LINE_MEMBER(drqnmi_w);
 	uint16_t m_kanji_addr = 0;
 	uint8_t m_timer_mode = 0;
 
@@ -151,10 +149,10 @@ private:
 	TIMER_DEVICE_CALLBACK_MEMBER(pc100_10hz_irq);
 
 
-	void rtc_portc_0_w(int state) { m_rtc_portc = (m_rtc_portc & ~(1 << 0)) | ((state & 1) << 0); }
-	void rtc_portc_1_w(int state) { m_rtc_portc = (m_rtc_portc & ~(1 << 1)) | ((state & 1) << 1); }
-	void rtc_portc_2_w(int state) { m_rtc_portc = (m_rtc_portc & ~(1 << 2)) | ((state & 1) << 2); }
-	void rtc_portc_3_w(int state) { m_rtc_portc = (m_rtc_portc & ~(1 << 3)) | ((state & 1) << 3); }
+	WRITE_LINE_MEMBER(rtc_portc_0_w) { m_rtc_portc = (m_rtc_portc & ~(1 << 0)) | ((state & 1) << 0); }
+	WRITE_LINE_MEMBER(rtc_portc_1_w) { m_rtc_portc = (m_rtc_portc & ~(1 << 1)) | ((state & 1) << 1); }
+	WRITE_LINE_MEMBER(rtc_portc_2_w) { m_rtc_portc = (m_rtc_portc & ~(1 << 2)) | ((state & 1) << 2); }
+	WRITE_LINE_MEMBER(rtc_portc_3_w) { m_rtc_portc = (m_rtc_portc & ~(1 << 3)) | ((state & 1) << 3); }
 	uint8_t m_rtc_portc;
 	void pc100_io(address_map &map);
 	void pc100_map(address_map &map);
@@ -205,14 +203,14 @@ uint32_t pc100_state::screen_update_pc100(screen_device &screen, bitmap_ind16 &b
 	return 0;
 }
 
-void pc100_state::irqnmi_w(int state)
+WRITE_LINE_MEMBER(pc100_state::irqnmi_w)
 {
 	if(!m_nmi_mask)
 		m_maincpu->set_input_line(INPUT_LINE_NMI, ((state == ASSERT_LINE) || m_drq_state) ? ASSERT_LINE : CLEAR_LINE);
 	m_irq_state = state == ASSERT_LINE;
 }
 
-void pc100_state::drqnmi_w(int state)
+WRITE_LINE_MEMBER(pc100_state::drqnmi_w)
 {
 	if(!m_nmi_mask)
 		m_maincpu->set_input_line(INPUT_LINE_NMI, ((state == ASSERT_LINE) || m_irq_state) ? ASSERT_LINE : CLEAR_LINE);
@@ -702,9 +700,6 @@ ROM_START( pc100 )
 
 	ROM_REGION16_LE( 0x20000*4, "vram", ROMREGION_ERASEFF )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

@@ -13,12 +13,8 @@
 
 #pragma once
 
-#include "ui/devctrl.h"
-
 #include "machine/bcreader.h"
-
-#include <string>
-
+#include "ui/devctrl.h"
 
 namespace ui {
 
@@ -28,8 +24,8 @@ public:
 	virtual ~menu_barcode_reader() override;
 
 private:
-	virtual void populate() override;
-	virtual bool handle(event const *ev) override;
+	virtual void populate(float &customtop, float &custombottom) override;
+	virtual void handle(event const *ev) override;
 
 	std::string m_barcode_buffer;
 };

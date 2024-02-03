@@ -83,8 +83,6 @@
 #include "screen.h"
 
 
-namespace {
-
 #define MAIN_CLOCK        XTAL(40'000'000)          // Pletronics 40.000 MHz. Crystal. Used for CPU clock.
 #define VIDEO_CLOCK       XTAL(14'318'181)    // Pletronics MP49 14.31818 MHz. Crystal. Used in common VGA ISA cards.
 
@@ -628,8 +626,6 @@ ROM_END
 void wms_state::init_wms()
 {
 }
-
-} // anonymous namespace
 
 
 /*********************************************

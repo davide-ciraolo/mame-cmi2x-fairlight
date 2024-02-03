@@ -33,6 +33,7 @@
 
 #include <algorithm>
 
+#define LOG_GENERAL (1U << 0)
 #define LOG_ACCESS  (1U << 1)
 #define LOG_DTU     (1U << 2)
 #define LOG_TLB     (1U << 3)
@@ -157,6 +158,7 @@ cammu_device::cammu_device(const machine_config &mconfig, device_type type, cons
 
 void cammu_device::device_start()
 {
+	m_exception_func.resolve();
 }
 
 void cammu_device::device_reset()
@@ -259,15 +261,13 @@ void cammu_device::set_spaces(address_space &main_space, address_space &io_space
 		memory.space->cache(memory.cache);
 }
 
-bool cammu_device::memory_translate(const u32 ssw, const int spacenum, const int intention, offs_t &address, address_space *&target_space)
+bool cammu_device::memory_translate(const u32 ssw, const int spacenum, const int intention, offs_t &address)
 {
 	// translate the address
 	translated_t translated = translate_address(ssw, address, BYTE,
-		intention == device_memory_interface::TR_READ ? READ :
-		intention == device_memory_interface::TR_WRITE ? WRITE :
+		(intention & TRANSLATE_TYPE_MASK) == TRANSLATE_READ ? READ :
+		(intention & TRANSLATE_TYPE_MASK) == TRANSLATE_WRITE ? WRITE :
 		EXECUTE);
-
-	target_space = &translated.cache->space();
 
 	// check that the requested space number matches the mapped space
 	if (translated.cache && translated.cache->space().spacenum() == spacenum)

@@ -563,7 +563,7 @@ uint8_t pc1640_state::io_r(offs_t offset)
 	else if (addr >= 0x020 && addr <= 0x021) { data = m_pic->read(offset & 0x01); decoded = true; }
 	else if (addr >= 0x040 && addr <= 0x043) { data = m_pit->read(offset & 0x03); decoded = true; }
 	else if (addr >= 0x060 && addr <= 0x06f) { data = system_r(offset & 0x0f); decoded = true; }
-	else if (addr == 0x071 || addr == 0x073) { data = m_rtc->data_r(); decoded = true; }
+	else if (addr >= 0x070 && addr <= 0x073) { data = m_rtc->read(offset & 0x01); decoded = true; }
 	else if (addr >= 0x078 && addr <= 0x07f) { data = mouse_r(offset & 0x07); decoded = true; }
 	else if (addr >= 0x378 && addr <= 0x37b) { data = printer_r(offset & 0x03); decoded = true; }
 	else if (addr >= 0x3b0 && addr <= 0x3df) { decoded = true; }
@@ -631,8 +631,7 @@ void pc1512_state::pc1512_io(address_map &map)
 	map(0x020, 0x021).rw(m_pic, FUNC(pic8259_device::read), FUNC(pic8259_device::write));
 	map(0x040, 0x043).rw(m_pit, FUNC(pit8253_device::read), FUNC(pit8253_device::write));
 	map(0x060, 0x06f).rw(FUNC(pc1512_state::system_r), FUNC(pc1512_state::system_w));
-	map(0x070, 0x070).mirror(0x02).w(m_rtc, FUNC(mc146818_device::address_w));
-	map(0x071, 0x071).mirror(0x02).rw(m_rtc, FUNC(mc146818_device::data_r), FUNC(mc146818_device::data_w));
+	map(0x070, 0x071).mirror(0x02).rw(m_rtc, FUNC(mc146818_device::read), FUNC(mc146818_device::write));
 	map(0x078, 0x07f).rw(FUNC(pc1512_state::mouse_r), FUNC(pc1512_state::mouse_w));
 	map(0x080, 0x083).w(FUNC(pc1512_state::dma_page_w));
 	map(0x0a1, 0x0a1).w(FUNC(pc1512_state::nmi_mask_w));
@@ -667,8 +666,7 @@ void pc1640_state::pc1640_io(address_map &map)
 	map(0x020, 0x021).w(m_pic, FUNC(pic8259_device::write));
 	map(0x040, 0x043).w(m_pit, FUNC(pit8253_device::write));
 	map(0x060, 0x06f).w(FUNC(pc1640_state::system_w));
-	map(0x070, 0x070).mirror(0x02).w(m_rtc, FUNC(mc146818_device::address_w));
-	map(0x071, 0x071).mirror(0x02).w(m_rtc, FUNC(mc146818_device::data_w));
+	map(0x070, 0x071).mirror(0x02).w(m_rtc, FUNC(mc146818_device::write));
 	map(0x078, 0x07f).w(FUNC(pc1640_state::mouse_w));
 	map(0x080, 0x083).w(FUNC(pc1640_state::dma_page_w));
 	map(0x0a1, 0x0a1).w(FUNC(pc1640_state::nmi_mask_w));
@@ -780,12 +778,12 @@ INPUT_PORTS_END
 //  PC1512_KEYBOARD_INTERFACE( kb_intf )
 //-------------------------------------------------
 
-void pc1512_base_state::kbdata_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::kbdata_w )
 {
 	m_kbdata = state;
 }
 
-void pc1512_base_state::kbclk_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::kbclk_w )
 {
 	if (!BIT(m_port61, 7) && m_kbclk && !state)
 	{
@@ -835,14 +833,14 @@ void pc1512_base_state::update_fdc_tc()
 		m_fdc->tc_w(false);
 }
 
-void pc1512_base_state::hrq_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::hrq_w )
 {
 	m_maincpu->set_input_line(INPUT_LINE_HALT, state ? ASSERT_LINE : CLEAR_LINE);
 
 	m_dmac->hack_w(state);
 }
 
-void pc1512_base_state::eop_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::eop_w )
 {
 	if (m_dma_channel == 2)
 	{
@@ -909,22 +907,22 @@ void pc1512_base_state::iow3_w(uint8_t data)
 	m_bus->dack_w(3, data);
 }
 
-void pc1512_base_state::dack0_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::dack0_w )
 {
 	if (!state) m_dma_channel = 0;
 }
 
-void pc1512_base_state::dack1_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::dack1_w )
 {
 	if (!state) m_dma_channel = 1;
 }
 
-void pc1512_base_state::dack2_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::dack2_w )
 {
 	if (!state) m_dma_channel = 2;
 }
 
-void pc1512_base_state::dack3_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::dack3_w )
 {
 	if (!state) m_dma_channel = 3;
 }
@@ -938,7 +936,7 @@ void pc1512_base_state::update_speaker()
 	m_speaker->level_w(m_speaker_drive & m_pit2);
 }
 
-void pc1512_base_state::pit1_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::pit1_w )
 {
 	if (!m_pit1 && state && !m_dreq0)
 	{
@@ -949,7 +947,7 @@ void pc1512_base_state::pit1_w(int state)
 	m_pit1 = state;
 }
 
-void pc1512_base_state::pit2_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::pit2_w )
 {
 	m_pit2 = state;
 	update_speaker();
@@ -975,13 +973,13 @@ void pc1512_base_state::update_fdc_drq()
 		m_dmac->dreq2_w(0);
 }
 
-void pc1512_base_state::fdc_int_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::fdc_int_w )
 {
 	m_dint = state;
 	update_fdc_int();
 }
 
-void pc1512_base_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::fdc_drq_w )
 {
 	m_ddrq = state;
 	update_fdc_drq();
@@ -1015,28 +1013,28 @@ void pc1512_base_state::update_ack()
 		m_pic->ir7_w(CLEAR_LINE);
 }
 
-void pc1512_base_state::write_centronics_ack(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::write_centronics_ack )
 {
 	m_centronics_ack = state;
 	update_ack();
 }
 
-void pc1512_base_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::write_centronics_busy )
 {
 	m_centronics_busy = state;
 }
 
-void pc1512_base_state::write_centronics_perror(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::write_centronics_perror )
 {
 	m_centronics_perror = state;
 }
 
-void pc1512_base_state::write_centronics_select(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::write_centronics_select )
 {
 	m_centronics_select = state;
 }
 
-void pc1512_base_state::write_centronics_fault(int state)
+WRITE_LINE_MEMBER( pc1512_base_state::write_centronics_fault )
 {
 	m_centronics_fault = state;
 }

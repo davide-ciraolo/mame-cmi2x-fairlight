@@ -14,23 +14,22 @@ DEFINE_DEVICE_TYPE(TMP95C061, tmp95c061_device, "tmp95c061", "Toshiba TMP95C061"
 
 tmp95c061_device::tmp95c061_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
 	tlcs900h_device(mconfig, TMP95C061, tag, owner, clock),
-	m_port1_read(*this, 0),
+	m_port1_read(*this),
 	m_port1_write(*this),
 	m_port2_write(*this),
-	m_port5_read(*this, 0),
+	m_port5_read(*this),
 	m_port5_write(*this),
-	m_port6_read(*this, 0),
+	m_port6_read(*this),
 	m_port6_write(*this),
-	m_port7_read(*this, 0),
+	m_port7_read(*this),
 	m_port7_write(*this),
-	m_port8_read(*this, 0),
+	m_port8_read(*this),
 	m_port8_write(*this),
-	m_port9_read(*this, 0),
-	m_porta_read(*this, 0),
+	m_port9_read(*this),
+	m_porta_read(*this),
 	m_porta_write(*this),
-	m_portb_read(*this, 0),
+	m_portb_read(*this),
 	m_portb_write(*this),
-	m_an_read(*this, 0),
 	m_port_latch{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 	m_port_control{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 	m_port_function{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -190,6 +189,23 @@ void tmp95c061_device::device_start()
 	save_item(NAME(m_mem_start_mask));
 	save_item(NAME(m_dram_refresh));
 	save_item(NAME(m_dram_access));
+
+	m_port1_read.resolve_safe(0);
+	m_port1_write.resolve_safe();
+	m_port2_write.resolve_safe();
+	m_port5_read.resolve_safe(0);
+	m_port5_write.resolve_safe();
+	m_port6_read.resolve_safe(0);
+	m_port6_write.resolve_safe();
+	m_port7_read.resolve_safe(0);
+	m_port7_write.resolve_safe();
+	m_port8_read.resolve_safe(0);
+	m_port8_write.resolve_safe();
+	m_port9_read.resolve_safe(0);
+	m_porta_read.resolve_safe(0);
+	m_porta_write.resolve_safe();
+	m_portb_read.resolve_safe(0);
+	m_portb_write.resolve_safe();
 }
 
 void tmp95c061_device::device_reset()
@@ -534,29 +550,15 @@ void tmp95c061_device::tlcs900_handle_ad()
 		if ( m_ad_cycles_left <= 0 )
 		{
 			/* Store A/D converted value */
-			if ( ( m_ad_mode & 0x10 ) == 0 )
+			switch( m_ad_mode & 0x03 )
 			{
-				/* conversion channel fixed */
-				m_ad_result[m_ad_mode & 0x03] = m_an_read[m_ad_mode & 0x03](0) & 0x3ff;
-			}
-			else
-			{
-				/* conversion channel sweep */
-				switch( m_ad_mode & 0x03 )
-				{
-				case 0x03:  /* AN3 */
-					m_ad_result[3] = m_an_read[3](0) & 0x3ff;
-					[[fallthrough]];
-				case 0x02:  /* AN2 */
-					m_ad_result[2] = m_an_read[2](0) & 0x3ff;
-					[[fallthrough]];
-				case 0x01:  /* AN1 */
-					m_ad_result[1] = m_an_read[1](0) & 0x3ff;
-					[[fallthrough]];
-				case 0x00:  /* AN0 */
-					m_ad_result[0] = m_an_read[0](0) & 0x3ff;
-					break;
-				}
+			case 0x00:  /* AN0 */
+				m_ad_result[0] = 0x3ff;
+				break;
+			case 0x01:  /* AN1 */
+			case 0x02:  /* AN2 */
+			case 0x03:  /* AN3 */
+				break;
 			}
 
 			/* Clear BUSY flag, set END flag */
@@ -565,10 +567,6 @@ void tmp95c061_device::tlcs900_handle_ad()
 
 			m_int_reg[TMP95C061_INTE0AD] |= 0x80;
 			m_check_irqs = 1;
-
-			/* AD repeat mode */
-			if ( m_ad_mode & 0x20 )
-				m_ad_cycles_left = ( m_ad_mode & 0x08 ) ? 320 : 160;
 		}
 	}
 }
@@ -1357,15 +1355,10 @@ void tmp95c061_device::ode_w(uint8_t data)
 
 uint8_t tmp95c061_device::adreg_r(offs_t offset)
 {
-	// ADMOD EOCF is cleared to 0 when reading any ADREG0..3
-	m_ad_mode &= ~0x80;
-
 	if (BIT(offset, 0))
 		return m_ad_result[offset >> 1] >> 2;
-
-	// Reading data from the upper 8 bits clears INTE0AD IADC
-	m_int_reg[TMP95C061_INTE0AD] &= ~0x80;
-	return m_ad_result[offset >> 1] << 6 | 0x3f;
+	else
+		return m_ad_result[offset >> 1] << 6 | 0x3f;
 }
 
 uint8_t tmp95c061_device::admod_r()
@@ -1383,7 +1376,7 @@ void tmp95c061_device::admod_w(uint8_t data)
 	{
 		data &= ~0x04;
 		data |= 0x40;
-		m_ad_cycles_left = ( data & 0x08 ) ? 320 : 160;
+		m_ad_cycles_left = ( data & 0x08 ) ? 640 : 320;
 	}
 
 	m_ad_mode = data;

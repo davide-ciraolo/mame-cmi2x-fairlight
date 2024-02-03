@@ -88,7 +88,7 @@ protected:
 	virtual bool take_c800() override { return false; }
 
 private:
-	void irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_w);
 };
 
 // card 2

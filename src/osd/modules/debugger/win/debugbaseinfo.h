@@ -13,8 +13,6 @@
 #include "debugwin.h"
 
 
-namespace osd::debugger::win {
-
 class debugbase_info
 {
 protected:
@@ -37,6 +35,4 @@ private:
 	bool const                  &m_waiting_for_debugger;
 };
 
-} // namespace osd::debugger::win
-
-#endif // MAME_DEBUGGER_WIN_DEBUGBASEINFO_H
+#endif

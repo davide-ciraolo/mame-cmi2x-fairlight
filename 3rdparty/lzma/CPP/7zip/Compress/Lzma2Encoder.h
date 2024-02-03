@@ -1,7 +1,7 @@
 // Lzma2Encoder.h
 
-#ifndef ZIP7_INC_LZMA2_ENCODER_H
-#define ZIP7_INC_LZMA2_ENCODER_H
+#ifndef __LZMA2_ENCODER_H
+#define __LZMA2_ENCODER_H
 
 #include "../../../C/Lzma2Enc.h"
 
@@ -12,17 +12,23 @@
 namespace NCompress {
 namespace NLzma2 {
 
-Z7_CLASS_IMP_COM_4(
-  CEncoder
-  , ICompressCoder
-  , ICompressSetCoderProperties
-  , ICompressWriteCoderProperties
-  , ICompressSetCoderPropertiesOpt
-)
+class CEncoder:
+  public ICompressCoder,
+  public ICompressSetCoderProperties,
+  public ICompressWriteCoderProperties,
+  public CMyUnknownImp
+{
   CLzma2EncHandle _encoder;
 public:
+  MY_UNKNOWN_IMP3(ICompressCoder, ICompressSetCoderProperties, ICompressWriteCoderProperties)
+ 
+  STDMETHOD(Code)(ISequentialInStream *inStream, ISequentialOutStream *outStream,
+      const UInt64 *inSize, const UInt64 *outSize, ICompressProgressInfo *progress);
+  STDMETHOD(SetCoderProperties)(const PROPID *propIDs, const PROPVARIANT *props, UInt32 numProps);
+  STDMETHOD(WriteCoderProperties)(ISequentialOutStream *outStream);
+
   CEncoder();
-  ~CEncoder();
+  virtual ~CEncoder();
 };
 
 }}

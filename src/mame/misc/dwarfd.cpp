@@ -305,9 +305,6 @@ uPC1352C @ N3
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
-
 class dwarfd_state : public driver_device
 {
 public:
@@ -350,8 +347,8 @@ private:
 	void output1_w(uint8_t data);
 	void output2_w(uint8_t data);
 	uint8_t qc_b8_r();
-	void dwarfd_sod_callback(int state);
-	void drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(dwarfd_sod_callback);
+	DECLARE_WRITE_LINE_MEMBER(drq_w);
 	void dwarfd_palette(palette_device &palette) const;
 	I8275_DRAW_CHARACTER_MEMBER(display_pixels);
 	I8275_DRAW_CHARACTER_MEMBER(pesp_display_pixels);
@@ -609,18 +606,19 @@ INPUT_PORTS_END
 
 I8275_DRAW_CHARACTER_MEMBER(dwarfd_state::pesp_display_pixels)
 {
-	using namespace i8275_attributes;
-	int bank = (BIT(attrcode, GPA1) ? 0 : 2) + (BIT(attrcode, GPA0) ? 1 : 0);
-	int palbank = (BIT(attrcode, RVV) ? 2 : 0) + (BIT(attrcode, VSP) ? 1 : 0);
+	int bank = ((gpa & 2) ? 0 : 2) + (gpa & 1);
 	const rgb_t *palette = m_palette->palette()->entry_list_raw();
 	uint16_t pixels = m_charmap[(linecount & 7) + ((charcode + (bank * 128)) << 3)];
 	if(!x)
 		m_back_color = false;
 
+	//if(!linecount)
+	//  logerror("%d %d %02x %02x %02x %02x %02x %02x %02x\n", x/8, y/8, charcode, lineattr, lten, rvv, vsp, gpa, hlgt);
+
 	for (int i = 0; i < 8; i += 2)
 	{
 		uint8_t pixel = (pixels >> (i * 2)) & 0xf;
-		uint8_t value = (pixel >> 1) | (palbank << 3);
+		uint8_t value = (pixel >> 1) | (rvv << 4) | (vsp << 3);
 		bitmap.pix(y, x + i) = palette[value];
 		bitmap.pix(y, x + i + 1) = palette[(pixel & 1) ? 0 : value];
 		if(m_back_color)
@@ -631,18 +629,19 @@ I8275_DRAW_CHARACTER_MEMBER(dwarfd_state::pesp_display_pixels)
 
 I8275_DRAW_CHARACTER_MEMBER(dwarfd_state::display_pixels)
 {
-	using namespace i8275_attributes;
-	int bank = (BIT(attrcode, GPA1) ? 0 : 4) + (BIT(attrcode, GPA0) ? 1 : 0) + (m_dsw2->read() & 2);
-	int palbank = (BIT(attrcode, RVV) ? 2 : 0) + (BIT(attrcode, VSP) ? 1 : 0);
+	int bank = ((gpa & 2) ? 0 : 4) + (gpa & 1) + (m_dsw2->read() & 2);
 	const rgb_t *palette = m_palette->palette()->entry_list_raw();
 	uint16_t pixels = m_charmap[(linecount & 7) + ((charcode + (bank * 128)) << 3)];
 	if(!x)
 		m_back_color = false;
 
+	//if(!linecount)
+	//  logerror("%d %d %02x %02x %02x %02x %02x %02x %02x\n", x/8, y/8, charcode, lineattr, lten, rvv, vsp, gpa, hlgt);
+
 	for (int i = 0; i < 8; i += 2)
 	{
 		uint8_t pixel = (pixels >> (i * 2)) & 0xf;
-		uint8_t value = (pixel >> 1) | (palbank << 3);
+		uint8_t value = (pixel >> 1) | (rvv << 4) | (vsp << 3);
 		bitmap.pix(y, x + i) = palette[value];
 		bitmap.pix(y, x + i + 1) = palette[(pixel & 1) ? 0 : value];
 		if(m_back_color)
@@ -653,18 +652,19 @@ I8275_DRAW_CHARACTER_MEMBER(dwarfd_state::display_pixels)
 
 I8275_DRAW_CHARACTER_MEMBER(dwarfd_state::qc_display_pixels)
 {
-	using namespace i8275_attributes;
-	int bank = BIT(attrcode, GPA0, 2);
-	int palbank = (BIT(attrcode, RVV) ? 2 : 0) + (BIT(attrcode, VSP) ? 1 : 0);
+	int bank = gpa;
 	const rgb_t *palette = m_palette->palette()->entry_list_raw();
 	uint16_t pixels = m_charmap[(linecount & 7) + ((charcode + (bank * 128)) << 3)];
 	if(!x)
 		m_back_color = false;
 
+	//if(!linecount)
+	//  logerror("%d %d %02x %02x %02x %02x %02x %02x %02x\n", x/8, y/8, charcode, lineattr, lten, rvv, vsp, gpa, hlgt);
+
 	for (int i = 0; i < 8; i += 2)
 	{
 		uint8_t pixel = (pixels >> (i * 2)) & 0xf;
-		uint8_t value = (pixel >> 1) | (palbank << 3);
+		uint8_t value = (pixel >> 1) | (rvv << 4) | (vsp << 3);
 		bitmap.pix(y, x + i) = palette[value];
 		bitmap.pix(y, x + i + 1) = palette[(pixel & 1) ? 0 : value];
 		if(m_back_color)
@@ -673,12 +673,12 @@ I8275_DRAW_CHARACTER_MEMBER(dwarfd_state::qc_display_pixels)
 	}
 }
 
-void dwarfd_state::dwarfd_sod_callback(int state)
+WRITE_LINE_MEMBER(dwarfd_state::dwarfd_sod_callback)
 {
 	m_crt_access = state;
 }
 
-void dwarfd_state::drq_w(int state)
+WRITE_LINE_MEMBER(dwarfd_state::drq_w)
 {
 	if(state && !m_crt_access)
 		m_maincpu->set_input_line(I8085_RST65_LINE, ASSERT_LINE);
@@ -993,9 +993,6 @@ void dwarfd_state::init_qc()
 	memregion("maincpu")->base()[0x59b4] = 0x00;
 
 }
-
-} // anonymous namespace
-
 
 //    YEAR  NAME      PARENT     MACHINE   INPUT     STATE         INIT    ORENTATION,         COMPANY           FULLNAME            FLAGS
 GAME( 1979, pokeresp,  0,        pokeresp, dwarfd,   dwarfd_state, init_dwarfd, ROT0, "Electro-Sport", "Poker (Electro-Sport)",                   MACHINE_IMPERFECT_GRAPHICS | MACHINE_SUPPORTS_SAVE )

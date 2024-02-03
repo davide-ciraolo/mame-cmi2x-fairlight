@@ -33,17 +33,17 @@ DEFINE_DEVICE_TYPE(VP590, vp590_device, "vp590", "VP-590 Color Board + VP-580 16
 //  CDP1862_INTERFACE( cgc_intf )
 //-------------------------------------------------
 
-int vp590_device::rd_r()
+READ_LINE_MEMBER( vp590_device::rd_r )
 {
 	return BIT(m_color, 1);
 }
 
-int vp590_device::bd_r()
+READ_LINE_MEMBER( vp590_device::bd_r )
 {
 	return BIT(m_color, 2);
 }
 
-int vp590_device::gd_r()
+READ_LINE_MEMBER( vp590_device::gd_r )
 {
 	return BIT(m_color, 3);
 }

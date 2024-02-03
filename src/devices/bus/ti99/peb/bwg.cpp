@@ -50,17 +50,17 @@
 // ----------------------------------
 // Flags for debugging
 
-#define LOG_WARN        (1U << 1)    // Warnings
-#define LOG_RW          (1U << 2)    // Read and write accesses
-#define LOG_CRU         (1U << 3)    // Show CRU bit accesses
-#define LOG_CRUD        (1U << 4)    // Show CRU bit accesses (details)
-#define LOG_READY       (1U << 5)    // Show ready line activity
-#define LOG_SIGNALS     (1U << 6)    // Show detailed signal activity
-#define LOG_ADDRESS     (1U << 7)    // Show address bus operations
-#define LOG_MOTOR       (1U << 8)    // Show motor operations
-#define LOG_CONFIG      (1U << 9)    // Configuration
+#define LOG_WARN        (1U<<1)    // Warnings
+#define LOG_RW          (1U<<2)     // Read and write accesses
+#define LOG_CRU         (1U<<3)    // Show CRU bit accesses
+#define LOG_CRUD        (1U<<4)    // Show CRU bit accesses (details)
+#define LOG_READY       (1U<<5)    // Show ready line activity
+#define LOG_SIGNALS     (1U<<6)    // Show detailed signal activity
+#define LOG_ADDRESS     (1U<<7)    // Show address bus operations
+#define LOG_MOTOR       (1U<<8)    // Show motor operations
+#define LOG_CONFIG      (1U<<9)    // Configuration
 
-#define VERBOSE (LOG_CONFIG | LOG_WARN)
+#define VERBOSE ( LOG_CONFIG | LOG_WARN )
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(TI99_BWG, bus::ti99::peb::snug_bwg_device, "ti99_bwg", "SNUG BwG Floppy Controller")
@@ -123,7 +123,7 @@ void snug_bwg_device::operate_ready_line()
 /*
     Callbacks from the WD1773 chip
 */
-void snug_bwg_device::fdc_irq_w(int state)
+WRITE_LINE_MEMBER( snug_bwg_device::fdc_irq_w )
 {
 	LOGMASKED(LOG_SIGNALS, "set intrq = %d\n", state);
 	m_IRQ = (line_state)state;
@@ -132,7 +132,7 @@ void snug_bwg_device::fdc_irq_w(int state)
 	operate_ready_line();
 }
 
-void snug_bwg_device::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( snug_bwg_device::fdc_drq_w )
 {
 	LOGMASKED(LOG_SIGNALS, "set drq = %d\n", state);
 	m_DRQ = (line_state)state;
@@ -390,19 +390,19 @@ void snug_bwg_device::cruwrite(offs_t offset, uint8_t data)
 	}
 }
 
-void snug_bwg_device::den_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::den_w)
 {
 	// (De)select the card. Indicated by a LED on the board.
 	m_selected = state;
 	LOGMASKED(LOG_CRU, "Map DSR (bit 0) = %d\n", m_selected);
 }
 
-void snug_bwg_device::mop_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::mop_w)
 {
 	m_motormf->b_w(state);
 }
 
-void snug_bwg_device::waiten_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::waiten_w)
 {
 	/* Set disk ready/hold (bit 2) */
 	// 0: ignore IRQ and DRQ
@@ -412,29 +412,29 @@ void snug_bwg_device::waiten_w(int state)
 	LOGMASKED(LOG_CRU, "Arm wait state logic (bit 2) = %d\n", state);
 }
 
-void snug_bwg_device::hlt_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::hlt_w)
 {
 	// Load disk heads (HLT pin) (bit 3). Not implemented.
 	LOGMASKED(LOG_CRU, "Set head load (bit 3) = %d\n", state);
 }
 
 /* Drive selects */
-void snug_bwg_device::dsel1_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::dsel1_w)
 {
 	select_drive(1, state);
 }
 
-void snug_bwg_device::dsel2_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::dsel2_w)
 {
 	select_drive(2, state);
 }
 
-void snug_bwg_device::dsel3_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::dsel3_w)
 {
 	select_drive(3, state);
 }
 
-void snug_bwg_device::dsel4_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::dsel4_w)
 {
 	select_drive(4, state);
 }
@@ -472,7 +472,7 @@ void snug_bwg_device::select_drive(int n, int state)
 	}
 }
 
-void snug_bwg_device::sidsel_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::sidsel_w)
 {
 	// Select side of disk (bit 7)
 	if (m_sel_floppy != 0)
@@ -482,7 +482,7 @@ void snug_bwg_device::sidsel_w(int state)
 	}
 }
 
-void snug_bwg_device::dden_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::dden_w)
 {
 	/* double density enable (active low) */
 	LOGMASKED(LOG_CRU, "Set density (bit 10) = %d (%s)\n", state, (state!=0)? "single" : "double");
@@ -492,7 +492,7 @@ void snug_bwg_device::dden_w(int state)
 /*
     All floppy motors are operated by the same line.
 */
-void snug_bwg_device::motorona_w(int state)
+WRITE_LINE_MEMBER(snug_bwg_device::motorona_w)
 {
 	m_MOTOR_ON = state;
 	LOGMASKED(LOG_MOTOR, "Motor %s\n", state? "on" : "off");

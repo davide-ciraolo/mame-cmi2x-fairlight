@@ -28,7 +28,7 @@ protected:
 	virtual void device_reset() override { }
 
 private:
-	void read(int state) { output_rxd(state); }
+	DECLARE_WRITE_LINE_MEMBER( read ) { output_rxd(state); }
 
 	required_device<midiin_device> m_midiin;
 };

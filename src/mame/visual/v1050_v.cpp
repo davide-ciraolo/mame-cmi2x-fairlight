@@ -87,7 +87,7 @@ MC6845_UPDATE_ROW( v1050_state::crtc_update_row )
 	}
 }
 
-void v1050_state::crtc_vs_w(int state)
+WRITE_LINE_MEMBER( v1050_state::crtc_vs_w )
 {
 	m_subcpu->set_input_line(INPUT_LINE_IRQ0, state ? ASSERT_LINE : CLEAR_LINE);
 

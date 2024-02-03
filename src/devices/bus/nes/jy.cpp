@@ -24,11 +24,12 @@
 #include "video/ppu2c0x.h"      // this has to be included so that IRQ functions can access ppu2c0x_device::BOTTOM_VISIBLE_SCANLINE
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -238,7 +239,7 @@ void nes_jy_typea_device::scanline_irq(int scanline, bool vblank, bool blanked)
 // 0x5000-0x5fff : sort of protection?
 uint8_t nes_jy_typea_device::read_l(offs_t offset)
 {
-	LOG("JY Company write_m, offset: %04x\n", offset);
+	LOG_MMC(("JY Company write_m, offset: %04x\n", offset));
 	offset += 0x100;
 
 	if (offset >= 0x1000 && offset < 0x1800)
@@ -262,7 +263,7 @@ uint8_t nes_jy_typea_device::read_l(offs_t offset)
 
 void nes_jy_typea_device::write_l(offs_t offset, uint8_t data)
 {
-	LOG("JY Company write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("JY Company write_m, offset: %04x, data: %02x\n", offset, data));
 	offset += 0x100;
 
 	if (offset >= 0x1800)
@@ -279,7 +280,7 @@ void nes_jy_typea_device::write_l(offs_t offset, uint8_t data)
 // 0x6000-0x7fff : WRAM or open bus
 uint8_t nes_jy_typea_device::read_m(offs_t offset)
 {
-	LOG("JY Company write_m, offset: %04x\n", offset);
+	LOG_MMC(("JY Company write_m, offset: %04x\n", offset));
 
 	if (m_reg[0] & 0x80)
 		return m_prg[(m_bank_6000 & m_prg_mask) * 0x2000 + (offset & 0x1fff)];
@@ -422,7 +423,7 @@ void nes_jy_typea_device::update_banks(int reg)
 
 void nes_jy_typea_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("JY Company write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("JY Company write_m, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x7000)
 	{

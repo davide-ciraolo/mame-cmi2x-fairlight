@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/d71_dsk.cpp
+    formats/d71_dsk.c
 
     Commodore 1571 sector disk image format
 
@@ -14,17 +14,17 @@ d71_format::d71_format() : d64_format(formats)
 {
 }
 
-const char *d71_format::name() const noexcept
+const char *d71_format::name() const
 {
 	return "d71";
 }
 
-const char *d71_format::description() const noexcept
+const char *d71_format::description() const
 {
 	return "Commodore 1571 disk image";
 }
 
-const char *d71_format::extensions() const noexcept
+const char *d71_format::extensions() const
 {
 	return "d71";
 }

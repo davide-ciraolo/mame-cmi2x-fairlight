@@ -68,8 +68,6 @@ ToDo:
 #include "speaker.h"
 
 
-namespace {
-
 class pcm_state : public driver_device
 {
 public:
@@ -91,9 +89,9 @@ public:
 
 private:
 	u8 port85_r();
-	void port82_w(int state);
-	void port85_w(u8 data);
-	void port94_w(u8 data);
+	DECLARE_WRITE_LINE_MEMBER( port82_w );
+	void port85_w(u8);
+	void port94_w(u8);
 	u32 screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
 	void io_map(address_map &map);
@@ -116,7 +114,7 @@ private:
 };
 
 
-void  pcm_state::port82_w(int state)
+WRITE_LINE_MEMBER( pcm_state::port82_w )
 {
 	if (state)
 	{
@@ -374,9 +372,6 @@ ROM_START( pcm )
 	ROM_REGION(0x0800, "chargen",0)
 	ROM_LOAD( "charrom.d113", 0x0000, 0x0800, CRC(5684b3c3) SHA1(418054aa70a0fd120611e32059eb2051d3b82b5a))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

@@ -21,13 +21,13 @@
  *
  *************************************/
 
-void tutankhm_state::flip_screen_x_w(int state)
+WRITE_LINE_MEMBER(tutankhm_state::flip_screen_x_w)
 {
 	m_flipscreen_x = state;
 }
 
 
-void tutankhm_state::flip_screen_y_w(int state)
+WRITE_LINE_MEMBER(tutankhm_state::flip_screen_y_w)
 {
 	m_flipscreen_y = state;
 }

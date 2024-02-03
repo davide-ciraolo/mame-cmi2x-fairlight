@@ -29,7 +29,8 @@ DEFINE_DEVICE_TYPE(S100_SLOT, s100_slot_device, "s100_slot", "S100 slot")
 
 device_s100_card_interface::device_s100_card_interface(const machine_config &mconfig, device_t &device) :
 	device_interface(device, "s100bus"),
-	m_bus(nullptr)
+	m_bus(nullptr),
+	m_next(nullptr)
 {
 }
 
@@ -59,7 +60,7 @@ void s100_slot_device::device_start()
 {
 	device_s100_card_interface *const dev = get_card_device();
 	if (dev)
-		m_bus->add_card(*dev);
+		m_bus->add_card(dev);
 }
 
 
@@ -89,10 +90,6 @@ s100_bus_device::s100_bus_device(const machine_config &mconfig, const char *tag,
 {
 }
 
-s100_bus_device::~s100_bus_device()
-{
-}
-
 
 //-------------------------------------------------
 //  device_start - device-specific startup
@@ -100,6 +97,24 @@ s100_bus_device::~s100_bus_device()
 
 void s100_bus_device::device_start()
 {
+	// resolve callbacks
+	m_write_irq.resolve_safe();
+	m_write_nmi.resolve_safe();
+	m_write_vi0.resolve_safe();
+	m_write_vi1.resolve_safe();
+	m_write_vi2.resolve_safe();
+	m_write_vi3.resolve_safe();
+	m_write_vi4.resolve_safe();
+	m_write_vi5.resolve_safe();
+	m_write_vi6.resolve_safe();
+	m_write_vi7.resolve_safe();
+	m_write_dma0.resolve_safe();
+	m_write_dma1.resolve_safe();
+	m_write_dma2.resolve_safe();
+	m_write_dma3.resolve_safe();
+	m_write_rdy.resolve_safe();
+	m_write_hold.resolve_safe();
+	m_write_error.resolve_safe();
 }
 
 
@@ -116,10 +131,10 @@ void s100_bus_device::device_reset()
 //  add_card - add card
 //-------------------------------------------------
 
-void s100_bus_device::add_card(device_s100_card_interface &card)
+void s100_bus_device::add_card(device_s100_card_interface *card)
 {
-	card.m_bus = this;
-	m_device_list.emplace_back(card);
+	card->m_bus = this;
+	m_device_list.append(*card);
 }
 
 
@@ -131,8 +146,13 @@ uint8_t s100_bus_device::smemr_r(offs_t offset)
 {
 	uint8_t data = 0xff;
 
-	for (device_s100_card_interface &entry : m_device_list)
-		data &= entry.s100_smemr_r(offset);
+	device_s100_card_interface *entry = m_device_list.first();
+
+	while (entry)
+	{
+		data &= entry->s100_smemr_r(offset);
+		entry = entry->next();
+	}
 
 	return data;
 }
@@ -144,8 +164,13 @@ uint8_t s100_bus_device::smemr_r(offs_t offset)
 
 void s100_bus_device::mwrt_w(offs_t offset, uint8_t data)
 {
-	for (device_s100_card_interface &entry : m_device_list)
-		entry.s100_mwrt_w(offset, data);
+	device_s100_card_interface *entry = m_device_list.first();
+
+	while (entry)
+	{
+		entry->s100_mwrt_w(offset, data);
+		entry = entry->next();
+	}
 }
 
 
@@ -157,8 +182,13 @@ uint8_t s100_bus_device::sinp_r(offs_t offset)
 {
 	uint8_t data = 0xff;
 
-	for (device_s100_card_interface &entry : m_device_list)
-		data &= entry.s100_sinp_r(offset);
+	device_s100_card_interface *entry = m_device_list.first();
+
+	while (entry)
+	{
+		data &= entry->s100_sinp_r(offset);
+		entry = entry->next();
+	}
 
 	return data;
 }
@@ -170,6 +200,11 @@ uint8_t s100_bus_device::sinp_r(offs_t offset)
 
 void s100_bus_device::sout_w(offs_t offset, uint8_t data)
 {
-	for (device_s100_card_interface &entry : m_device_list)
-		entry.s100_sout_w(offset, data);
+	device_s100_card_interface *entry = m_device_list.first();
+
+	while (entry)
+	{
+		entry->s100_sout_w(offset, data);
+		entry = entry->next();
+	}
 }

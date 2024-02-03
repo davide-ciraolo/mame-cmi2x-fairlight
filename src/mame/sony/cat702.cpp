@@ -118,6 +118,8 @@ void cat702_device::device_start()
 		memcpy(m_transform, m_region->base(), sizeof(m_transform));
 	}
 
+	m_dataout_handler.resolve_safe();
+
 	save_item(NAME(m_select));
 	save_item(NAME(m_clock));
 	save_item(NAME(m_datain));
@@ -181,7 +183,7 @@ void cat702_device::apply_sbox(const uint8_t *sbox)
 	m_state = r;
 }
 
-void cat702_device::write_select(int state)
+WRITE_LINE_MEMBER(cat702_device::write_select)
 {
 	if (m_select != state)
 	{
@@ -199,7 +201,7 @@ void cat702_device::write_select(int state)
 	}
 }
 
-void cat702_device::write_clock(int state)
+WRITE_LINE_MEMBER(cat702_device::write_clock)
 {
 	static const uint8_t initial_sbox[8] = { 0xff, 0xfe, 0xfc, 0xf8, 0xf0, 0xe0, 0xc0, 0x7f };
 
@@ -227,7 +229,7 @@ void cat702_device::write_clock(int state)
 	m_clock = state;
 }
 
-void cat702_device::write_datain(int state)
+WRITE_LINE_MEMBER(cat702_device::write_datain)
 {
 	m_datain = state;
 }

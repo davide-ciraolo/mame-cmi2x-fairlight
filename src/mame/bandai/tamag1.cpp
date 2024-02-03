@@ -3,13 +3,9 @@
 // thanks-to:digshadow, segher
 /*******************************************************************************
 
-Bandai Tamagotchi generation 1 hardware
-
-Hardware notes:
-- PCB label: TMG-M1
-- Seiko Epson E0C6S46 MCU under epoxy
-- 32*16 LCD screen + 8 custom segments
-- 1-bit sound
+  Bandai Tamagotchi generation 1 hardware
+  * PCB label TMG-M1
+  * Seiko Epson E0C6S46 MCU under epoxy
 
 *******************************************************************************/
 
@@ -40,12 +36,11 @@ public:
 
 	DECLARE_INPUT_CHANGED_MEMBER(input_changed);
 
-protected:
-	virtual void machine_start() override;
-
 private:
 	void tama_palette(palette_device &palette) const;
 	E0C6S46_PIXEL_UPDATE(pixel_update);
+
+	virtual void machine_start() override;
 
 	required_device<e0c6s46_device> m_maincpu;
 	output_finder<16, 40> m_out_x;
@@ -55,7 +50,6 @@ void tamag1_state::machine_start()
 {
 	m_out_x.resolve();
 }
-
 
 
 /*******************************************************************************
@@ -69,7 +63,7 @@ E0C6S46_PIXEL_UPDATE(tamag1_state::pixel_update)
 	static const int seg2x[0x28] =
 	{
 		0, 1, 2, 3, 4, 5, 6, 7,
-		35,8, 9, 10,11,12,13,14,
+		35, 8, 9,10,11,12,13,14,
 		15,34,33,32,31,30,29,28,
 		27,26,25,24,36,23,22,21,
 		20,19,18,17,16,37,38,39
@@ -125,12 +119,12 @@ INPUT_PORTS_END
 
 void tamag1_state::tama(machine_config &config)
 {
-	// basic machine hardware
+	/* basic machine hardware */
 	E0C6S46(config, m_maincpu, 32.768_kHz_XTAL);
 	m_maincpu->set_pixel_update_cb(FUNC(tamag1_state::pixel_update));
 	m_maincpu->write_r<4>().set("speaker", FUNC(speaker_sound_device::level_w)).bit(3);
 
-	// video hardware
+	/* video hardware */
 	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_LCD));
 	screen.set_refresh_hz(32.768_kHz_XTAL/1024);
 	screen.set_vblank_time(ATTOSECONDS_IN_USEC(0));
@@ -142,7 +136,7 @@ void tamag1_state::tama(machine_config &config)
 
 	PALETTE(config, "palette", FUNC(tamag1_state::tama_palette), 2);
 
-	// sound hardware
+	/* sound hardware */
 	SPEAKER(config, "mono").front_center();
 	SPEAKER_SOUND(config, "speaker").add_route(ALL_OUTPUTS, "mono", 0.25);
 }
@@ -170,4 +164,4 @@ ROM_END
 *******************************************************************************/
 
 //    YEAR  NAME  PARENT  COMPAT  MACHINE  INPUT  CLASS         INIT        COMPANY,  FULLNAME,           FLAGS
-SYST( 1997, tama, 0,      0,      tama,    tama,  tamag1_state, empty_init, "Bandai", "Tamagotchi (USA)", MACHINE_SUPPORTS_SAVE )
+CONS( 1997, tama, 0,      0,      tama,    tama,  tamag1_state, empty_init, "Bandai", "Tamagotchi (USA)", MACHINE_SUPPORTS_SAVE )

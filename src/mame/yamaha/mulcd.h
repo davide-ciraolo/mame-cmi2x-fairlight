@@ -4,15 +4,13 @@
 // HD44780/LCD image combo used in the yamaha mu, vl70m, fs1r and
 // probably others
 
-#ifndef MAME_YAMAHA_MULCD_H
-#define MAME_YAMAHA_MULCD_H
+#ifndef MAME_MACHINE_MULCD_H
+#define MAME_MACHINE_MULCD_H
 
 #pragma once
 
 #include "video/hd44780.h"
 #include "screen.h"
-
-DECLARE_DEVICE_TYPE(MULCD, mulcd_device)
 
 class mulcd_device : public device_t
 {
@@ -38,7 +36,9 @@ private:
 	output_finder<> m_contrast;
 	output_finder<6> m_led_outputs;
 
-	void render_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(render_w);
 };
 
-#endif // MAME_YAMAHA_MULCD_H
+DECLARE_DEVICE_TYPE(MULCD, mulcd_device)
+
+#endif

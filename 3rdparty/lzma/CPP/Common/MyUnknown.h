@@ -1,8 +1,17 @@
 // MyUnknown.h
 
-#ifndef ZIP7_INC_MY_UNKNOWN_H
-#define ZIP7_INC_MY_UNKNOWN_H
+#ifndef __MY_UNKNOWN_H
+#define __MY_UNKNOWN_H
 
 #include "MyWindows.h"
 
+/*
+#ifdef _WIN32
+#include <basetyps.h>
+#include <unknwn.h>
+#else
+#include "MyWindows.h"
+#endif
+*/
+  
 #endif

@@ -212,8 +212,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 class esqmr_state : public driver_device
 {
 public:
@@ -233,10 +231,10 @@ private:
 
 	virtual void machine_reset() override;
 
-	void esq5506_otto_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(esq5506_otto_irq);
 	u16 esq5506_read_adc();
-	void duart_tx_a(int state);
-	void duart_tx_b(int state);
+	DECLARE_WRITE_LINE_MEMBER(duart_tx_a);
+	DECLARE_WRITE_LINE_MEMBER(duart_tx_b);
 
 	void mr_map(address_map &map);
 };
@@ -254,17 +252,17 @@ void esqmr_state::mr_map(address_map &map)
 	map(0x00de0000, 0x00de003f).rw("ensoniq2", FUNC(es5506_device::read), FUNC(es5506_device::write));
 }
 
-void esqmr_state::duart_tx_a(int state)
+WRITE_LINE_MEMBER(esqmr_state::duart_tx_a)
 {
 	//m_mdout->write_txd(state);
 }
 
-void esqmr_state::duart_tx_b(int state)
+WRITE_LINE_MEMBER(esqmr_state::duart_tx_b)
 {
 	m_panel->rx_w(state);
 }
 
-void esqmr_state::esq5506_otto_irq(int state)
+WRITE_LINE_MEMBER(esqmr_state::esq5506_otto_irq)
 {
 }
 
@@ -362,9 +360,6 @@ ROM_END
 void esqmr_state::init_mr()
 {
 }
-
-} // anonymous namespace
-
 
 CONS( 1996, mr61,   0, 0, mr, mr, esqmr_state, init_mr, "Ensoniq", "MR-61 Workstation", MACHINE_NOT_WORKING )
 CONS( 1996, mrrack, 0, 0, mr, mr, esqmr_state, init_mr, "Ensoniq", "MR-Rack",           MACHINE_NOT_WORKING )

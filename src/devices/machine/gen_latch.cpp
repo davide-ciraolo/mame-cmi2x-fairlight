@@ -9,7 +9,7 @@
 #include "emu.h"
 #include "gen_latch.h"
 
-#define LOG_WARN (1U << 1)
+#define LOG_WARN (1U << 0)
 #define VERBOSE (LOG_WARN)
 
 #include "logmacro.h"
@@ -45,6 +45,7 @@ generic_latch_base_device::generic_latch_base_device(const machine_config &mconf
 
 void generic_latch_base_device::device_start()
 {
+	m_data_pending_cb.resolve_safe();
 	save_item(NAME(m_latch_written));
 
 	// synchronization is needed since other devices may not be initialized yet
@@ -66,7 +67,7 @@ void generic_latch_base_device::init_callback(s32 param)
 
 void generic_latch_base_device::device_reset()
 {
-	set_latch_written(false);
+	m_latch_written = false;
 }
 
 //-------------------------------------------------
@@ -74,7 +75,7 @@ void generic_latch_base_device::device_reset()
 //  to be read
 //-------------------------------------------------
 
-int generic_latch_base_device::pending_r()
+READ_LINE_MEMBER(generic_latch_base_device::pending_r)
 {
 	return m_latch_written ? 1 : 0;
 }
@@ -137,12 +138,12 @@ void generic_latch_8_device::clear_w(u8 data)
 	m_latched_value = 0x00;
 }
 
-void generic_latch_8_device::preset(int state)
+WRITE_LINE_MEMBER( generic_latch_8_device::preset )
 {
 	m_latched_value = 0xff;
 }
 
-void generic_latch_8_device::clear(int state)
+WRITE_LINE_MEMBER( generic_latch_8_device::clear )
 {
 	m_latched_value = 0x00;
 }
@@ -208,12 +209,12 @@ void generic_latch_16_device::clear_w(u16 data)
 	m_latched_value = 0x0000;
 }
 
-void generic_latch_16_device::preset(int state)
+WRITE_LINE_MEMBER( generic_latch_16_device::preset )
 {
 	m_latched_value = 0xffff;
 }
 
-void generic_latch_16_device::clear(int state)
+WRITE_LINE_MEMBER( generic_latch_16_device::clear )
 {
 	m_latched_value = 0x0000;
 }

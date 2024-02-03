@@ -44,13 +44,12 @@ public:
 	// general overridables
 	virtual void init(running_machine &machine) override;
 	virtual void update(bool skip_redraw) override;
-	virtual void input_update(bool relative_reset) override;
-	virtual void check_osd_inputs() override;
+	virtual void input_update() override;
 
 	// input overridables
 	virtual void customize_input_type_list(std::vector<input_type_entry> &typelist) override;
 
-	virtual void video_register();
+	virtual void video_register() override;
 
 	virtual bool video_init() override;
 	virtual bool window_init() override;
@@ -58,10 +57,8 @@ public:
 	virtual void video_exit() override;
 	virtual void window_exit() override;
 
-	virtual void process_events() override;
-	virtual bool has_focus() const override;
-
 	// sdl specific
+	void poll_inputs(running_machine &machine);
 	void release_keys();
 	bool should_hide_mouse();
 	void process_events_buf();

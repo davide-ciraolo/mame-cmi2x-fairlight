@@ -20,9 +20,8 @@
 
 class sed1200_device : public device_t {
 public:
-	void cs_w(int state);
 	void control_w(uint8_t data);
-	uint8_t busy_r();
+	uint8_t control_r();
 	void data_w(uint8_t data);
 
 	const uint8_t *render();
@@ -36,15 +35,9 @@ private:
 	uint8_t cgram[4*8];
 	uint8_t ddram[10*2];
 	uint8_t render_buf[20*8];
-	bool cursor_direction, cursor_blinking, cursor_full, cursor_on, display_on, two_lines;
+	bool cursor_direction, cursor_blinking, cursor_full, cursor_on, display_on;
 	uint8_t cursor_address, cgram_address;
 	const uint8_t *cgrom;
-
-	bool chip_select, first_input;
-	uint8_t first_data;
-
-	void control_write(uint8_t data);
-	void data_write(uint8_t data);
 
 	void soft_reset();
 	void cursor_step();

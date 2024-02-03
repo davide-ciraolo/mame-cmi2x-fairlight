@@ -47,9 +47,6 @@
 #include "machine/i8251.h"
 #include "screen.h"
 
-
-namespace {
-
 #define UPD3301_TAG     "upd3301"
 #define I8257_TAG       "i8257"
 #define SCREEN_TAG      "screen"
@@ -95,9 +92,9 @@ private:
 
 	UPD3301_DRAW_CHARACTER_MEMBER( olyboss_display_pixels );
 
-	void hrq_w(int state);
-	void tc_w(int state);
-	void romdis_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( hrq_w );
+	DECLARE_WRITE_LINE_MEMBER( tc_w );
+	DECLARE_WRITE_LINE_MEMBER( romdis_w );
 	u8 dma_mem_r(offs_t offset);
 	void dma_mem_w(offs_t offset, u8 data);
 	u8 fdcctrl_r();
@@ -250,7 +247,7 @@ void olyboss_state::vchrram_w(offs_t offset, u8 data)
 	m_vchrram[(m_vchrpage << 4) + (offset ^ 0xf)] = data;
 }
 
-void olyboss_state::romdis_w(int state)
+WRITE_LINE_MEMBER( olyboss_state::romdis_w )
 {
 	m_romen = state ? false : true;
 }
@@ -336,14 +333,14 @@ void olyboss_state::keyboard85_put(u8 data)
 
 /* 8257 Interface */
 
-void olyboss_state::hrq_w(int state)
+WRITE_LINE_MEMBER( olyboss_state::hrq_w )
 {
 	//logerror("hrq_w\n");
 	m_maincpu->set_input_line(INPUT_LINE_HALT,state);
 	m_dma->hlda_w(state);
 }
 
-void olyboss_state::tc_w(int state)
+WRITE_LINE_MEMBER( olyboss_state::tc_w )
 {
 	if((m_channel == 0) && state)
 	{
@@ -588,8 +585,6 @@ ROM_START( olybossd )
 	ROM_REGION( 0x800, UPD3301_TAG, 0)
 	ROM_LOAD( "olympia_boss_graphics_251-461.bin", 0x0000, 0x800, CRC(56149540) SHA1(b2b893bd219308fc98a38528beb7ddae391c7609) )
 ROM_END
-
-} // anonymous namespace
 
 
 //**************************************************************************

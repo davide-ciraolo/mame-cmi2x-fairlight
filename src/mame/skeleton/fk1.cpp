@@ -19,8 +19,6 @@ FK-1
 #include "screen.h"
 
 
-namespace {
-
 class fk1_state : public driver_device
 {
 public:
@@ -53,9 +51,9 @@ private:
 	uint8_t ppi3_a_r();
 	uint8_t ppi3_b_r();
 	uint8_t ppi3_c_r();
-	void pit_out0(int state);
-	void pit_out1(int state);
-	void pit_out2(int state);
+	DECLARE_WRITE_LINE_MEMBER(pit_out0);
+	DECLARE_WRITE_LINE_MEMBER(pit_out1);
+	DECLARE_WRITE_LINE_MEMBER(pit_out2);
 	void intr_w(uint8_t data);
 	uint8_t bank_ram_r();
 	uint8_t bank_rom_r();
@@ -236,22 +234,22 @@ uint8_t fk1_state::ppi3_c_r()
 	return 0;
 }
 
-void fk1_state::pit_out0(int state)
+WRITE_LINE_MEMBER( fk1_state::pit_out0 )
 {
 	// System time
-	logerror("fk1_pit_out0\n");
+	logerror("WRITE_LINE_MEMBER(fk1_pit_out0)\n");
 }
 
-void fk1_state::pit_out1(int state)
+WRITE_LINE_MEMBER( fk1_state::pit_out1 )
 {
 	// Timeout for disk operation
-	logerror("fk1_pit_out1\n");
+	logerror("WRITE_LINE_MEMBER(fk1_pit_out1)\n");
 }
 
-void fk1_state::pit_out2(int state)
+WRITE_LINE_MEMBER( fk1_state::pit_out2 )
 {
 	// Overflow for disk operations
-	logerror("fk1_pit_out2\n");
+	logerror("WRITE_LINE_MEMBER(fk1_pit_out2)\n");
 }
 
 /*
@@ -487,9 +485,6 @@ ROM_START( fk1 )
 	ROM_SYSTEM_BIOS( 1, "diag", "Diag BIOS" )
 	ROMX_LOAD( "fk1-diag.u65", 0x0000, 0x0800, CRC(e0660ae1) SHA1(6ad609049b28f27126af0a8a6224362351073dee), ROM_BIOS(1))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

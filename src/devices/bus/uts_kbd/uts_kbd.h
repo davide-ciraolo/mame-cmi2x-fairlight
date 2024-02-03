@@ -42,15 +42,16 @@ public:
 	auto rxd_callback() { return m_rxd_callback.bind(); }
 
 	// line handler
-	inline void ready_w(int state);
+	inline DECLARE_WRITE_LINE_MEMBER(ready_w);
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_config_complete() override;
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 
 	// called from keyboard
-	void write_rxd(int state) { m_rxd_callback(state); }
+	DECLARE_WRITE_LINE_MEMBER(write_rxd) { m_rxd_callback(state); }
 
 private:
 	// user callback
@@ -71,9 +72,9 @@ protected:
 	device_uts_keyboard_interface(const machine_config &mconfig, device_t &device);
 	virtual ~device_uts_keyboard_interface();
 
-	void write_rxd(int state) { m_port->write_rxd(state); }
+	DECLARE_WRITE_LINE_MEMBER(write_rxd) { m_port->write_rxd(state); }
 
-	virtual void ready_w(int state) = 0;
+	virtual DECLARE_WRITE_LINE_MEMBER(ready_w) = 0;
 
 private:
 	// parent port
@@ -91,7 +92,7 @@ extern void uts10_keyboards(device_slot_interface &slot);
 //  INLINE FUNCTIONS
 //**************************************************************************
 
-void uts_keyboard_port_device::ready_w(int state)
+WRITE_LINE_MEMBER(uts_keyboard_port_device::ready_w)
 {
 	 if (m_kbd != nullptr)
 		m_kbd->ready_w(state);

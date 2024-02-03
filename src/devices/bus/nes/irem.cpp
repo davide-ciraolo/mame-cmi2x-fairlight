@@ -21,11 +21,12 @@
 #include "irem.h"
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -151,7 +152,7 @@ void nes_h3001_device::pcb_reset()
 
 void nes_lrog017_device::write_h(offs_t offset, u8 data)
 {
-	LOG("lrog017 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("lrog017 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	// this pcb is subject to bus conflict
 	data = account_bus_conflict(offset, data);
@@ -170,7 +171,7 @@ void nes_lrog017_device::write_h(offs_t offset, u8 data)
 
 void nes_holydivr_device::write_h(offs_t offset, u8 data)
 {
-	LOG("holy diver write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("holy diver write_h, offset: %04x, data: %02x\n", offset, data));
 
 	// this pcb is subject to bus conflict
 	data = account_bus_conflict(offset, data);
@@ -194,7 +195,7 @@ void nes_holydivr_device::write_h(offs_t offset, u8 data)
 
 void nes_tam_s1_device::write_h(offs_t offset, u8 data)
 {
-	LOG("tam s1 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("tam s1 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	if (offset < 0x4000)
 	{
@@ -221,7 +222,7 @@ void nes_g101_device::set_prg()
 
 void nes_g101_device::write_h(offs_t offset, u8 data)
 {
-	LOG("g101 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("g101 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x7000)
 	{
@@ -278,7 +279,7 @@ TIMER_CALLBACK_MEMBER(nes_h3001_device::irq_timer_tick)
 
 void nes_h3001_device::write_h(offs_t offset, u8 data)
 {
-	LOG("h3001 write_h, offset %04x, data: %02x\n", offset, data);
+	LOG_MMC(("h3001 write_h, offset %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x7007)
 	{

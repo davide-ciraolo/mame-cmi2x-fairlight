@@ -45,8 +45,6 @@ RUN
 #include "softlist_dev.h"
 #include "speaker.h"
 
-#include "utf8.h"
-
 
 /* Read/Write Handlers */
 
@@ -117,7 +115,7 @@ void phc25_state::port40_w(uint8_t data)
 	m_port40 = data;
 }
 
-void phc25_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER( phc25_state::write_centronics_busy )
 {
 	m_centronics_busy = state;
 }
@@ -294,7 +292,7 @@ MC6847_GET_CHARROM_MEMBER(phc25_state::pal_char_rom_r)
 }
 
 // irq is inverted in emulation, so we need this trampoline
-void phc25_state::irq_w(int state)
+WRITE_LINE_MEMBER( phc25_state::irq_w )
 {
 	m_maincpu->set_input_line(0, state ? CLEAR_LINE : ASSERT_LINE);
 }

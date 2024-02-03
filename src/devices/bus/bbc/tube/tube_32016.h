@@ -61,7 +61,7 @@ protected:
 
 	void tube_32016_mem(address_map &map);
 
-	void prst_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(prst_w);
 };
 
 

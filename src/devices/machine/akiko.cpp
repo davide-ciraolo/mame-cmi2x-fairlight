@@ -23,9 +23,8 @@
 
 #include "emu.h"
 #include "akiko.h"
-
 #include "coreutil.h"
-#include "multibyte.h"
+#include "romload.h"
 
 #define LOG_WARN        (1U << 1) // Show warnings
 #define LOG_REGS        (1U << 2) // Show register r/w
@@ -53,11 +52,6 @@ DEFINE_DEVICE_TYPE(AKIKO, akiko_device, "akiko", "CBM AKIKO")
 
 void akiko_device::device_add_mconfig(machine_config &config)
 {
-	CDROM(config, m_cdrom).set_interface("cdrom");
-	CDDA(config, m_cdda);
-	m_cdda->add_route(0, ":lspeaker", 0.50);
-	m_cdda->add_route(1, ":rspeaker", 0.50);
-	m_cdda->set_cdrom_tag(m_cdrom);
 }
 
 
@@ -89,13 +83,14 @@ akiko_device::akiko_device(const machine_config &mconfig, const char *tag, devic
 	, m_cdrom_cmd_start(0)
 	, m_cdrom_cmd_end(0)
 	, m_cdrom_cmd_resp(0)
-	, m_cdda(*this, "cdda")
-	, m_cdrom(*this, "cdrom")
+	, m_cdda(*this, "^cdda")
+	, m_cddevice(*this, "^cdrom")
+	, m_cdrom(nullptr)
 	, m_cdrom_toc(nullptr)
 	, m_dma_timer(nullptr)
 	, m_frame_timer(nullptr)
-	, m_mem_r(*this, 0xffff), m_mem_w(*this), m_int_w(*this)
-	, m_scl_w(*this), m_sda_r(*this, 1), m_sda_w(*this)
+	, m_mem_r(*this), m_mem_w(*this), m_int_w(*this)
+	, m_scl_w(*this), m_sda_r(*this), m_sda_w(*this)
 {
 	for (int i = 0; i < 8; i++)
 	{
@@ -116,6 +111,14 @@ akiko_device::akiko_device(const machine_config &mconfig, const char *tag, devic
 
 void akiko_device::device_start()
 {
+	// resolve callbacks
+	m_mem_r.resolve_safe(0xffff);
+	m_mem_w.resolve_safe();
+	m_int_w.resolve_safe();
+	m_scl_w.resolve_safe();
+	m_sda_r.resolve_safe(1);
+	m_sda_w.resolve_safe();
+
 	m_c2p_input_index = 0;
 	m_c2p_output_index = 0;
 
@@ -150,8 +153,20 @@ void akiko_device::device_start()
 
 void akiko_device::device_reset()
 {
+	if (m_cddevice.found())
+	{
+		// CD32 case
+		m_cdrom = m_cddevice->get_cdrom_file();
+	}
+	else
+	{
+		// Arcade case
+		chd_file *chd = machine().rom_load().get_disk_handle(":cdrom");
+		m_cdrom = chd != nullptr ? new cdrom_file(chd) : nullptr;
+	}
+
 	/* create the TOC table */
-	if ( m_cdrom->exists() && m_cdrom->get_last_track() )
+	if ( m_cdrom != nullptr && m_cdrom->get_last_track() )
 	{
 		uint8_t *p;
 		int     i, addrctrl = m_cdrom->get_adr_control( 0 );
@@ -177,7 +192,9 @@ void akiko_device::device_reset()
 		p += 13;
 		p[1] = 0x01;
 		p[3] = 0xa2; /* disc end */
-		put_u24be(&p[8], discend);
+		p[8] = (discend >> 16 ) & 0xff;
+		p[9] = (discend >> 8 ) & 0xff;
+		p[10] = discend & 0xff;
 		p += 13;
 
 		for( i = 0; i < m_cdrom->get_last_track(); i++ )
@@ -189,7 +206,9 @@ void akiko_device::device_reset()
 
 			p[1] = ((addrctrl & 0x0f) << 4) | ((addrctrl & 0xf0) >> 4);
 			p[3] = dec_2_bcd( i+1 );
-			put_u24be(&p[8], trackpos);
+			p[8] = (trackpos >> 16 ) & 0xff;
+			p[9] = (trackpos >> 8 ) & 0xff;
+			p[10] = trackpos & 0xff;
 
 			p += 13;
 		}
@@ -203,6 +222,14 @@ void akiko_device::device_reset()
 
 void akiko_device::device_stop()
 {
+	if (!m_cddevice.found())
+	{
+		if( m_cdrom )
+		{
+			delete m_cdrom;
+			m_cdrom = nullptr;
+		}
+	}
 }
 
 void akiko_device::nvram_write(uint32_t data)
@@ -244,11 +271,6 @@ void akiko_device::mem_w8(offs_t offset, uint8_t data)
 {
 	int shift = (offset & 1) ? 0 : 8;
 	m_mem_w(offset, data << shift, 0xff << shift);
-}
-
-void akiko_device::set_mute(bool mute)
-{
-	m_cdda->set_output_gain( 0, mute ? 0.0 : 1.0 );
 }
 
 
@@ -438,7 +460,7 @@ TIMER_CALLBACK_MEMBER(akiko_device::dma_proc)
 	uint8_t   buf[2352];
 	int     index;
 
-	if ( !m_cdrom->exists() )
+	if ( m_cdrom == nullptr )
 		return;
 
 	if ( (m_cdrom_dmacontrol & 0x04000000) == 0 )
@@ -461,7 +483,9 @@ TIMER_CALLBACK_MEMBER(akiko_device::dma_proc)
 		buf[3] = m_cdrom_lba_cur - m_cdrom_lba_start;
 		memset( &buf[4], 0xff, 8 );
 
-		put_u24be(&buf[12], curmsf);
+		buf[12] = (curmsf >> 16) & 0xff;
+		buf[13] = (curmsf >> 8) & 0xff;
+		buf[14] = curmsf & 0xff;
 		buf[15] = 0x01; /* mode1 */
 
 		datasize = 2048;
@@ -565,7 +589,7 @@ TIMER_CALLBACK_MEMBER( akiko_device::cd_delayed_cmd )
 
 		resp[0] = 0x06;
 
-		if ( !m_cdrom->exists() || m_cdrom_numtracks == 0 )
+		if ( m_cdrom == nullptr || m_cdrom_numtracks == 0 )
 		{
 			resp[1] = 0x80;
 			setup_response( 15, resp );
@@ -641,7 +665,7 @@ void akiko_device::update_cdrom()
 
 			m_cdrom_cmd_start = (m_cdrom_cmd_start + 13) & 0xff;
 
-			if ( !m_cdrom->exists() || m_cdrom_numtracks == 0 )
+			if ( m_cdrom == nullptr || m_cdrom_numtracks == 0 )
 			{
 				resp[1] = 0x80;
 				setup_response( 2, resp );
@@ -706,7 +730,7 @@ void akiko_device::update_cdrom()
 
 			(void)cdda_getstatus(&lba);
 
-			if ( lba > 0 && m_cdrom->exists() )
+			if ( lba > 0 && m_cdrom != nullptr )
 			{
 				uint32_t  disk_pos;
 				uint32_t  track_pos;
@@ -725,10 +749,15 @@ void akiko_device::update_cdrom()
 				track_pos = cdrom_file::lba_to_msf(lba - m_cdrom->get_track_start(track));
 
 				/* track position */
-				put_u24be(&resp[6], track_pos);
+				resp[6] = (track_pos >> 16) & 0xff;
+				resp[7] = (track_pos >> 8) & 0xff;
+				resp[8] = track_pos & 0xff;
 
 				/* disk position */
-				put_u32be(&resp[9], disk_pos);
+				resp[9] = (disk_pos >> 24) & 0xff;
+				resp[10] = (disk_pos >> 16) & 0xff;
+				resp[11] = (disk_pos >> 8) & 0xff;
+				resp[12] = disk_pos & 0xff;
 			}
 			else
 			{
@@ -746,7 +775,7 @@ void akiko_device::update_cdrom()
 
 			m_cdrom_cmd_start = (m_cdrom_cmd_start + 2) & 0xff;
 
-			if ( !m_cdrom->exists() || m_cdrom_numtracks == 0 )
+			if ( m_cdrom == nullptr || m_cdrom_numtracks == 0 )
 				resp[1] = 0x80;
 
 			setup_response( 20, resp );
@@ -769,6 +798,7 @@ uint32_t akiko_device::read(offs_t offset)
 	switch( offset )
 	{
 		case 0x00/4:    /* ID */
+			if ( m_cdrom != nullptr ) m_cdda->set_cdrom(m_cdrom);
 			return 0x0000cafe;
 
 		case 0x04/4:    /* CDROM STATUS 1 */

@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/adam_dsk.cpp
+    formats/adam_dsk.c
 
     Coleco Adam disk image format
 
@@ -14,17 +14,17 @@ adam_format::adam_format() : wd177x_format(formats)
 {
 }
 
-const char *adam_format::name() const noexcept
+const char *adam_format::name() const
 {
 	return "adam";
 }
 
-const char *adam_format::description() const noexcept
+const char *adam_format::description() const
 {
 	return "Coleco Adam disk image";
 }
 
-const char *adam_format::extensions() const noexcept
+const char *adam_format::extensions() const
 {
 	return "dsk";
 }

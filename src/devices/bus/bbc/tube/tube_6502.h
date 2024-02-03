@@ -60,7 +60,7 @@ protected:
 	required_device<ram_device> m_ram;
 	required_memory_region m_rom;
 
-	void prst_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(prst_w);
 };
 
 

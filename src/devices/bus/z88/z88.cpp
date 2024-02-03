@@ -73,6 +73,9 @@ void z88cart_slot_device::device_start()
 {
 	m_cart = get_card_device();
 
+	// resolve callbacks
+	m_out_flp_cb.resolve_safe();
+
 	m_flp_timer = timer_alloc(FUNC(z88cart_slot_device::close_flap), this);
 	m_flp_timer->reset();
 }
@@ -92,23 +95,28 @@ TIMER_CALLBACK_MEMBER(z88cart_slot_device::close_flap)
     call load
 -------------------------------------------------*/
 
-std::pair<std::error_condition, std::string> z88cart_slot_device::call_load()
+image_init_result z88cart_slot_device::call_load()
 {
 	if (m_cart)
 	{
-		uint8_t *const cart_base = m_cart->get_cart_base();
-		if (!cart_base)
-			return std::make_pair(image_error::INTERNAL, std::string());
+		uint8_t *cart_base = m_cart->get_cart_base();
 
-		if (!loaded_through_softlist())
+		if (cart_base != nullptr)
 		{
-			offs_t read_length = length();
-			fread(cart_base + (m_cart->get_cart_size() - read_length), read_length);
+			if (!loaded_through_softlist())
+			{
+				offs_t read_length = length();
+				fread(cart_base + (m_cart->get_cart_size() - read_length), read_length);
+			}
+			else
+			{
+				offs_t read_length = get_software_region_length("rom");
+				memcpy(cart_base + (m_cart->get_cart_size() - read_length), get_software_region("rom"), read_length);
+			}
 		}
 		else
 		{
-			offs_t read_length = get_software_region_length("rom");
-			memcpy(cart_base + (m_cart->get_cart_size() - read_length), get_software_region("rom"), read_length);
+			return image_init_result::FAIL;
 		}
 	}
 
@@ -118,7 +126,7 @@ std::pair<std::error_condition, std::string> z88cart_slot_device::call_load()
 	// setup the timer to close the flap
 	m_flp_timer->adjust(CLOSE_FLAP_TIME);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 

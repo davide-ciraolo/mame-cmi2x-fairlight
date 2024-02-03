@@ -267,7 +267,7 @@ void datapack_device::control_w(uint8_t data)
     DEVICE_IMAGE_LOAD( datapack )
 -------------------------------------------------*/
 
-std::pair<std::error_condition, std::string> datapack_device::call_load()
+image_init_result datapack_device::call_load()
 {
 	uint8_t data[0x10];
 
@@ -275,13 +275,13 @@ std::pair<std::error_condition, std::string> datapack_device::call_load()
 
 	// check the OPK head
 	if(strncmp((const char*)data, "OPK", 3))
-		return std::make_pair(image_error::INVALIDIMAGE, std::string());
+		return image_init_result::FAIL;
 
 	// get datapack ID and size
 	m_id   = data[OPK_HEAD_SIZE + 0];
 	m_size = data[OPK_HEAD_SIZE + 1];
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 
@@ -289,7 +289,7 @@ std::pair<std::error_condition, std::string> datapack_device::call_load()
     DEVICE_IMAGE_CREATE( datapack )
 -------------------------------------------------*/
 
-std::pair<std::error_condition, std::string> datapack_device::call_create(int format_type, util::option_resolution *create_args)
+image_init_result datapack_device::call_create(int format_type, util::option_resolution *create_args)
 {
 	static const uint8_t opk_head[6] = {'O', 'P', 'K', 0x00, 0x00, 0x00};
 
@@ -314,7 +314,7 @@ std::pair<std::error_condition, std::string> datapack_device::call_create(int fo
 	fwrite(&m_id, 1);
 	fwrite(&m_size, 1);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 

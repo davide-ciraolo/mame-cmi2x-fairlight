@@ -489,7 +489,7 @@ void namcos1_state::sound_bankswitch_w(u8 data)
 *                                                                              *
 *******************************************************************************/
 
-void namcos1_state::subres_w(int state)
+WRITE_LINE_MEMBER(namcos1_state::subres_w)
 {
 //  logerror("reset control %s %02x\n",machine().describe_context(),data);
 	if (state != m_reset)

@@ -81,7 +81,7 @@ z80sti_device::z80sti_device(const machine_config &mconfig, const char *tag, dev
 	, device_serial_interface(mconfig, *this)
 	, device_z80daisy_interface(mconfig, *this)
 	, m_out_int_cb(*this)
-	, m_in_gpio_cb(*this, 0)
+	, m_in_gpio_cb(*this)
 	, m_out_gpio_cb(*this)
 	, m_out_so_cb(*this)
 	, m_out_tao_cb(*this)
@@ -110,6 +110,16 @@ z80sti_device::z80sti_device(const machine_config &mconfig, const char *tag, dev
 
 void z80sti_device::device_start()
 {
+	// resolve callbacks
+	m_out_int_cb.resolve_safe();
+	m_in_gpio_cb.resolve_safe(0);
+	m_out_gpio_cb.resolve_safe();
+	m_out_so_cb.resolve_safe();
+	m_out_tao_cb.resolve_safe();
+	m_out_tbo_cb.resolve_safe();
+	m_out_tco_cb.resolve_safe();
+	m_out_tdo_cb.resolve_safe();
+
 	// create the counter timers
 	m_timer[TIMER_A] = timer_alloc(FUNC(z80sti_device::timer_count), this);
 	m_timer[TIMER_B] = timer_alloc(FUNC(z80sti_device::timer_count), this);
@@ -666,21 +676,21 @@ void z80sti_device::gpip_input(int bit, int state)
 	m_gpip = (m_gpip & ~(1 << bit)) | (state << bit);
 }
 
-void z80sti_device::i0_w(int state) { gpip_input(0, state); }
-void z80sti_device::i1_w(int state) { gpip_input(1, state); }
-void z80sti_device::i2_w(int state) { gpip_input(2, state); }
-void z80sti_device::i3_w(int state) { gpip_input(3, state); }
-void z80sti_device::i4_w(int state) { gpip_input(4, state); }
-void z80sti_device::i5_w(int state) { gpip_input(5, state); }
-void z80sti_device::i6_w(int state) { gpip_input(6, state); }
-void z80sti_device::i7_w(int state) { gpip_input(7, state); }
+WRITE_LINE_MEMBER( z80sti_device::i0_w ) { gpip_input(0, state); }
+WRITE_LINE_MEMBER( z80sti_device::i1_w ) { gpip_input(1, state); }
+WRITE_LINE_MEMBER( z80sti_device::i2_w ) { gpip_input(2, state); }
+WRITE_LINE_MEMBER( z80sti_device::i3_w ) { gpip_input(3, state); }
+WRITE_LINE_MEMBER( z80sti_device::i4_w ) { gpip_input(4, state); }
+WRITE_LINE_MEMBER( z80sti_device::i5_w ) { gpip_input(5, state); }
+WRITE_LINE_MEMBER( z80sti_device::i6_w ) { gpip_input(6, state); }
+WRITE_LINE_MEMBER( z80sti_device::i7_w ) { gpip_input(7, state); }
 
 
 //-------------------------------------------------
 //  rc_w - receiver clock
 //-------------------------------------------------
 
-void z80sti_device::rc_w(int state)
+WRITE_LINE_MEMBER( z80sti_device::rc_w )
 {
 	rx_clock_w(state);
 }
@@ -690,7 +700,7 @@ void z80sti_device::rc_w(int state)
 //  tc_w - transmitter clock
 //-------------------------------------------------
 
-void z80sti_device::tc_w(int state)
+WRITE_LINE_MEMBER( z80sti_device::tc_w )
 {
 	tx_clock_w(state);
 }

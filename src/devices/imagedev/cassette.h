@@ -57,9 +57,9 @@ public:
 	void set_default_state(cassette_state default_state) { m_default_state = default_state; }
 	void set_interface(const char *interface) { m_interface = interface; }
 
-	// device_image_interface implementation
-	virtual std::pair<std::error_condition, std::string> call_load() override;
-	virtual std::pair<std::error_condition, std::string> call_create(int format_type, util::option_resolution *format_options) override;
+	// image-level overrides
+	virtual image_init_result call_load() override;
+	virtual image_init_result call_create(int format_type, util::option_resolution *format_options) override;
 	virtual void call_unload() override;
 	virtual std::string call_display() override;
 
@@ -67,7 +67,6 @@ public:
 	virtual bool is_writeable() const noexcept override { return true; }
 	virtual bool is_creatable() const noexcept override { return true; }
 	virtual bool is_reset_on_load() const noexcept override { return false; }
-	virtual bool support_command_line_image_creation() const noexcept override { return true; }
 	virtual const char *image_interface() const noexcept override { return m_interface; }
 	virtual const char *file_extensions() const noexcept override { return m_extension_list; }
 	virtual const char *image_type_name() const noexcept override { return "cassette"; }
@@ -105,10 +104,10 @@ public:
 	device_sound_interface& set_stereo() { m_stereo = true; return *this; }
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_config_complete() override;
 	virtual void device_start() override;
-	virtual bool use_software_list_file_extension_for_filetype() const noexcept override { return true; }
+	virtual const bool use_software_list_file_extension_for_filetype() const override { return true; }
 
 	// device_image_interface implementation
 	virtual const software_list_loader &get_software_list_loader() const override;
@@ -130,7 +129,7 @@ private:
 	cassette_state                  m_default_state;
 	const char *                    m_interface;
 
-	std::error_condition internal_load(bool is_create);
+	image_init_result internal_load(bool is_create);
 	bool            m_stereo;
 	std::vector<s16> m_samples;
 };

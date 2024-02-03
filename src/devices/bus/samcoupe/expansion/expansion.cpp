@@ -16,7 +16,7 @@
 //  DEVICE DEFINITIONS
 //**************************************************************************
 
-DEFINE_DEVICE_TYPE(SAMCOUPE_EXPANSION, samcoupe_expansion_device, "samcoupe_expansion", u8"SAM Coupé Expansion Bus")
+DEFINE_DEVICE_TYPE(SAMCOUPE_EXPANSION, samcoupe_expansion_device, "samcoupe_expansion", "SAM Coupe Expansion Bus")
 
 
 //**************************************************************************
@@ -51,6 +51,9 @@ void samcoupe_expansion_device::device_start()
 {
 	// get inserted module
 	m_module = get_card_device();
+
+	// resolve callbacks
+	m_int_handler.resolve_safe();
 }
 
 //-------------------------------------------------
@@ -85,13 +88,13 @@ void samcoupe_expansion_device::iorq_w(offs_t offset, uint8_t data)
 		m_module->iorq_w(offset, data);
 }
 
-void samcoupe_expansion_device::xmem_w(int state)
+WRITE_LINE_MEMBER( samcoupe_expansion_device::xmem_w )
 {
 	if (m_module)
 		m_module->xmem_w(state);
 }
 
-void samcoupe_expansion_device::print_w(int state)
+WRITE_LINE_MEMBER( samcoupe_expansion_device::print_w )
 {
 	if (m_module)
 		m_module->print_w(state);

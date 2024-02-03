@@ -8,11 +8,11 @@
 
 ****************************************************************************
 
-    Profiling is scope-based. To start profiling, put a profiler scope
+    Profiling is scope-based. To start profiling, put a profiler_scope
     object on the stack. To end profiling, just end the scope:
 
     {
-        auto scope = g_profiler.start(PROFILER_VIDEO);
+        profiler_scope scope(PROFILER_VIDEO);
 
         your_work_here();
     }
@@ -25,17 +25,6 @@
 #define MAME_EMU_PROFILER_H
 
 #pragma once
-
-#include "emufwd.h"
-
-#include "attotime.h"
-
-#include "eminline.h" // for get_profile_ticks()
-#include "osdcore.h"
-
-#include <cstdio>
-#include <cstdlib>
-#include <string>
 
 
 //**************************************************************************
@@ -94,57 +83,18 @@ DECLARE_ENUM_INCDEC_OPERATORS(profile_type)
 class real_profiler_state
 {
 public:
-	class scope
-	{
-	private:
-		real_profiler_state &m_host;
-		bool m_active;
-
-	public:
-		scope(scope const &) = delete;
-		scope &operator=(scope const &) = delete;
-
-		scope(scope &&that) noexcept : m_host(that.m_host), m_active(that.m_active)
-		{
-			that.m_active = false;
-		}
-
-		scope(real_profiler_state &host, profile_type type) noexcept : m_host(host), m_active(false)
-		{
-			if (m_host.enabled())
-			{
-				m_host.real_start(type);
-				m_active = true;
-			}
-		}
-
-		~scope()
-		{
-			stop();
-		}
-
-		void stop() noexcept
-		{
-			if (m_active)
-			{
-				m_host.real_stop();
-				m_active = false;
-			}
-		}
-	};
-
 	// construction/destruction
 	real_profiler_state();
 
 	// getters
-	bool enabled() const noexcept
+	bool enabled() const
 	{
 		return m_filoptr != nullptr;
 	}
 	const char *text(running_machine &machine);
 
 	// enable/disable
-	void enable(bool state = true) noexcept
+	void enable(bool state = true)
 	{
 		if (state != enabled())
 		{
@@ -153,31 +103,22 @@ public:
 	}
 
 	// start/stop
-	[[nodiscard]] auto start(profile_type type) noexcept { return scope(*this, type); }
+	void start(profile_type type) { if (enabled()) real_start(type); }
+	void stop() { if (enabled()) real_stop(); }
 
 private:
-	// an entry in the FILO
-	struct filo_entry
-	{
-		int             type;                       // type of entry
-		osd_ticks_t     start;                      // start time
-	};
-
-	void reset(bool enabled) noexcept;
+	void reset(bool enabled);
 	void update_text(running_machine &machine);
 
 	//-------------------------------------------------
 	//  real_start - mark the beginning of a
 	//  profiler entry
 	//-------------------------------------------------
-	ATTR_FORCE_INLINE void real_start(profile_type type) noexcept
+	ATTR_FORCE_INLINE void real_start(profile_type type)
 	{
 		// fail if we overflow
-		if (UNEXPECTED(m_filoptr >= &m_filo[std::size(m_filo) - 1]))
-		{
-			std::fprintf(stderr, "Profiler FILO overflow (type = %d)\n", int(type));
-			std::abort();
-		}
+		if (m_filoptr >= &m_filo[std::size(m_filo) - 1])
+			throw emu_fatalerror("Profiler FILO overflow (type = %d)\n", type);
 
 		// get current tick count
 		osd_ticks_t curticks = get_profile_ticks();
@@ -196,7 +137,7 @@ private:
 	//-------------------------------------------------
 	//  real_stop - mark the end of a profiler entry
 	//-------------------------------------------------
-	ATTR_FORCE_INLINE void real_stop() noexcept
+	ATTR_FORCE_INLINE void real_stop()
 	{
 		// degenerate scenario
 		if (UNEXPECTED(m_filoptr <= m_filo))
@@ -215,6 +156,13 @@ private:
 		m_filoptr->start = curticks;
 	}
 
+	// an entry in the FILO
+	struct filo_entry
+	{
+		int             type;                       // type of entry
+		osd_ticks_t     start;                      // start time
+	};
+
 	// internal state
 	filo_entry *        m_filoptr;                  // current FILO index
 	std::string         m_text;                     // profiler text
@@ -229,35 +177,19 @@ private:
 class dummy_profiler_state
 {
 public:
-	class scope
-	{
-	private:
-		dummy_profiler_state &m_host;
-
-	public:
-		scope(scope const &) = delete;
-		scope &operator=(scope const &) = delete;
-		scope(scope &&that) noexcept = default;
-		scope(dummy_profiler_state &host, profile_type type) noexcept : m_host(host) { }
-		~scope() { m_host.real_stop(); }
-		void stop() noexcept { }
-	};
-
 	// construction/destruction
 	dummy_profiler_state();
 
 	// getters
-	bool enabled() const noexcept { return false; }
+	bool enabled() const { return false; }
 	const char *text(running_machine &machine) { return ""; }
 
 	// enable/disable
-	void enable(bool state = true) noexcept { }
+	void enable(bool state = true) { }
 
 	// start/stop
-	[[nodiscard]] auto start(profile_type type) noexcept { return scope(*this, type); }
-
-private:
-	void real_stop() noexcept { }
+	void start(profile_type type) { }
+	void stop() { }
 };
 
 
@@ -278,4 +210,4 @@ typedef dummy_profiler_state profiler_state;
 extern profiler_state g_profiler;
 
 
-#endif // MAME_EMU_PROFILER_H
+#endif  /* MAME_EMU_PROFILER_H */

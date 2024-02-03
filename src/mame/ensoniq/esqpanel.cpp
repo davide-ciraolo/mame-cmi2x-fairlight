@@ -4,10 +4,8 @@
     Ensoniq panel/display device
 */
 #include "emu.h"
-#include "esqpanel.h"
-
 #include "http.h"
-#include "main.h"
+#include "esqpanel.h"
 
 //**************************************************************************
 // External panel support
@@ -73,13 +71,13 @@ namespace esqpanel {
 				return 0;
 			}
 
-			int c;
-			while ((c = is.get()) != EOF)
-			{
-				int message_type = external_panel::get_message_type(char(uint8_t(unsigned(c))));
-				int n;
+			int n;
+			while (!is.eof()) {
+				char c = is.get();
+				int message_type = external_panel::get_message_type(c);
 				is >> n;
-				if (n != 0)
+				int send = (n != 0);
+				if (send)
 				{
 					m_send_message_types |= message_type;
 				}
@@ -427,6 +425,9 @@ esqpanel_device::esqpanel_device(const machine_config &mconfig, device_type type
 
 void esqpanel_device::device_start()
 {
+	m_write_tx.resolve_safe();
+	m_write_analog.resolve_safe();
+
 	m_external_panel_server = new esqpanel::external_panel_server(machine().manager().http());
 	if (machine().manager().http()->is_active()) {
 		m_external_panel_server->set_keyboard(owner()->shortname());

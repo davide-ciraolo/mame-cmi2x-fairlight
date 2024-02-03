@@ -128,7 +128,6 @@ private:
 	constexpr static uint8_t SERR_SHORT_PERIOD = 0x02;
 	constexpr static uint8_t SERR_PHASE_ERROR = 0x04;
 	constexpr static uint8_t SERR_TC_P_ERROR = 0x08;
-	constexpr static uint8_t SERR_XFER_OUT = 0x20; // MB89351/2 only
 	constexpr static uint8_t SERR_DATA_ERROR_SPC = 0x40;
 	constexpr static uint8_t SERR_DATA_ERROR_SCSI = 0x80;
 
@@ -136,7 +135,6 @@ private:
 	constexpr static uint8_t SDGC_DIAG_CD = 0x02;
 	constexpr static uint8_t SDGC_DIAG_MSG = 0x04;
 	constexpr static uint8_t SDGC_DIAG_BSY = 0x08;
-	constexpr static uint8_t SDGC_XFER_ENABLE = 0x20; // MB89351/2 only
 	constexpr static uint8_t SDGC_DIAG_ACK = 0x40;
 	constexpr static uint8_t SDGC_DIAG_REQ = 0x80;
 
@@ -153,25 +151,30 @@ private:
 		ArbitrationAssertBSY,
 		ArbitrationWait,
 		ArbitrationAssertSEL,
+		ArbitrationDeAssertBSY,
 		SelectionWaitBusFree,
-		SelectionAssertID,
 		SelectionAssertSEL,
 		SelectionWaitBSY,
 		Selection,
 		TransferWaitReq,
 		TransferSendData,
+		TransferSendDataDMAReq,
+		TransferSendDataDMAResp,
 		TransferRecvData,
+		TransferRecvDataDMAReq,
+		TransferRecvDataDMAResp,
 		TransferSendAck,
 		TransferWaitDeassertREQ,
 		TransferDeassertACK
 		//TransferCommand,
 	} m_state;
 
-	void update_ssts();
-	void update_ints();
+	void update_ssts(void);
+	void update_ints(void);
 
-	void scsi_command_complete();
-	void scsi_disconnect();
+	void scsi_disconnect_timeout(void);
+	void scsi_command_complete(void);
+	void scsi_disconnect(void);
 	void update_state(mb87030_device::State new_state, int delay = 0, int timeout = 0);
 	auto get_state_name(State state) const;
 	void scsi_set_ctrl(uint32_t val, uint32_t mask);
@@ -202,6 +205,9 @@ private:
 	uint32_t m_tc;
 	uint8_t m_exbf;
 
+	uint8_t m_bus_data;
+	uint8_t m_hdb;
+	bool m_hdb_loaded;
 	bool m_send_atn_during_selection;
 	util::fifo <uint8_t, 8> m_fifo;
 
@@ -209,27 +215,9 @@ private:
 	uint32_t m_scsi_ctrl;
 
 	bool m_dma_transfer;
-	bool m_irq_state;
 };
 
-class mb89351_device : public mb87030_device
-{
-public:
-	mb89351_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
-
-	virtual void map(address_map &map) override;
-};
-
-class mb89352_device : public mb87030_device
-{
-public:
-	mb89352_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
-
-	virtual void map(address_map &map) override;
-};
 
 DECLARE_DEVICE_TYPE(MB87030, mb87030_device)
-DECLARE_DEVICE_TYPE(MB89351, mb89351_device)
-DECLARE_DEVICE_TYPE(MB89352, mb89352_device)
 
 #endif // MAME_MACHINE_MB87030_H

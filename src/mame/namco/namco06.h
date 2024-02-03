@@ -1,11 +1,12 @@
 // license:BSD-3-Clause
 // copyright-holders:Mike Harris, Aaron Giles
-#ifndef MAME_NAMCO_NAMCO06_H
-#define MAME_NAMCO_NAMCO06_H
+#ifndef MAME_MACHINE_NAMCO06_H
+#define MAME_MACHINE_NAMCO06_H
 
 #pragma once
 
 
+/* device get info callback */
 class namco_06xx_device : public device_t
 {
 public:
@@ -36,9 +37,9 @@ private:
 	TIMER_CALLBACK_MEMBER( ctrl_w_sync );
 
 	// internal state
-	emu_timer *m_nmi_timer;
+	emu_timer *m_nmi_timer = nullptr;
 	uint8_t m_control;
-	bool m_timer_state;
+	bool m_next_timer_state;
 	bool m_read_stretch;
 
 	required_device<cpu_device> m_nmicpu;
@@ -52,4 +53,4 @@ private:
 DECLARE_DEVICE_TYPE(NAMCO_06XX, namco_06xx_device)
 
 
-#endif // MAME_NAMCO_NAMCO06_H
+#endif // MAME_MACHINE_NAMCO06_H

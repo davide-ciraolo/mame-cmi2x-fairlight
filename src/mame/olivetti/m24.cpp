@@ -37,6 +37,7 @@
 #include "sound/spkrdev.h"
 #include "speaker.h"
 
+#include "formats/pc_dsk.h"
 #include "formats/naslite_dsk.h"
 #include "formats/m20_dsk.h"
 
@@ -72,15 +73,15 @@ protected:
 
 private:
 	void dma_segment_w(offs_t offset, u8 data);
-	void dma_hrq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(dma_hrq_w);
 	u8 dma_memory_read(offs_t offset);
 	void dma_memory_write(offs_t offset, u8 data);
 	template <int Channel> u8 dma_io_read(offs_t offset);
 	template <int Channel> void dma_io_write(offs_t offset, u8 data);
-	template <int Channel> void dma_dack_w(int state);
-	void dma_tc_w(int state);
-	void dreq0_ck_w(int state);
-	void speaker_ck_w(int state);
+	template <int Channel> DECLARE_WRITE_LINE_MEMBER(dma_dack_w);
+	DECLARE_WRITE_LINE_MEMBER(dma_tc_w);
+	DECLARE_WRITE_LINE_MEMBER(dreq0_ck_w);
+	DECLARE_WRITE_LINE_MEMBER(speaker_ck_w);
 	void update_speaker();
 
 	u8 keyboard_data_r();
@@ -92,8 +93,8 @@ private:
 	u8 ctrlport_b_r();
 
 	void alt_w(u8 data);
-	void chck_w(int state);
-	void int87_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(chck_w);
+	DECLARE_WRITE_LINE_MEMBER(int87_w);
 	void nmi_enable_w(u8 data);
 	void update_nmi();
 
@@ -128,9 +129,9 @@ private:
 	void pb_w(u8 data);
 	u8 kbcdata_r();
 	void kbcdata_w(u8 data);
-	void kbcin_w(int state);
-	void int_w(int state);
-	void halt_i86_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(kbcin_w);
+	DECLARE_WRITE_LINE_MEMBER(int_w);
+	DECLARE_WRITE_LINE_MEMBER(halt_i86_w);
 	static void floppy_formats(format_registration &fr);
 
 	static void cfg_m20_format(device_t *device);
@@ -191,7 +192,7 @@ void m24_state::dma_segment_w(offs_t offset, u8 data)
 	m_dma_segment[offset] = data & 0x0f;
 }
 
-void m24_state::dma_hrq_w(int state)
+WRITE_LINE_MEMBER(m24_state::dma_hrq_w)
 {
 	if(!m_i86_halt)
 		m_maincpu->set_input_line(INPUT_LINE_HALT, state ? ASSERT_LINE : CLEAR_LINE);
@@ -227,7 +228,7 @@ void m24_state::dma_io_write(offs_t offset, u8 data)
 }
 
 template <int Channel>
-void m24_state::dma_dack_w(int state)
+WRITE_LINE_MEMBER(m24_state::dma_dack_w)
 {
 	m_isabus->dack_line_w(Channel, state);
 
@@ -247,7 +248,7 @@ void m24_state::dma_dack_w(int state)
 	}
 }
 
-void m24_state::dma_tc_w(int state)
+WRITE_LINE_MEMBER(m24_state::dma_tc_w)
 {
 	m_tc = (state == ASSERT_LINE);
 	for (int channel = 0; channel < 4; channel++)
@@ -255,7 +256,7 @@ void m24_state::dma_tc_w(int state)
 			m_isabus->eop_w(channel, state);
 }
 
-void m24_state::dreq0_ck_w(int state)
+WRITE_LINE_MEMBER(m24_state::dreq0_ck_w)
 {
 	if (state && !m_dreq0_ck && !BIT(m_dma_active, 0))
 		m_dmac->dreq0_w(1);
@@ -263,7 +264,7 @@ void m24_state::dreq0_ck_w(int state)
 	m_dreq0_ck = state;
 }
 
-void m24_state::speaker_ck_w(int state)
+WRITE_LINE_MEMBER(m24_state::speaker_ck_w)
 {
 	if (state)
 		m_ctrlport_b |= 0x20;
@@ -363,7 +364,7 @@ void m24_state::alt_w(u8 data)
 	m_i86_halt_perm = true;
 }
 
-void m24_state::chck_w(int state)
+WRITE_LINE_MEMBER(m24_state::chck_w)
 {
 	m_chck_active = (state == 0);
 	if (m_chck_active)
@@ -378,7 +379,7 @@ void m24_state::chck_w(int state)
 		m_ctrlport_b &= 0xbf;
 }
 
-void m24_state::int87_w(int state)
+WRITE_LINE_MEMBER(m24_state::int87_w)
 {
 	m_87int = state;
 	update_nmi();
@@ -424,12 +425,12 @@ void m24_state::kbcdata_w(u8 data)
 	m_kbcout = data;
 }
 
-void m24_state::kbcin_w(int state)
+WRITE_LINE_MEMBER(m24_state::kbcin_w)
 {
 	m_kbdata = state;
 }
 
-void m24_state::int_w(int state)
+WRITE_LINE_MEMBER(m24_state::int_w)
 {
 	if(!m_i86_halt)
 		m_maincpu->set_input_line(INPUT_LINE_IRQ0, state ? ASSERT_LINE : CLEAR_LINE);
@@ -437,7 +438,7 @@ void m24_state::int_w(int state)
 		m_z8000_apb->int_w(state ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void m24_state::halt_i86_w(int state)
+WRITE_LINE_MEMBER(m24_state::halt_i86_w)
 {
 	if(m_i86_halt_perm)
 		return;

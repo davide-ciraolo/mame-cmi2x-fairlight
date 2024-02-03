@@ -131,17 +131,17 @@ bool sda2006_device::nvram_write(util::write_stream &file)
 	return !file.write(m_eeprom_data, EEPROM_CAPACITY, actual) && actual == EEPROM_CAPACITY;
 }
 
-int sda2006_device::read_data()
+READ_LINE_MEMBER( sda2006_device::read_data )
 {
 	return m_latch^1;
 }
 
-void sda2006_device::write_data(int state)
+WRITE_LINE_MEMBER( sda2006_device::write_data )
 {
 	m_latch = state;
 }
 
-void sda2006_device::write_enable(int state)
+WRITE_LINE_MEMBER( sda2006_device::write_enable )
 {
 	if( (m_write_state ^ state) && (!state)){  //falling edge
 		m_is_end_o_stream = true;
@@ -150,7 +150,7 @@ void sda2006_device::write_enable(int state)
 	m_write_state = state;
 }
 
-void sda2006_device::write_clock(int state)
+WRITE_LINE_MEMBER( sda2006_device::write_clock )
 {
 	if( (m_clock_state ^ state) && (!state)) { // falling edge
 

@@ -2,7 +2,7 @@
 // copyright-holders:Vas Crabb
 /***************************************************************************
 
-    m6500_1.cpp
+    m6500_1.h
 
     MOS Technology 6500/1, original NMOS variant with onboard peripherals:
     * 6502 CPU
@@ -73,8 +73,6 @@
 #include "emu.h"
 #include "m6500_1.h"
 
-#include "m6502mcu.ipp"
-
 
 namespace {
 
@@ -94,8 +92,8 @@ DEFINE_DEVICE_TYPE(M6500_1, m6500_1_device, "m6500_1", "MOS Technology 6500/1");
 
 
 m6500_1_device::m6500_1_device(machine_config const &mconfig, char const *tag, device_t *owner, u32 clock)
-	: m6502_mcu_device_base<m6502_device>(mconfig, M6500_1, tag, owner, clock)
-	, m_port_in_cb{ *this, 0xffU }
+	: m6502_mcu_device(mconfig, M6500_1, tag, owner, clock)
+	, m_port_in_cb{ *this }
 	, m_port_out_cb{ *this }
 	, m_cntr_out_cb{ *this }
 	, m_cr{ 0x00U }
@@ -136,15 +134,24 @@ void m6500_1_device::pd_w(u8 data)
 }
 
 
-void m6500_1_device::cntr_w(int state)
+WRITE_LINE_MEMBER(m6500_1_device::cntr_w)
 {
 	machine().scheduler().synchronize(timer_expired_delegate(FUNC(m6500_1_device::set_cntr_in), this), state);
 }
 
 
+void m6500_1_device::device_resolve_objects()
+{
+	m6502_mcu_device::device_resolve_objects();
+
+	m_port_in_cb.resolve_all();
+	m_port_out_cb.resolve_all_safe();
+	m_cntr_out_cb.resolve_safe();
+}
+
 void m6500_1_device::device_start()
 {
-	m6502_mcu_device_base<m6502_device>::device_start();
+	m6502_mcu_device::device_start();
 
 	m_counter_base = 0U;
 
@@ -166,7 +173,7 @@ void m6500_1_device::device_start()
 
 void m6500_1_device::device_reset()
 {
-	m6502_mcu_device_base<m6502_device>::device_reset();
+	m6502_mcu_device::device_reset();
 
 	SP = 0x003fU;
 
@@ -231,7 +238,7 @@ void m6500_1_device::state_import(device_state_entry const &entry)
 		break;
 
 	default:
-		m6502_mcu_device_base<m6502_device>::state_import(entry);
+		m6502_mcu_device::state_import(entry);
 	}
 }
 
@@ -262,7 +269,7 @@ void m6500_1_device::state_export(device_state_entry const &entry)
 		break;
 
 	default:
-		m6502_mcu_device_base<m6502_device>::state_export(entry);
+		m6502_mcu_device::state_export(entry);
 	}
 }
 
@@ -299,7 +306,7 @@ void m6500_1_device::update_irq()
 
 u8 m6500_1_device::read_port(offs_t offset)
 {
-	if (!machine().side_effects_disabled() && !m_port_in_cb[offset].isunset())
+	if (!machine().side_effects_disabled() && m_port_in_cb[offset])
 	{
 		u8 const prev(m_port_in[offset]);
 		m_port_in[offset] = m_port_in_cb[offset]();
@@ -325,7 +332,7 @@ void m6500_1_device::write_port(offs_t offset, u8 data)
 
 	if (!offset)
 	{
-		if (!machine().side_effects_disabled() && !m_port_in_cb[0].isunset())
+		if (!machine().side_effects_disabled() && m_port_in_cb[0])
 			m_port_in[0] = m_port_in_cb[0]();
 		u8 const effective(m_port_in[0] & data);
 		u8 const diff(prev ^ effective);
@@ -346,7 +353,7 @@ void m6500_1_device::clear_edge(offs_t offset, u8 data)
 template <unsigned Port> TIMER_CALLBACK_MEMBER(m6500_1_device::set_port_in)
 {
 	u8 const prev(m_port_in[Port]);
-	m_port_in[Port] = !m_port_in_cb[Port].isunset() ? m_port_in_cb[Port]() : u8(u32(param));
+	m_port_in[Port] = m_port_in_cb[Port] ? m_port_in_cb[Port]() : u8(u32(param));
 
 	if (!Port)
 	{

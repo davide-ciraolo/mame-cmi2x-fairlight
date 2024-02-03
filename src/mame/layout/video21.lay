@@ -1,11 +1,10 @@
 <?xml version="1.0"?>
 <!--
-license:CC0-1.0
-authors:hap
+license:CC0
 -->
 <mamelayout version="2">
 
-<!-- define elements -->
+	<!-- define elements -->
 
 	<element name="overlay">
 		<rect>
@@ -105,7 +104,7 @@ authors:hap
 	</element>
 
 
-<!-- build screen -->
+	<!-- build screen -->
 
 	<view name="Internal Layout">
 		<screen index="0">

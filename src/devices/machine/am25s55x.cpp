@@ -55,6 +55,8 @@ void am25s55x_device::device_start()
 	save_item(NAME(m_x.u));
 	save_item(NAME(m_y.u));
 	save_item(NAME(m_s_out.u));
+
+	m_s.resolve_safe();
 }
 
 void am25s55x_device::device_reset()

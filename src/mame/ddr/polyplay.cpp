@@ -158,7 +158,7 @@ INTERRUPT_GEN_MEMBER(polyplay_state::nmi_handler)
 }
 
 /* I/O Port handling */
-void polyplay_state::ctc_zc2_w(int state)
+WRITE_LINE_MEMBER(polyplay_state::ctc_zc2_w)
 {
 	//osd_printf_verbose("ctc_z2_w: %02x\n", state);
 }

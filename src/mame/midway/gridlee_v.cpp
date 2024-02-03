@@ -78,7 +78,7 @@ void gridlee_state::video_start()
  *
  *************************************/
 
-void gridlee_state::cocktail_flip_w(int state)
+WRITE_LINE_MEMBER(gridlee_state::cocktail_flip_w)
 {
 	m_cocktail_flip = state;
 }

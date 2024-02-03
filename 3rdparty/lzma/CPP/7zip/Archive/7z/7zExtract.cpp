@@ -16,11 +16,10 @@
 namespace NArchive {
 namespace N7z {
 
-Z7_CLASS_IMP_COM_1(
-  CFolderOutStream
-  , ISequentialOutStream
-  /* , ICompressGetSubStreamSize */
-)
+class CFolderOutStream:
+  public ISequentialOutStream,
+  public CMyUnknownImp
+{
   CMyComPtr<ISequentialOutStream> _stream;
 public:
   bool TestMode;
@@ -32,7 +31,6 @@ private:
   UInt64 _rem;
 
   const UInt32 *_indexes;
-  // unsigned _startIndex;
   unsigned _numFiles;
   unsigned _fileIndex;
 
@@ -42,6 +40,8 @@ private:
   HRESULT ProcessEmptyFiles();
 
 public:
+  MY_UNKNOWN_IMP1(ISequentialOutStream)
+
   const CDbEx *_db;
   CMyComPtr<IArchiveExtractCallback> ExtractCallback;
 
@@ -52,6 +52,8 @@ public:
       CheckCrc(true)
       {}
 
+  STDMETHOD(Write)(const void *data, UInt32 size, UInt32 *processedSize);
+
   HRESULT Init(unsigned startIndex, const UInt32 *indexes, unsigned numFiles);
   HRESULT FlushCorrupted(Int32 callbackOperationResult);
 
@@ -61,7 +63,6 @@ public:
 
 HRESULT CFolderOutStream::Init(unsigned startIndex, const UInt32 *indexes, unsigned numFiles)
 {
-  // _startIndex = startIndex;
   _fileIndex = startIndex;
   _indexes = indexes;
   _numFiles = numFiles;
@@ -75,10 +76,11 @@ HRESULT CFolderOutStream::Init(unsigned startIndex, const UInt32 *indexes, unsig
 HRESULT CFolderOutStream::OpenFile(bool isCorrupted)
 {
   const CFileItem &fi = _db->Files[_fileIndex];
-  const UInt32 nextFileIndex = (_indexes ? *_indexes : _fileIndex);
-  Int32 askMode = (_fileIndex == nextFileIndex) ? TestMode ?
-      NExtract::NAskMode::kTest :
-      NExtract::NAskMode::kExtract :
+  UInt32 nextFileIndex = (_indexes ? *_indexes : _fileIndex);
+  Int32 askMode = (_fileIndex == nextFileIndex) ?
+        (TestMode ?
+        NExtract::NAskMode::kTest :
+        NExtract::NAskMode::kExtract) :
       NExtract::NAskMode::kSkip;
 
   if (isCorrupted
@@ -88,7 +90,7 @@ HRESULT CFolderOutStream::OpenFile(bool isCorrupted)
     askMode = NExtract::NAskMode::kTest;
   
   CMyComPtr<ISequentialOutStream> realOutStream;
-  RINOK(ExtractCallback->GetStream(_fileIndex, &realOutStream, askMode))
+  RINOK(ExtractCallback->GetStream(_fileIndex, &realOutStream, askMode));
   
   _stream = realOutStream;
   _crc = CRC_INIT_VAL;
@@ -134,13 +136,13 @@ HRESULT CFolderOutStream::ProcessEmptyFiles()
 {
   while (_numFiles != 0 && _db->Files[_fileIndex].Size == 0)
   {
-    RINOK(OpenFile())
-    RINOK(CloseFile())
+    RINOK(OpenFile());
+    RINOK(CloseFile());
   }
   return S_OK;
 }
 
-Z7_COM7F_IMF(CFolderOutStream::Write(const void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CFolderOutStream::Write(const void *data, UInt32 size, UInt32 *processedSize)
 {
   if (processedSize)
     *processedSize = 0;
@@ -150,12 +152,6 @@ Z7_COM7F_IMF(CFolderOutStream::Write(const void *data, UInt32 size, UInt32 *proc
     if (_fileIsOpen)
     {
       UInt32 cur = (size < _rem ? size : (UInt32)_rem);
-      if (_calcCrc)
-      {
-        const UInt32 k_Step = (UInt32)1 << 20;
-        if (cur > k_Step)
-          cur = k_Step;
-      }
       HRESULT result = S_OK;
       if (_stream)
         result = _stream->Write(data, cur, &cur);
@@ -168,16 +164,16 @@ Z7_COM7F_IMF(CFolderOutStream::Write(const void *data, UInt32 size, UInt32 *proc
       _rem -= cur;
       if (_rem == 0)
       {
-        RINOK(CloseFile())
-        RINOK(ProcessEmptyFiles())
+        RINOK(CloseFile());
+        RINOK(ProcessEmptyFiles());
       }
-      RINOK(result)
+      RINOK(result);
       if (cur == 0)
         break;
       continue;
     }
   
-    RINOK(ProcessEmptyFiles())
+    RINOK(ProcessEmptyFiles());
     if (_numFiles == 0)
     {
       // we support partial extracting
@@ -190,7 +186,7 @@ Z7_COM7F_IMF(CFolderOutStream::Write(const void *data, UInt32 size, UInt32 *proc
       // return S_FALSE;
       return k_My_HRESULT_WritingWasCut;
     }
-    RINOK(OpenFile())
+    RINOK(OpenFile());
   }
   
   return S_OK;
@@ -202,37 +198,19 @@ HRESULT CFolderOutStream::FlushCorrupted(Int32 callbackOperationResult)
   {
     if (_fileIsOpen)
     {
-      RINOK(CloseFile_and_SetResult(callbackOperationResult))
+      RINOK(CloseFile_and_SetResult(callbackOperationResult));
     }
     else
     {
-      RINOK(OpenFile(true))
+      RINOK(OpenFile(true));
     }
   }
   return S_OK;
 }
 
-/*
-Z7_COM7F_IMF(CFolderOutStream::GetSubStreamSize(UInt64 subStream, UInt64 *value))
+STDMETHODIMP CHandler::Extract(const UInt32 *indices, UInt32 numItems,
+    Int32 testModeSpec, IArchiveExtractCallback *extractCallbackSpec)
 {
-  *value = 0;
-  // const unsigned numFiles_Original = _numFiles + _fileIndex - _startIndex;
-  const unsigned numFiles_Original = _numFiles;
-  if (subStream >= numFiles_Original)
-    return S_FALSE; // E_FAIL;
-  *value = _db->Files[_startIndex + (unsigned)subStream].Size;
-  return S_OK;
-}
-*/
-
-
-Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
-    Int32 testModeSpec, IArchiveExtractCallback *extractCallbackSpec))
-{
-  // for GCC
-  // CFolderOutStream *folderOutStream = new CFolderOutStream;
-  // CMyComPtr<ISequentialOutStream> outStream(folderOutStream);
-
   COM_TRY_BEGIN
   
   CMyComPtr<IArchiveExtractCallback> extractCallback = extractCallbackSpec;
@@ -241,7 +219,7 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
 
   // numItems = (UInt32)(Int32)-1;
 
-  const bool allFilesMode = (numItems == (UInt32)(Int32)-1);
+  bool allFilesMode = (numItems == (UInt32)(Int32)-1);
   if (allFilesMode)
     numItems = _db.Files.Size();
 
@@ -256,8 +234,8 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     
     for (i = 0; i < numItems; i++)
     {
-      const UInt32 fileIndex = allFilesMode ? i : indices[i];
-      const CNum folderIndex = _db.FileIndexToFolderIndexMap[fileIndex];
+      UInt32 fileIndex = allFilesMode ? i : indices[i];
+      CNum folderIndex = _db.FileIndexToFolderIndexMap[fileIndex];
       if (folderIndex == kNumNoIndex)
         continue;
       if (folderIndex != prevFolder || fileIndex < nextFile)
@@ -269,7 +247,7 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     }
   }
 
-  RINOK(extractCallback->SetTotal(importantTotalUnpacked))
+  RINOK(extractCallback->SetTotal(importantTotalUnpacked));
 
   CLocalProgress *lps = new CLocalProgress;
   CMyComPtr<ICompressProgressInfo> progress = lps;
@@ -280,8 +258,8 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
       false
     #elif !defined(USE_MIXER_ST)
       true
-    #elif !defined(Z7_7Z_SET_PROPERTIES)
-      #ifdef Z7_ST
+    #elif !defined(__7Z_SET_PROPERTIES)
+      #ifdef _7ZIP_ST
         false
       #else
         true
@@ -293,8 +271,8 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
 
   UInt64 curPacked, curUnpacked;
 
-  CMyComPtr<IArchiveExtractCallbackMessage2> callbackMessage;
-  extractCallback.QueryInterface(IID_IArchiveExtractCallbackMessage2, &callbackMessage);
+  CMyComPtr<IArchiveExtractCallbackMessage> callbackMessage;
+  extractCallback.QueryInterface(IID_IArchiveExtractCallbackMessage, &callbackMessage);
 
   CFolderOutStream *folderOutStream = new CFolderOutStream;
   CMyComPtr<ISequentialOutStream> outStream(folderOutStream);
@@ -306,7 +284,7 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
 
   for (UInt32 i = 0;; lps->OutSize += curUnpacked, lps->InSize += curPacked)
   {
-    RINOK(lps->SetCur())
+    RINOK(lps->SetCur());
 
     if (i >= numItems)
       break;
@@ -315,7 +293,7 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     curPacked = 0;
 
     UInt32 fileIndex = allFilesMode ? i : indices[i];
-    const CNum folderIndex = _db.FileIndexToFolderIndexMap[fileIndex];
+    CNum folderIndex = _db.FileIndexToFolderIndexMap[fileIndex];
 
     UInt32 numSolidFiles = 1;
 
@@ -328,7 +306,7 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
 
       for (k = i + 1; k < numItems; k++)
       {
-        const UInt32 fileIndex2 = allFilesMode ? k : indices[k];
+        UInt32 fileIndex2 = allFilesMode ? k : indices[k];
         if (_db.FileIndexToFolderIndexMap[fileIndex2] != folderIndex
             || fileIndex2 < nextFile)
           break;
@@ -342,26 +320,20 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
     }
 
     {
-      const HRESULT result = folderOutStream->Init(fileIndex,
+      HRESULT result = folderOutStream->Init(fileIndex,
           allFilesMode ? NULL : indices + i,
           numSolidFiles);
 
       i += numSolidFiles;
 
-      RINOK(result)
+      RINOK(result);
     }
 
+    // to test solid block with zero unpacked size we disable that code
     if (folderOutStream->WasWritingFinished())
-    {
-      // for debug: to test zero size stream unpacking
-      // if (folderIndex == kNumNoIndex)  // enable this check for debug
       continue;
-    }
 
-    if (folderIndex == kNumNoIndex)
-      return E_FAIL;
-
-    #ifndef Z7_NO_CRYPTO
+    #ifndef _NO_CRYPTO
     CMyComPtr<ICryptoGetTextPassword> getTextPassword;
     if (extractCallback)
       extractCallback.QueryInterface(IID_ICryptoGetTextPassword, &getTextPassword);
@@ -369,15 +341,14 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
 
     try
     {
-      #ifndef Z7_NO_CRYPTO
+      #ifndef _NO_CRYPTO
         bool isEncrypted = false;
         bool passwordIsDefined = false;
-        UString_Wipe password;
+        UString password;
       #endif
 
-      bool dataAfterEnd_Error = false;
 
-      const HRESULT result = decoder.Decode(
+      HRESULT result = decoder.Decode(
           EXTERNAL_CODECS_VARS
           _inStream,
           _db.ArcInfo.DataStartPosition,
@@ -387,36 +358,29 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
           outStream,
           progress,
           NULL // *inStreamMainRes
-          , dataAfterEnd_Error
           
-          Z7_7Z_DECODER_CRYPRO_VARS
-          #if !defined(Z7_ST)
-            , true, _numThreads, _memUsage_Decompress
+          _7Z_DECODER_CRYPRO_VARS
+          #if !defined(_7ZIP_ST) && !defined(_SFX)
+            , true, _numThreads
           #endif
           );
 
-      if (result == S_FALSE || result == E_NOTIMPL || dataAfterEnd_Error)
+      if (result == S_FALSE || result == E_NOTIMPL)
       {
-        const bool wasFinished = folderOutStream->WasWritingFinished();
+        bool wasFinished = folderOutStream->WasWritingFinished();
+      
+        int resOp = (result == S_FALSE ?
+            NExtract::NOperationResult::kDataError :
+            NExtract::NOperationResult::kUnsupportedMethod);
 
-        int resOp = NExtract::NOperationResult::kDataError;
-        
-        if (result != S_FALSE)
-        {
-          if (result == E_NOTIMPL)
-            resOp = NExtract::NOperationResult::kUnsupportedMethod;
-          else if (wasFinished && dataAfterEnd_Error)
-            resOp = NExtract::NOperationResult::kDataAfterEnd;
-        }
-
-        RINOK(folderOutStream->FlushCorrupted(resOp))
+        RINOK(folderOutStream->FlushCorrupted(resOp));
 
         if (wasFinished)
         {
           // we don't show error, if it's after required files
           if (/* !folderOutStream->ExtraWriteWasCut && */ callbackMessage)
           {
-            RINOK(callbackMessage->ReportExtractResult(NEventIndexType::kBlockIndex, folderIndex, resOp))
+            RINOK(callbackMessage->ReportExtractResult(NEventIndexType::kBlockIndex, folderIndex, resOp));
           }
         }
         continue;
@@ -425,15 +389,14 @@ Z7_COM7F_IMF(CHandler::Extract(const UInt32 *indices, UInt32 numItems,
       if (result != S_OK)
         return result;
 
-      RINOK(folderOutStream->FlushCorrupted(NExtract::NOperationResult::kDataError))
+      RINOK(folderOutStream->FlushCorrupted(NExtract::NOperationResult::kDataError));
       continue;
     }
     catch(...)
     {
-      RINOK(folderOutStream->FlushCorrupted(NExtract::NOperationResult::kDataError))
+      RINOK(folderOutStream->FlushCorrupted(NExtract::NOperationResult::kDataError));
       // continue;
-      // return E_FAIL;
-      throw;
+      return E_FAIL;
     }
   }
 

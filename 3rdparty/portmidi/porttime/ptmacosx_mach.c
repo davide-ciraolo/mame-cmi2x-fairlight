@@ -102,7 +102,7 @@ PtError Pt_Start(int resolution, PtCallback *callback, void *userData)
 }
 
 
-PtError Pt_Stop(void)
+PtError Pt_Stop()
 {
     /* printf("Pt_Stop called\n"); */
     pt_callback_proc_id++;
@@ -112,13 +112,13 @@ PtError Pt_Stop(void)
 }
 
 
-int Pt_Started(void)
+int Pt_Started()
 {
     return time_started_flag;
 }
 
 
-PtTimestamp Pt_Time(void)
+PtTimestamp Pt_Time()
 {
     UInt64 clock_time, nsec_time;
     clock_time = AudioGetCurrentHostTime() - start_time;

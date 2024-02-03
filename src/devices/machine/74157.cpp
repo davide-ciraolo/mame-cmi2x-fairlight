@@ -42,8 +42,8 @@ ls157_device::ls157_device(const machine_config &mconfig, const char *tag, devic
 
 ls157_device::ls157_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, u32 clock, u8 mask)
 	: device_t(mconfig, type, tag, owner, clock)
-	, m_a_in_cb(*this, 0)
-	, m_b_in_cb(*this, 0)
+	, m_a_in_cb(*this)
+	, m_b_in_cb(*this)
 	, m_out_cb(*this)
 	, m_data_mask(mask)
 {
@@ -71,6 +71,11 @@ ls157_x2_device::ls157_x2_device(const machine_config &mconfig, const char *tag,
 
 void ls157_device::device_start()
 {
+	// resolve callbacks
+	m_a_in_cb.resolve();
+	m_b_in_cb.resolve();
+	m_out_cb.resolve();
+
 	// register items for save state
 	save_item(NAME(m_a));
 	save_item(NAME(m_b));
@@ -151,10 +156,10 @@ void ls157_device::interleave_w(u8 data)
 //  aN_w -- update one bit of first data input
 //-------------------------------------------------
 
-void ls157_device::a0_w(int state) { write_a_bit(0, state); }
-void ls157_device::a1_w(int state) { write_a_bit(1, state); }
-void ls157_device::a2_w(int state) { write_a_bit(2, state); }
-void ls157_device::a3_w(int state) { write_a_bit(3, state); }
+WRITE_LINE_MEMBER(ls157_device::a0_w) { write_a_bit(0, state); }
+WRITE_LINE_MEMBER(ls157_device::a1_w) { write_a_bit(1, state); }
+WRITE_LINE_MEMBER(ls157_device::a2_w) { write_a_bit(2, state); }
+WRITE_LINE_MEMBER(ls157_device::a3_w) { write_a_bit(3, state); }
 
 void ls157_device::write_a_bit(int bit, bool state)
 {
@@ -165,7 +170,7 @@ void ls157_device::write_a_bit(int bit, bool state)
 		else
 			m_a &= ~(1 << bit);
 
-		if (!m_strobe && !m_select && !m_out_cb.isunset())
+		if (!m_strobe && !m_select && !m_out_cb.isnull())
 			m_out_cb(m_a);
 	}
 }
@@ -175,10 +180,10 @@ void ls157_device::write_a_bit(int bit, bool state)
 //  bN_w -- update one bit of second data input
 //-------------------------------------------------
 
-void ls157_device::b0_w(int state) { write_b_bit(0, state); }
-void ls157_device::b1_w(int state) { write_b_bit(1, state); }
-void ls157_device::b2_w(int state) { write_b_bit(2, state); }
-void ls157_device::b3_w(int state) { write_b_bit(3, state); }
+WRITE_LINE_MEMBER(ls157_device::b0_w) { write_b_bit(0, state); }
+WRITE_LINE_MEMBER(ls157_device::b1_w) { write_b_bit(1, state); }
+WRITE_LINE_MEMBER(ls157_device::b2_w) { write_b_bit(2, state); }
+WRITE_LINE_MEMBER(ls157_device::b3_w) { write_b_bit(3, state); }
 
 void ls157_device::write_b_bit(int bit, bool state)
 {
@@ -189,7 +194,7 @@ void ls157_device::write_b_bit(int bit, bool state)
 		else
 			m_b &= ~(1 << bit);
 
-		if (!m_strobe && m_select && !m_out_cb.isunset())
+		if (!m_strobe && m_select && !m_out_cb.isnull())
 			m_out_cb(m_b);
 	}
 }
@@ -203,7 +208,7 @@ void ls157_device::write_b_bit(int bit, bool state)
 //  select_w -- set select input
 //-------------------------------------------------
 
-void ls157_device::select_w(int state)
+WRITE_LINE_MEMBER(ls157_device::select_w)
 {
 	if (m_select != bool(state))
 	{
@@ -217,14 +222,14 @@ void ls157_device::select_w(int state)
 //  strobe_w -- set strobe input (active low)
 //-------------------------------------------------
 
-void ls157_device::strobe_w(int state)
+WRITE_LINE_MEMBER(ls157_device::strobe_w)
 {
 	if (m_strobe != bool(state))
 	{
 		m_strobe = bool(state);
 
 		// Clear output when strobe goes high
-		if (m_strobe && !m_out_cb.isunset())
+		if (m_strobe && !m_out_cb.isnull())
 			m_out_cb(0);
 		else
 			update_output();
@@ -241,12 +246,12 @@ void ls157_device::update_output()
 {
 	// S high, strobe low: Y1-Y4 = B1-B4
 	// S low, strobe low:  Y1-Y4 = A1-A4
-	if (!m_strobe && !m_out_cb.isunset())
+	if (!m_strobe && !m_out_cb.isnull())
 	{
 		if (m_select)
-			m_out_cb(m_b_in_cb.isunset() ? m_b : (m_b_in_cb() & m_data_mask));
+			m_out_cb(m_b_in_cb.isnull() ? m_b : (m_b_in_cb() & m_data_mask));
 		else
-			m_out_cb(m_a_in_cb.isunset() ? m_a : (m_a_in_cb() & m_data_mask));
+			m_out_cb(m_a_in_cb.isnull() ? m_a : (m_a_in_cb() & m_data_mask));
 	}
 }
 
@@ -260,9 +265,9 @@ u8 ls157_device::output_r()
 	if (m_strobe)
 		return 0;
 	else if (m_select)
-		return m_b_in_cb.isunset() ? m_b : (m_b_in_cb() & m_data_mask);
+		return m_b_in_cb.isnull() ? m_b : (m_b_in_cb() & m_data_mask);
 	else
-		return m_a_in_cb.isunset() ? m_a : (m_a_in_cb() & m_data_mask);
+		return m_a_in_cb.isnull() ? m_a : (m_a_in_cb() & m_data_mask);
 }
 
 

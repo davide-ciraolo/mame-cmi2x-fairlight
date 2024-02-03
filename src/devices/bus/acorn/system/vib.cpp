@@ -127,7 +127,7 @@ void acorn_vib_device::device_reset()
 //**************************************************************************
 
 template<mc14411_device::timer_id T>
-void acorn_vib_device::write_acia_clock(int state)
+WRITE_LINE_MEMBER(acorn_vib_device::write_acia_clock)
 {
 	if (T == m_txc->read())
 		m_acia->write_txc(state);
@@ -135,7 +135,7 @@ void acorn_vib_device::write_acia_clock(int state)
 		m_acia->write_rxc(state);
 }
 
-void acorn_vib_device::irq_w(int state)
+WRITE_LINE_MEMBER(acorn_vib_device::irq_w)
 {
 	m_bus->irq_w(state);
 }

@@ -5,13 +5,11 @@
     AWP Hardware video simulation system
 
 *************************************************************************************/
-#ifndef MAME_SHARED_AWPVID_H
-#define MAME_SHARED_AWPVID_H
-
-#pragma once
+#ifndef AWP_VIDEO
+#define AWP_VIDEO
 
 #include "machine/steppers.h"
 
-void awp_draw_reel(running_machine &machine, const char *reeltag, stepper_device &reel);
+void awp_draw_reel(running_machine &machine, const char* reeltag, stepper_device &reel);
 
 #endif

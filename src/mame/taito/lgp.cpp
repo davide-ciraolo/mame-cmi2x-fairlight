@@ -72,8 +72,6 @@ Dumping Notes:
 #include "speaker.h"
 
 
-namespace {
-
 class lgp_state : public driver_device
 {
 public:
@@ -98,7 +96,7 @@ private:
 	uint8_t ldp_read();
 	uint32_t screen_update_lgp(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 	INTERRUPT_GEN_MEMBER(vblank_callback_lgp);
-	void ld_command_strobe_cb(int state);
+	DECLARE_WRITE_LINE_MEMBER(ld_command_strobe_cb);
 	void lgp_palette(palette_device &palette) const;
 
 	void main_io_map(address_map &map);
@@ -154,7 +152,7 @@ uint32_t lgp_state::screen_update_lgp(screen_device &screen, bitmap_rgb32 &bitma
 /* Main Z80 R/W */
 uint8_t lgp_state::ldp_read()
 {
-	return m_laserdisc->data_r();
+	return m_laserdisc->status_r();
 }
 
 /* Sound Z80 R/W */
@@ -367,7 +365,7 @@ void lgp_state::machine_start()
 {
 }
 
-void lgp_state::ld_command_strobe_cb(int state)
+WRITE_LINE_MEMBER(lgp_state::ld_command_strobe_cb)
 {
 	//m_maincpu->set_input_line(INPUT_LINE_NMI, state ? ASSERT_LINE : CLEAR_LINE);
 }
@@ -610,9 +608,6 @@ ROM_END
 void lgp_state::init_lgp()
 {
 }
-
-} // anonymous namespace
-
 
 /*    YEAR  NAME PARENT   MACHINE INPUT STATE      INIT      MONITOR  COMPANY   FULLNAME                         FLAGS) */
 GAME( 1983, lgp, 0,       lgp,    lgp,  lgp_state, init_lgp, ROT0,    "Taito",  "Laser Grand Prix",              MACHINE_NOT_WORKING|MACHINE_NO_SOUND)

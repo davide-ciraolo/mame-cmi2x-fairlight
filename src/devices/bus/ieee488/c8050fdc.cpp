@@ -24,10 +24,9 @@
 //  MACROS / CONSTANTS
 //**************************************************************************
 
-#define LOG_MORE (1U << 1)
-#define LOG_BITS (1U << 2)
-#define VERBOSE (0)
-#include "logmacro.h"
+#define LOG 0
+#define LOG_MORE 0
+#define LOG_BITS 0
 
 #define GCR_DECODE(_e, _i) \
 	((BIT(_e, 6) << 7) | (BIT(_i, 7) << 6) | (_e & 0x33) | (BIT(_e, 2) << 3) | (_i & 0x04))
@@ -106,6 +105,12 @@ c8050_fdc_device::c8050_fdc_device(const machine_config &mconfig, const char *ta
 
 void c8050_fdc_device::device_start()
 {
+	// resolve callbacks
+	m_write_sync.resolve_safe();
+	m_write_ready.resolve_safe();
+	m_write_brdy.resolve_safe();
+	m_write_error.resolve_safe();
+
 	// allocate timer
 	t_gen = timer_alloc(FUNC(c8050_fdc_device::update_state), this);
 
@@ -209,7 +214,7 @@ void c8050_fdc_device::ds_w(int ds)
 		live_sync();
 		m_ds = cur_live.ds = ds;
 		pll_reset(cur_live.tm);
-		LOG("%s %s DS %u\n", machine().time().as_string(), machine().describe_context(), ds);
+		if (LOG) logerror("%s %s DS %u\n", machine().time().as_string(), machine().describe_context(), ds);
 		checkpoint();
 		live_run();
 	}
@@ -427,17 +432,19 @@ void c8050_fdc_device::live_run(const attotime &limit)
 			// GCR error
 			int error = !(ready || BIT(cur_live.e, 3));
 
-			if (cur_live.rw_sel) {
-				LOGMASKED(LOG_BITS, "%s cyl %u bit %u sync %u bc %u sr %03x i %03x e %02x\n",cur_live.tm.as_string(),get_floppy()->get_cyl(),bit,sync,cur_live.bit_counter,cur_live.shift_reg,cur_live.i,cur_live.e);
-			} else {
-				LOGMASKED(LOG_BITS, "%s cyl %u writing bit %u bc %u sr %03x i %03x e %02x\n",cur_live.tm.as_string(),get_floppy()->get_cyl(),write_bit,cur_live.bit_counter,cur_live.shift_reg_write,cur_live.i,cur_live.e);
+			if (LOG_BITS) {
+				if (cur_live.rw_sel) {
+					logerror("%s cyl %u bit %u sync %u bc %u sr %03x i %03x e %02x\n",cur_live.tm.as_string(),get_floppy()->get_cyl(),bit,sync,cur_live.bit_counter,cur_live.shift_reg,cur_live.i,cur_live.e);
+				} else {
+					logerror("%s cyl %u writing bit %u bc %u sr %03x i %03x e %02x\n",cur_live.tm.as_string(),get_floppy()->get_cyl(),write_bit,cur_live.bit_counter,cur_live.shift_reg_write,cur_live.i,cur_live.e);
+				}
 			}
 
 			if (!ready) {
 				// load write shift register
 				cur_live.shift_reg_write = GCR_ENCODE(cur_live.e, cur_live.i);
 
-				LOGMASKED(LOG_BITS, "%s load write shift register %03x\n",cur_live.tm.as_string(),cur_live.shift_reg_write);
+				if (LOG_BITS) logerror("%s load write shift register %03x\n",cur_live.tm.as_string(),cur_live.shift_reg_write);
 			} else {
 				// clock write shift register
 				cur_live.shift_reg_write <<= 1;
@@ -446,25 +453,25 @@ void c8050_fdc_device::live_run(const attotime &limit)
 
 			if (ready != cur_live.ready) {
 				if (cur_live.rw_sel && !ready)
-					LOG("%s READY %u : %02x\n", cur_live.tm.as_string(),ready,GCR_DECODE(cur_live.e, cur_live.i));
+					if (LOG) logerror("%s READY %u : %02x\n", cur_live.tm.as_string(),ready,GCR_DECODE(cur_live.e, cur_live.i));
 				cur_live.ready = ready;
 				syncpoint = true;
 			}
 
 			if (brdy != cur_live.brdy) {
-				LOGMASKED(LOG_MORE, "%s BRDY %u\n", cur_live.tm.as_string(), brdy);
+				if (LOG_MORE) logerror("%s BRDY %u\n", cur_live.tm.as_string(), brdy);
 				cur_live.brdy = brdy;
 				syncpoint = true;
 			}
 
 			if (sync != cur_live.sync) {
-				LOG("%s SYNC %u\n", cur_live.tm.as_string(), sync);
+				if (LOG) logerror("%s SYNC %u\n", cur_live.tm.as_string(), sync);
 				cur_live.sync = sync;
 				syncpoint = true;
 			}
 
 			if (error != cur_live.error) {
-				LOGMASKED(LOG_MORE, "%s ERROR %u\n", cur_live.tm.as_string(), error);
+				if (LOG_MORE) logerror("%s ERROR %u\n", cur_live.tm.as_string(), error);
 				cur_live.error = error;
 				syncpoint = true;
 			}
@@ -500,7 +507,7 @@ uint8_t c8050_fdc_device::read()
 
 void c8050_fdc_device::write(uint8_t data)
 {
-	LOG("%s %s PI %02x\n", machine().time().as_string(), machine().describe_context(), data);
+	if (LOG) logerror("%s %s PI %02x\n", machine().time().as_string(), machine().describe_context(), data);
 
 	if (m_pi != data)
 	{
@@ -511,50 +518,50 @@ void c8050_fdc_device::write(uint8_t data)
 	}
 }
 
-void c8050_fdc_device::ds0_w(int state)
+WRITE_LINE_MEMBER( c8050_fdc_device::ds0_w )
 {
 	m_ds0 = state;
 }
 
-void c8050_fdc_device::ds1_w(int state)
+WRITE_LINE_MEMBER( c8050_fdc_device::ds1_w )
 {
 	m_ds1 = state;
 
 	ds_w(m_ds1 << 1 | m_ds0);
 }
 
-void c8050_fdc_device::drv_sel_w(int state)
+WRITE_LINE_MEMBER( c8050_fdc_device::drv_sel_w )
 {
 	if (m_drv_sel != state)
 	{
 		live_sync();
 		m_drv_sel = cur_live.drv_sel = state;
 		checkpoint();
-		LOG("%s %s DRV SEL %u\n", machine().time().as_string(), machine().describe_context(), state);
+		if (LOG) logerror("%s %s DRV SEL %u\n", machine().time().as_string(), machine().describe_context(), state);
 		live_run();
 	}
 }
 
-void c8050_fdc_device::mode_sel_w(int state)
+WRITE_LINE_MEMBER( c8050_fdc_device::mode_sel_w )
 {
 	if (m_mode_sel != state)
 	{
 		live_sync();
 		m_mode_sel = cur_live.mode_sel = state;
 		checkpoint();
-		LOG("%s %s MODE SEL %u\n", machine().time().as_string(), machine().describe_context(), state);
+		if (LOG) logerror("%s %s MODE SEL %u\n", machine().time().as_string(), machine().describe_context(), state);
 		live_run();
 	}
 }
 
-void c8050_fdc_device::rw_sel_w(int state)
+WRITE_LINE_MEMBER( c8050_fdc_device::rw_sel_w )
 {
 	if (m_rw_sel != state)
 	{
 		live_sync();
 		m_rw_sel = cur_live.rw_sel = state;
 		checkpoint();
-		LOG("%s %s RW SEL %u\n", machine().time().as_string(), machine().describe_context(), state);
+		if (LOG) logerror("%s %s RW SEL %u\n", machine().time().as_string(), machine().describe_context(), state);
 		if (m_rw_sel) {
 			pll_stop_writing(get_floppy(), cur_live.tm);
 		} else {
@@ -564,13 +571,13 @@ void c8050_fdc_device::rw_sel_w(int state)
 	}
 }
 
-void c8050_fdc_device::mtr0_w(int state)
+WRITE_LINE_MEMBER( c8050_fdc_device::mtr0_w )
 {
 	if (m_mtr0 != state)
 	{
 		live_sync();
 		m_mtr0 = state;
-		LOG("%s %s MTR0 %u\n", machine().time().as_string(), machine().describe_context(), state);
+		if (LOG) logerror("%s %s MTR0 %u\n", machine().time().as_string(), machine().describe_context(), state);
 		m_floppy0->mon_w(state);
 		checkpoint();
 
@@ -586,13 +593,13 @@ void c8050_fdc_device::mtr0_w(int state)
 	}
 }
 
-void c8050_fdc_device::mtr1_w(int state)
+WRITE_LINE_MEMBER( c8050_fdc_device::mtr1_w )
 {
 	if (m_mtr1 != state)
 	{
 		live_sync();
 		m_mtr1 = state;
-		LOG("%s %s MTR1 %u\n", machine().time().as_string(), machine().describe_context(), state);
+		if (LOG) logerror("%s %s MTR1 %u\n", machine().time().as_string(), machine().describe_context(), state);
 		if (m_floppy1) m_floppy1->mon_w(state);
 		checkpoint();
 
@@ -608,13 +615,13 @@ void c8050_fdc_device::mtr1_w(int state)
 	}
 }
 
-void c8050_fdc_device::odd_hd_w(int state)
+WRITE_LINE_MEMBER( c8050_fdc_device::odd_hd_w )
 {
 	if (m_odd_hd != state)
 	{
 		live_sync();
 		m_odd_hd = cur_live.odd_hd = state;
-		LOG("%s %s ODD HD %u\n", machine().time().as_string(), machine().describe_context(), state);
+		if (LOG) logerror("%s %s ODD HD %u\n", machine().time().as_string(), machine().describe_context(), state);
 		m_floppy0->ss_w(!state);
 		if (m_floppy1) m_floppy1->ss_w(!state);
 		checkpoint();
@@ -622,7 +629,7 @@ void c8050_fdc_device::odd_hd_w(int state)
 	}
 }
 
-void c8050_fdc_device::pull_sync_w(int state)
+WRITE_LINE_MEMBER( c8050_fdc_device::pull_sync_w )
 {
-	LOGMASKED(LOG_MORE, "%s %s PULL SYNC %u\n", machine().time().as_string(), machine().describe_context(), state);
+	if (LOG_MORE) logerror("%s %s PULL SYNC %u\n", machine().time().as_string(), machine().describe_context(), state);
 }

@@ -90,8 +90,6 @@ To Do:
 #include "speaker.h"
 
 
-namespace {
-
 class bcs3_state : public driver_device
 {
 public:
@@ -118,8 +116,8 @@ private:
 	u8 keyboard_r(offs_t offset);
 	u8 video_r(offs_t offset);
 	u8 zx_r();
-	void ctc_z0_w(int state);
-	void ctc_z1_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(ctc_z0_w);
+	DECLARE_WRITE_LINE_MEMBER(ctc_z1_w);
 	u32 screen_update_bcs3(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	u32 screen_update_bcs3a(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
@@ -369,7 +367,7 @@ static GFXDECODE_START( gfx_bcs3 )
 	GFXDECODE_ENTRY( "chargen", 0x0000, bcs3_charlayout, 0, 1 )
 GFXDECODE_END
 
-void bcs3_state::ctc_z0_w(int state)
+WRITE_LINE_MEMBER( bcs3_state::ctc_z0_w )
 {
 	m_ctc->trg1(state);
 	if (state && m_cass)
@@ -381,7 +379,7 @@ void bcs3_state::ctc_z0_w(int state)
 
 // The manual says the cassette pulses come from here, but
 // it's total silence during cassette saving.
-void bcs3_state::ctc_z1_w(int state)
+WRITE_LINE_MEMBER( bcs3_state::ctc_z1_w )
 {
 	m_ctc->trg2(state);
 }
@@ -556,9 +554,6 @@ ROM_START( bcs3d )
 	ROM_REGION( 0x0400, "chargen", 0 )
 	ROM_LOAD( "bcs_zg_33.d21", 0x0000, 0x0400, CRC(b27f1c07) SHA1(61c80c585f198370ba5e856839c12b15acdc58ee))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

@@ -14,8 +14,7 @@ local exports = {
 
 local hiscore = exports
 
-local hiscore_plugin_path
-local reset_subscription, frame_subscription, stop_subscription
+local hiscore_plugin_path = ""
 
 function hiscore.set_folder(path)
 	hiscore_plugin_path = path
@@ -24,7 +23,7 @@ end
 function hiscore.startplugin()
 
 	local function get_data_path()
-		return manager.machine.options.entries.homepath:value():match('([^;]+)') .. '/hiscore'
+		return emu.subst_env(manager.machine.options.entries.homepath:value():match('([^;]+)')) .. '/hiscore'
 	end
 
 	-- configuration
@@ -175,7 +174,7 @@ function hiscore.startplugin()
 			  end
 			elseif string.find(line, rm_match) then --- match this game
 			  current_is_match = true;
-			elseif string.find(line, '^[a-z0-9_,]+:') then --- some game
+			elseif string.find(line, '^[a-z0-9_]+:') then --- some game
 			  if current_is_match and string.len(cluster) > 0 then
 				break; -- we're done
 			  end
@@ -329,7 +328,7 @@ function hiscore.startplugin()
 		scores_have_been_read = false;
 	end
 
-	reset_subscription = emu.add_machine_reset_notifier(function ()
+	emu.register_start(function()
 		found_hiscore_entry = false
 		mem_check_passed = false
 		scores_have_been_read = false;
@@ -355,18 +354,18 @@ function hiscore.startplugin()
 		end
 	end)
 
-	frame_subscription = emu.add_machine_frame_notifier(function ()
+	emu.register_frame(function()
 		if found_hiscore_entry then
 			tick()
 		end
 	end)
 
-	stop_subscription = emu.add_machine_stop_notifier(function ()
+	emu.register_stop(function()
 		reset()
 		save_config()
 	end)
 
-	emu.register_prestart(function ()
+	emu.register_prestart(function()
 		reset()
 	end)
 

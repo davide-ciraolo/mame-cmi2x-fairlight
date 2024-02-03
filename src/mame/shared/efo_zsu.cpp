@@ -156,7 +156,7 @@ void efo_zsu_device::ay1_porta_w(u8 data)
 	m_ay1_porta = data;
 }
 
-void efo_zsu_device::ctc0_z0_w(int state)
+WRITE_LINE_MEMBER(efo_zsu_device::ctc0_z0_w)
 {
 	if (state)
 	{
@@ -166,27 +166,27 @@ void efo_zsu_device::ctc0_z0_w(int state)
 	}
 }
 
-void efo_zsu_device::ctc0_z1_w(int state)
+WRITE_LINE_MEMBER(efo_zsu_device::ctc0_z1_w)
 {
 //  printf("USED  ctc0_z1_w %d\n", state);
 }
 
-void efo_zsu_device::ctc1_z0_w(int state)
+WRITE_LINE_MEMBER(efo_zsu_device::ctc1_z0_w)
 {
 //  printf("ctc1_z0_w %d\n", state);
 }
 
-void efo_zsu_device::ctc1_z1_w(int state)
+WRITE_LINE_MEMBER(efo_zsu_device::ctc1_z1_w)
 {
 //  printf("ctc1_z1_w %d\n", state);
 }
 
-void efo_zsu_device::ctc1_z2_w(int state)
+WRITE_LINE_MEMBER(efo_zsu_device::ctc1_z2_w)
 {
 //  printf("ctc1_z2_w %d\n", state);
 }
 
-void efo_zsu_device::ctc0_z2_w(int state)
+WRITE_LINE_MEMBER(efo_zsu_device::ctc0_z2_w)
 {
 	if (state)
 	{
@@ -201,7 +201,7 @@ void efo_zsu_device::ctc0_z2_w(int state)
 	}
 }
 
-void efo_zsu_device::fifo_dor_w(int state)
+WRITE_LINE_MEMBER(efo_zsu_device::fifo_dor_w)
 {
 	if (!m_fifo_shift_timer->enabled())
 		m_ctc[0]->trg3(!state);

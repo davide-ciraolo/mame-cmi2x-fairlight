@@ -1,22 +1,17 @@
 // Windows/Shell.h
 
-#ifndef ZIP7_WINDOWS_SHELL_H
-#define ZIP7_WINDOWS_SHELL_H
+#ifndef __WINDOWS_SHELL_H
+#define __WINDOWS_SHELL_H
 
-#include "../Common/Common.h"
-#include "../Common/MyWindows.h"
-#if defined(__MINGW32__) || defined(__MINGW64__)
+#include <windows.h>
 #include <shlobj.h>
-#else
-#include <ShlObj.h>
-#endif
 
 #include "../Common/MyString.h"
 
 #include "Defs.h"
 
-namespace NWindows {
-namespace NShell {
+namespace NWindows{
+namespace NShell{
 
 /////////////////////////
 // CItemIDList
@@ -25,7 +20,6 @@ namespace NShell {
 class CItemIDList
 {
   LPITEMIDLIST m_Object;
-  Z7_CLASS_NO_COPY(CItemIDList)
 public:
   CItemIDList(): m_Object(NULL) {}
   // CItemIDList(LPCITEMIDLIST itemIDList);
@@ -55,7 +49,6 @@ public:
 /////////////////////////////
 // CDrop
 
-/*
 class CDrop
 {
   HDROP m_Object;
@@ -70,51 +63,22 @@ public:
   operator HDROP() { return m_Object;}
   bool QueryPoint(LPPOINT point)
     { return BOOLToBool(::DragQueryPoint(m_Object, point)); }
-  void Finish()
-  {
-    ::DragFinish(m_Object);
-  }
-  UINT QueryFile(UINT fileIndex, LPTSTR fileName, UINT bufSize)
-    { return ::DragQueryFile(m_Object, fileIndex, fileName, bufSize); }
+  void Finish() {  ::DragFinish(m_Object); }
+  UINT QueryFile(UINT fileIndex, LPTSTR fileName, UINT fileNameSize)
+    { return ::DragQueryFile(m_Object, fileIndex, fileName, fileNameSize); }
   #ifndef _UNICODE
-  UINT QueryFile(UINT fileIndex, LPWSTR fileName, UINT bufSize)
-    { return ::DragQueryFileW(m_Object, fileIndex, fileName, bufSize); }
+  UINT QueryFile(UINT fileIndex, LPWSTR fileName, UINT fileNameSize)
+    { return ::DragQueryFileW(m_Object, fileIndex, fileName, fileNameSize); }
   #endif
   UINT QueryCountOfFiles();
-  void QueryFileName(UINT fileIndex, UString &fileName);
+  UString QueryFileName(UINT fileIndex);
   void QueryFileNames(UStringVector &fileNames);
 };
-*/
+
 #endif
 
-struct CFileAttribs
-{
-  int FirstDirIndex;
-  // DWORD Sum;
-  // DWORD Product;
-  // CRecordVector<DWORD> Vals;
-  // CRecordVector<bool> IsDirVector;
-
-  CFileAttribs()
-  {
-    Clear();
-  }
-
-  void Clear()
-  {
-    FirstDirIndex = -1;
-    // Sum = 0;
-    // Product = 0;
-    // IsDirVector.Clear();
-  }
-};
-
-
-/* read pathnames from HDROP or SHELLIDLIST.
-   The parser can return E_INVALIDARG, if there is some unexpected data in dataObject */
-HRESULT DataObject_GetData_HDROP_or_IDLIST_Names(IDataObject *dataObject, UStringVector &names);
-
-HRESULT DataObject_GetData_FILE_ATTRS(IDataObject *dataObject, CFileAttribs &attribs);
+/////////////////////////////
+// Functions
 
 bool GetPathFromIDList(LPCITEMIDLIST itemIDList, CSysString &path);
 bool BrowseForFolder(LPBROWSEINFO lpbi, CSysString &resultPath);

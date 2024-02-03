@@ -57,9 +57,6 @@
 
 #include "prophet600.lh"
 
-
-namespace {
-
 #define MAINCPU_TAG "z80"
 #define PIT_TAG     "pit"
 #define UART_TAG    "uart"
@@ -94,10 +91,10 @@ public:
 private:
 	virtual void machine_start() override;
 
-	void pit_ch0_tick_w(int state);
-	void pit_ch2_tick_w(int state);
-	void acia_irq_w(int state);
-	void acia_clock_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( pit_ch0_tick_w );
+	DECLARE_WRITE_LINE_MEMBER( pit_ch2_tick_w );
+	DECLARE_WRITE_LINE_MEMBER( acia_irq_w );
+	DECLARE_WRITE_LINE_MEMBER( acia_clock_w );
 
 	void dac_w(offs_t offset, uint8_t data);
 	void scanrow_w(uint8_t data);
@@ -130,18 +127,18 @@ private:
 	uint16_t m_CVs[CV_MAX]{};
 };
 
-void prophet600_state::pit_ch0_tick_w(int state)
+WRITE_LINE_MEMBER( prophet600_state::pit_ch0_tick_w )
 {
 	m_maincpu->set_input_line(INPUT_LINE_IRQ0, state);
 }
 
-void prophet600_state::pit_ch2_tick_w(int state)
+WRITE_LINE_MEMBER( prophet600_state::pit_ch2_tick_w )
 {
 	m_comparitor &= ~0x04;
 	m_comparitor |= (state == ASSERT_LINE) ? 0x04 : 0x00;
 }
 
-void prophet600_state::acia_irq_w(int state)
+WRITE_LINE_MEMBER( prophet600_state::acia_irq_w )
 {
 	if (!m_nmi_gate)
 	{
@@ -149,7 +146,7 @@ void prophet600_state::acia_irq_w(int state)
 	}
 }
 
-void prophet600_state::acia_clock_w(int state)
+WRITE_LINE_MEMBER( prophet600_state::acia_clock_w )
 {
 	m_acia->write_txc(state);
 	m_acia->write_rxc(state);
@@ -308,8 +305,5 @@ ROM_START( prpht600 )
 	ROM_REGION(0x2000, MAINCPU_TAG, 0)
 	ROM_LOAD( "p600.bin",     0x000000, 0x002000, CRC(78e3f048) SHA1(61548b6de3d9b5c0ae76f8e751ece0b57de17118) )
 ROM_END
-
-} // anonymous namespace
-
 
 CONS( 1983, prpht600, 0, 0, prophet600, prophet600, prophet600_state, empty_init, "Sequential Circuits", "Prophet-600", MACHINE_NOT_WORKING|MACHINE_NO_SOUND )

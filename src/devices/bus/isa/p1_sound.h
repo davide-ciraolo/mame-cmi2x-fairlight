@@ -49,7 +49,7 @@ protected:
 	virtual void device_add_mconfig(machine_config &config) override;
 
 private:
-	void sampler_sync(int state);
+	DECLARE_WRITE_LINE_MEMBER(sampler_sync);
 
 	uint8_t m_dac_data[16];
 	int m_dac_ptr;

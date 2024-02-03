@@ -15,11 +15,8 @@
 #include "emu.h"
 #include "at45dbxx.h"
 
-#define LOG_LEVEL0 (1U << 1)
-#define LOG_LEVEL1 (1U << 2)
-#define LOG_LEVEL2 (1U << 3)
-#define VERBOSE (LOG_LEVEL0)
-#include "logmacro.h"
+#define LOG_LEVEL  1
+#define _logerror(level,x)  do { if (LOG_LEVEL > level) logerror x; } while (0)
 
 #define FLASH_CMD_52  0x52
 #define FLASH_CMD_57  0x57
@@ -104,6 +101,8 @@ void at45db041_device::device_start()
 	save_item(NAME(m_pin.wp));
 	save_item(NAME(m_pin.reset));
 	save_item(NAME(m_pin.busy));
+
+	write_so.resolve_safe();
 }
 
 
@@ -113,7 +112,7 @@ void at45db041_device::device_start()
 
 void at45db041_device::device_reset()
 {
-	LOGMASKED(LOG_LEVEL1, "at45dbxx_reset\n");
+	_logerror( 1, ("at45dbxx_reset\n"));
 	// mode
 	m_mode = FLASH_MODE_SI;
 	m_status = 0;
@@ -184,7 +183,7 @@ uint8_t at45db041_device::read_byte()
 	if ((m_mode != FLASH_MODE_SO) || (!m_io.data)) return 0;
 	// read byte
 	data = m_io.data[m_io.pos++];
-	LOGMASKED(LOG_LEVEL2, "at45dbxx_read_byte (%02X) (%03d/%03d)\n", data, m_io.pos, m_io.size);
+	_logerror( 2, ("at45dbxx_read_byte (%02X) (%03d/%03d)\n", data, m_io.pos, m_io.size));
 	if (m_io.pos == m_io.size) m_io.pos = 0;
 	return data;
 }
@@ -229,7 +228,7 @@ void at45db041_device::write_byte(uint8_t data)
 	if (m_cmd.size < 8)
 	{
 		uint8_t opcode;
-		LOGMASKED(LOG_LEVEL2, "at45dbxx_write_byte (%02X)\n", data);
+		_logerror( 2, ("at45dbxx_write_byte (%02X)\n", data));
 		// add to command buffer
 		m_cmd.data[m_cmd.size++] = data;
 		// check opcode
@@ -242,7 +241,7 @@ void at45db041_device::write_byte(uint8_t data)
 				// 8 bits command
 				if (m_cmd.size == 1)
 				{
-					LOGMASKED(LOG_LEVEL1, "at45dbxx opcode %02X - status register read\n", opcode);
+					_logerror( 1, ("at45dbxx opcode %02X - status register read\n", opcode));
 					m_status = (m_status & 0xC7) | device_id(); // 80 = busy / 40 = compare fail
 					flash_set_io(&m_status, 1, 0);
 					m_mode = FLASH_MODE_SO;
@@ -259,10 +258,10 @@ void at45db041_device::write_byte(uint8_t data)
 					uint32_t page;
 					uint8_t comp;
 					page = flash_get_page_addr();
-					LOGMASKED(LOG_LEVEL1, "at45dbxx opcode %02X - main memory page to buffer 1 compare [%04X]\n", opcode, page);
+					_logerror( 1, ("at45dbxx opcode %02X - main memory page to buffer 1 compare [%04X]\n", opcode, page));
 					comp = memcmp( &m_data[page * page_size()], &m_buffer1[0], page_size()) == 0 ? 0 : 1;
 					if (comp) m_status |= 0x40; else m_status &= ~0x40;
-					LOGMASKED(LOG_LEVEL1, "at45dbxx page compare %s\n", comp ? "failure" : "success");
+					_logerror( 1, ("at45dbxx page compare %s\n", comp ? "failure" : "success"));
 					m_mode = FLASH_MODE_SI;
 					m_cmd.size = 8;
 				}
@@ -277,7 +276,7 @@ void at45db041_device::write_byte(uint8_t data)
 					uint32_t page, byte;
 					page = flash_get_page_addr();
 					byte = flash_get_byte_addr();
-					LOGMASKED(LOG_LEVEL1, "at45dbxx opcode %02X - main memory page read [%04X/%04X]\n", opcode, page, byte);
+					_logerror( 1, ("at45dbxx opcode %02X - main memory page read [%04X/%04X]\n", opcode, page, byte));
 					flash_set_io(&m_data[page * page_size()], page_size(), byte);
 					m_mode = FLASH_MODE_SO;
 					m_cmd.size = 8;
@@ -293,7 +292,7 @@ void at45db041_device::write_byte(uint8_t data)
 					uint32_t page, byte;
 					page = flash_get_page_addr();
 					byte = flash_get_byte_addr();
-					LOGMASKED(LOG_LEVEL1, "at45dbxx opcode %02X - main memory page program through buffer 1 [%04X/%04X]\n",opcode, page, byte);
+					_logerror( 1, ("at45dbxx opcode %02X - main memory page program through buffer 1 [%04X/%04X]\n",opcode, page, byte));
 					flash_set_io(&m_buffer1[0], page_size(), byte);
 					memset(&m_buffer1[0], 0xff, m_buffer1.size());
 					m_mode = FLASH_MODE_SI;
@@ -304,7 +303,7 @@ void at45db041_device::write_byte(uint8_t data)
 			// other
 			default :
 			{
-				LOGMASKED(LOG_LEVEL1, "at45dbxx opcode %02X - unknown\n", opcode);
+				_logerror( 1, ("at45dbxx opcode %02X - unknown\n", opcode));
 				m_cmd.data[0] = 0;
 				m_cmd.size = 0;
 			}
@@ -313,7 +312,7 @@ void at45db041_device::write_byte(uint8_t data)
 	}
 	else
 	{
-		LOGMASKED(LOG_LEVEL2, "at45dbxx_write_byte (%02X) (%03d/%03d)\n", data, m_io.pos + 1, m_io.size);
+		_logerror( 2, ("at45dbxx_write_byte (%02X) (%03d/%03d)\n", data, m_io.pos + 1, m_io.size));
 		// store byte
 		m_io.data[m_io.pos] = data;
 		m_io.pos++;
@@ -321,19 +320,19 @@ void at45db041_device::write_byte(uint8_t data)
 	}
 }
 
-int at45db041_device::so_r()
+READ_LINE_MEMBER(at45db041_device::so_r)
 {
 	if (m_pin.cs == 0) return 0;
 	return m_pin.so;
 }
 
-void at45db041_device::si_w(int state)
+WRITE_LINE_MEMBER(at45db041_device::si_w)
 {
 	if (m_pin.cs == 0) return;
 	m_pin.si = state;
 }
 
-void at45db041_device::cs_w(int state)
+WRITE_LINE_MEMBER(at45db041_device::cs_w)
 {
 	// check if changed
 	if (m_pin.cs == state) return;
@@ -346,7 +345,7 @@ void at45db041_device::cs_w(int state)
 			uint32_t page, byte;
 			page = flash_get_page_addr();
 			byte = flash_get_byte_addr();
-			LOGMASKED(LOG_LEVEL1, "at45dbxx - program data stored in buffer 1 into selected page in main memory [%04X/%04X]\n", page, byte);
+			_logerror( 1, ("at45dbxx - program data stored in buffer 1 into selected page in main memory [%04X/%04X]\n", page, byte));
 			memcpy( &m_data[page * page_size()], &m_buffer1[0], page_size());
 		}
 		// reset
@@ -356,7 +355,7 @@ void at45db041_device::cs_w(int state)
 	m_pin.cs = state;
 }
 
-void at45db041_device::sck_w(int state)
+WRITE_LINE_MEMBER(at45db041_device::sck_w)
 {
 	// check if changed
 	if (m_pin.sck == state) return;

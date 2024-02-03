@@ -274,32 +274,32 @@ void epson_lx800_device::portc_w(offs_t offset, uint8_t data)
 	m_beep->set_state(!BIT(data, 7));
 }
 
-int epson_lx800_device::an0_r()
+READ_LINE_MEMBER( epson_lx800_device::an0_r )
 {
 	return BIT(ioport("DIPSW2")->read(), 0);
 }
 
-int epson_lx800_device::an1_r()
+READ_LINE_MEMBER( epson_lx800_device::an1_r )
 {
 	return BIT(ioport("DIPSW2")->read(), 1);
 }
 
-int epson_lx800_device::an2_r()
+READ_LINE_MEMBER( epson_lx800_device::an2_r )
 {
 	return BIT(ioport("DIPSW2")->read(), 2);
 }
 
-int epson_lx800_device::an3_r()
+READ_LINE_MEMBER( epson_lx800_device::an3_r )
 {
 	return BIT(ioport("DIPSW2")->read(), 3); // can also read an external line AUTO_FEED_XT
 }
 
-int epson_lx800_device::an4_r()
+READ_LINE_MEMBER( epson_lx800_device::an4_r )
 {
 	return 0; // Printer select line (0=always selected)
 }
 
-int epson_lx800_device::an5_r()
+READ_LINE_MEMBER( epson_lx800_device::an5_r )
 {
 	return 1; // Monitors 24v line, should return 4.08 volts
 }
@@ -315,12 +315,12 @@ uint8_t epson_lx800_device::centronics_data_r()
 	return 0x55;
 }
 
-void epson_lx800_device::centronics_pe_w(int state)
+WRITE_LINE_MEMBER( epson_lx800_device::centronics_pe_w )
 {
 	logerror("centronics: pe = %d\n", state);
 }
 
-void epson_lx800_device::reset_w(int state)
+WRITE_LINE_MEMBER( epson_lx800_device::reset_w )
 {
 	logerror("cpu reset");
 	m_maincpu->reset();

@@ -1,5 +1,5 @@
 # utf8proc
-[![CI](https://github.com/NanoComp/meep/actions/workflows/build-ci.yml/badge.svg)](https://github.com/JuliaStrings/utf8proc/actions/workflows/build-ci.yml)
+[![Travis CI Status](https://travis-ci.org/JuliaStrings/utf8proc.png)](https://travis-ci.org/JuliaStrings/utf8proc)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/ivaa0v6ikxrmm5r6?svg=true)](https://ci.appveyor.com/project/StevenGJohnson/utf8proc)
 
 [utf8proc](http://juliastrings.github.io/utf8proc/) is a small, clean C
@@ -38,8 +38,9 @@ For compilation of the C library, run `make`.  You can also install the library 
 Alternatively, you can compile with `cmake`, e.g. by
 ```sh
 mkdir build
-cmake -S . -B build
-cmake --build build
+cd build
+cmake ..
+make
 ```
 
 ### Using other compilers
@@ -59,7 +60,7 @@ The C library is found in this directory after successful compilation
 and is named `libutf8proc.a` (for the static library) and
 `libutf8proc.so` (for the dynamic library).
 
-The Unicode version supported is 15.1.0.
+The Unicode version supported is 13.0.0.
 
 For Unicode normalizations, the following options are used:
 

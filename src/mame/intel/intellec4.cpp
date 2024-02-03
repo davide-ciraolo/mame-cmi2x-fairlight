@@ -83,8 +83,8 @@ public:
 	void ram1_out(u8 data);
 
 	// universal slot outputs
-	void bus_reset_4002(int state);
-	void bus_user_reset(int state);
+	DECLARE_WRITE_LINE_MEMBER(bus_reset_4002);
+	DECLARE_WRITE_LINE_MEMBER(bus_user_reset);
 
 	// front panel switches
 	DECLARE_INPUT_CHANGED_MEMBER(sw_reset);
@@ -498,13 +498,13 @@ void intellec4_state::ram1_out(u8 data)
   Bus signal handlers
 ----------------------------------*/
 
-void intellec4_state::bus_reset_4002(int state)
+WRITE_LINE_MEMBER(intellec4_state::bus_reset_4002)
 {
 	m_bus_reset_4002 = 0 == state;
 	check_4002_reset();
 }
 
-void intellec4_state::bus_user_reset(int state)
+WRITE_LINE_MEMBER(intellec4_state::bus_user_reset)
 {
 	if (!state)
 		trigger_reset();
@@ -1038,7 +1038,7 @@ public:
 	}
 
 	// universal slot outputs
-	void bus_test(int state);
+	DECLARE_WRITE_LINE_MEMBER(bus_test);
 
 	// front panel switches
 	DECLARE_INPUT_CHANGED_MEMBER(sw_hold);
@@ -1091,7 +1091,7 @@ INPUT_PORTS_END
   Bus signal handlers
 ----------------------------------*/
 
-void mod4_state::bus_test(int state)
+WRITE_LINE_MEMBER(mod4_state::bus_test)
 {
 	if (!m_one_shot && !m_sw_hold)
 		m_cpu->set_input_line(I4004_TEST_LINE, state ? CLEAR_LINE : ASSERT_LINE);
@@ -1230,11 +1230,11 @@ public:
 	{
 	}
 
-	void stp_ack(int state);
+	DECLARE_WRITE_LINE_MEMBER(stp_ack);
 
 	// universal slot outputs
-	void bus_stop(int state);
-	void bus_test(int state);
+	DECLARE_WRITE_LINE_MEMBER(bus_stop);
+	DECLARE_WRITE_LINE_MEMBER(bus_test);
 
 	// front panel switches
 	DECLARE_INPUT_CHANGED_MEMBER(sw_stop);
@@ -1287,7 +1287,7 @@ INPUT_PORTS_END
   CPU output handlers
 ----------------------------------*/
 
-void mod40_state::stp_ack(int state)
+WRITE_LINE_MEMBER(mod40_state::stp_ack)
 {
 	// resets the single-step monostable
 	if (m_stp_ack && state)
@@ -1307,7 +1307,7 @@ void mod40_state::stp_ack(int state)
 }
 
 
-void mod40_state::bus_stop(int state)
+WRITE_LINE_MEMBER(mod40_state::bus_stop)
 {
 	// will not allow the CPU to step/run
 	if (m_single_step || !m_sw_stop)
@@ -1320,7 +1320,7 @@ void mod40_state::bus_stop(int state)
   Bus signal handlers
 ----------------------------------*/
 
-void mod40_state::bus_test(int state)
+WRITE_LINE_MEMBER(mod40_state::bus_test)
 {
 	m_cpu->set_input_line(I4040_TEST_LINE, state ? CLEAR_LINE : ASSERT_LINE);
 }

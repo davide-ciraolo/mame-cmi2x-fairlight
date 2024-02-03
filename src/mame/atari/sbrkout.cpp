@@ -45,9 +45,6 @@
 #include "tilemap.h"
 #include "sbrkout.lh"
 
-
-namespace {
-
 class sbrkout_state : public driver_device
 {
 public:
@@ -73,14 +70,14 @@ protected:
 private:
 	void irq_ack_w(uint8_t data);
 
-	void pot_mask1_w(int state);
-	void pot_mask2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pot_mask1_w);
+	DECLARE_WRITE_LINE_MEMBER(pot_mask2_w);
 	void output_latch_w(offs_t offset, uint8_t data);
-	void start_1_led_w(int state);
-	void start_2_led_w(int state);
-	void serve_led_w(int state);
-	void serve_2_led_w(int state);
-	void coincount_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(start_1_led_w);
+	DECLARE_WRITE_LINE_MEMBER(start_2_led_w);
+	DECLARE_WRITE_LINE_MEMBER(serve_led_w);
+	DECLARE_WRITE_LINE_MEMBER(serve_2_led_w);
+	DECLARE_WRITE_LINE_MEMBER(coincount_w);
 	uint8_t sync_r();
 	uint8_t sync2_r();
 	void sbrkout_videoram_w(offs_t offset, uint8_t data);
@@ -264,7 +261,7 @@ TIMER_CALLBACK_MEMBER(sbrkout_state::pot_trigger_callback)
 }
 
 
-void sbrkout_state::pot_mask1_w(int state)
+WRITE_LINE_MEMBER(sbrkout_state::pot_mask1_w)
 {
 	m_pot_mask[0] = !state;
 	m_pot_trigger[0] = 0;
@@ -272,7 +269,7 @@ void sbrkout_state::pot_mask1_w(int state)
 }
 
 
-void sbrkout_state::pot_mask2_w(int state)
+WRITE_LINE_MEMBER(sbrkout_state::pot_mask2_w)
 {
 	m_pot_mask[1] = !state;
 	m_pot_trigger[1] = 0;
@@ -299,7 +296,7 @@ void sbrkout_state::output_latch_w(offs_t offset, uint8_t data)
 }
 
 
-void sbrkout_state::coincount_w(int state)
+WRITE_LINE_MEMBER(sbrkout_state::coincount_w)
 {
 	machine().bookkeeping().coin_counter_w(0, state);
 }
@@ -671,9 +668,6 @@ ROM_START( sbrkoutct ) // built from original Atari source code
 	ROM_LOAD( "006400.m2",    0x0000, 0x0100, CRC(b8094b4c) SHA1(82dc6799a19984f3b204ee3aeeb007e55afc8be3) )    /* sync (not used) */
 	ROM_LOAD( "006401.e2",    0x0100, 0x0020, CRC(857df8db) SHA1(06313d5bde03220b2bc313d18e50e4bb1d0cfbbb) )    /* memory mapper */
 ROM_END
-
-} // anonymous namespace
-
 
 /*************************************
  *

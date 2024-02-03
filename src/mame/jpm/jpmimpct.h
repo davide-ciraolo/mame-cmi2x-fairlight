@@ -35,7 +35,7 @@ public:
 
 	auto rxd_handler() { return m_rxd_handler.bind(); }
 
-	void output_rxd(int state) { m_rxd_handler(state); }
+	DECLARE_WRITE_LINE_MEMBER( output_rxd ) { m_rxd_handler(state); }
 
 	void touched(uint8_t x, uint8_t y);
 
@@ -76,8 +76,6 @@ public:
 		, m_upd7759(*this, "upd")
 		, m_reel(*this, "reel%u", 0U)
 		, m_lamp_output(*this, "lamp%u", 0U)
-		, m_pwrled(*this, "PWRLED")
-		, m_statled(*this, "STATLED")
 	{ }
 
 	void impact_nonvideo(machine_config &config);
@@ -86,13 +84,13 @@ public:
 
 
 	DECLARE_INPUT_CHANGED_MEMBER(coin_changed);
-	template <unsigned N> int coinsense_r() { return (m_coinstate >> N) & 1; }
+	template <unsigned N> DECLARE_READ_LINE_MEMBER( coinsense_r ) { return (m_coinstate >> N) & 1; }
 
-	int hopper_b_0_r();
-	int hopper_b_3_r();
-	int hopper_c_4_r();
-	int hopper_c_6_r();
-	int hopper_c_7_r();
+	DECLARE_READ_LINE_MEMBER(hopper_b_0_r);
+	DECLARE_READ_LINE_MEMBER(hopper_b_3_r);
+	DECLARE_READ_LINE_MEMBER(hopper_c_4_r);
+	DECLARE_READ_LINE_MEMBER(hopper_c_6_r);
+	DECLARE_READ_LINE_MEMBER(hopper_c_7_r);
 
 protected:
 	void impact_nonvideo_base(machine_config &config);
@@ -126,8 +124,8 @@ protected:
 	virtual void machine_reset() override;
 
 private:
-	template <unsigned N> void reel_optic_cb(int state) { if (state) m_optic_pattern |= (1 << N); else m_optic_pattern &= ~(1 << N); }
-	template <unsigned N> void reel_optic_inv_cb(int state) { if (!state) m_optic_pattern |= (1 << N); else m_optic_pattern &= ~(1 << N); }
+	template <unsigned N> DECLARE_WRITE_LINE_MEMBER(reel_optic_cb) { if (state) m_optic_pattern |= (1 << N); else m_optic_pattern &= ~(1 << N); }
+	template <unsigned N> DECLARE_WRITE_LINE_MEMBER(reel_optic_inv_cb) { if (!state) m_optic_pattern |= (1 << N); else m_optic_pattern &= ~(1 << N); }
 	template <unsigned N> TIMER_DEVICE_CALLBACK_MEMBER(coinoff) { m_coinstate |= (1 << N); logerror("coin state lowered %d\n", N+1); }
 
 
@@ -152,18 +150,18 @@ private:
 
 
 
-	void duart_irq_handler(int state);
+	DECLARE_WRITE_LINE_MEMBER(duart_irq_handler);
 	void impact_non_video_map(address_map &map);
 
 	uint8_t m_Lamps[256]{};
-	uint8_t m_optic_pattern = 0;
-	bool m_payen = false;
-	uint8_t m_hopinhibit = 0;
-	uint8_t m_slidesout = 0;
-	uint8_t m_hopper[3]{};
-	uint8_t m_motor[3]{};
-	uint8_t m_volume_latch = 0;
-	uint8_t m_global_volume = 0;
+	int m_optic_pattern = 0;
+	int m_payen = 0;
+	int m_hopinhibit = 0;
+	int m_slidesout = 0;
+	int m_hopper[3]{};
+	int m_motor[3]{};
+	int m_volume_latch = 0;
+	int m_global_volume = 0;
 	uint16_t m_coinstate = 0;
 	required_device_array<timer_device, 6> m_cointimer;
 
@@ -173,8 +171,6 @@ private:
 	required_device<upd7759_device> m_upd7759;
 	optional_device_array<stepper_device, 6> m_reel;
 	output_finder<256> m_lamp_output;
-	output_finder<> m_pwrled;
-	output_finder<> m_statled;
 };
 
 class jpmimpct_video_state : public jpmimpct_state
@@ -207,7 +203,7 @@ protected:
 
 	void tms_program_map(address_map &map);
 
-	void tms_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(tms_irq);
 	TMS340X0_TO_SHIFTREG_CB_MEMBER(to_shiftreg);
 	TMS340X0_FROM_SHIFTREG_CB_MEMBER(from_shiftreg);
 	TMS340X0_SCANLINE_RGB32_CB_MEMBER(scanline_update);

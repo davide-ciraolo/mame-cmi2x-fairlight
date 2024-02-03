@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
+license:CC0
 
   Missing Cartridges
 
@@ -94,7 +94,7 @@ license:CC0-1.0
 <!-- Originally AstroSmash was planned to be an Asteroid clone, titled Meteor. The code is still inside
      the final AstroSmash cart, and this version makes the game selectable -->
 	<software name="astrosmsm" cloneof="astrosms">
-		<description>AstroSmash - Meteor (hacked?)</description>
+		<description>AstroSmash - Meteor (Hacked?)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1838,7 +1838,7 @@ license:CC0-1.0
 <!-- Unreleased / Prototypes / Homebrew -->
 
 	<software name="addtom">
-		<description>Advanced Dungeons &amp; Dragons - Tower of Mystery (unreleased)</description>
+		<description>Advanced Dungeons &amp; Dragons - Tower of Mystery (Unreleased)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1859,7 +1859,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="adventur" cloneof="add">
-		<description>Adventure (prototype)</description>
+		<description>Adventure (Prototype)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1871,7 +1871,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="advtron">
-		<description>Adventures of TRON (unreleased)</description>
+		<description>Adventures of TRON (Unreleased)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1883,7 +1883,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="airstrk">
-		<description>Air Strike (prototype)</description>
+		<description>Air Strike (Prototype)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1895,7 +1895,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="allstar">
-		<description>All Star Major League Baseball (prototype)</description>
+		<description>All Star Major League Baseball (Prototype)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1910,7 +1910,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="brickout">
-		<description>Brickout! (unreleased)</description>
+		<description>Brickout! (Unreleased)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1922,7 +1922,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="crazycln">
-		<description>Crazy Clones (unfinished)</description>
+		<description>Crazy Clones (Unfinished)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1934,7 +1934,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="choplift">
-		<description>Choplifter! (prototype)</description>
+		<description>Choplifter! (Prototype)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1949,7 +1949,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="pool">
-		<description>Deep Pockets: Super Pro Pool and Billiards (unreleased)</description>
+		<description>Deep Pockets: Super Pro Pool and Billiards (Unreleased)</description>
 		<year>1990</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1964,7 +1964,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="dfactorp" cloneof="dfactor">
-		<description>The Dreadnaught Factor (prototype)</description>
+		<description>The Dreadnaught Factor (Prototype)</description>
 		<year>1982</year>
 		<publisher>Activision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1976,7 +1976,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="gftgold">
-		<description>Go for the Gold! (prototype)</description>
+		<description>Go for the Gold! (Prototype)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -1988,7 +1988,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="gridshk">
-		<description>Grid Shock (prototype)</description>
+		<description>Grid Shock (Prototype)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2000,7 +2000,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="hheggs">
-		<description>Happy Holidays: Easter Eggcitement (prototype)</description>
+		<description>Happy Holidays: Easter Eggcitement (Prototype)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2012,7 +2012,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="hhsanta">
-		<description>Happy Holidays: Santa's Helper (prototype)</description>
+		<description>Happy Holidays: Santa's Helper (Prototype)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2024,7 +2024,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="hhtrick">
-		<description>Happy Holidays: Trick or Treat (prototype)</description>
+		<description>Happy Holidays: Trick or Treat (Prototype)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2036,7 +2036,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="hvrfor3d">
-		<description>Hover Force 3D (unreleased)</description>
+		<description>Hover Force 3D (Unreleased)</description>
 		<year>1984</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2054,7 +2054,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="hlights">
-		<description>Hypnotic Lights (prototype)</description>
+		<description>Hypnotic Lights (Prototype)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2066,7 +2066,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="illusion">
-		<description>Illusions (unreleased)</description>
+		<description>Illusions (Unreleased)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2078,7 +2078,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="kingotm">
-		<description>King of the Mountain (unreleased)</description>
+		<description>King of the Mountain (Unreleased)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2093,7 +2093,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="landbttl">
-		<description>Land Battle (unreleased)</description>
+		<description>Land Battle (Unreleased)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2107,7 +2107,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="llight">
-		<description>League of Light (prototype)</description>
+		<description>League of Light (Prototype)</description>
 		<year>1983</year>
 		<publisher>Activision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2119,7 +2119,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="llight1" cloneof="llight">
-		<description>League of Light (prototype, alt)</description>
+		<description>League of Light (Prototype, Alt)</description>
 		<year>1983</year>
 		<publisher>Activision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2131,7 +2131,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="llight2" cloneof="llight" supported="no">
-		<description>League of Light (prototype, alt 2)</description>
+		<description>League of Light (Prototype, Alt 2)</description>
 		<year>1983</year>
 		<publisher>Activision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2143,7 +2143,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="magic">
-		<description>Magic Carousel (prototype)</description>
+		<description>Magic Carousel (Prototype)</description>
 		<year>1983</year>
 		<publisher>INTV</publisher>
 		<info name="usage" value="Uses Intellivoice"/>
@@ -2159,7 +2159,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="masters2">
-		<description>Masters of the Universe II (prototype)</description>
+		<description>Masters of the Universe II (Prototype)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2171,7 +2171,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="minotaur" cloneof="addtot">
-		<description>Minotaur (prototype)</description>
+		<description>Minotaur (Prototype)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2183,7 +2183,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="minotaur2" cloneof="addtot">
-		<description>Minotaur (prototype, v2)</description>
+		<description>Minotaur (Prototype, v2)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2195,7 +2195,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="minotaur11" cloneof="addtot" supported="no">
-		<description>Minotaur (prototype, v1.1)</description>
+		<description>Minotaur (Prototype, v1.1)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2207,7 +2207,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="mycastle" cloneof="thcastle">
-		<description>Mystic Castle (prototype)</description>
+		<description>Mystic Castle (Prototype)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2222,7 +2222,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="blowout">
-		<description>Party Line: Blow Out (unreleased)</description>
+		<description>Party Line: Blow Out (Unreleased)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2237,7 +2237,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="blowouta" cloneof="blowout">
-		<description>Party Line: Blow Out (unreleased, alt)</description>
+		<description>Party Line: Blow Out (Unreleased, Alt)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2252,7 +2252,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="hardhat">
-		<description>Party Line: Hard Hat (unreleased)</description>
+		<description>Party Line: Hard Hat (Unreleased)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2264,7 +2264,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="spacecad">
-		<description>Party Line: Space Cadet (unreleased)</description>
+		<description>Party Line: Space Cadet (Unreleased)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2276,7 +2276,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="riveraidp" cloneof="riveraid">
-		<description>River Raid (prototype)</description>
+		<description>River Raid (Prototype)</description>
 		<year>1983?</year>
 		<publisher>Activision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2288,7 +2288,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="rrubble">
-		<description>Robot Rubble (prototype)</description>
+		<description>Robot Rubble (Prototype)</description>
 		<year>1983</year>
 		<publisher>Activision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2300,7 +2300,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="rrubble2" cloneof="rrubble">
-		<description>Robot Rubble (prototype, v2)</description>
+		<description>Robot Rubble (Prototype, v2)</description>
 		<year>1983</year>
 		<publisher>Activision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2312,7 +2312,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="rrubble1" cloneof="rrubble">
-		<description>Robot Rubble (prototype, v1)</description>
+		<description>Robot Rubble (Prototype, v1)</description>
 		<year>1983</year>
 		<publisher>Activision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2324,7 +2324,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="rockybw">
-		<description>Rocky &amp; Bullwinckle (unreleased)</description>
+		<description>Rocky &amp; Bullwinckle (Unreleased)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2336,7 +2336,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="scarfing">
-		<description>Scarfinger (unfinished)</description>
+		<description>Scarfinger (Unfinished)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2351,7 +2351,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="soccer2" cloneof="worldcup">
-		<description>Soccer 2 (prototype)</description>
+		<description>Soccer 2 (Prototype)</description>
 		<year>198?</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2366,7 +2366,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="sshuttle">
-		<description>Space Shuttle (prototype)</description>
+		<description>Space Shuttle (Prototype)</description>
 		<year>1981</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2381,7 +2381,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="ssoccer">
-		<description>Super Soccer (unreleased)</description>
+		<description>Super Soccer (Unreleased)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2399,7 +2399,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="takeover">
-		<description>Takeover (unreleased)</description>
+		<description>Takeover (Unreleased)</description>
 		<year>1982</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2411,7 +2411,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="thinicep" cloneof="thinice">
-		<description>Thin Ice (prototype)</description>
+		<description>Thin Ice (Prototype)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2423,7 +2423,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="yogi">
-		<description>Yogi's Frustration (unreleased)</description>
+		<description>Yogi's Frustration (Unreleased)</description>
 		<year>1983</year>
 		<publisher>Mattel Electronics</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2506,7 +2506,7 @@ license:CC0-1.0
 
 
 	<software name="4tris">
-		<description>4-Tris (download version)</description>
+		<description>4-Tris (Download Version)</description>
 		<year>2000</year>
 		<publisher>IntelligentVision</publisher>
 		<info name="serial" value="9111"/>
@@ -2552,7 +2552,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="minehunt">
-		<description>Minehunter (download version)</description>
+		<description>Minehunter (Download Version)</description>
 		<year>2004</year>
 		<publisher>IntelligentVision</publisher>
 		<info name="serial" value="9113"/>
@@ -2566,7 +2566,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="minehunta" cloneof="minehunt">
-		<description>Minehunter (download version, alt?)</description>
+		<description>Minehunter (Download Version, Alt?)</description>
 		<year>2004</year>
 		<publisher>IntelligentVision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2578,7 +2578,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="sgr">
-		<description>SameGame &amp; Robots (download version)</description>
+		<description>SameGame &amp; Robots (Download Version)</description>
 		<year>2005</year>
 		<publisher>IntelligentVision</publisher>
 		<info name="serial" value="9114"/>
@@ -2640,7 +2640,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="stonix">
-		<description>Stonix (download version)</description>
+		<description>Stonix (Download Version)</description>
 		<year>2005</year>
 		<publisher>IntelligentVision</publisher>
 		<info name="serial" value="9112"/>
@@ -2674,7 +2674,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="todd">
-		<description>Tag Along Todd (unfinished)</description>
+		<description>Tag Along Todd (Unfinished)</description>
 		<year>200?</year>
 		<publisher>IntelligentVision</publisher>
 		<part name="cart" interface="intv_cart">
@@ -2690,7 +2690,7 @@ license:CC0-1.0
 <!-- TODO: Investigate these files -->
 
 	<software name="kingotmf" cloneof="kingotm" supported="no">
-		<description>King of the Mountain (fixed?)</description>
+		<description>King of the Mountain (Fixed?)</description>
 		<year>200?</year>
 		<publisher>IntelligentVision</publisher>
 		<part name="cart" interface="intv_cart">

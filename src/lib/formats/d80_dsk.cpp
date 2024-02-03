@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/d80_dsk.cpp
+    formats/d80_dsk.c
 
     Commodore 8050 sector disk image format
 
@@ -21,17 +21,17 @@ d80_format::d80_format(const format *_formats) : d64_format(_formats), formats(n
 {
 }
 
-const char *d80_format::name() const noexcept
+const char *d80_format::name() const
 {
 	return "d80";
 }
 
-const char *d80_format::description() const noexcept
+const char *d80_format::description() const
 {
 	return "Commodore 8050 disk image";
 }
 
-const char *d80_format::extensions() const noexcept
+const char *d80_format::extensions() const
 {
 	return "d80";
 }

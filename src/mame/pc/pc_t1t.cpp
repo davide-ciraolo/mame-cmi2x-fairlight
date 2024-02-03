@@ -987,19 +987,19 @@ uint8_t pc_t1t_device::read(offs_t offset)
 	return data;
 }
 
-void pc_t1t_device::t1000_de_changed(int state)
+WRITE_LINE_MEMBER( pc_t1t_device::t1000_de_changed )
 {
 	m_display_enable = state ? 0 : 1;
 }
 
 
-void pcvideo_pcjr_device::de_changed(int state)
+WRITE_LINE_MEMBER( pcvideo_pcjr_device::de_changed )
 {
 	m_display_enable = state ? 1 : 0;
 }
 
 
-void pcvideo_t1000_device::t1000_vsync_changed(int state)
+WRITE_LINE_MEMBER( pcvideo_t1000_device::t1000_vsync_changed )
 {
 	m_vsync = state ? 8 : 0;
 	if ( state )
@@ -1008,7 +1008,7 @@ void pcvideo_t1000_device::t1000_vsync_changed(int state)
 	}
 }
 
-void pcvideo_t1000_device::disable_w(int state)
+WRITE_LINE_MEMBER( pcvideo_t1000_device::disable_w )
 {
 	if(state)
 		m_vram->set_bank(8);
@@ -1017,7 +1017,7 @@ void pcvideo_t1000_device::disable_w(int state)
 	m_disable = state ? true : false;
 }
 
-void pcvideo_pcjr_device::pcjr_vsync_changed(int state)
+WRITE_LINE_MEMBER( pcvideo_pcjr_device::pcjr_vsync_changed )
 {
 	m_vsync = state ? 8 : 0;
 	if ( state )

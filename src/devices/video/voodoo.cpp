@@ -685,6 +685,10 @@ generic_voodoo_device::generic_voodoo_device(const machine_config &mconfig, devi
 
 void generic_voodoo_device::device_start()
 {
+	// resolve callbacks
+	m_vblank_cb.resolve();
+	m_stall_cb.resolve();
+	m_pciint_cb.resolve();
 }
 
 
@@ -2575,7 +2579,8 @@ void voodoo_1_device::vblank_start(s32 param)
 	m_vblank = true;
 
 	// notify external VBLANK handler on all models
-	m_vblank_cb(true);
+	if (!m_vblank_cb.isnull())
+		m_vblank_cb(true);
 }
 
 
@@ -2593,7 +2598,8 @@ void voodoo_1_device::vblank_stop(s32 param)
 	m_vblank = false;
 
 	// notify external VBLANK handler on all models
-	m_vblank_cb(false);
+	if (!m_vblank_cb.isnull())
+		m_vblank_cb(false);
 
 	// go to the end of the next frame
 	adjust_vblank_start_timer();
@@ -2883,7 +2889,7 @@ void voodoo_1_device::recompute_video_memory_common(u32 config, u32 rowpixels)
 
 s32 voodoo_1_device::triangle()
 {
-	auto profile = g_profiler.start(PROFILER_USER2);
+	g_profiler.start(PROFILER_USER2);
 
 	// allocate polygon information now
 	auto &poly = m_renderer->alloc_poly();
@@ -3015,7 +3021,7 @@ s32 voodoo_1_device::triangle()
 	if (DEBUG_STATS)
 		m_stats.m_triangles++;
 
-	profile.stop();
+	g_profiler.stop();
 
 	if (LOG_REGISTERS)
 		logerror("cycles = %d\n", TRIANGLE_SETUP_CLOCKS + pixels);
@@ -3131,7 +3137,7 @@ void voodoo_1_device::check_stalled_cpu(attotime current_time)
 		m_stall_state = NOT_STALLED;
 
 		// either call the callback, or trigger the trigger
-		if (!m_stall_cb.isunset())
+		if (!m_stall_cb.isnull())
 			m_stall_cb(false);
 		else
 			machine().scheduler().trigger(m_stall_trigger);
@@ -3159,7 +3165,7 @@ void voodoo_1_device::stall_cpu(stall_state state)
 		m_stats.m_stalls++;
 
 	// either call the callback, or spin the CPU
-	if (!m_stall_cb.isunset())
+	if (!m_stall_cb.isnull())
 		m_stall_cb(true);
 	else
 		m_cpu->spin_until_trigger(m_stall_trigger);

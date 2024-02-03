@@ -145,7 +145,6 @@ PL1 = Compact Flash Slot
 #include "speaker.h"
 
 #include "bfm_sc5.lh"
-#include "bfm_sc5_gu96x8.lh"
 
 
 
@@ -315,12 +314,12 @@ void bfm_sc5_state::sc5_10202F0_w(offs_t offset, uint8_t data)
 }
 
 
-void bfm_sc5_state::bfm_sc5_duart_irq_handler(int state)
+WRITE_LINE_MEMBER(bfm_sc5_state::bfm_sc5_duart_irq_handler)
 {
 	logerror("bfm_sc5_duart_irq_handler\n");
 }
 
-void bfm_sc5_state::bfm_sc5_duart_txa(int state)
+WRITE_LINE_MEMBER(bfm_sc5_state::bfm_sc5_duart_txa)
 {
 	logerror("bfm_sc5_duart_tx\n");
 }
@@ -352,12 +351,9 @@ void bfm_sc5_state::bfm_sc5(machine_config &config)
 	m_duart->inport_cb().set(FUNC(bfm_sc5_state::bfm_sc5_duart_input_r));
 	m_duart->outport_cb().set(FUNC(bfm_sc5_state::bfm_sc5_duart_output_w));
 
-	// BFM_BDA(config, m_vfd0, 60, 0);
-	BFM_GU96X8M_K657C2(config, m_vfd1, 60, 0);
+	BFM_BDA(config, m_vfd0, 60, 0);
 
-
-	// config.set_default_layout(layout_bfm_sc5);
-	config.set_default_layout(layout_bfm_sc5_gu96x8);
+	config.set_default_layout(layout_bfm_sc5);
 
 	YMZ280B(config, m_ymz, 16000000); // ?? Mhz
 	m_ymz->add_route(ALL_OUTPUTS, "mono", 1.0);

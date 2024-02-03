@@ -4,8 +4,6 @@
 // Creation of unformatted floppy images
 
 #include "fs_unformatted.h"
-#include "flopimg.h"
-#include "fsblk.h"
 
 namespace fs {
 
@@ -21,11 +19,8 @@ const char *unformatted_image::description() const
 	return "Unformatted floppy image";
 }
 
-void unformatted_image::enumerate_f(floppy_enumerator &fe) const
+void unformatted_image::enumerate_f(floppy_enumerator &fe, u32 form_factor, const std::vector<u32> &variants) const
 {
-	u32 form_factor = fe.form_factor();
-	const std::vector<u32> &variants = fe.variants();
-
 	bool all = form_factor == floppy_image::FF_UNKNOWN;
 	u32 best_8 =
 		form_factor == floppy_image::FF_8 ?

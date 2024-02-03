@@ -17,17 +17,17 @@ vector06_format::vector06_format() : wd177x_format(formats)
 {
 }
 
-const char *vector06_format::name() const noexcept
+const char *vector06_format::name() const
 {
 	return "vector06";
 }
 
-const char *vector06_format::description() const noexcept
+const char *vector06_format::description() const
 {
 	return "Vector 06 disk image";
 }
 
-const char *vector06_format::extensions() const noexcept
+const char *vector06_format::extensions() const
 {
 	return "fdd";
 }

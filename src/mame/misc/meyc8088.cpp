@@ -36,8 +36,6 @@
 #include "gldarrow.lh"
 
 
-namespace {
-
 class meyc8088_state : public driver_device
 {
 public:
@@ -80,7 +78,7 @@ private:
 
 	void meyc8088_palette(palette_device &palette) const;
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void screen_vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
 	TIMER_DEVICE_CALLBACK_MEMBER(heartbeat_callback);
 	void meyc8088_map(address_map &map);
 };
@@ -170,7 +168,7 @@ uint32_t meyc8088_state::screen_update(screen_device &screen, bitmap_ind16 &bitm
 	return 0;
 }
 
-void meyc8088_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(meyc8088_state::screen_vblank)
 {
 	// LC255(200ns pulse) rising edge asserts INTR at start and end of vblank
 	// INTA wired back to INTR to clear it, vector is hardwired to $20
@@ -414,8 +412,6 @@ ROM_START( gldarrow )
 	ROM_REGION( 0x20, "proms", 0 )
 	ROM_LOAD( "prom.2c", 0x00, 0x20, CRC(2839bb14) SHA1(c9acdb3ae00c2f9344aedaf77c0f4e860a3184fc) ) // M3-7602-5 color prom
 ROM_END
-
-} // anonymous namespace
 
 
 GAMEL( 1984, gldarrow, 0, meyc8088, gldarrow, meyc8088_state, empty_init, ROT0, "Meyco Games, Inc.", "Golden Arrow (Standard G8-03)", MACHINE_SUPPORTS_SAVE, layout_gldarrow )

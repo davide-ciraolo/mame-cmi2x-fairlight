@@ -1,7 +1,7 @@
 // 7zDecode.h
 
-#ifndef ZIP7_INC_7Z_DECODE_H
-#define ZIP7_INC_7Z_DECODE_H
+#ifndef __7Z_DECODE_H
+#define __7Z_DECODE_H
 
 #include "../Common/CoderMixer2.h"
 
@@ -24,12 +24,9 @@ struct CBindInfoEx: public NCoderMixer2::CBindInfo
 class CDecoder
 {
   bool _bindInfoPrev_Defined;
-  #ifdef USE_MIXER_ST
-  #ifdef USE_MIXER_MT
-    bool _useMixerMT;
-  #endif
-  #endif
   CBindInfoEx _bindInfoPrev;
+  
+  bool _useMixerMT;
   
   #ifdef USE_MIXER_ST
     NCoderMixer2::CMixerST *_mixerST;
@@ -56,14 +53,12 @@ public:
 
       , ISequentialOutStream *outStream
       , ICompressProgressInfo *compressProgress
-
       , ISequentialInStream **inStreamMainRes
-      , bool &dataAfterEnd_Error
       
-      Z7_7Z_DECODER_CRYPRO_VARS_DECL
+      _7Z_DECODER_CRYPRO_VARS_DECL
       
-      #if !defined(Z7_ST)
-      , bool mtMode, UInt32 numThreads, UInt64 memUsage
+      #if !defined(_7ZIP_ST) && !defined(_SFX)
+      , bool mtMode, UInt32 numThreads
       #endif
       );
 };

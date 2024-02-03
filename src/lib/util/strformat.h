@@ -173,6 +173,8 @@
 
 #pragma once
 
+#include "vecstream.h"
+
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -358,54 +360,52 @@ public:
 	{
 	}
 
-	template <typename Character, typename Traits = std::char_traits<Character> >
-	void apply(std::basic_ostream<Character, Traits> &stream) const
+	template <typename Stream> void apply(Stream &stream) const
 	{
-		using stream_type = std::basic_ostream<Character, Traits>;
-		using chars = format_chars<Character>;
+		typedef format_chars<typename Stream::char_type> chars;
 
 		stream.unsetf(
-				stream_type::basefield |
-				stream_type::adjustfield |
-				stream_type::floatfield |
-				stream_type::boolalpha |
-				stream_type::showbase |
-				stream_type::showpoint |
-				stream_type::showpos |
-				stream_type::uppercase);
+				Stream::basefield |
+				Stream::adjustfield |
+				Stream::floatfield |
+				Stream::boolalpha |
+				Stream::showbase |
+				Stream::showpoint |
+				Stream::showpos |
+				Stream::uppercase);
 
-		if (get_alternate_format()) stream.setf(stream_type::showbase | stream_type::showpoint);
+		if (get_alternate_format()) stream.setf(Stream::showbase | Stream::showpoint);
 		stream.fill(get_zero_pad() ? chars::zero : chars::space);
-		stream.setf(get_left_align() ? stream_type::left : get_zero_pad() ? stream_type::internal : stream_type::right);
-		if (positive_sign::plus == get_positive_sign()) stream.setf(stream_type::showpos);
+		stream.setf(get_left_align() ? Stream::left : get_zero_pad() ? Stream::internal : Stream::right);
+		if (positive_sign::plus == get_positive_sign()) stream.setf(Stream::showpos);
 		stream.precision((get_precision() < 0) ? 6 : get_precision());
 		stream.width(get_field_width());
-		if (get_uppercase()) stream.setf(stream_type::uppercase);
+		if (get_uppercase()) stream.setf(Stream::uppercase);
 		switch (get_conversion())
 		{
 		case conversion::unspecified:
 			break;
 		case conversion::signed_decimal:
 		case conversion::unsigned_decimal:
-			stream.setf(stream_type::dec);
+			stream.setf(Stream::dec);
 			break;
 		case conversion::octal:
-			stream.setf(stream_type::oct);
+			stream.setf(Stream::oct);
 			break;
 		case conversion::hexadecimal:
-			stream.setf(stream_type::hex | stream_type::scientific | stream_type::fixed);
+			stream.setf(Stream::hex | Stream::scientific | Stream::fixed);
 			break;
 		case conversion::scientific_decimal:
-			stream.setf(stream_type::dec | stream_type::scientific);
+			stream.setf(Stream::dec | Stream::scientific);
 			break;
 		case conversion::fixed_decimal:
-			stream.setf(stream_type::dec | stream_type::fixed);
+			stream.setf(Stream::dec | Stream::fixed);
 			break;
 		case conversion::floating_decimal:
-			stream.setf(stream_type::dec);
+			stream.setf(Stream::dec);
 			break;
 		case conversion::scientific_hexadecimal:
-			stream.setf(stream_type::hex | stream_type::scientific | stream_type::fixed);
+			stream.setf(Stream::hex | Stream::scientific | Stream::fixed);
 			break;
 		case conversion::character:
 		case conversion::string:
@@ -1012,12 +1012,10 @@ public:
 //  NON-POLYMORPHIC ARGUMENT WRAPPER
 //**************************************************************************
 
-template <typename Character, typename Traits = std::char_traits<Character> >
+template <typename Stream>
 class format_argument
 {
 public:
-	using stream_type = std::basic_ostream<Character, Traits>;
-
 	format_argument()
 		: m_value(nullptr)
 		, m_output_function(nullptr)
@@ -1035,18 +1033,18 @@ public:
 	{
 	}
 
-	void output(stream_type &str, format_flags const &flags) const { m_output_function(str, flags, m_value); }
+	void output(Stream &str, format_flags const &flags) const { m_output_function(str, flags, m_value); }
 	bool make_integer(int &result) const { return m_make_integer_function(m_value, result); }
 	void store_integer(std::streamoff data) const { m_store_integer_function(m_value, data); }
 
 private:
-	typedef void (*output_function)(stream_type &str, format_flags const &flags, void const *value);
+	typedef void (*output_function)(Stream &str, format_flags const &flags, void const *value);
 	typedef bool (*make_integer_function)(void const *value, int &result);
 	typedef void (*store_integer_function)(void const *value, std::streamoff data);
 
-	template <typename T> static void static_output(stream_type &str, format_flags const &flags, void const *value)
+	template <typename T> static void static_output(Stream &str, format_flags const &flags, void const *value)
 	{
-		format_output<stream_type, T>::apply(str, flags, *reinterpret_cast<T const *>(value));
+		format_output<Stream, T>::apply(str, flags, *reinterpret_cast<T const *>(value));
 	}
 
 	template <typename T> static bool static_make_integer(void const *value, int &result)
@@ -1070,12 +1068,11 @@ private:
 //  NON-POLYMORPHIC ARGUMENT PACK WRAPPER BASE
 //**************************************************************************
 
-template <typename Character = char, typename Traits = std::char_traits<Character> >
+template <typename Stream = std::ostream>
 class format_argument_pack
 {
 public:
-	using stream_type = std::basic_ostream<Character, Traits>;
-	using char_type = Character;
+	typedef typename Stream::char_type char_type;
 	typedef char_type const *iterator;
 	iterator format_begin() const
 	{
@@ -1089,7 +1086,7 @@ public:
 	{
 		return m_argument_count;
 	}
-	format_argument<char_type, Traits> const &operator[](std::size_t index) const
+	format_argument<Stream> const &operator[](std::size_t index) const
 	{
 		assert(m_argument_count > index);
 		return m_arguments[index];
@@ -1106,7 +1103,7 @@ protected:
 	template <typename Format>
 	format_argument_pack(
 			Format &&fmt,
-			format_argument<char_type, Traits> const *arguments,
+			format_argument<Stream> const *arguments,
 			std::enable_if_t<handle_char_ptr<std::remove_reference_t<Format> >::value, std::size_t> argument_count)
 		: m_begin(fmt)
 		, m_end(nullptr)
@@ -1122,7 +1119,7 @@ protected:
 	template <typename Format>
 	format_argument_pack(
 			Format &&fmt,
-			format_argument<char_type, Traits> const *arguments,
+			format_argument<Stream> const *arguments,
 			std::enable_if_t<handle_char_array<std::remove_reference_t<Format> >::value, std::size_t> argument_count)
 		: m_begin(std::cbegin(fmt))
 		, m_end(std::cend(fmt))
@@ -1138,7 +1135,7 @@ protected:
 	template <typename Format>
 	format_argument_pack(
 			Format &&fmt,
-			format_argument<char_type, Traits> const *arguments,
+			format_argument<Stream> const *arguments,
 			std::enable_if_t<handle_container<std::remove_reference_t<Format> >::value, std::size_t> argument_count)
 		: m_begin(fmt.empty() ? nullptr : &*std::cbegin(fmt))
 		, m_end(fmt.empty() ? nullptr : (m_begin + std::distance(std::cbegin(fmt), std::cend(fmt))))
@@ -1152,17 +1149,17 @@ protected:
 		assert(m_arguments || !m_argument_count);
 	}
 
-	format_argument_pack(format_argument_pack<char_type, Traits> const &) = default;
-	format_argument_pack(format_argument_pack<char_type, Traits> &&) = default;
-	format_argument_pack &operator=(format_argument_pack<char_type, Traits> const &) = default;
-	format_argument_pack &operator=(format_argument_pack<char_type, Traits> &&) = default;
+	format_argument_pack(format_argument_pack<Stream> const &) = default;
+	format_argument_pack(format_argument_pack<Stream> &&) = default;
+	format_argument_pack &operator=(format_argument_pack<Stream> const &) = default;
+	format_argument_pack &operator=(format_argument_pack<Stream> &&) = default;
 
 private:
-	iterator                                    m_begin;
-	iterator                                    m_end;
-	bool                                        m_check_nul;
-	format_argument<char_type, Traits> const    *m_arguments;
-	std::size_t                                 m_argument_count;
+	iterator                        m_begin;
+	iterator                        m_end;
+	bool                            m_check_nul;
+	format_argument<Stream> const   *m_arguments;
+	std::size_t                     m_argument_count;
 };
 
 
@@ -1170,27 +1167,27 @@ private:
 //  ARGUMENT PACK WRAPPER IMPLEMENTATION
 //**************************************************************************
 
-template <typename Character, typename Traits, std::size_t Count>
+template <typename Stream, std::size_t Count>
 class format_argument_pack_impl
-	: private std::array<format_argument<Character, Traits>, Count>
-	, public format_argument_pack<Character, Traits>
+	: private std::array<format_argument<Stream>, Count>
+	, public format_argument_pack<Stream>
 {
 public:
-	using typename format_argument_pack<Character, Traits>::iterator;
-	using format_argument_pack<Character, Traits>::operator[];
+	using typename format_argument_pack<Stream>::iterator;
+	using format_argument_pack<Stream>::operator[];
 
 	template <typename Format, typename... Params>
 	format_argument_pack_impl(Format &&fmt, Params &&... args)
-		: std::array<format_argument<Character, Traits>, Count>({ { format_argument<Character, Traits>(std::forward<Params>(args))... } })
-		, format_argument_pack<Character, Traits>(std::forward<Format>(fmt), Count ? &*this->cbegin() : nullptr, Count)
+		: std::array<format_argument<Stream>, Count>({ { format_argument<Stream>(std::forward<Params>(args))... } })
+		, format_argument_pack<Stream>(std::forward<Format>(fmt), Count ? &*this->cbegin() : nullptr, Count)
 	{
 		static_assert(sizeof...(Params) == Count, "Wrong number of constructor arguments");
 	}
 
-	format_argument_pack_impl(format_argument_pack_impl<Character, Traits, Count> const &) = default;
-	format_argument_pack_impl(format_argument_pack_impl<Character, Traits, Count> &&) = default;
-	format_argument_pack_impl &operator=(format_argument_pack_impl<Character, Traits, Count> const &) = default;
-	format_argument_pack_impl &operator=(format_argument_pack_impl<Character, Traits, Count> &&) = default;
+	format_argument_pack_impl(format_argument_pack_impl<Stream, Count> const &) = default;
+	format_argument_pack_impl(format_argument_pack_impl<Stream, Count> &&) = default;
+	format_argument_pack_impl &operator=(format_argument_pack_impl<Stream, Count> const &) = default;
+	format_argument_pack_impl &operator=(format_argument_pack_impl<Stream, Count> &&) = default;
 };
 
 
@@ -1199,9 +1196,9 @@ public:
 //**************************************************************************
 
 template <typename Stream = std::ostream, typename Format, typename... Params>
-inline auto make_format_argument_pack(Format &&fmt, Params &&... args)
+inline format_argument_pack_impl<Stream, sizeof...(Params)> make_format_argument_pack(Format &&fmt, Params &&... args)
 {
-	return format_argument_pack_impl<typename Stream::char_type, typename Stream::traits_type, sizeof...(Params)>(std::forward<Format>(fmt), std::forward<Params>(args)...);
+	return format_argument_pack_impl<Stream, sizeof...(Params)>(std::forward<Format>(fmt), std::forward<Params>(args)...);
 }
 
 
@@ -1549,16 +1546,15 @@ private:
 //  CORE FORMATTING FUNCTION
 //**************************************************************************
 
-template <typename Character, typename Traits = std::char_traits<Character> >
-typename std::basic_ostream<Character, Traits>::off_type stream_format(std::basic_ostream<Character, Traits> &str, format_argument_pack<Character, Traits> const &args)
+template <typename Stream, typename Base>
+typename Stream::off_type stream_format(Stream &str, format_argument_pack<Base> const &args)
 {
-	using stream_type = std::basic_ostream<Character, Traits>;
-	using format_helper = format_helper<format_argument_pack<Character, Traits> >;
-	using iterator = typename format_argument_pack<Character, Traits>::iterator;
+	typedef format_helper<format_argument_pack<Base> > format_helper;
+	typedef typename format_argument_pack<Base>::iterator iterator;
 	class stream_preserver
 	{
 	public:
-		stream_preserver(stream_type &stream)
+		stream_preserver(Stream &stream)
 			: m_stream(stream)
 			, m_fill(stream.fill())
 			, m_flags(stream.flags())
@@ -1574,14 +1570,14 @@ typename std::basic_ostream<Character, Traits>::off_type stream_format(std::basi
 			m_stream.fill(m_fill);
 		}
 	private:
-		stream_type                     &m_stream;
-		typename stream_type::char_type m_fill;
-		typename stream_type::fmtflags  m_flags;
-		std::streamsize                 m_precision;
-		std::streamsize                 m_width;
+		Stream                      &m_stream;
+		typename Stream::char_type  m_fill;
+		typename Stream::fmtflags   m_flags;
+		std::streamsize             m_precision;
+		std::streamsize             m_width;
 	};
 
-	typename stream_type::pos_type const begin(str.tellp());
+	typename Stream::pos_type const begin(str.tellp());
 	stream_preserver const preserver(str);
 	int next_pos(1);
 	iterator start = args.format_begin();
@@ -1654,7 +1650,7 @@ typename std::basic_ostream<Character, Traits>::off_type stream_format(std::basi
 			}
 			else if (format_flags::conversion::percent == flags.get_conversion())
 			{
-				str << Character(format_chars<Character>::percent);
+				str << typename Stream::char_type(format_chars<typename Stream::char_type>::percent);
 				start = it;
 			}
 			else
@@ -1665,10 +1661,10 @@ typename std::basic_ostream<Character, Traits>::off_type stream_format(std::basi
 					continue;
 				if (format_flags::conversion::tell == flags.get_conversion())
 				{
-					typename stream_type::pos_type const current(str.tellp());
+					typename Stream::pos_type const current(str.tellp());
 					args[arg_pos - 1].store_integer(
-							((typename stream_type::pos_type(-1) == begin) || (typename stream_type::pos_type(-1) == current))
-								? typename stream_type::off_type(-1)
+							((typename Stream::pos_type(-1) == begin) || (typename Stream::pos_type(-1) == current))
+								? typename Stream::off_type(-1)
 								: (current - begin));
 				}
 				else
@@ -1679,9 +1675,9 @@ typename std::basic_ostream<Character, Traits>::off_type stream_format(std::basi
 			}
 		}
 	}
-	typename stream_type::pos_type const end(str.tellp());
-	return ((typename stream_type::pos_type(-1) == begin) || (typename stream_type::pos_type(-1) == end))
-			? typename stream_type::off_type(-1)
+	typename Stream::pos_type const end(str.tellp());
+	return ((typename Stream::pos_type(-1) == begin) || (typename Stream::pos_type(-1) == end))
+			? typename Stream::off_type(-1)
 			: (end - begin);
 }
 
@@ -1698,14 +1694,14 @@ inline typename Stream::off_type stream_format(Stream &str, Format const &fmt, P
 	return detail::stream_format(str, detail::make_format_argument_pack<Stream>(fmt, std::forward<Params>(args)...));
 }
 
-template <typename Stream, typename Character, typename Traits>
-inline typename Stream::off_type stream_format(Stream &str, detail::format_argument_pack<Character, Traits> const &args)
+template <typename Stream, typename Base>
+inline typename Stream::off_type stream_format(Stream &str, detail::format_argument_pack<Base> const &args)
 {
 	return detail::stream_format(str, args);
 }
 
-template <typename Stream, typename Character, typename Traits>
-inline typename Stream::off_type stream_format(Stream &str, detail::format_argument_pack<Character, Traits> &&args)
+template <typename Stream, typename Base>
+inline typename Stream::off_type stream_format(Stream &str, detail::format_argument_pack<Base> &&args)
 {
 	return detail::stream_format(str, args);
 }
@@ -1718,7 +1714,7 @@ inline typename Stream::off_type stream_format(Stream &str, detail::format_argum
 template <typename String = std::string, typename Format, typename... Params>
 inline String string_format(Format &&fmt, Params &&... args)
 {
-	using ostream = std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type>;
+	typedef std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type> ostream;
 	ostream str;
 	stream_format(str, fmt, std::forward<Params>(args)...);
 	return str.str();
@@ -1727,45 +1723,45 @@ inline String string_format(Format &&fmt, Params &&... args)
 template <typename String = std::string, typename Format, typename... Params>
 inline String string_format(std::locale const &locale, Format &&fmt, Params &&... args)
 {
-	using ostream = std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type>;
+	typedef std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type> ostream;
 	ostream str;
 	str.imbue(locale);
 	stream_format(str, fmt, std::forward<Params>(args)...);
 	return str.str();
 };
 
-template <typename String = std::string>
-inline String string_format(detail::format_argument_pack<typename String::value_type, typename String::traits_type> const &args)
+template <typename String = std::string, typename Stream>
+inline String string_format(detail::format_argument_pack<Stream> const &args)
 {
-	using ostream = std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type>;
+	typedef std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type> ostream;
 	ostream str;
 	detail::stream_format(str, args);
 	return str.str();
 };
 
-template <typename String = std::string>
-inline String string_format(detail::format_argument_pack<typename String::value_type, typename String::traits_type> &&args)
+template <typename String = std::string, typename Stream>
+inline String string_format(detail::format_argument_pack<Stream> &&args)
 {
-	using ostream = std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type>;
+	typedef std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type> ostream;
 	ostream str;
 	detail::stream_format(str, std::move(args));
 	return str.str();
 };
 
-template <typename String = std::string>
-inline String string_format(std::locale const &locale, detail::format_argument_pack<typename String::value_type, typename String::traits_type> const &args)
+template <typename String = std::string, typename Stream>
+inline String string_format(std::locale const &locale, detail::format_argument_pack<Stream> const &args)
 {
-	using ostream = std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type>;
+	typedef std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type> ostream;
 	ostream str;
 	str.imbue(locale);
 	detail::stream_format(str, args);
 	return str.str();
 };
 
-template <typename String = std::string>
-inline String string_format(std::locale const &locale, detail::format_argument_pack<typename String::value_type, typename String::traits_type> &&args)
+template <typename String = std::string, typename Stream>
+inline String string_format(std::locale const &locale, detail::format_argument_pack<Stream> &&args)
 {
-	using ostream = std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type>;
+	typedef std::basic_ostringstream<typename String::value_type, typename String::traits_type, typename String::allocator_type> ostream;
 	ostream str;
 	str.imbue(locale);
 	detail::stream_format(str, std::move(args));
@@ -1796,115 +1792,638 @@ extern template class format_chars<wchar_t>;
 
 extern template void format_flags::apply(std::ostream &) const;
 extern template void format_flags::apply(std::wostream &) const;
+extern template void format_flags::apply(std::iostream &) const;
+extern template void format_flags::apply(std::wiostream &) const;
+extern template void format_flags::apply(std::ostringstream &) const;
+extern template void format_flags::apply(std::wostringstream &) const;
+extern template void format_flags::apply(std::stringstream &) const;
+extern template void format_flags::apply(std::wstringstream &) const;
+extern template void format_flags::apply(ovectorstream &) const;
+extern template void format_flags::apply(wovectorstream &) const;
+extern template void format_flags::apply(vectorstream &) const;
+extern template void format_flags::apply(wvectorstream &) const;
 
-extern template class format_argument<char>;
-extern template void format_argument<char>::static_output<bool>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<char>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<signed char>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<unsigned char>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<short>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<unsigned short>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<int>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<unsigned int>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<long>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<unsigned long>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<long long>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<unsigned long long>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<char *>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<char const *>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<std::string>(std::ostream &, format_flags const &, void const *);
-extern template void format_argument<char>::static_output<std::string_view>(std::ostream &, format_flags const &, void const *);
-extern template bool format_argument<char>::static_make_integer<bool>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<char>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<signed char>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<unsigned char>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<short>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<unsigned short>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<int>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<unsigned int>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<long>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<unsigned long>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<long long>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<unsigned long long>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<char *>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<char const *>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<std::string>(void const *, int &);
-extern template bool format_argument<char>::static_make_integer<std::string_view>(void const *, int &);
-extern template void format_argument<char>::static_store_integer<bool>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<char>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<signed char>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<unsigned char>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<short>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<unsigned short>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<int>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<unsigned int>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<long>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<unsigned long>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<long long>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<unsigned long long>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<char *>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<char const *>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<std::string>(void const *, std::streamoff);
-extern template void format_argument<char>::static_store_integer<std::string_view>(void const *, std::streamoff);
+extern template class format_argument<std::ostream>;
+extern template void format_argument<std::ostream>::static_output<char>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<signed char>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<unsigned char>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<short>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<unsigned short>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<int>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<unsigned int>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<long>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<unsigned long>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<long long>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<unsigned long long>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<char *>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<char const *>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<std::string>(std::ostream &, format_flags const &, void const *);
+extern template void format_argument<std::ostream>::static_output<std::string_view>(std::ostream &, format_flags const &, void const *);
+extern template bool format_argument<std::ostream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<char *>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<char const *>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<std::string>(void const *, int &);
+extern template bool format_argument<std::ostream>::static_make_integer<std::string_view>(void const *, int &);
+extern template void format_argument<std::ostream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<char *>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<char const *>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<std::string>(void const *, std::streamoff);
+extern template void format_argument<std::ostream>::static_store_integer<std::string_view>(void const *, std::streamoff);
 
-extern template class format_argument<wchar_t>;
-extern template void format_argument<wchar_t>::static_output<bool>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<char>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<signed char>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<unsigned char>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<wchar_t>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<short>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<unsigned short>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<int>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<unsigned int>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<long>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<unsigned long>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<long long>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<unsigned long long>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<wchar_t *>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<wchar_t const *>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<std::wstring>(std::wostream &, format_flags const &, void const *);
-extern template void format_argument<wchar_t>::static_output<std::wstring_view>(std::wostream &, format_flags const &, void const *);
-extern template bool format_argument<wchar_t>::static_make_integer<bool>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<char>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<signed char>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<unsigned char>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<wchar_t>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<short>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<unsigned short>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<int>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<unsigned int>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<long>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<unsigned long>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<long long>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<unsigned long long>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<wchar_t *>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<wchar_t const *>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<std::wstring>(void const *, int &);
-extern template bool format_argument<wchar_t>::static_make_integer<std::wstring_view>(void const *, int &);
-extern template void format_argument<wchar_t>::static_store_integer<bool>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<char>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<signed char>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<unsigned char>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<wchar_t>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<short>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<unsigned short>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<int>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<unsigned int>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<long>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<unsigned long>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<long long>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<unsigned long long>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<wchar_t *>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<wchar_t const *>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<std::wstring>(void const *, std::streamoff);
-extern template void format_argument<wchar_t>::static_store_integer<std::wstring_view>(void const *, std::streamoff);
+extern template class format_argument<std::wostream>;
+extern template void format_argument<std::wostream>::static_output<char>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<signed char>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<unsigned char>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<wchar_t>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<short>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<unsigned short>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<int>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<unsigned int>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<long>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<unsigned long>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<long long>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<unsigned long long>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<wchar_t *>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<wchar_t const *>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<std::wstring>(std::wostream &, format_flags const &, void const *);
+extern template void format_argument<std::wostream>::static_output<std::wstring_view>(std::wostream &, format_flags const &, void const *);
+extern template bool format_argument<std::wostream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<wchar_t>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<wchar_t *>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<wchar_t const *>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<std::wstring>(void const *, int &);
+extern template bool format_argument<std::wostream>::static_make_integer<std::wstring_view>(void const *, int &);
+extern template void format_argument<std::wostream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<wchar_t>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<wchar_t *>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<wchar_t const *>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<std::wstring>(void const *, std::streamoff);
+extern template void format_argument<std::wostream>::static_store_integer<std::wstring_view>(void const *, std::streamoff);
 
-extern template class format_argument_pack<char>;
-extern template class format_argument_pack<wchar_t>;
+extern template class format_argument<std::iostream>;
+extern template void format_argument<std::iostream>::static_output<char>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<signed char>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<unsigned char>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<short>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<unsigned short>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<int>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<unsigned int>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<long>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<unsigned long>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<long long>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<unsigned long long>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<char *>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<char const *>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<std::string>(std::iostream &, format_flags const &, void const *);
+extern template void format_argument<std::iostream>::static_output<std::string_view>(std::iostream &, format_flags const &, void const *);
+extern template bool format_argument<std::iostream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<char *>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<char const *>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<std::string>(void const *, int &);
+extern template bool format_argument<std::iostream>::static_make_integer<std::string_view>(void const *, int &);
+extern template void format_argument<std::iostream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<char *>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<char const *>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<std::string>(void const *, std::streamoff);
+extern template void format_argument<std::iostream>::static_store_integer<std::string_view>(void const *, std::streamoff);
 
-extern template std::ostream::off_type stream_format(std::ostream &, format_argument_pack<char> const &);
-extern template std::wostream::off_type stream_format(std::wostream &, format_argument_pack<wchar_t> const &);
+extern template class format_argument<std::wiostream>;
+extern template void format_argument<std::wiostream>::static_output<char>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<signed char>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<unsigned char>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<wchar_t>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<short>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<unsigned short>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<int>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<unsigned int>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<long>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<unsigned long>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<long long>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<unsigned long long>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<wchar_t *>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<wchar_t const *>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<std::wstring>(std::wiostream &, format_flags const &, void const *);
+extern template void format_argument<std::wiostream>::static_output<std::wstring_view>(std::wiostream &, format_flags const &, void const *);
+extern template bool format_argument<std::wiostream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<wchar_t>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<wchar_t *>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<wchar_t const *>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<std::wstring>(void const *, int &);
+extern template bool format_argument<std::wiostream>::static_make_integer<std::wstring_view>(void const *, int &);
+extern template void format_argument<std::wiostream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<wchar_t>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<wchar_t *>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<wchar_t const *>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<std::wstring>(void const *, std::streamoff);
+extern template void format_argument<std::wiostream>::static_store_integer<std::wstring_view>(void const *, std::streamoff);
+
+extern template class format_argument<std::ostringstream>;
+extern template void format_argument<std::ostringstream>::static_output<char>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<signed char>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<unsigned char>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<short>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<unsigned short>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<int>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<unsigned int>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<long>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<unsigned long>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<long long>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<unsigned long long>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<char *>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<char const *>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<std::string>(std::ostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::ostringstream>::static_output<std::string_view>(std::ostringstream &, format_flags const &, void const *);
+extern template bool format_argument<std::ostringstream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<char *>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<char const *>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<std::string>(void const *, int &);
+extern template bool format_argument<std::ostringstream>::static_make_integer<std::string_view>(void const *, int &);
+extern template void format_argument<std::ostringstream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<char *>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<char const *>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<std::string>(void const *, std::streamoff);
+extern template void format_argument<std::ostringstream>::static_store_integer<std::string_view>(void const *, std::streamoff);
+
+extern template class format_argument<std::wostringstream>;
+extern template void format_argument<std::wostringstream>::static_output<char>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<signed char>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<unsigned char>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<wchar_t>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<short>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<unsigned short>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<int>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<unsigned int>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<long>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<unsigned long>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<long long>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<unsigned long long>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<wchar_t *>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<wchar_t const *>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<std::wstring>(std::wostringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wostringstream>::static_output<std::wstring_view>(std::wostringstream &, format_flags const &, void const *);
+extern template bool format_argument<std::wostringstream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<wchar_t>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<wchar_t *>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<wchar_t const *>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<std::wstring>(void const *, int &);
+extern template bool format_argument<std::wostringstream>::static_make_integer<std::wstring_view>(void const *, int &);
+extern template void format_argument<std::wostringstream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<wchar_t>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<wchar_t *>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<wchar_t const *>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<std::wstring>(void const *, std::streamoff);
+extern template void format_argument<std::wostringstream>::static_store_integer<std::wstring_view>(void const *, std::streamoff);
+
+extern template class format_argument<std::stringstream>;
+extern template void format_argument<std::stringstream>::static_output<char>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<signed char>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<unsigned char>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<short>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<unsigned short>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<int>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<unsigned int>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<long>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<unsigned long>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<long long>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<unsigned long long>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<char *>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<char const *>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<std::string>(std::stringstream &, format_flags const &, void const *);
+extern template void format_argument<std::stringstream>::static_output<std::string_view>(std::stringstream &, format_flags const &, void const *);
+extern template bool format_argument<std::stringstream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<char *>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<char const *>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<std::string>(void const *, int &);
+extern template bool format_argument<std::stringstream>::static_make_integer<std::string_view>(void const *, int &);
+extern template void format_argument<std::stringstream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<char *>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<char const *>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<std::string>(void const *, std::streamoff);
+extern template void format_argument<std::stringstream>::static_store_integer<std::string_view>(void const *, std::streamoff);
+
+extern template class format_argument<std::wstringstream>;
+extern template void format_argument<std::wstringstream>::static_output<char>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<signed char>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<unsigned char>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<wchar_t>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<short>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<unsigned short>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<int>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<unsigned int>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<long>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<unsigned long>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<long long>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<unsigned long long>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<wchar_t *>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<wchar_t const *>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<std::wstring>(std::wstringstream &, format_flags const &, void const *);
+extern template void format_argument<std::wstringstream>::static_output<std::wstring_view>(std::wstringstream &, format_flags const &, void const *);
+extern template bool format_argument<std::wstringstream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<wchar_t>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<wchar_t *>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<wchar_t const *>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<std::wstring>(void const *, int &);
+extern template bool format_argument<std::wstringstream>::static_make_integer<std::wstring_view>(void const *, int &);
+extern template void format_argument<std::wstringstream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<wchar_t>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<wchar_t *>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<wchar_t const *>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<std::wstring>(void const *, std::streamoff);
+extern template void format_argument<std::wstringstream>::static_store_integer<std::wstring_view>(void const *, std::streamoff);
+
+extern template class format_argument<ovectorstream>;
+extern template void format_argument<ovectorstream>::static_output<char>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<signed char>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<unsigned char>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<short>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<unsigned short>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<int>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<unsigned int>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<long>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<unsigned long>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<long long>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<unsigned long long>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<char *>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<char const *>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<std::string>(ovectorstream &, format_flags const &, void const *);
+extern template void format_argument<ovectorstream>::static_output<std::string_view>(ovectorstream &, format_flags const &, void const *);
+extern template bool format_argument<ovectorstream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<char *>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<char const *>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<std::string>(void const *, int &);
+extern template bool format_argument<ovectorstream>::static_make_integer<std::string_view>(void const *, int &);
+extern template void format_argument<ovectorstream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<char *>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<char const *>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<std::string>(void const *, std::streamoff);
+extern template void format_argument<ovectorstream>::static_store_integer<std::string_view>(void const *, std::streamoff);
+
+extern template class format_argument<wovectorstream>;
+extern template void format_argument<wovectorstream>::static_output<char>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<signed char>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<unsigned char>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<wchar_t>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<short>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<unsigned short>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<int>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<unsigned int>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<long>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<unsigned long>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<long long>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<unsigned long long>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<wchar_t *>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<wchar_t const *>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<std::wstring>(wovectorstream &, format_flags const &, void const *);
+extern template void format_argument<wovectorstream>::static_output<std::wstring_view>(wovectorstream &, format_flags const &, void const *);
+extern template bool format_argument<wovectorstream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<wchar_t>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<wchar_t *>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<wchar_t const *>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<std::wstring>(void const *, int &);
+extern template bool format_argument<wovectorstream>::static_make_integer<std::wstring_view>(void const *, int &);
+extern template void format_argument<wovectorstream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<wchar_t>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<wchar_t *>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<wchar_t const *>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<std::wstring>(void const *, std::streamoff);
+extern template void format_argument<wovectorstream>::static_store_integer<std::wstring_view>(void const *, std::streamoff);
+
+extern template class format_argument<vectorstream>;
+extern template void format_argument<vectorstream>::static_output<char>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<signed char>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<unsigned char>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<short>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<unsigned short>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<int>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<unsigned int>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<long>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<unsigned long>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<long long>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<unsigned long long>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<char *>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<char const *>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<std::string>(vectorstream &, format_flags const &, void const *);
+extern template void format_argument<vectorstream>::static_output<std::string_view>(vectorstream &, format_flags const &, void const *);
+extern template bool format_argument<vectorstream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<char *>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<char const *>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<std::string>(void const *, int &);
+extern template bool format_argument<vectorstream>::static_make_integer<std::string_view>(void const *, int &);
+extern template void format_argument<vectorstream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<char *>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<char const *>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<std::string>(void const *, std::streamoff);
+extern template void format_argument<vectorstream>::static_store_integer<std::string_view>(void const *, std::streamoff);
+
+extern template class format_argument<wvectorstream>;
+extern template void format_argument<wvectorstream>::static_output<char>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<signed char>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<unsigned char>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<wchar_t>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<short>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<unsigned short>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<int>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<unsigned int>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<long>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<unsigned long>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<long long>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<unsigned long long>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<wchar_t *>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<wchar_t const *>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<std::wstring>(wvectorstream &, format_flags const &, void const *);
+extern template void format_argument<wvectorstream>::static_output<std::wstring_view>(wvectorstream &, format_flags const &, void const *);
+extern template bool format_argument<wvectorstream>::static_make_integer<char>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<signed char>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<unsigned char>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<wchar_t>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<short>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<unsigned short>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<int>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<unsigned int>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<long>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<unsigned long>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<long long>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<unsigned long long>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<wchar_t *>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<wchar_t const *>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<std::wstring>(void const *, int &);
+extern template bool format_argument<wvectorstream>::static_make_integer<std::wstring_view>(void const *, int &);
+extern template void format_argument<wvectorstream>::static_store_integer<char>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<signed char>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<unsigned char>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<wchar_t>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<short>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<unsigned short>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<int>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<unsigned int>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<long>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<unsigned long>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<long long>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<unsigned long long>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<wchar_t *>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<wchar_t const *>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<std::wstring>(void const *, std::streamoff);
+extern template void format_argument<wvectorstream>::static_store_integer<std::wstring_view>(void const *, std::streamoff);
+
+extern template class format_argument_pack<std::ostream>;
+extern template class format_argument_pack<std::wostream>;
+extern template class format_argument_pack<std::iostream>;
+extern template class format_argument_pack<std::wiostream>;
+extern template class format_argument_pack<std::ostringstream>;
+extern template class format_argument_pack<std::wostringstream>;
+extern template class format_argument_pack<std::stringstream>;
+extern template class format_argument_pack<std::wstringstream>;
+extern template class format_argument_pack<ovectorstream>;
+extern template class format_argument_pack<wovectorstream>;
+extern template class format_argument_pack<vectorstream>;
+extern template class format_argument_pack<wvectorstream>;
+
+extern template std::ostream::off_type stream_format(std::ostream &, format_argument_pack<std::ostream> const &);
+extern template std::wostream::off_type stream_format(std::wostream &, format_argument_pack<std::wostream> const &);
+extern template std::iostream::off_type stream_format(std::iostream &, format_argument_pack<std::ostream> const &);
+extern template std::iostream::off_type stream_format(std::iostream &, format_argument_pack<std::iostream> const &);
+extern template std::wiostream::off_type stream_format(std::wiostream &, format_argument_pack<std::wostream> const &);
+extern template std::wiostream::off_type stream_format(std::wiostream &, format_argument_pack<std::wiostream> const &);
+extern template std::ostringstream::off_type stream_format(std::ostringstream &, format_argument_pack<std::ostream> const &);
+extern template std::ostringstream::off_type stream_format(std::ostringstream &, format_argument_pack<std::ostringstream> const &);
+extern template std::wostringstream::off_type stream_format(std::wostringstream &, format_argument_pack<std::wostream> const &);
+extern template std::wostringstream::off_type stream_format(std::wostringstream &, format_argument_pack<std::wostringstream> const &);
+extern template std::stringstream::off_type stream_format(std::stringstream &, format_argument_pack<std::ostream> const &);
+extern template std::stringstream::off_type stream_format(std::stringstream &, format_argument_pack<std::iostream> const &);
+extern template std::stringstream::off_type stream_format(std::stringstream &, format_argument_pack<std::stringstream> const &);
+extern template std::wstringstream::off_type stream_format(std::wstringstream &, format_argument_pack<std::wostream> const &);
+extern template std::wstringstream::off_type stream_format(std::wstringstream &, format_argument_pack<std::wiostream> const &);
+extern template std::wstringstream::off_type stream_format(std::wstringstream &, format_argument_pack<std::wstringstream> const &);
+extern template ovectorstream::off_type stream_format(ovectorstream &, format_argument_pack<std::ostream> const &);
+extern template ovectorstream::off_type stream_format(ovectorstream &, format_argument_pack<ovectorstream> const &);
+extern template wovectorstream::off_type stream_format(wovectorstream &, format_argument_pack<std::wostream> const &);
+extern template wovectorstream::off_type stream_format(wovectorstream &, format_argument_pack<wovectorstream> const &);
+extern template vectorstream::off_type stream_format(vectorstream &, format_argument_pack<std::ostream> const &);
+extern template vectorstream::off_type stream_format(vectorstream &, format_argument_pack<std::iostream> const &);
+extern template vectorstream::off_type stream_format(vectorstream &, format_argument_pack<vectorstream> const &);
+extern template wvectorstream::off_type stream_format(wvectorstream &, format_argument_pack<std::wostream> const &);
+extern template wvectorstream::off_type stream_format(wvectorstream &, format_argument_pack<std::wiostream> const &);
+extern template wvectorstream::off_type stream_format(wvectorstream &, format_argument_pack<wvectorstream> const &);
 
 } // namespace detail
 

@@ -94,18 +94,19 @@ public:
 protected:
 	riscii_series_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, u32 clock, unsigned addrbits, unsigned pcbits, unsigned bankbits, u8 maxbank, u8 post_id_mask, address_map_constructor regs);
 
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
-	// device_execute_interface implementation
+	// device_execute_interface overrides
 	virtual void execute_run() override;
 	virtual void execute_set_input(int inputnum, int state) override;
 
-	// device_memory_interface implementation
+	// device_memory_interface overrides
 	virtual space_config_vector memory_space_config() const override;
 
-	// device_state_interface implementation
+	// device_state_interface overrides
 	virtual void state_string_export(const device_state_entry &entry, std::string &str) const override;
 
 	void core_regs_map(address_map &map);
@@ -187,12 +188,6 @@ protected:
 	void timer0_reload();
 	TIMER_CALLBACK_MEMBER(timer0);
 	u16 timer0_count() const;
-	void timer1_reload();
-	TIMER_CALLBACK_MEMBER(timer1);
-	u8 timer1_count() const;
-	void timer2_reload();
-	TIMER_CALLBACK_MEMBER(timer2);
-	u8 timer2_count() const;
 	u8 trl0l_r();
 	void trl0l_w(u8 data);
 	u8 trl0h_r();
@@ -367,7 +362,7 @@ private:
 	u8 m_tr01con;
 	u8 m_tr2con;
 	u8 m_trlir;
-	emu_timer *m_timer[3];
+	emu_timer *m_timer0;
 
 	// synthesizer state
 	u8 m_sfcr;
@@ -395,7 +390,7 @@ public:
 	epg3231_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock);
 
 protected:
-	// device_disasm_interface implementation
+	// device_disasm_interface overrides
 	virtual std::unique_ptr<util::disasm_interface> create_disassembler() override;
 
 private:

@@ -127,9 +127,6 @@ The ROM support is still TODO.
 #include "screen.h"
 #include "render.h"
 
-
-namespace {
-
 #define XTAL_MEKD3 3.579545_MHz_XTAL
 
 class mekd3_state : public driver_device
@@ -174,13 +171,13 @@ public:
 	void mekd3(machine_config &config);
 	void init_mekd3();
 
-	void reset_key_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(reset_key_w);
 	DECLARE_INPUT_CHANGED_MEMBER(keypad_changed);
 	DECLARE_INPUT_CHANGED_MEMBER(rs232_cts_route_change);
 	DECLARE_INPUT_CHANGED_MEMBER(rs232_dcd_route_change);
 
 private:
-	int keypad_cb1_r();
+	DECLARE_READ_LINE_MEMBER(keypad_cb1_r);
 	uint8_t keypad_key_r();
 	void led_digit_w(uint8_t data);
 	void led_segment_w(uint8_t data);
@@ -212,24 +209,24 @@ private:
 
 	// MEK68IO
 
-	void rs232_route_cts(int state);
-	void rs232_route_dcd(int state);
+	DECLARE_WRITE_LINE_MEMBER(rs232_route_cts);
+	DECLARE_WRITE_LINE_MEMBER(rs232_route_dcd);
 	int m_cts;
 	int m_dcd;
 
 	// Clocks
-	void write_f1_clock(int state);
-	void write_f2_clock(int state);
-	void write_f4_clock(int state);
-	void write_f5_clock(int state);
-	void write_f7_clock(int state);
-	void write_f8_clock(int state);
-	void write_f9_clock(int state);
-	void write_f13_clock(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_f1_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f2_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f4_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f5_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f7_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f8_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f9_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f13_clock);
 
 	TIMER_DEVICE_CALLBACK_MEMBER(kansas_r);
-	void acia_cas_clock300_w(int state);
-	void acia_cas_clock1200_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(acia_cas_clock300_w);
+	DECLARE_WRITE_LINE_MEMBER(acia_cas_clock1200_w);
 	uint8_t pia_io2a_r();
 
 	required_device<pia6821_device> m_pia_io1;
@@ -466,7 +463,7 @@ void mekd3_state::page_w(uint8_t data)
 
 ************************************************************/
 
-void mekd3_state::reset_key_w(int state)
+WRITE_LINE_MEMBER(mekd3_state::reset_key_w)
 {
 	m_maincpu->set_input_line(INPUT_LINE_RESET, state ? CLEAR_LINE : ASSERT_LINE);
 
@@ -503,7 +500,7 @@ INPUT_CHANGED_MEMBER(mekd3_state::keypad_changed)
 	m_kpd_pia->cb1_w(mekd3_state::keypad_key_pressed());
 }
 
-int mekd3_state::keypad_cb1_r()
+READ_LINE_MEMBER(mekd3_state::keypad_cb1_r)
 {
 	return mekd3_state::keypad_key_pressed();
 }
@@ -544,7 +541,7 @@ void mekd3_state::led_digit_w(uint8_t data)
 
 ************************************************************/
 
-void mekd3_state::rs232_route_cts(int state)
+WRITE_LINE_MEMBER(mekd3_state::rs232_route_cts)
 {
 	if (m_rs232_cts_route->read())
 		m_acia_io1->write_cts(state);
@@ -553,7 +550,7 @@ void mekd3_state::rs232_route_cts(int state)
 	m_cts = state;
 }
 
-void mekd3_state::rs232_route_dcd(int state)
+WRITE_LINE_MEMBER(mekd3_state::rs232_route_dcd)
 {
 	if (m_rs232_dcd_route->read())
 		m_acia_io1->write_dcd(state);
@@ -578,7 +575,7 @@ INPUT_CHANGED_MEMBER(mekd3_state::rs232_dcd_route_change)
 		m_acia_io1->write_dcd(0);
 }
 
-void mekd3_state::write_f1_clock(int state)
+WRITE_LINE_MEMBER(mekd3_state::write_f1_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 0))
 		m_acia_io1->write_txc(state);
@@ -586,7 +583,7 @@ void mekd3_state::write_f1_clock(int state)
 		m_acia_io1->write_rxc(state);
 }
 
-void mekd3_state::write_f2_clock(int state)
+WRITE_LINE_MEMBER(mekd3_state::write_f2_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 1))
 		m_acia_io1->write_txc(state);
@@ -594,7 +591,7 @@ void mekd3_state::write_f2_clock(int state)
 		m_acia_io1->write_rxc(state);
 }
 
-void mekd3_state::write_f4_clock(int state)
+WRITE_LINE_MEMBER(mekd3_state::write_f4_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 2))
 		m_acia_io1->write_txc(state);
@@ -602,7 +599,7 @@ void mekd3_state::write_f4_clock(int state)
 		m_acia_io1->write_rxc(state);
 }
 
-void mekd3_state::write_f5_clock(int state)
+WRITE_LINE_MEMBER(mekd3_state::write_f5_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 3))
 		m_acia_io1->write_txc(state);
@@ -610,7 +607,7 @@ void mekd3_state::write_f5_clock(int state)
 		m_acia_io1->write_rxc(state);
 }
 
-void mekd3_state::write_f7_clock(int state)
+WRITE_LINE_MEMBER(mekd3_state::write_f7_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 4))
 		m_acia_io1->write_txc(state);
@@ -622,7 +619,7 @@ void mekd3_state::write_f7_clock(int state)
 		acia_cas_clock1200_w(state);
 }
 
-void mekd3_state::write_f8_clock(int state)
+WRITE_LINE_MEMBER(mekd3_state::write_f8_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 5))
 		m_acia_io1->write_txc(state);
@@ -630,7 +627,7 @@ void mekd3_state::write_f8_clock(int state)
 		m_acia_io1->write_rxc(state);
 }
 
-void mekd3_state::write_f9_clock(int state)
+WRITE_LINE_MEMBER(mekd3_state::write_f9_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 6))
 		m_acia_io1->write_txc(state);
@@ -642,7 +639,7 @@ void mekd3_state::write_f9_clock(int state)
 		acia_cas_clock300_w(state);
 }
 
-void mekd3_state::write_f13_clock(int state)
+WRITE_LINE_MEMBER(mekd3_state::write_f13_clock)
 {
 	if (BIT(m_rs232_tx_baud->read(), 7))
 		m_acia_io1->write_txc(state);
@@ -680,7 +677,7 @@ TIMER_DEVICE_CALLBACK_MEMBER(mekd3_state::kansas_r)
 	}
 }
 
-void mekd3_state::acia_cas_clock300_w(int state)
+WRITE_LINE_MEMBER(mekd3_state::acia_cas_clock300_w)
 {
 	// The Kansas City cassette format encodes a '0' bit by four cycles of
 	// a 1200 Hz sine wave, and a '1' bit as eight cycles of 2400 Hz,
@@ -706,7 +703,7 @@ void mekd3_state::acia_cas_clock300_w(int state)
 	m_acia_cas->write_rxc(state);
 }
 
-void mekd3_state::acia_cas_clock1200_w(int state)
+WRITE_LINE_MEMBER(mekd3_state::acia_cas_clock1200_w)
 {
 	// For the 1200 baud rate the number of cycles in reduced to just one
 	// cycle at 1200 Hz and two at 2400 Hz.
@@ -953,7 +950,7 @@ void mekd3_state::mekd3(machine_config &config)
 	m_cass->add_route(ALL_OUTPUTS, "mono", 0.05);
 
 	// Keypad and display PIA. CA2 and CB2 are NC.
-	PIA6821(config, m_kpd_pia);
+	PIA6821(config, m_kpd_pia, 0);
 	m_kpd_pia->readpa_handler().set(FUNC(mekd3_state::keypad_key_r));
 	m_kpd_pia->readcb1_handler().set(FUNC(mekd3_state::keypad_cb1_r));
 	m_kpd_pia->writepa_handler().set(FUNC(mekd3_state::led_segment_w));
@@ -971,7 +968,7 @@ void mekd3_state::mekd3(machine_config &config)
 	// MEK68IO
 
 	// A 'user' PIA, I/O available at SK6.
-	PIA6821(config, m_pia_io1);
+	PIA6821(config, m_pia_io1, 0);
 	m_pia_io1->irqa_handler().set(m_mainnmi, FUNC(input_merger_device::in_w<2>));
 	m_pia_io1->irqb_handler().set(m_mainirq, FUNC(input_merger_device::in_w<1>));
 
@@ -979,7 +976,7 @@ void mekd3_state::mekd3(machine_config &config)
 	// PA0 can optionally be an audio bit input, at TP1.
 	// PA1 is a jumper mode input, and low by default.
 	// PA2 can optionally be an audio bit output, at TP2.
-	PIA6821(config, m_pia_io2);
+	PIA6821(config, m_pia_io2, 0);
 	m_pia_io2->readpa_handler().set(FUNC(mekd3_state::pia_io2a_r));
 	m_pia_io2->irqa_handler().set(m_mainirq, FUNC(input_merger_device::in_w<2>));
 	m_pia_io2->irqb_handler().set(m_mainirq, FUNC(input_merger_device::in_w<3>));
@@ -1040,7 +1037,7 @@ void mekd3_state::mekd3(machine_config &config)
 	// CA2 light pen input.
 	// PB0 is mode flags and light pen control.
 	// CB1 is VSYNC, and CB2 is HSYNC.
-	PIA6821(config, m_r2_pia);
+	PIA6821(config, m_r2_pia, 0);
 	m_r2_pia->readpa_handler().set(FUNC(mekd3_state::r2_pia_pa_r));
 	m_r2_pia->readpb_handler().set(FUNC(mekd3_state::r2_pia_pb_r));
 	m_r2_pia->irqa_handler().set(m_mainirq, FUNC(input_merger_device::in_w<6>));
@@ -1063,9 +1060,6 @@ ROM_START(mekd3)
 	ROM_REGION(0x0400, "chargen",0)
 	ROM_LOAD("mcm6674p.chr", 0x0000, 0x0400, CRC(1c22088a) SHA1(b5f0bd0cfdec0cd5c1cb764506bef3c17d6af0eb))
 ROM_END
-
-} // anonymous namespace
-
 
 /***************************************************************************
 

@@ -262,7 +262,7 @@ void epson_tf20_device::fdc_control_w(uint8_t data)
 //  rxc_w - rx input
 //-------------------------------------------------
 
-void epson_tf20_device::rxc_w(int state)
+WRITE_LINE_MEMBER( epson_tf20_device::rxc_w )
 {
 	m_rxc = state;
 	m_sio_input->rx_w(m_txda && m_rxc);
@@ -272,7 +272,7 @@ void epson_tf20_device::rxc_w(int state)
 //  pinc_w - pin input
 //-------------------------------------------------
 
-void epson_tf20_device::pinc_w(int state)
+WRITE_LINE_MEMBER( epson_tf20_device::pinc_w )
 {
 	m_pinc = state;
 	m_sio_input->pin_w(!m_dtra || m_pinc);
@@ -282,7 +282,7 @@ void epson_tf20_device::pinc_w(int state)
 //  txda_w - rx output
 //-------------------------------------------------
 
-void epson_tf20_device::txda_w(int state)
+WRITE_LINE_MEMBER( epson_tf20_device::txda_w )
 {
 	m_txda = state;
 	m_sio_input->rx_w(m_txda && m_rxc);
@@ -292,7 +292,7 @@ void epson_tf20_device::txda_w(int state)
 //  dtra_w - pin output
 //-------------------------------------------------
 
-void epson_tf20_device::dtra_w(int state)
+WRITE_LINE_MEMBER( epson_tf20_device::dtra_w )
 {
 	m_dtra = state;
 	m_sio_input->pin_w(!m_dtra || m_pinc);

@@ -10,6 +10,7 @@
 #include "mc1502_fdc.h"
 
 #include "cpu/i86/i86.h"
+#include "formats/pc_dsk.h"
 
 
 //**************************************************************************
@@ -129,7 +130,7 @@ uint8_t mc1502_fdc_device::mc1502_wd17xx_motor_r()
 	return motor_on;
 }
 
-void mc1502_fdc_device::mc1502_fdc_irq_drq(int state)
+WRITE_LINE_MEMBER(mc1502_fdc_device::mc1502_fdc_irq_drq)
 {
 	if (state)
 		m_isa->set_ready(CLEAR_LINE); // deassert I/O CH RDY

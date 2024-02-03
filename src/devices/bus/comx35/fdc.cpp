@@ -44,8 +44,6 @@ Notes:
 #include "emu.h"
 #include "fdc.h"
 
-#include "formats/comx35_dsk.h"
-
 
 
 //**************************************************************************

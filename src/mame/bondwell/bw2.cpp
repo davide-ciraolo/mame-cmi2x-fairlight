@@ -361,7 +361,7 @@ INPUT_PORTS_END
 //  DEVICE CONFIGURATION
 //**************************************************************************
 
-void bw2_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER( bw2_state::write_centronics_busy )
 {
 	m_centronics_busy = state;
 }
@@ -468,7 +468,7 @@ uint8_t bw2_state::ppi_pc_r()
 //  pit8253_config pit_intf
 //-------------------------------------------------
 
-void bw2_state::mtron_w(int state)
+WRITE_LINE_MEMBER( bw2_state::mtron_w )
 {
 	m_mtron = state;
 	m_mfdbk = !state;
@@ -480,7 +480,7 @@ void bw2_state::mtron_w(int state)
 //  floppy_formats
 //-------------------------------------------------
 
-void bw2_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( bw2_state::fdc_drq_w )
 {
 	if (state)
 	{

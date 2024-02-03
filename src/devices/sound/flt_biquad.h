@@ -24,8 +24,7 @@ public:
 		NOTCH,
 		PEAK,
 		LOWSHELF,
-		HIGHSHELF,
-		RAWPARAMS
+		HIGHSHELF
 	};
 
 	struct biquad_params
@@ -45,12 +44,7 @@ public:
 	void modify(biquad_type type, double fc, double q, double gain);
 	void modify(biquad_params p);
 
-	// set up the filter with raw biquad coefficients
-	filter_biquad_device& setup_raw(double a1, double a2, double b0, double b1, double b2);
-	void modify_raw(double a1, double a2, double b0, double b1, double b2);
-
-	// Helper setup functions to create common filters representable by biquad filters:
-	// (and, as needed, modify/update/recalc helpers)
+	// helper setup functions to create common filters representable by biquad filters:
 
 	// Sallen-Key low-pass
 	filter_biquad_device& opamp_sk_lowpass_setup(double r1, double r2, double r3, double r4, double c1, double c2);

@@ -351,13 +351,13 @@ uint8_t isa8_epc_mda_device::io_read(offs_t offset)
 	return data;
 }
 
-void isa8_epc_mda_device::hsync_changed(int state)
+WRITE_LINE_MEMBER( isa8_epc_mda_device::hsync_changed )
 {
 	m_hsync = state ? 1 : 0;
 }
 
 
-void isa8_epc_mda_device::vsync_changed(int state)
+WRITE_LINE_MEMBER( isa8_epc_mda_device::vsync_changed )
 {
 	m_vsync = state ? 0x80 : 0;
 	if ( state )

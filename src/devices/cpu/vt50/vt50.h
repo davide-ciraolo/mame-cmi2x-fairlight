@@ -40,18 +40,19 @@ protected:
 	// construction/destruction
 	vt5x_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, u32 clock, int bbits, int ybits);
 
-	// device_t implementation
+	// device-level overrides
 	virtual void device_config_complete() override;
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
-	// device_execute_interface implementation
+	// device_execute_interface overrides
 	virtual void execute_run() override;
 
-	// device_memory_interface implementation
+	// device_memory_interface overrides
 	virtual space_config_vector memory_space_config() const override;
 
-	// device_state_interface implementation
+	// device_state_interface overrides
 	virtual void state_string_export(const device_state_entry &entry, std::string &str) const override;
 
 	// video helpers
@@ -153,7 +154,10 @@ public:
 	auto graphic_callback() { return m_graphic_callback.bind(); }
 
 protected:
-	// device_disasm_interface implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
+
+	// device_disasm_interface overrides
 	virtual std::unique_ptr<util::disasm_interface> create_disassembler() override;
 
 	virtual void execute_tw(u8 inst) override;

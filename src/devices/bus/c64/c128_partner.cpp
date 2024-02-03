@@ -44,7 +44,7 @@ DEFINE_DEVICE_TYPE(C128_PARTNER, c128_partner_cartridge_device, "c128_partner", 
 //  INPUT_PORTS( c128_partner )
 //-------------------------------------------------
 
-void c128_partner_cartridge_device::nmi_w(int state)
+WRITE_LINE_MEMBER( c128_partner_cartridge_device::nmi_w )
 {
 	if (state)
 	{

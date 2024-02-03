@@ -25,8 +25,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
@@ -51,9 +49,9 @@ public:
 
 	uint16_t cs4031_ior(offs_t offset);
 	void cs4031_iow(offs_t offset, uint16_t data);
-	void cs4031_hold(int state);
+	DECLARE_WRITE_LINE_MEMBER( cs4031_hold );
 	void cs4031_tc(offs_t offset, uint8_t data) { m_isabus->eop_w(offset, data); }
-	void cs4031_spkr(int state) { m_speaker->level_w(state); }
+	DECLARE_WRITE_LINE_MEMBER( cs4031_spkr ) { m_speaker->level_w(state); }
 	void ct486(machine_config &config);
 	void ct486_io(address_map &map);
 	void ct486_map(address_map &map);
@@ -84,7 +82,7 @@ void ct486_state::cs4031_iow(offs_t offset, uint16_t data)
 		m_isabus->dack16_w(offset, data);
 }
 
-void ct486_state::cs4031_hold(int state)
+WRITE_LINE_MEMBER( ct486_state::cs4031_hold )
 {
 	// halt cpu
 	m_maincpu->set_input_line(INPUT_LINE_HALT, state ? ASSERT_LINE : CLEAR_LINE);
@@ -203,8 +201,6 @@ ROM_START( ct486 )
 	ROM_REGION(0x100000, "bios", 0)
 	ROM_LOAD("chips_1.ami", 0xf0000, 0x10000, CRC(a14a7511) SHA1(b88d09be66905ed2deddc26a6f8522e7d2d6f9a8))
 ROM_END
-
-} // anonymous namespace
 
 
 //**************************************************************************

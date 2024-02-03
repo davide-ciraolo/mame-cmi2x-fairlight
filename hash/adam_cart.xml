@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
+license:CC0
 -->
 <softwarelist name="adam_cart" description="Coleco Adam cartridges">
 
 	<!--
 	<software name="adamdev" supported="no">
-	    <description>ADAM Dev (prototype)</description>
+	    <description>ADAM Dev (Prototype)</description>
 	    <year>198?</year>
 	    <publisher>Coleco?</publisher>
 	    <part name="cart" interface="coleco_cart">
@@ -22,7 +22,7 @@ license:CC0-1.0
 	-->
 
 	<software name="ard" supported="no">
-		<description>ADAM Resident Debugger (prototype revision 2.0)</description>
+		<description>ADAM Resident Debugger (Prototype Rev20)</description>
 		<year>198?</year>
 		<publisher>Coleco?</publisher>
 
@@ -58,7 +58,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="adamdiaga" cloneof="adamdiag">
-		<description>ADAM Diagnostics (alt)</description>
+		<description>ADAM Diagnostics (Alt)</description>
 		<year>198?</year>
 		<publisher>Coleco</publisher>
 		<part name="cart" interface="coleco_cart">
@@ -80,7 +80,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="adamtesta" cloneof="adamtest">
-		<description>ADAM Final Test (alt)</description>
+		<description>ADAM Final Test (Alt)</description>
 		<year>198?</year>
 		<publisher>Coleco</publisher>
 		<part name="cart" interface="coleco_cart">

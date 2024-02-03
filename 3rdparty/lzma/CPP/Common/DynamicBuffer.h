@@ -1,11 +1,7 @@
 // Common/DynamicBuffer.h
 
-#ifndef ZIP7_INC_COMMON_DYNAMIC_BUFFER_H
-#define ZIP7_INC_COMMON_DYNAMIC_BUFFER_H
-
-#include <string.h>
-
-#include "Common.h"
+#ifndef __COMMON_DYNAMIC_BUFFER_H
+#define __COMMON_DYNAMIC_BUFFER_H
 
 template <class T> class CDynamicBuffer
 {
@@ -38,7 +34,7 @@ template <class T> class CDynamicBuffer
   }
 
 public:
-  CDynamicBuffer(): _items(NULL), _size(0), _pos(0) {}
+  CDynamicBuffer(): _items(0), _size(0), _pos(0) {}
   // operator T *() { return _items; }
   operator const T *() const { return _items; }
   ~CDynamicBuffer() { delete []_items; }
@@ -58,7 +54,7 @@ public:
     memcpy(GetCurPtrAndGrow(size), data, size * sizeof(T));
   }
 
-  size_t GetPos() const { return _pos; }
+  const size_t GetPos() const { return _pos; }
 
   // void Empty() { _pos = 0; }
 };

@@ -40,8 +40,8 @@ protected:
 	virtual void device_add_mconfig(machine_config &config) override;
 
 private:
-	void access_mapper_w(int state);
-	void map_mode_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(access_mapper_w);
+	DECLARE_WRITE_LINE_MEMBER(map_mode_w);
 
 	// Console RAM
 	required_device<ram_device> m_ram;

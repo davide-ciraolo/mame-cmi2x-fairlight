@@ -27,6 +27,8 @@ DEFINE_DEVICE_TYPE(EPSON_PF10, epson_pf10_device, "epson_pf10", "EPSON PF-10 Por
 
 void epson_pf10_device::cpu_mem(address_map &map)
 {
+	map(0x0000, 0x001f).m("maincpu", FUNC(hd6303y_cpu_device::m6801_io));
+	map(0x0040, 0x00ff).ram(); /* 192 bytes internal ram */
 	map(0x0800, 0x0fff).ram(); /* external 2k ram */
 	map(0x1000, 0x17ff).rw(FUNC(epson_pf10_device::fdc_r), FUNC(epson_pf10_device::fdc_w));
 	map(0x1800, 0x1fff).w(FUNC(epson_pf10_device::fdc_tc_w));
@@ -60,7 +62,7 @@ static void pf10_floppies(device_slot_interface &device)
 
 void epson_pf10_device::device_add_mconfig(machine_config &config)
 {
-	HD6303X(config, m_cpu, XTAL(4'915'200)); // HD63A03XF
+	HD6303Y(config, m_cpu, XTAL(4'915'200)); // HD63A03XF
 	m_cpu->set_addrmap(AS_PROGRAM, &epson_pf10_device::cpu_mem);
 	m_cpu->in_p1_cb().set(FUNC(epson_pf10_device::port1_r));
 	m_cpu->out_p1_cb().set(FUNC(epson_pf10_device::port1_w));
@@ -183,7 +185,7 @@ void epson_pf10_device::fdc_tc_w(uint8_t data)
 //  rxc_w - rx input
 //-------------------------------------------------
 
-void epson_pf10_device::rxc_w(int state)
+WRITE_LINE_MEMBER( epson_pf10_device::rxc_w )
 {
 	m_rxc = state;
 	m_sio_input->rx_w(m_hd6303_tx & m_rxc);
@@ -193,7 +195,7 @@ void epson_pf10_device::rxc_w(int state)
 //  pinc_w - pin input
 //-------------------------------------------------
 
-void epson_pf10_device::pinc_w(int state)
+WRITE_LINE_MEMBER( epson_pf10_device::pinc_w )
 {
 	m_pinc = state;
 	m_sio_input->pin_w(m_pinc);
@@ -203,7 +205,7 @@ void epson_pf10_device::pinc_w(int state)
 //  hd6303_tx_w - rx output
 //-------------------------------------------------
 
-void epson_pf10_device::hd6303_tx_w(int state)
+WRITE_LINE_MEMBER( epson_pf10_device::hd6303_tx_w )
 {
 	m_hd6303_tx = state;
 	m_sio_input->rx_w(m_hd6303_tx & m_rxc);

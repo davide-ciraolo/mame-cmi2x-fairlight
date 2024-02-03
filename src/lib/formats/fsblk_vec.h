@@ -3,7 +3,7 @@
 
 // Block device on vector<uint8_t>
 
-#include "fsblk.h"
+#include "fsmgr.h"
 
 namespace fs {
 

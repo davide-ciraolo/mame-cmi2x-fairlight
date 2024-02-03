@@ -10,11 +10,12 @@
 #include "zemina.h"
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(...) do { if (VERBOSE) logerror(__VA_ARGS__); } while (0)
 
 //**************************************************************************
 //  DEVICE DEFINITIONS
@@ -67,7 +68,7 @@ void nes_zemina_device::pcb_reset()
 
 void nes_zemina_device::write_h(offs_t offset, u8 data)
 {
-	LOG("zemina write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC("zemina write_h, offset: %04x, data: %02x\n", offset, data);
 
 	switch (offset & 0x6000)
 	{

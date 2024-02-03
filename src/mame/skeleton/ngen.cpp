@@ -81,8 +81,6 @@
 #include "screen.h"
 
 
-namespace {
-
 class ngen_state : public driver_device
 {
 public:
@@ -112,16 +110,16 @@ protected:
 	uint8_t hd_buffer_r(offs_t offset);
 	void hd_buffer_w(offs_t offset, uint8_t data);
 
-	void pit_out0_w(int state);
-	void pit_out1_w(int state);
-	void pit_out2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pit_out0_w);
+	DECLARE_WRITE_LINE_MEMBER(pit_out1_w);
+	DECLARE_WRITE_LINE_MEMBER(pit_out2_w);
 
-	void dma_hrq_changed(int state);
-	void dma_eop_changed(int state);
-	void dack0_w(int state);
-	void dack1_w(int state);
-	void dack2_w(int state);
-	void dack3_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(dma_hrq_changed);
+	DECLARE_WRITE_LINE_MEMBER(dma_eop_changed);
+	DECLARE_WRITE_LINE_MEMBER(dack0_w);
+	DECLARE_WRITE_LINE_MEMBER(dack1_w);
+	DECLARE_WRITE_LINE_MEMBER(dack2_w);
+	DECLARE_WRITE_LINE_MEMBER(dack3_w);
 	uint8_t dma_read_word(offs_t offset);
 	void dma_write_word(offs_t offset, uint8_t data);
 	// TODO: sort out what devices use which channels
@@ -136,9 +134,9 @@ protected:
 
 	MC6845_UPDATE_ROW(crtc_update_row);
 
-	void timer_clk_out(int state);
+	DECLARE_WRITE_LINE_MEMBER(timer_clk_out);
 
-	void fdc_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(fdc_irq_w);
 
 	void ngen386_io(address_map &map);
 	void ngen386_mem(address_map &map);
@@ -164,11 +162,11 @@ private:
 	void xbus_w(uint16_t data);
 	uint16_t xbus_r();
 
-	void cpu_timer_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(cpu_timer_w);
 
 	void hfd_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	uint16_t hfd_r(offs_t offset, uint16_t mem_mask = ~0);
-	[[maybe_unused]] void fdc_drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(fdc_drq_w);
 	void fdc_control_w(uint8_t data);
 	uint8_t irq_cb();
 	void hdc_control_w(uint8_t data);
@@ -218,34 +216,34 @@ public:
 private:
 };
 
-void ngen_state::pit_out0_w(int state)
+WRITE_LINE_MEMBER(ngen_state::pit_out0_w)
 {
 	m_pic->ir3_w(state);  // Timer interrupt
 	popmessage("PIT Timer 0 state %i\n",state);
 }
 
-void ngen_state::pit_out1_w(int state)
+WRITE_LINE_MEMBER(ngen_state::pit_out1_w)
 {
 	popmessage("PIT Timer 1 state %i\n",state);
 	m_iouart->rxcb_w(state);
 	m_iouart->txcb_w(state);  // channels in the correct order?
 }
 
-void ngen_state::pit_out2_w(int state)
+WRITE_LINE_MEMBER(ngen_state::pit_out2_w)
 {
 	m_iouart->rxca_w(state);
 	m_iouart->txca_w(state);
 	popmessage("PIT Timer 2 state %i\n",state);
 }
 
-void ngen_state::cpu_timer_w(int state)
+WRITE_LINE_MEMBER(ngen_state::cpu_timer_w)
 {
 	if(state != 0)
 		popmessage("80186 Timer 0 state %i\n",state);
 	m_pic->ir5_w(state);
 }
 
-void ngen_state::timer_clk_out(int state)
+WRITE_LINE_MEMBER(ngen_state::timer_clk_out)
 {
 	m_viduart->write_rxc(state);  // Keyboard UART Rx/Tx clocks
 	m_viduart->write_txc(state);
@@ -601,12 +599,12 @@ uint16_t ngen_state::hfd_r(offs_t offset, uint16_t mem_mask)
 	return ret;
 }
 
-void ngen_state::fdc_irq_w(int state)
+WRITE_LINE_MEMBER(ngen_state::fdc_irq_w)
 {
 	m_pic->ir7_w(state);
 }
 
-void ngen_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER(ngen_state::fdc_drq_w)
 {
 	m_dmac->dreq3_w(state);
 }
@@ -661,7 +659,7 @@ void ngen_state::hd_buffer_w(offs_t offset, uint8_t data)
 	m_hd_buffer[offset] = data;
 }
 
-void ngen_state::dma_hrq_changed(int state)
+WRITE_LINE_MEMBER( ngen_state::dma_hrq_changed )
 {
 	if(m_maincpu)
 		m_maincpu->set_input_line(INPUT_LINE_HALT, state ? ASSERT_LINE : CLEAR_LINE);
@@ -669,7 +667,7 @@ void ngen_state::dma_hrq_changed(int state)
 		m_i386cpu->set_input_line(INPUT_LINE_HALT, state ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void ngen_state::dma_eop_changed(int state)
+WRITE_LINE_MEMBER( ngen_state::dma_eop_changed )
 {
 	if(m_dma_channel == 0)
 	{
@@ -696,10 +694,10 @@ void ngen_state::set_dma_channel(int channel, int state)
 		m_dma_channel = -1;
 }
 
-void ngen_state::dack0_w(int state) { set_dma_channel(0, state); }
-void ngen_state::dack1_w(int state) { set_dma_channel(1, state); }
-void ngen_state::dack2_w(int state) { set_dma_channel(2, state); }
-void ngen_state::dack3_w(int state) { set_dma_channel(3, state); }
+WRITE_LINE_MEMBER( ngen_state::dack0_w ) { set_dma_channel(0, state); }
+WRITE_LINE_MEMBER( ngen_state::dack1_w ) { set_dma_channel(1, state); }
+WRITE_LINE_MEMBER( ngen_state::dack2_w ) { set_dma_channel(2, state); }
+WRITE_LINE_MEMBER( ngen_state::dack3_w ) { set_dma_channel(3, state); }
 
 uint8_t ngen_state::dma_3_dack_r()
 {
@@ -1199,8 +1197,6 @@ ROM_START( 386i )
 	ROM_REGION( 0x2000, "video", 0)
 	ROM_LOAD( "72-1630_gc-104_vga.bin",  0x000000, 0x002000, CRC(4e4d8ebe) SHA1(50c96ccb4d0bd1beb2d1aee0d18b2c462d25fc8f) )
 ROM_END
-
-} // anonymous namespace
 
 
 COMP( 1983, ngen,    0,    0, ngen,    ngen, ngen_state,    empty_init, "Convergent Technologies",  "NGEN CP-001", MACHINE_IS_SKELETON )

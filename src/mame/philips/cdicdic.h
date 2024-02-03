@@ -21,15 +21,16 @@ TODO:
 
 *******************************************************************************/
 
-#ifndef MAME_PHILIPS_CDICDIC_H
-#define MAME_PHILIPS_CDICDIC_H
+#ifndef MAME_MACHINE_CDICDIC_H
+#define MAME_MACHINE_CDICDIC_H
 
 #pragma once
 
-#include "imagedev/cdromimg.h"
+#include "imagedev/chd_cd.h"
 #include "machine/scc68070.h"
 #include "sound/cdda.h"
 #include "sound/dmadac.h"
+#include "cdrom.h"
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -60,7 +61,8 @@ public:
 	uint8_t intack_r();
 
 protected:
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
@@ -154,7 +156,7 @@ private:
 	required_address_space m_memory_space;
 	required_device_array<dmadac_sound_device, 2> m_dmadac;
 	required_device<scc68070_device> m_scc;
-	required_device<cdrom_image_device> m_cdrom;
+	optional_device<cdrom_image_device> m_cdrom_dev;
 
 	uint32_t m_clock2;
 
@@ -172,6 +174,7 @@ private:
 	uint16_t m_interrupt_vector;  // CDIC Interrupt Vector Register   (0x303ffc)
 	uint16_t m_data_buffer;       // CDIC Data Buffer Register        (0x303ffe)
 
+	cdrom_file *m_cd;
 	bool m_cd_byteswap;
 
 	emu_timer *m_sector_timer;
@@ -228,4 +231,4 @@ private:
 // device type definition
 DECLARE_DEVICE_TYPE(CDI_CDIC, cdicdic_device)
 
-#endif // MAME_PHILIPS_CDICDIC_H
+#endif // MAME_MACHINE_CDICDIC_H

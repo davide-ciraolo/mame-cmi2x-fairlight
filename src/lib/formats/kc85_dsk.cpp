@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/kc85_dsk.cpp
+    formats/kc85_dsk.c
 
     kc85 format
 
@@ -14,17 +14,17 @@ kc85_format::kc85_format() : upd765_format(formats)
 {
 }
 
-const char *kc85_format::name() const noexcept
+const char *kc85_format::name() const
 {
 	return "kc85";
 }
 
-const char *kc85_format::description() const noexcept
+const char *kc85_format::description() const
 {
 	return "KC85 disk image";
 }
 
-const char *kc85_format::extensions() const noexcept
+const char *kc85_format::extensions() const
 {
 	return "img";
 }

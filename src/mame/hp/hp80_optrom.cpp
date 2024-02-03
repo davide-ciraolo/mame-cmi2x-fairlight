@@ -44,42 +44,42 @@ void hp80_optrom_device::device_start()
 {
 }
 
-std::pair<std::error_condition, std::string> hp80_optrom_device::call_load()
+image_init_result hp80_optrom_device::call_load()
 {
 	LOG("hp80_optrom: call_load\n");
 	if (!loaded_through_softlist()) {
-		return std::make_pair(image_error::UNSUPPORTED, "Images must be loaded from software list");
+		LOG("hp80_optrom: must be loaded from sw list\n");
+		return image_init_result::FAIL;
 	}
 
 	const char *sc_feature = get_feature("sc");
 	if (sc_feature == nullptr) {
-		return std::make_pair(image_error::BADSOFTWARE, "Software item is missing 'sc' feature");
+		LOG("hp80_optrom: no 'sc' feature\n");
+		return image_init_result::FAIL;
 	}
 
 	unsigned sc;
 	if (sc_feature[ 0 ] != '0' || sc_feature[ 1 ] != 'x' || sscanf(&sc_feature[ 2 ] , "%x" , &sc) != 1) {
-		return std::make_pair(image_error::BADSOFTWARE, "Can't parse software item 'sc' feature");
+		LOG("hp80_optrom: can't parse 'sc' feature\n");
+		return image_init_result::FAIL;
 	}
 
 	// Valid SC values: 0x01..0xff
 	if (sc < 1 || sc > 0xff) {
-		return std::make_pair(
-				image_error::BADSOFTWARE,
-				util::string_format("Illegal select code (%x)\n" , sc));
+		LOG("hp80_optrom: illegal select code (%x)\n" , sc);
+		return image_init_result::FAIL;
 	}
 
 	auto length = get_software_region_length("rom");
 
 	if (length != HP80_OPTROM_SIZE) {
-		return std::make_pair(
-				image_error::INVALIDLENGTH,
-				util::string_format("Incorrect 'rom' data area size (%u, should be %u)", length, HP80_OPTROM_SIZE));
+		LOG("hp80_optrom: illegal region length (%x)\n" , length);
+		return image_init_result::FAIL;
 	}
 
 	LOG("hp80_optrom: loaded SC=0x%02x\n" , sc);
 	m_select_code = sc;
-
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void hp80_optrom_device::call_unload()

@@ -69,7 +69,7 @@ univ_bus_device::univ_bus_device(machine_config const &mconfig, char const *tag,
   input lines
 ----------------------------------*/
 
-void univ_bus_device::sync_in(int state)
+WRITE_LINE_MEMBER(univ_bus_device::sync_in)
 {
 	for (device_univ_card_interface *card : m_cards)
 	{
@@ -80,7 +80,7 @@ void univ_bus_device::sync_in(int state)
 	}
 }
 
-void univ_bus_device::stop_acknowledge_in(int state)
+WRITE_LINE_MEMBER(univ_bus_device::stop_acknowledge_in)
 {
 	for (device_univ_card_interface *card : m_cards)
 	{
@@ -91,7 +91,7 @@ void univ_bus_device::stop_acknowledge_in(int state)
 	}
 }
 
-void univ_bus_device::cpu_reset_in(int state)
+WRITE_LINE_MEMBER(univ_bus_device::cpu_reset_in)
 {
 	for (device_univ_card_interface *card : m_cards)
 	{
@@ -109,6 +109,11 @@ void univ_bus_device::cpu_reset_in(int state)
 
 void univ_bus_device::device_start()
 {
+	m_test_out_cb.resolve_safe();
+	m_stop_out_cb.resolve_safe();
+	m_reset_4002_out_cb.resolve_safe();
+	m_user_reset_out_cb.resolve_safe();
+
 	save_item(NAME(m_test));
 	save_item(NAME(m_stop));
 	save_item(NAME(m_reset_4002));

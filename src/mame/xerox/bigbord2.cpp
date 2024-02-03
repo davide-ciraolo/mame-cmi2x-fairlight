@@ -121,21 +121,21 @@ public:
 	void init_bigbord2();
 
 private:
-	void side_select_w(int state);
-	void smc1_w(int state);
-	void smc2_w(int state);
-	void head_load_w(int state);
-	void disk_motor_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(side_select_w);
+	DECLARE_WRITE_LINE_MEMBER(smc1_w);
+	DECLARE_WRITE_LINE_MEMBER(smc2_w);
+	DECLARE_WRITE_LINE_MEMBER(head_load_w);
+	DECLARE_WRITE_LINE_MEMBER(disk_motor_w);
 	void syslatch2_w(u8 data);
 	u8 status_port_r();
 	u8 kbd_r();
 	void kbd_put(u8 data);
-	void clock_w(int state);
-	void busreq_w(int state);
-	void ctc_z1_w(int state);
-	void sio_wrdya_w(int state);
-	void sio_wrdyb_w(int state);
-	void fdc_drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(clock_w);
+	DECLARE_WRITE_LINE_MEMBER(busreq_w);
+	DECLARE_WRITE_LINE_MEMBER(ctc_z1_w);
+	DECLARE_WRITE_LINE_MEMBER(sio_wrdya_w);
+	DECLARE_WRITE_LINE_MEMBER(sio_wrdyb_w);
+	DECLARE_WRITE_LINE_MEMBER(fdc_drq_w);
 	u8 memory_read_byte(offs_t offset);
 	void memory_write_byte(offs_t offset, u8 data);
 	u8 io_read_byte(offs_t offset);
@@ -214,17 +214,17 @@ void bigbord2_state::kbd_put(u8 data)
 	}
 }
 
-void bigbord2_state::sio_wrdya_w(int state)
+WRITE_LINE_MEMBER( bigbord2_state::sio_wrdya_w )
 {
 	m_cc[0] = state;
 }
 
-void bigbord2_state::sio_wrdyb_w(int state)
+WRITE_LINE_MEMBER( bigbord2_state::sio_wrdyb_w )
 {
 	m_cc[1] = state;
 }
 
-void bigbord2_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( bigbord2_state::fdc_drq_w )
 {
 	m_cc[2] = state;
 }
@@ -233,7 +233,7 @@ void bigbord2_state::fdc_drq_w(int state)
 /* Z80 DMA */
 
 
-void bigbord2_state::busreq_w(int state)
+WRITE_LINE_MEMBER( bigbord2_state::busreq_w )
 {
 // since our Z80 has no support for BUSACK, we assume it is granted immediately
 	m_maincpu->set_input_line(Z80_INPUT_LINE_BUSRQ, state);
@@ -263,28 +263,28 @@ void bigbord2_state::io_write_byte(offs_t offset, u8 data)
 
 /* Read/Write Handlers */
 
-void bigbord2_state::side_select_w(int state)
+WRITE_LINE_MEMBER(bigbord2_state::side_select_w)
 {
 	if (m_floppy)
 		m_floppy->ss_w(state);
 }
 
-void bigbord2_state::smc1_w(int state)
+WRITE_LINE_MEMBER(bigbord2_state::smc1_w)
 {
 	// connects to "U6 (FDC9216B)" which drives the fdc "rawread" and "rclk" pins
 }
 
-void bigbord2_state::smc2_w(int state)
+WRITE_LINE_MEMBER(bigbord2_state::smc2_w)
 {
 	// connects to "U6 (FDC9216B)" which drives the fdc "rawread" and "rclk" pins
 }
 
-void bigbord2_state::head_load_w(int state)
+WRITE_LINE_MEMBER(bigbord2_state::head_load_w)
 {
 	// connects to HLD pin on floppy drive
 }
 
-void bigbord2_state::disk_motor_w(int state)
+WRITE_LINE_MEMBER(bigbord2_state::disk_motor_w)
 {
 	// motor on
 	if (m_floppy)
@@ -389,7 +389,7 @@ INPUT_PORTS_END
 
 /* Z80 CTC */
 
-void bigbord2_state::clock_w(int state)
+WRITE_LINE_MEMBER( bigbord2_state::clock_w )
 {
 	m_ctc2->trg0(state);
 	m_ctc2->trg1(state);
@@ -398,7 +398,7 @@ void bigbord2_state::clock_w(int state)
 }
 
 // there's a multitude of optional jumpers in this area, but this will do
-void bigbord2_state::ctc_z1_w(int state)
+WRITE_LINE_MEMBER( bigbord2_state::ctc_z1_w )
 {
 	m_sio->rxca_w(state);
 	m_sio->txca_w(state);

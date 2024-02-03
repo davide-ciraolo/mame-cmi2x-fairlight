@@ -77,6 +77,11 @@ dave_device::dave_device(const machine_config &mconfig, const char *tag, device_
 
 void dave_device::device_start()
 {
+	// resolve callbacks
+	m_write_irq.resolve_safe();
+	m_write_lh.resolve_safe();
+	m_write_rh.resolve_safe();
+
 	// allocate timers
 	m_timer_1hz = timer_alloc(FUNC(dave_device::update_1hz_timer), this);
 	m_timer_1hz->adjust(attotime::from_hz(2), 0, attotime::from_hz(2));
@@ -271,7 +276,7 @@ void dave_device::sound_stream_update(sound_stream &stream, std::vector<read_str
 //  int1_w - interrupt 1 write
 //-------------------------------------------------
 
-void dave_device::int1_w(int state)
+WRITE_LINE_MEMBER( dave_device::int1_w )
 {
 	if (!(m_irq_status & IRQ_INT1) && state)
 		m_irq_status |= IRQ_INT1_LATCH;
@@ -289,7 +294,7 @@ void dave_device::int1_w(int state)
 //  int2_w - interrupt 2 write
 //-------------------------------------------------
 
-void dave_device::int2_w(int state)
+WRITE_LINE_MEMBER( dave_device::int2_w )
 {
 	if (!(m_irq_status & IRQ_INT2) && state)
 		m_irq_status |= IRQ_INT2_LATCH;

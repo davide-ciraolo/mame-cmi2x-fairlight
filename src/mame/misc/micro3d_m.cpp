@@ -32,17 +32,27 @@
  *
  *************************************/
 
-void micro3d_state::duart_irq_handler(int state)
+WRITE_LINE_MEMBER(micro3d_state::duart_irq_handler)
 {
 	m_maincpu->set_input_line(3, state);
 }
 
-void micro3d_state::duart_txb(int state)
+WRITE_LINE_MEMBER(micro3d_state::duart_txb)
 {
-	if (state)
-		m_sound_port_latch[3] |= 1;
-	else
-		m_sound_port_latch[3] &= ~1;
+	m_m68681_tx0 = state;
+	m_audiocpu->set_input_line(MCS51_RX_LINE, ASSERT_LINE);
+	// TODO: next line should be behind a timer callback which lasts one audiocpu clock cycle
+	m_audiocpu->set_input_line(MCS51_RX_LINE, CLEAR_LINE);
+}
+
+uint8_t micro3d_state::data_to_i8031()
+{
+	return m_m68681_tx0;
+}
+
+void micro3d_state::data_from_i8031(uint8_t data)
+{
+	m_duart->rx_b_w(data);
 }
 
 /*
@@ -348,7 +358,7 @@ uint8_t micro3d_state::adc_volume_r()
 	return (uint8_t)((255.0/100.0) * m_volume->read() + 0.5);
 }
 
-int micro3d_state::botss_hwchk_r()
+READ_LINE_MEMBER(micro3d_state::botss_hwchk_r)
 {
 	return m_botss_latch;
 }
@@ -382,7 +392,7 @@ void micro3d_state::micro3d_reset_w(uint16_t data)
 void micro3d_state::host_drmath_int_w(uint16_t data)
 {
 	m_drmath->set_input_line(AM29000_INTR2, ASSERT_LINE);
-	machine().scheduler().perfect_quantum(attotime::from_usec(10));
+	machine().scheduler().boost_interleave(attotime::zero, attotime::from_usec(10));
 }
 
 
@@ -453,10 +463,8 @@ void micro3d_state::micro3d_sound_p1_w(uint8_t data)
 
 void micro3d_state::micro3d_sound_p3_w(uint8_t data)
 {
-	// preserve RXD input
-	m_sound_port_latch[3] = (m_sound_port_latch[3] & 1) | (data & ~1);
+	m_sound_port_latch[3] = data;
 
-	m_duart->rx_b_w(BIT(data, 1));
 	m_upd7759->set_rom_bank(BIT(data, 2));
 	m_upd7759->reset_w(!BIT(data, 4));
 }

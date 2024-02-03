@@ -4,11 +4,11 @@
 
 #include "PasswordDialog.h"
 
-#ifdef Z7_LANG
+#ifdef LANG
 #include "LangUtils.h"
 #endif
 
-#ifdef Z7_LANG
+#ifdef LANG
 static const UInt32 kLangIDs[] =
 {
   IDT_PASSWORD_ENTER,
@@ -30,9 +30,9 @@ void CPasswordDialog::SetTextSpec()
 
 bool CPasswordDialog::OnInit()
 {
-  #ifdef Z7_LANG
+  #ifdef LANG
   LangSetWindowText(*this, IDD_PASSWORD);
-  LangSetDlgItems(*this, kLangIDs, Z7_ARRAY_SIZE(kLangIDs));
+  LangSetDlgItems(*this, kLangIDs, ARRAY_SIZE(kLangIDs));
   #endif
   _passwordEdit.Attach(GetItem(IDE_PASSWORD_PASSWORD));
   CheckButton(IDX_PASSWORD_SHOW, ShowPassword);
@@ -40,7 +40,7 @@ bool CPasswordDialog::OnInit()
   return CModalDialog::OnInit();
 }
 
-bool CPasswordDialog::OnButtonClicked(unsigned buttonID, HWND buttonHWND)
+bool CPasswordDialog::OnButtonClicked(int buttonID, HWND buttonHWND)
 {
   if (buttonID == IDX_PASSWORD_SHOW)
   {

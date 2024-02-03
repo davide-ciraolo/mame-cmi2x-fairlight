@@ -10,6 +10,7 @@
 #include "p1_fdc.h"
 
 #include "cpu/i86/i86.h"
+#include "formats/pc_dsk.h"
 
 
 //**************************************************************************
@@ -114,7 +115,7 @@ void p1_fdc_device::p1_wd17xx_aux_w(int data)
 	floppy1->mon_w(!(data & 8));
 }
 
-void p1_fdc_device::p1_fdc_irq_drq(int state)
+WRITE_LINE_MEMBER(p1_fdc_device::p1_fdc_irq_drq)
 {
 	if (state)
 		m_isa->set_ready(CLEAR_LINE); // deassert I/O CH RDY

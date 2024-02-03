@@ -928,6 +928,7 @@ VIDEO_START_MEMBER(dkong_state,dkong_base)
 	save_item(NAME(m_counter));
 	save_item(NAME(m_pixelcnt));
 	save_item(NAME(m_bg_bits));
+
 }
 
 VIDEO_START_MEMBER(dkong_state,dkong)
@@ -988,11 +989,13 @@ uint32_t dkong_state::screen_update_dkong(screen_device &screen, bitmap_ind16 &b
 
 uint32_t dkong_state::screen_update_pestplce(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
+	int offs;
+
 	machine().tilemap().set_flip_all(m_flip ? TILEMAP_FLIPX | TILEMAP_FLIPY : 0);
 	m_bg_tilemap->draw(screen, bitmap, cliprect, 0, 0);
 
 	/* Draw the sprites. */
-	for (int offs = 0;offs < m_sprite_ram.bytes();offs += 4)
+	for (offs = 0;offs < m_sprite_ram.bytes();offs += 4)
 	{
 		if (m_sprite_ram[offs])
 		{

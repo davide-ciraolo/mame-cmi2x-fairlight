@@ -1,6 +1,6 @@
 // license:BSD-3-Clause
 // copyright-holders:Bryan McPhail
-/*******************************************************************************
+/***************************************************************************
 
     Konami 051649 - SCC1 sound as used in Haunted Castle, City Bomber
 
@@ -12,25 +12,17 @@
     waveform from RAM (32 bytes per waveform, 8 bit signed data).
 
     This sound chip is the same as the sound chip in some Konami
-    megaROM cartridges for the MSX. This device only emulates the
-    sound portion, not the memory mapper.
+    megaROM cartridges for the MSX. It is actually well researched
+    and documented:
 
-    052539 is more or less equivalent to this chip except channel 5
+        http://bifi.msxnet.org/msxnet/tech/scc.html
+
+    Thanks to Sean Young (sean@mess.org) for some bugfixes.
+
+    K052539 is more or less equivalent to this chip except channel 5
     does not share waveram with channel 4.
 
-    References:
-    - http://bifi.msxnet.org/msxnet/tech/scc.html
-    - http://bifi.msxnet.org/msxnet/tech/soundcartridge
-
-    TODO:
-    - make 052539 a subdevice
-    - bus conflicts on 051649 (not 052539). When the CPU accesses waveform RAM
-      and the SCC is reading it at the same time, it can cause audible spikes.
-      A similar thing happens internally when the shared ch4/ch5 do a read at
-      the same time.
-    - test register bits 0-4, not used in any software
-
-*******************************************************************************/
+***************************************************************************/
 
 #include "emu.h"
 #include "k051649.h"
@@ -49,9 +41,9 @@ void k051649_device::scc_map(address_map &map)
 DEFINE_DEVICE_TYPE(K051649, k051649_device, "k051649", "K051649 SCC1")
 
 
-//******************************************************************************
+//**************************************************************************
 //  LIVE DEVICE
-//******************************************************************************
+//**************************************************************************
 
 //-------------------------------------------------
 //  k051649_device - constructor
@@ -80,7 +72,6 @@ void k051649_device::device_start()
 	save_item(STRUCT_MEMBER(m_channel_list, clock));
 	save_item(STRUCT_MEMBER(m_channel_list, frequency));
 	save_item(STRUCT_MEMBER(m_channel_list, volume));
-	save_item(STRUCT_MEMBER(m_channel_list, sample));
 	save_item(STRUCT_MEMBER(m_channel_list, key));
 	save_item(STRUCT_MEMBER(m_channel_list, waveram));
 	save_item(NAME(m_test));
@@ -145,25 +136,21 @@ void k051649_device::sound_stream_update(sound_stream &stream, std::vector<read_
 			// channel is halted for freq < 9
 			if (voice.frequency > 8)
 			{
-				if (++voice.clock > voice.frequency)
+				if ((voice.clock--) <= 0)
 				{
 					voice.counter = (voice.counter + 1) & 0x1f;
-					voice.clock = 0;
+					voice.clock = voice.frequency;
 				}
-				if (voice.clock == 0)
-				{
-					voice.sample = (voice.key ? voice.waveram[voice.counter] : 0) * voice.volume;
-				}
+				// scale to 11 bit digital output on chip
+				if (voice.key)
+					outputs[0].add_int(i, (voice.waveram[voice.counter] * voice.volume) >> 4, 1024);
 			}
-
-			// scale to 11 bit digital output on chip
-			outputs[0].add_int(i, voice.sample >> 4, 1024);
 		}
 	}
 }
 
 
-/******************************************************************************/
+/********************************************************************************/
 
 
 void k051649_device::k051649_waveform_w(offs_t offset, u8 data)
@@ -187,19 +174,17 @@ void k051649_device::k051649_waveform_w(offs_t offset, u8 data)
 
 u8 k051649_device::k051649_waveform_r(offs_t offset)
 {
-	u8 counter = 0;
-
-	// test register bits 6/7 expose the internal counter
+	// test-register bits 6/7 expose the internal counter
 	if (m_test & 0xc0)
 	{
 		m_stream->update();
 
-		if (offset >= 0x60 && (m_test & 0xc0) != 0xc0)
-			counter = m_channel_list[3 + (m_test >> 6 & 1)].counter;
+		if (offset >= 0x60)
+			offset += m_channel_list[3 + (m_test >> 6 & 1)].counter;
 		else if (m_test & 0x40)
-			counter = m_channel_list[offset >> 5].counter;
+			offset += m_channel_list[offset >> 5].counter;
 	}
-	return m_channel_list[offset >> 5].waveram[(offset + counter) & 0x1f];
+	return m_channel_list[offset >> 5].waveram[offset & 0x1f];
 }
 
 
@@ -216,22 +201,20 @@ void k051649_device::k052539_waveform_w(offs_t offset, u8 data)
 
 u8 k051649_device::k052539_waveform_r(offs_t offset)
 {
-	u8 counter = 0;
-
-	// test register bit 6 exposes the internal counter
+	// test-register bit 6 exposes the internal counter
 	if (m_test & 0x40)
 	{
 		m_stream->update();
-		counter = m_channel_list[offset >> 5].counter;
+		offset += m_channel_list[offset >> 5].counter;
 	}
-	return m_channel_list[offset >> 5].waveram[(offset + counter) & 0x1f];
+	return m_channel_list[offset >> 5].waveram[offset & 0x1f];
 }
 
 
 void k051649_device::k051649_volume_w(offs_t offset, u8 data)
 {
 	m_stream->update();
-	m_channel_list[offset].volume = data & 0xf;
+	m_channel_list[offset & 0x7].volume = data & 0xf;
 }
 
 
@@ -242,18 +225,21 @@ void k051649_device::k051649_frequency_w(offs_t offset, u8 data)
 
 	m_stream->update();
 
+	// test-register bit 5 resets the internal counter
+	if (m_test & 0x20)
+	{
+		m_channel_list[offset].counter = 0;
+		m_channel_list[offset].clock = 0;
+	}
+	// TODO: correct?
+	else if (m_channel_list[offset].frequency < 9)
+		m_channel_list[offset].clock = 0;
+
 	// update frequency
 	if (freq_hi)
 		m_channel_list[offset].frequency = (m_channel_list[offset].frequency & 0x0ff) | (data << 8 & 0xf00);
 	else
 		m_channel_list[offset].frequency = (m_channel_list[offset].frequency & 0xf00) | data;
-
-	// test register bit 5 resets the internal counter
-	if (m_test & 0x20)
-		m_channel_list[offset].counter = 0;
-
-	// sample reload pending
-	m_channel_list[offset].clock = -1;
 }
 
 
@@ -274,13 +260,10 @@ void k051649_device::k051649_test_w(u8 data)
 }
 
 
-u8 k051649_device::k051649_test_r(address_space &space)
+u8 k051649_device::k051649_test_r()
 {
-	u8 data = space.unmap();
-
-	// reading the test register triggers a write
+	// reading the test register sets it to $ff!
 	if (!machine().side_effects_disabled())
-		k051649_test_w(data);
-
-	return data;
+		k051649_test_w(0xff);
+	return 0xff;
 }

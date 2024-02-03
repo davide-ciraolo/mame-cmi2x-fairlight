@@ -131,8 +131,6 @@ Notes:
 #include "speaker.h"
 
 
-namespace {
-
 class sigmab98_base_state : public driver_device
 {
 public:
@@ -164,7 +162,7 @@ protected:
 	void draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect, int pri_mask);
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
-	[[maybe_unused]] void screen_vblank_sammymdl(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank_sammymdl);
 
 	// Required devices
 	required_device<screen_device> m_screen;
@@ -260,7 +258,7 @@ private:
 	required_device_array<ttl165_device, 2> m_dsw_shifter;
 
 	int m_dsw_bit;
-	void dsw_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(dsw_w);
 
 	void lufykzku_c4_w(uint8_t data);
 	void lufykzku_c6_w(uint8_t data);
@@ -824,7 +822,7 @@ void sigmab98_state::gegege_io_map(address_map &map)
                        Otakara Itadaki Luffy Kaizoku-Dan!
 ***************************************************************************/
 
-void lufykzku_state::dsw_w(int state)
+WRITE_LINE_MEMBER(lufykzku_state::dsw_w)
 {
 	m_dsw_bit = state;
 }
@@ -947,7 +945,7 @@ void sigmab98_base_state::vblank_w(uint8_t data)
 	m_vblank = (m_vblank & ~0x03) | (data & 0x03);
 }
 
-void sigmab98_base_state::screen_vblank_sammymdl(int state)
+WRITE_LINE_MEMBER(sigmab98_base_state::screen_vblank_sammymdl)
 {
 	// rising edge
 	if (state)
@@ -2277,9 +2275,6 @@ void sammymdl_state::init_haekaka()
 	rom[0x005ac] = 0xc3;
 }
 
-} // anonymous namespace
-
-
 /***************************************************************************
 
     Game Drivers
@@ -2298,7 +2293,7 @@ GAME( 2000, dashhero, 0,        sigmab98, sigma_1b, sigmab98_state, init_dashher
 // Banpresto Medal Games
 GAME( 2001, lufykzku, 0,        lufykzku, lufykzku, lufykzku_state, init_lufykzku, ROT0, "Banpresto / Eiichiro Oda / Shueisha - Fuji TV - Toho Animation", "Otakara Itadaki Luffy Kaizoku-Dan! (Japan, v1.02)", 0 )
 // Sammy Medal Games:
-GAME( 2000, sammymdl, 0,        sammymdl, sammymdl, sammymdl_state, init_animalc,  ROT0, "Sammy",             "Sammy Medal Game System BIOS",         MACHINE_IS_BIOS_ROOT )
+GAME( 2000, sammymdl, 0,        sammymdl, sammymdl, sammymdl_state, init_animalc,  ROT0, "Sammy",             "Sammy Medal Game System Bios",         MACHINE_IS_BIOS_ROOT )
 GAME( 2000, animalc,  sammymdl, animalc,  sammymdl, sammymdl_state, init_animalc,  ROT0, "Sammy",             "Animal Catch",                         0 )
 GAME( 2000, itazuram, sammymdl, itazuram, sammymdl, sammymdl_state, init_itazuram, ROT0, "Sammy",             "Itazura Monkey",                       0 )
 GAME( 2000, pyenaget, sammymdl, pyenaget, sammymdl, sammymdl_state, init_haekaka,  ROT0, "Sammy",             "Pye-nage Taikai",                      0 )

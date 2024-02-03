@@ -12,9 +12,6 @@
         - MK48T08
         - MK48T12
 
-    Dallas clones that have the same functional interface:
-        - DS1643
-
 ***************************************************************************/
 
 #ifndef MAME_MACHINE_TIMEKPR_H
@@ -22,7 +19,7 @@
 
 #pragma once
 
-#include "dirtc.h"
+
 
 
 //**************************************************************************
@@ -32,7 +29,7 @@
 
 // ======================> timekeeper_device
 
-class timekeeper_device : public device_t, public device_nvram_interface, public device_rtc_interface
+class timekeeper_device : public device_t, public device_nvram_interface
 {
 public:
 	void write(offs_t offset, u8 data);
@@ -54,11 +51,6 @@ protected:
 	virtual void nvram_default() override;
 	virtual bool nvram_read(util::read_stream &file) override;
 	virtual bool nvram_write(util::write_stream &file) override;
-
-	// device_rtc_interface overrides
-	virtual bool rtc_feature_y2k() const override { return m_offset_century != -1; }
-	virtual bool rtc_feature_leap_year() const override { return true; }
-	virtual void rtc_clock_updated(int year, int month, int day, int day_of_week, int hour, int minute, int second) override;
 
 	TIMER_CALLBACK_MEMBER(timer_tick);
 	TIMER_CALLBACK_MEMBER(watchdog_callback);
@@ -122,9 +114,6 @@ class m48t58_device : public timekeeper_device
 {
 public:
 	m48t58_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock = 0);
-
-protected:
-	m48t58_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, u32 clock);
 };
 
 class mk48t08_device : public timekeeper_device
@@ -139,12 +128,6 @@ public:
 	mk48t12_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock = 0);
 };
 
-class ds1643_device : public m48t58_device
-{
-public:
-	ds1643_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock = 0);
-};
-
 // device type definition
 DECLARE_DEVICE_TYPE(M48T02,  m48t02_device)
 DECLARE_DEVICE_TYPE(M48T35,  m48t35_device)
@@ -152,6 +135,5 @@ DECLARE_DEVICE_TYPE(M48T37,  m48t37_device)
 DECLARE_DEVICE_TYPE(M48T58,  m48t58_device)
 DECLARE_DEVICE_TYPE(MK48T08, mk48t08_device)
 DECLARE_DEVICE_TYPE(MK48T12, mk48t12_device)
-DECLARE_DEVICE_TYPE(DS1643,  ds1643_device)
 
 #endif // MAME_MACHINE_TIMEKPR_H

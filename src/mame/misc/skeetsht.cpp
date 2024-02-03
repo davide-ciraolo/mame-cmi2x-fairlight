@@ -21,8 +21,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 /*************************************
  *
  *  Structs
@@ -57,7 +55,7 @@ private:
 	uint8_t tms_r(offs_t offset);
 	void hc11_porta_w(uint8_t data);
 	void ay8910_w(uint8_t data);
-	void tms_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(tms_irq);
 	TMS340X0_SCANLINE_RGB32_CB_MEMBER(scanline_update);
 	virtual void machine_reset() override;
 	virtual void video_start() override;
@@ -132,7 +130,7 @@ void skeetsht_state::ramdac_w(offs_t offset, uint16_t data)
  *
  *************************************/
 
-void skeetsht_state::tms_irq(int state)
+WRITE_LINE_MEMBER(skeetsht_state::tms_irq)
 {
 	m_68hc11->set_input_line(MC68HC11_IRQ_LINE, state ? ASSERT_LINE : CLEAR_LINE);
 }
@@ -281,8 +279,6 @@ ROM_START( popshot )
 	DISK_REGION( "laserdisc" )
 		DISK_IMAGE_READONLY( "popshot", 0, NO_DUMP ) // unknown disc label?
 ROM_END
-
-} // anonymous namespace
 
 
 /*************************************

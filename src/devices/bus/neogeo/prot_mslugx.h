@@ -1,5 +1,5 @@
 // license:BSD-3-Clause
-// copyright-holders:S. Smith, David Haywood, Fabio Priuli, iq_132
+// copyright-holders:S. Smith,David Haywood,Fabio Priuli
 
 #ifndef MAME_BUS_NEOGEO_PROT_MSLUGX_H
 #define MAME_BUS_NEOGEO_PROT_MSLUGX_H

@@ -551,68 +551,68 @@ INPUT_PORTS_END
 
 // Telmac 1800
 
-int tmc1800_state::clear_r()
+READ_LINE_MEMBER( tmc1800_state::clear_r )
 {
 	return BIT(m_run->read(), 0);
 }
 
-int tmc1800_state::ef2_r()
+READ_LINE_MEMBER( tmc1800_state::ef2_r )
 {
 	return m_cassette->input() < 0;
 }
 
-int tmc1800_state::ef3_r()
+READ_LINE_MEMBER( tmc1800_state::ef3_r )
 {
 	return CLEAR_LINE; // TODO
 }
 
-void tmc1800_state::q_w(int state)
+WRITE_LINE_MEMBER( tmc1800_state::q_w )
 {
 	m_cassette->output(state ? 1.0 : -1.0);
 }
 
 // Oscom 1000B
 
-int osc1000b_state::clear_r()
+READ_LINE_MEMBER( osc1000b_state::clear_r )
 {
 	return BIT(m_run->read(), 0);
 }
 
-int osc1000b_state::ef2_r()
+READ_LINE_MEMBER( osc1000b_state::ef2_r )
 {
 	return m_cassette->input() < 0;
 }
 
-int osc1000b_state::ef3_r()
+READ_LINE_MEMBER( osc1000b_state::ef3_r )
 {
 	return CLEAR_LINE; // TODO
 }
 
-void osc1000b_state::q_w(int state)
+WRITE_LINE_MEMBER( osc1000b_state::q_w )
 {
 	m_cassette->output(state ? 1.0 : -1.0);
 }
 
 // Telmac 2000
 
-int tmc2000_state::clear_r()
+READ_LINE_MEMBER( tmc2000_state::clear_r )
 {
 	return BIT(m_run->read(), 0);
 }
 
-int tmc2000_state::ef2_r()
+READ_LINE_MEMBER( tmc2000_state::ef2_r )
 {
 	return (m_cassette)->input() < 0;
 }
 
-int tmc2000_state::ef3_r()
+READ_LINE_MEMBER( tmc2000_state::ef3_r )
 {
 	uint8_t data = ~m_key_row[m_keylatch / 8]->read();
 
 	return BIT(data, m_keylatch % 8);
 }
 
-void tmc2000_state::q_w(int state)
+WRITE_LINE_MEMBER( tmc2000_state::q_w )
 {
 	/* CDP1864 audio output enable */
 	m_cti->aoe_w(state);
@@ -634,7 +634,7 @@ void tmc2000_state::dma_w(offs_t offset, uint8_t data)
 
 // OSCOM Nano
 
-int nano_state::clear_r()
+READ_LINE_MEMBER( nano_state::clear_r )
 {
 	int run = BIT(m_run->read(), 0);
 	int monitor = BIT(m_monitor->read(), 0);
@@ -642,12 +642,12 @@ int nano_state::clear_r()
 	return run && monitor;
 }
 
-int nano_state::ef2_r()
+READ_LINE_MEMBER( nano_state::ef2_r )
 {
 	return m_cassette->input() < 0;
 }
 
-int nano_state::ef3_r()
+READ_LINE_MEMBER( nano_state::ef3_r )
 {
 	uint8_t data = 0xff;
 
@@ -657,7 +657,7 @@ int nano_state::ef3_r()
 	return !BIT(data, m_keylatch & 0x07);
 }
 
-void nano_state::q_w(int state)
+WRITE_LINE_MEMBER( nano_state::q_w )
 {
 	/* CDP1864 audio output enable */
 	m_cti->aoe_w(state);
@@ -766,17 +766,17 @@ void nano_state::machine_reset()
 
 QUICKLOAD_LOAD_MEMBER(tmc1800_base_state::quickload_cb)
 {
-	int const size = image.length();
+	uint8_t *ptr = m_rom->base();
+	int size = image.length();
 
-	if (size > m_ram->size()) // FIXME: comparing size to RAM size, but loading to ROM - seems incorrect
+	if (size > m_ram->size())
 	{
-		return std::make_pair(image_error::INVALIDLENGTH, std::string());
+		return image_init_result::FAIL;
 	}
 
-	uint8_t *const ptr = m_rom->base();
-	image.fread(ptr, size);
+	image.fread( ptr, size);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void tmc1800_state::tmc1800(machine_config &config)

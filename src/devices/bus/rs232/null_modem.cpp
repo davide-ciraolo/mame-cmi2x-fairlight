@@ -37,10 +37,10 @@ static INPUT_PORTS_START(null_modem)
 
 	PORT_START("FLOW_CONTROL")
 	PORT_CONFNAME(0x07, 0x00, "Flow Control")
-	PORT_CONFSETTING(   0x00, DEF_STR(Off))
-	PORT_CONFSETTING(   0x01, "RTS")
-	PORT_CONFSETTING(   0x02, "DTR")
-	PORT_CONFSETTING(   0x04, "XON/XOFF")
+	PORT_CONFSETTING(0x00, "Off")
+	PORT_CONFSETTING(0x01, "RTS")
+	PORT_CONFSETTING(0x02, "DTR")
+	PORT_CONFSETTING(0x04, "XON/XOFF")
 INPUT_PORTS_END
 
 ioport_constructor null_modem_device::device_input_ports() const
@@ -53,7 +53,7 @@ void null_modem_device::device_start()
 	m_timer_poll = timer_alloc(FUNC(null_modem_device::update_queue), this);
 }
 
-void null_modem_device::update_serial(int state)
+WRITE_LINE_MEMBER(null_modem_device::update_serial)
 {
 	int startbits = 1;
 	int databits = convert_databits(m_rs232_databits->read());
@@ -96,7 +96,7 @@ TIMER_CALLBACK_MEMBER(null_modem_device::update_queue)
 
 		if (m_input_count != 0)
 		{
-			uint8_t const fc = m_flow->read();
+			uint8_t fc = m_flow->read();
 
 			if (fc == 0 || (fc == 1 && m_rts == 0) || (fc == 2 && m_dtr == 0) || (fc == 4 && m_xoff == 0))
 			{
@@ -106,7 +106,7 @@ TIMER_CALLBACK_MEMBER(null_modem_device::update_queue)
 			}
 		}
 
-		int const txbaud = convert_baud(m_rs232_txbaud->read());
+		int txbaud = convert_baud(m_rs232_txbaud->read());
 		m_timer_poll->adjust(attotime::from_hz(txbaud));
 	}
 }
@@ -123,9 +123,11 @@ void null_modem_device::tra_complete()
 
 void null_modem_device::rcv_complete()
 {
+	u8 data;
+
 	receive_register_extract();
 
-	uint8_t const data = get_received_char();
+	data = get_received_char();
 	if (m_flow->read() != 4)
 	{
 		m_stream->output(data);

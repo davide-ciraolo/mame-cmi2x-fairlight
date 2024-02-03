@@ -141,7 +141,7 @@ public:
 
 	void rblaster(machine_config &config);
 
-	int begas_vblank_r();
+	DECLARE_READ_LINE_MEMBER(begas_vblank_r);
 	DECLARE_INPUT_CHANGED_MEMBER(coin_inserted);
 
 protected:
@@ -321,7 +321,7 @@ void deco_ld_state::rblaster_sound_map(address_map &map)
 	map(0xe000, 0xffff).rom();
 }
 
-int deco_ld_state::begas_vblank_r()
+READ_LINE_MEMBER( deco_ld_state::begas_vblank_r )
 {
 	return m_screen->vpos() >= 240*2;
 }

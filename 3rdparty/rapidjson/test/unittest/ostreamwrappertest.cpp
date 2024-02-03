@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -69,15 +69,14 @@ static void TestFileStream() {
 
     const char* s = "Hello World!\n";
     {
-        FileStreamType ofs(filename, ios::out | ios::binary);
-        BasicOStreamWrapper<FileStreamType> osw(ofs);
+        ofstream ofs(filename, ios::out | ios::binary);
+        BasicOStreamWrapper<ofstream> osw(ofs);
         for (const char* p = s; *p; p++)
             osw.Put(*p);
         osw.Flush();
     }
 
     fp = fopen(filename, "r");
-    ASSERT_TRUE( fp != NULL );
     for (const char* p = s; *p; p++)
         EXPECT_EQ(*p, static_cast<char>(fgetc(fp)));
     fclose(fp);

@@ -2,8 +2,8 @@
 // copyright-holders:Mike Balfour, Ben Bruscella, Sean Young, Frank Palazzolo
 #pragma once
 
-#ifndef MAME_COLECO_COLECO_H
-#define MAME_COLECO_COLECO_H
+#ifndef MAME_INCLUDES_COLECO_H
+#define MAME_INCLUDES_COLECO_H
 
 
 #include "cpu/z80/z80.h"
@@ -53,7 +53,8 @@ public:
 	TIMER_CALLBACK_MEMBER(paddle_irqreset_callback);
 	TIMER_CALLBACK_MEMBER(paddle_pulse_callback);
 	TIMER_DEVICE_CALLBACK_MEMBER(paddle_update_callback);
-	void coleco_vdp_interrupt(int state);
+	DECLARE_WRITE_LINE_MEMBER(coleco_vdp_interrupt);
+	DECLARE_DEVICE_IMAGE_LOAD_MEMBER(czz50_cart);
 
 	uint8_t coleco_paddle_read(int port, int joy_mode, uint8_t joy_status);
 	uint8_t coleco_scan_paddles(uint8_t *joy_status0, uint8_t *joy_status1);
@@ -136,4 +137,4 @@ private:
 	uint8_t m_unknown = 0U;
 };
 
-#endif // MAME_COLECO_COLECO_H
+#endif

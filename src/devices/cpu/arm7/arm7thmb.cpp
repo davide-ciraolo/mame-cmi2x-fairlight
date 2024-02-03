@@ -658,9 +658,10 @@ void arm7_cpu_device::tg04_00_07(uint32_t pc, uint32_t op) /* ROR Rd, Rs */
 	const uint32_t rd = (op & THUMB_ADDSUB_RD) >> THUMB_ADDSUB_RD_SHIFT;
 	const uint32_t rrd = GetRegister(rd);
 	const uint32_t imm = GetRegister(rs) & 0xff;
+	const uint32_t imm_masked = imm & 0x1f;
 	if (imm > 0)
 	{
-		SetRegister(rd, rotr_32(rrd, imm));
+		SetRegister(rd, (rrd >> imm_masked) | (rrd << (32 - imm_masked)));
 		if (rrd & (1 << ((imm - 1) & 0x1f)))
 		{
 			set_cpsr(GET_CPSR | C_MASK);
@@ -1004,14 +1005,18 @@ void arm7_cpu_device::tg05_2(uint32_t pc, uint32_t op)  /* STRB Rd, [Rn, Rm] */
 	R15 += 2;
 }
 
-void arm7_cpu_device::tg05_3(uint32_t pc, uint32_t op)  /* LDRSB Rd, [Rn, Rm] */
+void arm7_cpu_device::tg05_3(uint32_t pc, uint32_t op)  /* LDSB Rd, [Rn, Rm] todo, add dasm */
 {
 	uint32_t rm = (op & THUMB_GROUP5_RM) >> THUMB_GROUP5_RM_SHIFT;
 	uint32_t rn = (op & THUMB_GROUP5_RN) >> THUMB_GROUP5_RN_SHIFT;
 	uint32_t rd = (op & THUMB_GROUP5_RD) >> THUMB_GROUP5_RD_SHIFT;
 	uint32_t addr = GetRegister(rn) + GetRegister(rm);
 	uint32_t op2 = READ8(addr);
-	SetRegister(rd, util::sext(op2, 8));
+	if (op2 & 0x00000080)
+	{
+		op2 |= 0xffffff00;
+	}
+	SetRegister(rd, op2);
 	R15 += 2;
 }
 
@@ -1048,7 +1053,7 @@ void arm7_cpu_device::tg05_6(uint32_t pc, uint32_t op)  /* LDRB Rd, [Rn, Rm] */
 	R15 += 2;
 }
 
-void arm7_cpu_device::tg05_7(uint32_t pc, uint32_t op)  /* LDRSH Rd, [Rn, Rm] */
+void arm7_cpu_device::tg05_7(uint32_t pc, uint32_t op)  /* LDSH Rd, [Rn, Rm] */
 {
 	uint32_t rm = (op & THUMB_GROUP5_RM) >> THUMB_GROUP5_RM_SHIFT;
 	uint32_t rn = (op & THUMB_GROUP5_RN) >> THUMB_GROUP5_RN_SHIFT;
@@ -1543,7 +1548,11 @@ void arm7_cpu_device::tg0d_f(uint32_t pc, uint32_t op) // COND_NV:   // SWI (thi
 
 void arm7_cpu_device::tg0e_0(uint32_t pc, uint32_t op)
 {
-	int32_t offs = util::sext((op & THUMB_BRANCH_OFFS) << 1, 12);
+	int32_t offs = (op & THUMB_BRANCH_OFFS) << 1;
+	if (offs & 0x00000800)
+	{
+		offs |= 0xfffff800;
+	}
 	R15 += 4 + offs;
 }
 
@@ -1564,7 +1573,11 @@ void arm7_cpu_device::tg0f_0(uint32_t pc, uint32_t op)
 {
 	/* BL (HI) */
 
-	uint32_t addr = util::sext((op & THUMB_BLOP_OFFS) << 12, 23);
+	uint32_t addr = (op & THUMB_BLOP_OFFS) << 12;
+	if (addr & (1 << 22))
+	{
+		addr |= 0xff800000;
+	}
 	addr += R15 + 4;
 	SetRegister(14, addr);
 	R15 += 2;

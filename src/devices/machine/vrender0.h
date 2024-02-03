@@ -20,6 +20,14 @@
 #include "diserial.h"
 
 //**************************************************************************
+//  INTERFACE CONFIGURATION MACROS
+//**************************************************************************
+
+#define IDLE_LOOP_SPEEDUP
+
+
+
+//**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
 
@@ -95,7 +103,7 @@ public:
 	bool irq_pending() { return m_intst; }
 	void write_line_tx(int port, uint8_t value);
 	template <int Port> auto tx_callback() { return write_tx[Port].bind(); }
-	template <int Port> void rx_w(int state) { m_uart[Port]->rx_w((uint8_t)state); }
+	template <int Port> DECLARE_WRITE_LINE_MEMBER(rx_w) { m_uart[Port]->rx_w((uint8_t)state); }
 
 protected:
 	// device-level overrides
@@ -135,7 +143,7 @@ private:
 	uint32_t intst_r();
 	void intst_w(uint32_t data);
 
-	void soundirq_cb(int state);
+	DECLARE_WRITE_LINE_MEMBER(soundirq_cb);
 
 	// Timer
 	template<int Which> void tmcon_w(offs_t offset, uint32_t data, uint32_t mem_mask = ~0);
@@ -177,12 +185,19 @@ private:
 	uint32_t cfgr_r();
 
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void screen_vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
 
 	uint16_t textureram_r(offs_t offset);
 	void textureram_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	uint16_t frameram_r(offs_t offset);
 	void frameram_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
+
+	// Hacks
+#ifdef IDLE_LOOP_SPEEDUP
+	uint8_t     m_FlipCntRead = 0;
+	DECLARE_WRITE_LINE_MEMBER(idle_skip_resume_w);
+	DECLARE_WRITE_LINE_MEMBER(idle_skip_speedup_w);
+#endif
 };
 
 

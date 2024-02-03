@@ -27,34 +27,34 @@ DEFINE_DEVICE_TYPE(DS75161A, ds75161a_device, "ds75161a", "DS75161A GPIB Transce
 //  ds75161a_device - constructor
 //-------------------------------------------------
 
-ds75161a_device::ds75161a_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
-	device_t(mconfig, DS75161A, tag, owner, clock),
-	m_in_ren_cb(*this, 0),
-	m_in_ifc_cb(*this, 0),
-	m_in_ndac_cb(*this, 0),
-	m_in_nrfd_cb(*this, 0),
-	m_in_dav_cb(*this, 0),
-	m_in_eoi_cb(*this, 0),
-	m_in_atn_cb(*this, 0),
-	m_in_srq_cb(*this, 0),
-	m_out_ren_cb(*this),
-	m_out_ifc_cb(*this),
-	m_out_ndac_cb(*this),
-	m_out_nrfd_cb(*this),
-	m_out_dav_cb(*this),
-	m_out_eoi_cb(*this),
-	m_out_atn_cb(*this),
-	m_out_srq_cb(*this),
-	m_ren(1),
-	m_ifc(1),
-	m_ndac(1),
-	m_nrfd(1),
-	m_dav(1),
-	m_eoi(1),
-	m_atn(1),
-	m_srq(1),
-	m_te(0),
-	m_dc(0)
+ds75161a_device::ds75161a_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: device_t(mconfig, DS75161A, tag, owner, clock),
+		m_in_ren_cb(*this),
+		m_in_ifc_cb(*this),
+		m_in_ndac_cb(*this),
+		m_in_nrfd_cb(*this),
+		m_in_dav_cb(*this),
+		m_in_eoi_cb(*this),
+		m_in_atn_cb(*this),
+		m_in_srq_cb(*this),
+		m_out_ren_cb(*this),
+		m_out_ifc_cb(*this),
+		m_out_ndac_cb(*this),
+		m_out_nrfd_cb(*this),
+		m_out_dav_cb(*this),
+		m_out_eoi_cb(*this),
+		m_out_atn_cb(*this),
+		m_out_srq_cb(*this),
+		m_ren(1),
+		m_ifc(1),
+		m_ndac(1),
+		m_nrfd(1),
+		m_dav(1),
+		m_eoi(1),
+		m_atn(1),
+		m_srq(1),
+		m_te(0),
+		m_dc(0)
 {
 }
 
@@ -64,6 +64,25 @@ ds75161a_device::ds75161a_device(const machine_config &mconfig, const char *tag,
 
 void ds75161a_device::device_start()
 {
+	// resolve callbacks
+	m_in_ren_cb.resolve_safe(0);
+	m_in_ifc_cb.resolve_safe(0);
+	m_in_ndac_cb.resolve_safe(0);
+	m_in_nrfd_cb.resolve_safe(0);
+	m_in_dav_cb.resolve_safe(0);
+	m_in_eoi_cb.resolve_safe(0);
+	m_in_atn_cb.resolve_safe(0);
+	m_in_srq_cb.resolve_safe(0);
+
+	m_out_ren_cb.resolve_safe();
+	m_out_ifc_cb.resolve_safe();
+	m_out_ndac_cb.resolve_safe();
+	m_out_nrfd_cb.resolve_safe();
+	m_out_dav_cb.resolve_safe();
+	m_out_eoi_cb.resolve_safe();
+	m_out_atn_cb.resolve_safe();
+	m_out_srq_cb.resolve_safe();
+
 	// register for state saving
 	save_item(NAME(m_ren));
 	save_item(NAME(m_ifc));
@@ -104,7 +123,7 @@ void ds75161a_device::update_signals()
 //  te_w - transmit enable
 //-------------------------------------------------
 
-void ds75161a_device::te_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::te_w )
 {
 	if (m_te != state)
 	{
@@ -119,7 +138,7 @@ void ds75161a_device::te_w(int state)
 //  dc_w - direction control
 //-------------------------------------------------
 
-void ds75161a_device::dc_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::dc_w )
 {
 	if (m_dc != state)
 	{
@@ -134,7 +153,7 @@ void ds75161a_device::dc_w(int state)
 //  ren_r - remote enable read
 //-------------------------------------------------
 
-int ds75161a_device::ren_r()
+READ_LINE_MEMBER( ds75161a_device::ren_r )
 {
 	return m_dc ? m_in_ren_cb() : 0;
 }
@@ -144,7 +163,7 @@ int ds75161a_device::ren_r()
 //  ifc_r - interface clear read
 //-------------------------------------------------
 
-int ds75161a_device::ifc_r()
+READ_LINE_MEMBER( ds75161a_device::ifc_r )
 {
 	return m_dc ? m_in_ifc_cb() : 0;
 }
@@ -154,7 +173,7 @@ int ds75161a_device::ifc_r()
 //  ndac_r - not data acknowledge read
 //-------------------------------------------------
 
-int ds75161a_device::ndac_r()
+READ_LINE_MEMBER( ds75161a_device::ndac_r )
 {
 	return m_te ? m_in_ndac_cb() : 0;
 }
@@ -164,7 +183,7 @@ int ds75161a_device::ndac_r()
 //  nrfd_r - not ready for data read
 //-------------------------------------------------
 
-int ds75161a_device::nrfd_r()
+READ_LINE_MEMBER( ds75161a_device::nrfd_r )
 {
 	return m_te ? m_in_nrfd_cb() : 0;
 }
@@ -174,7 +193,7 @@ int ds75161a_device::nrfd_r()
 //  dav_r - data valid read
 //-------------------------------------------------
 
-int ds75161a_device::dav_r()
+READ_LINE_MEMBER( ds75161a_device::dav_r )
 {
 	return m_te ? 0 : m_in_dav_cb();
 }
@@ -184,7 +203,7 @@ int ds75161a_device::dav_r()
 //  eoi_r - end or identify read
 //-------------------------------------------------
 
-int ds75161a_device::eoi_r()
+READ_LINE_MEMBER( ds75161a_device::eoi_r )
 {
 	int atn = m_in_atn_cb();
 	int eoi = m_in_eoi_cb();
@@ -199,7 +218,7 @@ int ds75161a_device::eoi_r()
 //  atn_r - attention read
 //-------------------------------------------------
 
-int ds75161a_device::atn_r()
+READ_LINE_MEMBER( ds75161a_device::atn_r )
 {
 	return m_dc ? m_in_atn_cb() : 0;
 }
@@ -209,7 +228,7 @@ int ds75161a_device::atn_r()
 //  srq_r - service request read
 //-------------------------------------------------
 
-int ds75161a_device::srq_r()
+READ_LINE_MEMBER( ds75161a_device::srq_r )
 {
 	return m_dc ? 0 : m_in_srq_cb();
 }
@@ -219,7 +238,7 @@ int ds75161a_device::srq_r()
 //  ren_w - remote enable write
 //-------------------------------------------------
 
-void ds75161a_device::ren_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::ren_w )
 {
 	if (m_ren != state)
 	{
@@ -234,7 +253,7 @@ void ds75161a_device::ren_w(int state)
 //  ifc_w - interface clear write
 //-------------------------------------------------
 
-void ds75161a_device::ifc_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::ifc_w )
 {
 	if (m_ifc != state)
 	{
@@ -249,7 +268,7 @@ void ds75161a_device::ifc_w(int state)
 //  ndac_w - not data acknowledge write
 //-------------------------------------------------
 
-void ds75161a_device::ndac_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::ndac_w )
 {
 	if (m_ndac != state)
 	{
@@ -264,7 +283,7 @@ void ds75161a_device::ndac_w(int state)
 //  nrfd_w - not ready for data write
 //-------------------------------------------------
 
-void ds75161a_device::nrfd_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::nrfd_w )
 {
 	if (m_nrfd != state)
 	{
@@ -279,7 +298,7 @@ void ds75161a_device::nrfd_w(int state)
 //  dav_w - data valid write
 //-------------------------------------------------
 
-void ds75161a_device::dav_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::dav_w )
 {
 	if (m_dav != state)
 	{
@@ -294,7 +313,7 @@ void ds75161a_device::dav_w(int state)
 //  eoi_w - end or identify write
 //-------------------------------------------------
 
-void ds75161a_device::eoi_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::eoi_w )
 {
 	if (m_eoi != state)
 	{
@@ -309,7 +328,7 @@ void ds75161a_device::eoi_w(int state)
 //  atn_w - attention write
 //-------------------------------------------------
 
-void ds75161a_device::atn_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::atn_w )
 {
 	if (m_atn != state)
 	{
@@ -324,7 +343,7 @@ void ds75161a_device::atn_w(int state)
 //  srq_w - service request write
 //-------------------------------------------------
 
-void ds75161a_device::srq_w(int state)
+WRITE_LINE_MEMBER( ds75161a_device::srq_w )
 {
 	if (m_srq != state)
 	{

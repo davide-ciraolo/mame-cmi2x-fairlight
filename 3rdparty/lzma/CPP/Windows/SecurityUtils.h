@@ -1,36 +1,11 @@
 // Windows/SecurityUtils.h
 
-#ifndef ZIP7_INC_WINDOWS_SECURITY_UTILS_H
-#define ZIP7_INC_WINDOWS_SECURITY_UTILS_H
+#ifndef __WINDOWS_SECURITY_UTILS_H
+#define __WINDOWS_SECURITY_UTILS_H
 
 #include <NTSecAPI.h>
 
 #include "Defs.h"
-
-#ifndef _UNICODE
-
-extern "C" {
-typedef NTSTATUS (NTAPI *Func_LsaOpenPolicy)(PLSA_UNICODE_STRING SystemName,
-    PLSA_OBJECT_ATTRIBUTES ObjectAttributes, ACCESS_MASK DesiredAccess, PLSA_HANDLE PolicyHandle);
-typedef NTSTATUS (NTAPI *Func_LsaClose)(LSA_HANDLE ObjectHandle);
-typedef NTSTATUS (NTAPI *Func_LsaAddAccountRights)(LSA_HANDLE PolicyHandle,
-    PSID AccountSid, PLSA_UNICODE_STRING UserRights, ULONG CountOfRights );
-#define MY_STATUS_NOT_IMPLEMENTED  ((NTSTATUS)0xC0000002L)
-}
-
-#define POLICY_FUNC_CALL(fff, str)  \
-  if (hModule == NULL) return MY_STATUS_NOT_IMPLEMENTED; \
-  const Func_ ## fff v = Z7_GET_PROC_ADDRESS(Func_ ## fff, hModule, str); \
-  if (!v) return MY_STATUS_NOT_IMPLEMENTED; \
-  const NTSTATUS res = v
-
-#else
-
-#define POLICY_FUNC_CALL(fff, str)  \
-  const NTSTATUS res = ::fff
-
-#endif
-
 
 namespace NWindows {
 namespace NSecurity {
@@ -39,7 +14,7 @@ class CAccessToken
 {
   HANDLE _handle;
 public:
-  CAccessToken(): _handle(NULL) {}
+  CAccessToken(): _handle(NULL) {};
   ~CAccessToken() { Close(); }
   bool Close()
   {
@@ -78,9 +53,15 @@ public:
 
 };
 
+#ifndef _UNICODE
+typedef NTSTATUS (NTAPI *LsaOpenPolicyP)(PLSA_UNICODE_STRING SystemName,
+    PLSA_OBJECT_ATTRIBUTES ObjectAttributes, ACCESS_MASK DesiredAccess, PLSA_HANDLE PolicyHandle);
+typedef NTSTATUS (NTAPI *LsaCloseP)(LSA_HANDLE ObjectHandle);
+typedef NTSTATUS (NTAPI *LsaAddAccountRightsP)(LSA_HANDLE PolicyHandle,
+    PSID AccountSid, PLSA_UNICODE_STRING UserRights, ULONG CountOfRights );
+#define MY_STATUS_NOT_IMPLEMENTED           ((NTSTATUS)0xC0000002L)
+#endif
 
-
-    
 struct CPolicy
 {
 protected:
@@ -93,25 +74,51 @@ public:
   CPolicy(): _handle(NULL)
   {
     #ifndef _UNICODE
-    hModule = GetModuleHandle(TEXT("advapi32.dll"));
+    hModule = GetModuleHandle(TEXT("Advapi32.dll"));
     #endif
-  }
+  };
   ~CPolicy() { Close(); }
 
   NTSTATUS Open(PLSA_UNICODE_STRING systemName, PLSA_OBJECT_ATTRIBUTES objectAttributes,
       ACCESS_MASK desiredAccess)
   {
+    #ifndef _UNICODE
+    if (hModule == NULL)
+      return MY_STATUS_NOT_IMPLEMENTED;
+    LsaOpenPolicyP lsaOpenPolicy = (LsaOpenPolicyP)GetProcAddress(hModule, "LsaOpenPolicy");
+    if (lsaOpenPolicy == NULL)
+      return MY_STATUS_NOT_IMPLEMENTED;
+    #endif
+
     Close();
-    POLICY_FUNC_CALL (LsaOpenPolicy, "LsaOpenPolicy")
+    return
+      #ifdef _UNICODE
+      ::LsaOpenPolicy
+      #else
+      lsaOpenPolicy
+      #endif
       (systemName, objectAttributes, desiredAccess, &_handle);
-    return res;
   }
   
   NTSTATUS Close()
   {
     if (_handle == NULL)
       return 0;
-    POLICY_FUNC_CALL (LsaClose, "LsaClose")
+
+    #ifndef _UNICODE
+    if (hModule == NULL)
+      return MY_STATUS_NOT_IMPLEMENTED;
+    LsaCloseP lsaClose = (LsaCloseP)GetProcAddress(hModule, "LsaClose");
+    if (lsaClose == NULL)
+      return MY_STATUS_NOT_IMPLEMENTED;
+    #endif
+
+    NTSTATUS res =
+      #ifdef _UNICODE
+      ::LsaClose
+      #else
+      lsaClose
+      #endif
       (_handle);
     _handle = NULL;
     return res;
@@ -130,9 +137,21 @@ public:
 
   NTSTATUS AddAccountRights(PSID accountSid, PLSA_UNICODE_STRING userRights, ULONG countOfRights)
   {
-    POLICY_FUNC_CALL (LsaAddAccountRights, "LsaAddAccountRights")
+    #ifndef _UNICODE
+    if (hModule == NULL)
+      return MY_STATUS_NOT_IMPLEMENTED;
+    LsaAddAccountRightsP lsaAddAccountRights = (LsaAddAccountRightsP)GetProcAddress(hModule, "LsaAddAccountRights");
+    if (lsaAddAccountRights == NULL)
+      return MY_STATUS_NOT_IMPLEMENTED;
+    #endif
+
+    return
+      #ifdef _UNICODE
+      ::LsaAddAccountRights
+      #else
+      lsaAddAccountRights
+      #endif
       (_handle, accountSid, userRights, countOfRights);
-    return res;
   }
   NTSTATUS AddAccountRights(PSID accountSid, PLSA_UNICODE_STRING userRights)
     { return AddAccountRights(accountSid, userRights, 1); }

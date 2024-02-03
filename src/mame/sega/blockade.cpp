@@ -24,8 +24,6 @@
 #include "blockade.lh"
 
 
-namespace {
-
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
@@ -47,7 +45,7 @@ public:
 	{ }
 
 	DECLARE_INPUT_CHANGED_MEMBER(coin_inserted);
-	int coin_r();
+	DECLARE_READ_LINE_MEMBER(coin_r);
 	void coin_latch_w(uint8_t data);
 
 	void videoram_w(offs_t offset, uint8_t data);
@@ -335,7 +333,7 @@ INPUT_CHANGED_MEMBER( blockade_state::coin_inserted )
 		m_maincpu->pulse_input_line(INPUT_LINE_RESET, attotime::zero);
 }
 
-int blockade_state::coin_r()
+READ_LINE_MEMBER( blockade_state::coin_r )
 {
 	return m_coin_latch;
 }
@@ -581,8 +579,6 @@ ROM_START( mineswpr4 )
 	ROM_LOAD_NIB_HIGH("mineswee.cms", 0x000, 0x200, CRC(aad3ce0c) SHA1(92257706ae0c9c1a258eed3311116063e647e1ae))
 	ROM_LOAD_NIB_LOW( "mineswee.cls", 0x000, 0x200, CRC(70959755) SHA1(f62d448742da3fae8bbd96eb3a2714db500cecce))
 ROM_END
-
-} // anonymous namespace
 
 
 //**************************************************************************

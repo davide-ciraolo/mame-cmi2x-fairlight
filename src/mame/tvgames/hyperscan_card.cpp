@@ -65,14 +65,14 @@ void hyperscan_card_device::device_reset()
    call_load()
 -------------------------------------------------*/
 
-std::pair<std::error_condition, std::string> hyperscan_card_device::call_load()
+image_init_result hyperscan_card_device::call_load()
 {
 	if (fread(m_memory, sizeof(m_memory)) != sizeof(m_memory))
-		return std::make_pair(image_error::UNSPECIFIED, std::string());
+		return image_init_result::FAIL;
 
 	battery_load(m_memory, sizeof(m_memory), nullptr);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 

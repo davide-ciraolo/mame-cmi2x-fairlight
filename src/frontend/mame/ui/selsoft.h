@@ -32,11 +32,6 @@ public:
 	menu_select_software(mame_ui_manager &mui, render_container &container, ui_system_info const &system);
 	virtual ~menu_select_software() override;
 
-protected:
-	virtual void recompute_metrics(uint32_t width, uint32_t height, float aspect) override;
-
-	virtual void menu_deactivated() override;
-
 private:
 	using filter_map = std::map<software_filter::type, software_filter::ptr>;
 	using icon_cache = texture_lru<ui_software_info const *>;
@@ -44,8 +39,8 @@ private:
 	struct search_item;
 	class machine_data;
 
-	virtual void populate() override;
-	virtual bool handle(event const *ev) override;
+	virtual void populate(float &customtop, float &custombottom) override;
+	virtual void handle(event const *ev) override;
 
 	// drawing
 	virtual float draw_left_panel(float x1, float y1, float x2, float y2) override;
@@ -65,7 +60,7 @@ private:
 	virtual void inkey_export() override { throw false; }
 
 	// handlers
-	bool inkey_select(const event *menu_event);
+	void inkey_select(const event *menu_event);
 
 	std::map<std::string, std::string>  m_icon_paths;
 	ui_system_info const                &m_system;

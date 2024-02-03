@@ -177,18 +177,21 @@ TIMER_DEVICE_CALLBACK_MEMBER( cgenie_fdc_device::timer_callback )
 
 DEVICE_IMAGE_LOAD_MEMBER( cgenie_fdc_device::socket_load )
 {
-	uint32_t const size = m_socket->common_get_size("rom");
+	uint32_t size = m_socket->common_get_size("rom");
 
 	if (size > 0x1000)
-		return std::make_pair(image_error::INVALIDLENGTH, "Unsupported ROM size (must be no more than 4K)");
+	{
+		image.seterror(image_error::INVALIDIMAGE, "Unsupported ROM size");
+		return image_init_result::FAIL;
+	}
 
 	m_socket->rom_alloc(0x1000, GENERIC_ROM8_WIDTH, ENDIANNESS_LITTLE);
 	m_socket->common_load_rom(m_socket->get_rom_base(), size, "rom");
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
-void cgenie_fdc_device::intrq_w(int state)
+WRITE_LINE_MEMBER( cgenie_fdc_device::intrq_w )
 {
 	if (VERBOSE)
 		logerror("cgenie_fdc_device::intrq_w: %d\n", state);

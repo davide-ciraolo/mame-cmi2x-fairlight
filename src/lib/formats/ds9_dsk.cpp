@@ -49,17 +49,17 @@ ds9_format::ds9_format()
 {
 }
 
-const char *ds9_format::name() const noexcept
+const char *ds9_format::name() const
 {
 	return "a9dsk";
 }
 
-const char *ds9_format::description() const noexcept
+const char *ds9_format::description() const
 {
 	return "Agat-9 840K floppy image";
 }
 
-const char *ds9_format::extensions() const noexcept
+const char *ds9_format::extensions() const
 {
 	return "ds9";
 }
@@ -89,7 +89,7 @@ int ds9_format::identify(util::random_read &io, uint32_t form_factor, const std:
 	return 0;
 }
 
-bool ds9_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool ds9_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	uint8_t track_count, head_count, sector_count;
 	find_size(io, track_count, head_count, sector_count);
@@ -115,7 +115,7 @@ bool ds9_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 		}
 	}
 
-	image.set_variant(floppy_image::DSQD);
+	image->set_variant(floppy_image::DSQD);
 
 	return true;
 }

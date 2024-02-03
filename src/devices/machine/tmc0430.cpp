@@ -94,13 +94,13 @@
 #include "emu.h"
 #include "tmc0430.h"
 
-#define LOG_DETAIL      (1U << 1)     // More detail
-#define LOG_ADDRESS     (1U << 2)     // Address bus
-#define LOG_CLOCK       (1U << 3)     // Clock line
-#define LOG_READY       (1U << 4)     // Ready line
-#define LOG_LINES       (1U << 5)     // Select/mode lines
+#define LOG_DETAIL      (1U<<1)     // More detail
+#define LOG_ADDRESS     (1U<<2)     // Address bus
+#define LOG_CLOCK       (1U<<3)     // Clock line
+#define LOG_READY       (1U<<4)     // Ready line
+#define LOG_LINES       (1U<<5)     // Select/mode lines
 
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE ( LOG_GENERAL )
 
 #include "logmacro.h"
 
@@ -135,7 +135,7 @@ tmc0430_device::tmc0430_device(const machine_config &mconfig, const char *tag, d
 /*
     Direction. When ASSERTed, GROM is set to be read by CPU.
 */
-void tmc0430_device::m_line(int state)
+WRITE_LINE_MEMBER( tmc0430_device::m_line )
 {
 	m_read_mode = (state==ASSERT_LINE);
 	LOGMASKED(LOG_LINES, "GROM %d dir %s\n", m_ident>>13, m_read_mode? "READ" : "WRITE");
@@ -144,7 +144,7 @@ void tmc0430_device::m_line(int state)
 /*
     Mode. When ASSERTed, the address counter will be accessed (read or write).
 */
-void tmc0430_device::mo_line(int state)
+WRITE_LINE_MEMBER( tmc0430_device::mo_line )
 {
 	m_address_mode = (state==ASSERT_LINE);
 	LOGMASKED(LOG_LINES, "GROM %d mode %s\n", m_ident>>13, m_address_mode? "ADDR" : "DATA");
@@ -153,7 +153,7 @@ void tmc0430_device::mo_line(int state)
 /*
     Select. When ASSERTed, the read/write operation is started.
 */
-void tmc0430_device::gsq_line(int state)
+WRITE_LINE_MEMBER( tmc0430_device::gsq_line )
 {
 	if (state==ASSERT_LINE && !m_selected)      // check for edge
 	{
@@ -197,7 +197,7 @@ void tmc0430_device::set_lines(line_state mline, line_state moline, line_state g
     For the emulation we may assume that all GROMs at the same clock line
     raise their outputs synchronously.
 */
-void tmc0430_device::gclock_in(int state)
+WRITE_LINE_MEMBER( tmc0430_device::gclock_in )
 {
 	int bank = 0;
 	uint16_t baddr = 0;
@@ -334,6 +334,7 @@ void tmc0430_device::write(uint8_t data)
 
 void tmc0430_device::device_start()
 {
+	m_gromready.resolve_safe();
 	save_item(NAME(m_current_clock_level));
 	save_item(NAME(m_current_ident));
 	save_item(NAME(m_phase));

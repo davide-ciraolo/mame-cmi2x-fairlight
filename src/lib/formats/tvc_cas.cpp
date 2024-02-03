@@ -10,8 +10,6 @@
 
 #include "tvc_cas.h"
 
-#include "multibyte.h"
-
 
 #define TVC64_BIT0_FREQ     1812
 #define TVC64_BIT1_FREQ     2577
@@ -95,7 +93,7 @@ static cassette_image::error tvc64_cassette_load(cassette_image *cassette)
 
 	uint8_t header[TVC64_HEADER_BYTES];
 	cassette->image_read(header, 0, TVC64_HEADER_BYTES);
-	uint16_t cas_size = get_u16le(&header[0x82]);
+	uint16_t cas_size = (header[0x83]<<8) | header[0x82];
 
 	// tape header
 	tmp_buff[buff_idx++] = 0x00;

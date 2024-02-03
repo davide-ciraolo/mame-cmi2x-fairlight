@@ -17,8 +17,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 class scv_state : public driver_device
 {
 public:
@@ -48,7 +46,7 @@ private:
 	uint8_t portb_r();
 	uint8_t portc_r();
 	void portc_w(uint8_t data);
-	void upd1771_ack_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(upd1771_ack_w);
 	void scv_palette(palette_device &palette) const;
 	uint32_t screen_update_scv(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
@@ -577,7 +575,7 @@ uint32_t scv_state::screen_update_scv(screen_device &screen, bitmap_ind16 &bitma
 }
 
 
-void scv_state::upd1771_ack_w(int state)
+WRITE_LINE_MEMBER( scv_state::upd1771_ack_w )
 {
 	m_maincpu->set_input_line(UPD7810_INTF1, (state) ? ASSERT_LINE : CLEAR_LINE);
 }
@@ -689,8 +687,6 @@ ROM_START( scv_pal )
 	ROM_REGION( 0x400, "charrom", 0 )
 	ROM_LOAD( "epochtv.chr", 0, 0x400, BAD_DUMP CRC(db521533) SHA1(40b4e44838c35191f115437a14f200f052e71509) )
 ROM_END
-
-} // anonymous namespace
 
 
 /*    YEAR  NAME     PARENT  COMPAT  MACHINE  INPUT  CLASS      INIT        COMPANY  FULLNAME                       FLAGS */

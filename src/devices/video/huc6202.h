@@ -37,8 +37,8 @@ public:
 	void io_write(offs_t offset, u8 data);
 	u16 next_pixel();
 	u16 time_until_next_event();
-	void vsync_changed(int state);
-	void hsync_changed(int state);
+	DECLARE_WRITE_LINE_MEMBER( vsync_changed );
+	DECLARE_WRITE_LINE_MEMBER( hsync_changed );
 
 protected:
 	// device-level overrides

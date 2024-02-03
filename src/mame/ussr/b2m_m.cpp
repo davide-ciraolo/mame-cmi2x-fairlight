@@ -92,7 +92,7 @@ void b2m_state::set_bank(int bank)
 }
 
 
-void b2m_state::pit_out1(int state)
+WRITE_LINE_MEMBER(b2m_state::pit_out1)
 {
 	m_speaker->level_w(state);
 }
@@ -119,7 +119,7 @@ uint8_t b2m_state::ppi1_portb_r()
 	return m_video_scroll;
 }
 
-void b2m_state::fdc_drq(int state)
+WRITE_LINE_MEMBER( b2m_state::fdc_drq )
 {
 	/* Clears HALT state of CPU when data is ready to read */
 	if (state)

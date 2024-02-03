@@ -9,18 +9,23 @@
 void sslam_state::draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	gfx_element *gfx = m_gfxdecode->gfx(0);
+	uint16_t *source = m_spriteram;
+	uint16_t *finish = source + 0x1000/2;
 
-	for (int i = 3; i < m_spriteram.length() - 3; i += 4)
+	source += 3; // strange
+
+	while( source<finish )
 	{
-		const uint16_t *src = &m_spriteram[i];
-		if (src[0] & 0x2000) break;
+		int xpos, ypos, number, flipx, colr, eightbyeight;
 
-		int xpos = src[2] & 0x1ff;
-		int ypos = src[0] & 0x01ff;
-		int colr = (src[2] & 0xf000) >> 12;
-		int eightbyeight = src[0] & 0x1000;
-		int flipx = src[0] & 0x4000;
-		int number = src[3];
+		if (source[0] & 0x2000) break;
+
+		xpos = source[2] & 0x1ff;
+		ypos = source[0] & 0x01ff;
+		colr = (source[2] & 0xf000) >> 12;
+		eightbyeight = source[0] & 0x1000;
+		flipx = source[0] & 0x4000;
+		number = source[3];
 
 		xpos -=16; xpos -=7; xpos += m_sprites_x_offset;
 		ypos = 0xff - ypos;
@@ -60,7 +65,10 @@ void sslam_state::draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect)
 				gfx->transpen(bitmap,cliprect,number,colr,0,0,xpos,ypos,0);
 			}
 		}
+
+		source += 4;
 	}
+
 }
 
 

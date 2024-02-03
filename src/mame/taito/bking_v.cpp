@@ -249,7 +249,7 @@ uint32_t bking_state::screen_update_bking(screen_device &screen, bitmap_ind16 &b
 }
 
 
-void bking_state::screen_vblank_bking(int state)
+WRITE_LINE_MEMBER(bking_state::screen_vblank_bking)
 {
 	// rising edge
 	if (state)

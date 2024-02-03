@@ -376,14 +376,14 @@ void vectrex_base_state::via_pa_w(uint8_t data)
 }
 
 
-void vectrex_base_state::via_ca2_w(int state)
+WRITE_LINE_MEMBER(vectrex_base_state::via_ca2_w)
 {
 	if (state == 0)
 		m_zero_integrators_timer->adjust(attotime::from_nsec(ANALOG_DELAY));
 }
 
 
-void vectrex_base_state::via_cb2_w(int state)
+WRITE_LINE_MEMBER(vectrex_base_state::via_cb2_w)
 {
 	if (m_cb2 != state)
 	{

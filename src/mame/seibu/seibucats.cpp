@@ -79,9 +79,6 @@
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
-
 // TBD, assume same as Seibu SPI
 #define MAIN_CLOCK   (XTAL(50'000'000)/2)
 #define PIXEL_CLOCK  (XTAL(28'636'363)/4)
@@ -419,9 +416,6 @@ void seibucats_state::init_seibucats()
 	}
 //  seibuspi_rise11_sprite_decrypt_rfjet(memregion("sprites")->base(), 0x300000);
 }
-
-} // anonymous namespace
-
 
 // Gravure Collection
 // Pakkun Ball TV

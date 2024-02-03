@@ -135,7 +135,7 @@ void pk8020_state::ppi_2_portc_w(uint8_t data)
 	m_printer->write_strobe(!BIT(data, 5));
 }
 
-void pk8020_state::pit_out0(int state)
+WRITE_LINE_MEMBER(pk8020_state::pit_out0)
 {
 	m_sound_level = state;
 

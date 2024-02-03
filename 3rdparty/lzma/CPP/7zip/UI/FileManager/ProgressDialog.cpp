@@ -15,7 +15,7 @@ extern HINSTANCE g_hInstance;
 static const UINT_PTR kTimerID = 3;
 static const UINT kTimerElapse = 100;
 
-#ifdef Z7_LANG
+#ifdef LANG
 #include "LangUtils.h"
 #endif
 
@@ -32,7 +32,7 @@ HRESULT CProgressSync::ProcessStopAndPause()
   return S_OK;
 }
 
-#ifndef Z7_SFX
+#ifndef _SFX
 CProgressDialog::~CProgressDialog()
 {
   AddToTitle(L"");
@@ -45,17 +45,15 @@ void CProgressDialog::AddToTitle(LPCWSTR s)
 #endif
 
 
-#define UNDEFINED_VAL ((UInt64)(Int64)-1)
-
 bool CProgressDialog::OnInit()
 {
-  _range = UNDEFINED_VAL;
-  _prevPercentValue = UNDEFINED_VAL;
+  _range = (UInt64)(Int64)-1;
+  _prevPercentValue = -1;
 
   _wasCreated = true;
   _dialogCreatedEvent.Set();
 
-  #ifdef Z7_LANG
+  #ifdef LANG
   LangSetDlgItems(*this, NULL, 0);
   #endif
 
@@ -116,15 +114,15 @@ bool CProgressDialog::OnTimer(WPARAM /* timerID */, LPARAM /* callback */)
   if (total == 0)
     total = 1;
 
-  const UInt64 percentValue = completed * 100 / total;
+  int percentValue = (int)(completed * 100 / total);
   if (percentValue != _prevPercentValue)
   {
     wchar_t s[64];
     ConvertUInt64ToString(percentValue, s);
     UString title = s;
-    title += "% ";
+    title += L"% ";
     SetText(title + _title);
-    #ifndef Z7_SFX
+    #ifndef _SFX
     AddToTitle(title + MainAddTitle);
     #endif
     _prevPercentValue = percentValue;
@@ -138,11 +136,8 @@ bool CProgressDialog::OnMessage(UINT message, WPARAM wParam, LPARAM lParam)
   {
     case kCloseMessage:
     {
-      if (_timer)
-      {
-        KillTimer(kTimerID);
-        _timer = 0;
-      }
+      KillTimer(_timer);
+      _timer = 0;
       if (_inCancelMessageBox)
       {
         _externalCloseMessageWasReceived = true;
@@ -161,7 +156,7 @@ bool CProgressDialog::OnMessage(UINT message, WPARAM wParam, LPARAM lParam)
   return CModalDialog::OnMessage(message, wParam, lParam);
 }
 
-bool CProgressDialog::OnButtonClicked(unsigned buttonID, HWND buttonHWND)
+bool CProgressDialog::OnButtonClicked(int buttonID, HWND buttonHWND)
 {
   switch (buttonID)
   {

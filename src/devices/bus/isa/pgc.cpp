@@ -32,6 +32,7 @@
 #include "screen.h"
 
 
+//#define LOG_GENERAL (1U << 0) //defined in logmacro.h already
 #define LOG_VRAM    (1U << 1)
 #define LOG_CMD     (1U << 2)
 
@@ -252,7 +253,7 @@ void isa8_pgc_device::device_reset()
 
 //
 
-void isa8_pgc_device::vblank_irq(int state)
+WRITE_LINE_MEMBER(isa8_pgc_device::vblank_irq)
 {
 	if (state)
 	{

@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Jonathan Gevaryahu
-#ifndef MAME_VTECH_SOCRATES_A_H
-#define MAME_VTECH_SOCRATES_A_H
+#ifndef MAME_AUDIO_SOCRATES_H
+#define MAME_AUDIO_SOCRATES_H
 
 #pragma once
 
@@ -41,4 +41,4 @@ private:
 DECLARE_DEVICE_TYPE(SOCRATES_SOUND, socrates_snd_device)
 
 
-#endif // MAME_VTECH_SOCRATES_A_H
+#endif // MAME_AUDIO_SOCRATES_H

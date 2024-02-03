@@ -31,21 +31,22 @@ public:
 	auto rom_out_cb() { return m_rom_out_cb.bind(); }
 
 	// control line handlers
-	void clock_w(int state);
-	void reset_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(clock_w);
+	DECLARE_WRITE_LINE_MEMBER(reset_w);
 
 	// getters
 	u32 count() const { return m_count; }
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_validity_check(validity_checker &valid) const override;
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_clock_changed() override;
 
-	// device_rom_interface implementation
+	// device_rom_interface overrides
 	virtual space_config_vector memory_space_config() const override;
-	virtual void rom_bank_post_change() override;
+	virtual void rom_bank_updated() override;
 
 	TIMER_CALLBACK_MEMBER(advance_counter);
 

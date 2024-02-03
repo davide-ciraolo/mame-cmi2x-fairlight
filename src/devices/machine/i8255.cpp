@@ -220,15 +220,15 @@ i8255_device::i8255_device(const machine_config &mconfig, device_type type, cons
 	, m_force_portb_in(is_ams40489)
 	, m_force_portc_out(is_ams40489)
 	, m_dont_clear_output_latches(is_ams40489)
-	, m_in_pa_cb(*this, 0)
-	, m_in_pb_cb(*this, 0)
-	, m_in_pc_cb(*this, 0)
+	, m_in_pa_cb(*this)
+	, m_in_pb_cb(*this)
+	, m_in_pc_cb(*this)
 	, m_out_pa_cb(*this)
 	, m_out_pb_cb(*this)
 	, m_out_pc_cb(*this)
-	, m_tri_pa_cb(*this, 0xff)
-	, m_tri_pb_cb(*this, 0xff)
-	, m_tri_pc_cb(*this, 0xff)
+	, m_tri_pa_cb(*this)
+	, m_tri_pb_cb(*this)
+	, m_tri_pc_cb(*this)
 	, m_control(0)
 	, m_intr{ 0, 0 }
 {
@@ -237,6 +237,20 @@ i8255_device::i8255_device(const machine_config &mconfig, device_type type, cons
 i8255_device::i8255_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: i8255_device(mconfig, I8255, tag, owner, clock, false)
 {
+}
+
+void i8255_device::device_resolve_objects()
+{
+	// resolve callbacks
+	m_in_pa_cb.resolve_safe(0);
+	m_in_pb_cb.resolve_safe(0);
+	m_in_pc_cb.resolve_safe(0);
+	m_out_pa_cb.resolve_safe();
+	m_out_pb_cb.resolve_safe();
+	m_out_pc_cb.resolve_safe();
+	m_tri_pa_cb.resolve_safe(0xff);
+	m_tri_pb_cb.resolve_safe(0xff);
+	m_tri_pc_cb.resolve_safe(0xff);
 }
 
 //-------------------------------------------------
@@ -863,7 +877,7 @@ uint8_t i8255_device::ackb_r()
 }
 
 
-void i8255_device::pc2_w(int state)
+WRITE_LINE_MEMBER( i8255_device::pc2_w )
 {
 	if (group_mode(GROUP_B) == 1)
 	{
@@ -896,7 +910,7 @@ void i8255_device::pc2_w(int state)
 }
 
 
-void i8255_device::pc4_w(int state)
+WRITE_LINE_MEMBER( i8255_device::pc4_w )
 {
 	if ((group_mode(GROUP_A) == 2) || ((group_mode(GROUP_A) == 1) && (port_mode(PORT_A) == MODE_INPUT)))
 	{
@@ -915,7 +929,7 @@ void i8255_device::pc4_w(int state)
 }
 
 
-void i8255_device::pc6_w(int state)
+WRITE_LINE_MEMBER( i8255_device::pc6_w )
 {
 	if ((group_mode(GROUP_A) == 2) || ((group_mode(GROUP_A) == 1) && (port_mode(PORT_A) == MODE_OUTPUT)))
 	{

@@ -321,13 +321,13 @@ private:
 	{
 		auto length = image.length();
 		if (length > m_u13.bytes())
-			return std::make_pair(image_error::INVALIDLENGTH, std::string());
+			return image_init_result::FAIL;
 
 		if (image.fread(m_u13, length) != length)
-			return std::make_pair(image_error::UNSPECIFIED, std::string());
+			return image_init_result::FAIL;
 
 		m_maincpu->set_pc(0x6000);
-		return std::make_pair(std::error_condition(), std::string());
+		return image_init_result::PASS;
 	}
 };
 

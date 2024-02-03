@@ -125,9 +125,6 @@ namespace {
 	}
 }
 
-
-namespace {
-
 // **** Constants ****
 static constexpr unsigned CPU_CLOCK = 613000;
 // Time taken by hw timer updating (semi-made up) (in µsec)
@@ -206,7 +203,6 @@ protected:
 
 	// State of keyboard
 	ioport_value m_kb_state[ 3 ];
-	bool m_int_kb_enabled;
 	bool m_kb_enable;
 	bool m_kb_pressed;
 	bool m_kb_flipped;
@@ -329,7 +325,6 @@ void hp80_base_state::machine_start()
 	save_item(NAME(m_halt_lines));
 	save_pointer(NAME(m_kb_state) , 3);
 	save_item(NAME(m_kb_enable));
-	save_item(NAME(m_int_kb_enabled));
 	save_item(NAME(m_kb_pressed));
 	save_item(NAME(m_kb_flipped));
 	save_item(NAME(m_kb_lang_readout));
@@ -351,7 +346,6 @@ void hp80_base_state::machine_reset()
 	m_kb_state[ 2 ] = 0;
 	m_kb_keycode = 0xff;
 	m_kb_enable = true;
-	m_int_kb_enabled = false;
 	m_kb_pressed = false;
 	m_kb_flipped = false;
 	m_kb_lang_readout = false;
@@ -469,9 +463,6 @@ void hp80_base_state::keysts_w(uint8_t data)
 	if (m_has_int_keyb) {
 		m_kb_lang_readout = BIT(data , 2);
 		m_kb_raw_readout = BIT(data , 3);
-		if (!m_int_kb_enabled && (data & 0x0f) == 1) {
-			m_int_kb_enabled = true;
-		}
 	}
 	m_dac->write(BIT(data , 5));
 	m_beep->set_state(BIT(data , 6));
@@ -726,7 +717,7 @@ TIMER_DEVICE_CALLBACK_MEMBER(hp80_base_state::kb_scan)
 	input[ 1 ] = m_io_key1->read();
 	input[ 2 ] = m_io_key2->read();
 
-	if (m_kb_enable && (!m_has_int_keyb || m_int_kb_enabled)) {
+	if (m_kb_enable) {
 		uint8_t row;
 		uint8_t col;
 
@@ -994,7 +985,7 @@ private:
 	virtual void machine_reset() override;
 
 	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	void vblank_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank_w);
 
 	uint8_t crtc_r(offs_t offset);
 	void crtc_w(offs_t offset, uint8_t data);
@@ -1098,7 +1089,7 @@ uint32_t hp85_state::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, 
 	return 0;
 }
 
-void hp85_state::vblank_w(int state)
+WRITE_LINE_MEMBER(hp85_state::vblank_w)
 {
 	COPY_BIT(!state , m_crt_sts , CRT_STS_DISPLAY_BIT);
 	if (state) {
@@ -1642,7 +1633,7 @@ protected:
 
 private:
 	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	void vblank_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank_w);
 	attotime time_to_video_mem_availability() const;
 
 	required_device<screen_device> m_screen;
@@ -1697,7 +1688,7 @@ private:
 	void emc_w(offs_t offset, uint8_t data);
 	uint32_t& get_ptr();
 	void ptr12_decrement();
-	void lma_cycle(int state);
+	DECLARE_WRITE_LINE_MEMBER(lma_cycle);
 	void opcode_cb(uint8_t opcode);
 };
 
@@ -1809,7 +1800,7 @@ uint32_t hp86_state::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, 
 	return 0;
 }
 
-void hp86_state::vblank_w(int state)
+WRITE_LINE_MEMBER(hp86_state::vblank_w)
 {
 	COPY_BIT(state , m_crt_sts , 4);
 	if (state) {
@@ -2098,7 +2089,7 @@ void hp86_state::ptr12_decrement()
 	}
 }
 
-void hp86_state::lma_cycle(int state)
+WRITE_LINE_MEMBER(hp86_state::lma_cycle)
 {
 	m_lmard = state;
 	if (m_emc_state == EMC_INDIRECT_1) {
@@ -2440,9 +2431,6 @@ ROM_START(hp86b_004)
 	ROM_REGION(0x500 , "chargen" , 0)
 	ROM_LOAD("chrgen.bin" , 0 , 0x500 , CRC(c7d04292) SHA1(b86ed801ee9f7a57b259374b8a9810572cb03230))
 ROM_END
-
-} // anonymous namespace
-
 
 COMP( 1980, hp85,      0,     0, hp85, hp85,     hp85_state,     empty_init, "HP", "HP 85", 0)
 COMP( 1983, hp86b,     0,     0, hp86, hp86,     hp86_state,     empty_init, "HP", "HP 86B",0)

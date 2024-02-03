@@ -32,8 +32,6 @@ http://www.stuartconner.me.uk/tms9995_breadboard/tms9995_breadboard.htm
 #include "machine/terminal.h"
 
 
-namespace {
-
 class evmbug_state : public driver_device
 {
 public:
@@ -192,9 +190,6 @@ ROM_START( tms9995bb )
 	ROM_SYSTEM_BIOS( 6, "test3", "Test EPROM 3")
 	ROMX_LOAD( "test3.bin",    0x0000, 0x8000, CRC(a28579eb) SHA1(477f853970f132592714bcdd048ec932e96c8593), ROM_BIOS(6) )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

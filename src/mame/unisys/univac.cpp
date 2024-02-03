@@ -109,6 +109,7 @@ After entering the characters, press FCTN and CTRL PAGE keys again to save the s
 #include "screen.h"
 #include "speaker.h"
 
+#define LOG_GENERAL (1U << 0)
 #define LOG_PARITY  (1U << 1)
 #define LOG_NVRAM   (1U << 2)
 
@@ -167,21 +168,21 @@ private:
 	void bank_w(offs_t offset, u8 data);
 	void nvram_w(offs_t offset, u8 data);
 
-	void nvram_protect_w(int state);
-	void select_disp_w(int state);
-	void ram_control_w(int state);
-	void parity_poison_w(int state);
-	void display_enable_w(int state);
-	void alarm_enable_w(int state);
-	void sio_loopback_w(int state);
-	void sio_txda_w(int state);
-	void sio_txdb_w(int state);
-	void aux_rxd_w(int state);
-	void sio_rtsb_w(int state);
-	void sio_wrdyb_w(int state);
-	void aux_dsr_w(int state);
-	void loopback_rxcb_w(int state);
-	void porte6_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(nvram_protect_w);
+	DECLARE_WRITE_LINE_MEMBER(select_disp_w);
+	DECLARE_WRITE_LINE_MEMBER(ram_control_w);
+	DECLARE_WRITE_LINE_MEMBER(parity_poison_w);
+	DECLARE_WRITE_LINE_MEMBER(display_enable_w);
+	DECLARE_WRITE_LINE_MEMBER(alarm_enable_w);
+	DECLARE_WRITE_LINE_MEMBER(sio_loopback_w);
+	DECLARE_WRITE_LINE_MEMBER(sio_txda_w);
+	DECLARE_WRITE_LINE_MEMBER(sio_txdb_w);
+	DECLARE_WRITE_LINE_MEMBER(aux_rxd_w);
+	DECLARE_WRITE_LINE_MEMBER(sio_rtsb_w);
+	DECLARE_WRITE_LINE_MEMBER(sio_wrdyb_w);
+	DECLARE_WRITE_LINE_MEMBER(aux_dsr_w);
+	DECLARE_WRITE_LINE_MEMBER(loopback_rxcb_w);
+	DECLARE_WRITE_LINE_MEMBER(porte6_w);
 
 	u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
@@ -274,7 +275,7 @@ void univac_state::nvram_w(offs_t offset, u8 data)
 		m_p_nvram[offset] = data | 0xf0;
 }
 
-void univac_state::nvram_protect_w(int state)
+WRITE_LINE_MEMBER(univac_state::nvram_protect_w)
 {
 	// There seems to be some timing-based write protection related to the CTC's TRG0 input.
 	// The present implementation is a crude approximation of a wild guess.
@@ -290,27 +291,27 @@ void univac_state::nvram_protect_w(int state)
 	}
 }
 
-void univac_state::select_disp_w(int state)
+WRITE_LINE_MEMBER(univac_state::select_disp_w)
 {
 	m_disp_mask = state ? 0x2000 : 0x0000;
 }
 
-void univac_state::ram_control_w(int state)
+WRITE_LINE_MEMBER(univac_state::ram_control_w)
 {
 	m_bank_mask = state ? 0x2000 : 0x0000;
 }
 
-void univac_state::parity_poison_w(int state)
+WRITE_LINE_MEMBER(univac_state::parity_poison_w)
 {
 	m_parity_poison = state;
 }
 
-void univac_state::display_enable_w(int state)
+WRITE_LINE_MEMBER(univac_state::display_enable_w)
 {
 	m_display_enable = state;
 }
 
-void univac_state::alarm_enable_w(int state)
+WRITE_LINE_MEMBER(univac_state::alarm_enable_w)
 {
 	m_alarm_enable = state;
 	if (!state)
@@ -320,7 +321,7 @@ void univac_state::alarm_enable_w(int state)
 	}
 }
 
-void univac_state::sio_loopback_w(int state)
+WRITE_LINE_MEMBER(univac_state::sio_loopback_w)
 {
 	if (state)
 	{
@@ -352,14 +353,14 @@ void univac_state::sio_loopback_w(int state)
 	m_loopback_control = state;
 }
 
-void univac_state::sio_txda_w(int state)
+WRITE_LINE_MEMBER(univac_state::sio_txda_w)
 {
 	m_sio_txda = state;
 	if (m_loopback_control)
 		m_sio->rxa_w(state);
 }
 
-void univac_state::sio_txdb_w(int state)
+WRITE_LINE_MEMBER(univac_state::sio_txdb_w)
 {
 	m_sio_txdb = state;
 	if (m_loopback_control)
@@ -368,14 +369,14 @@ void univac_state::sio_txdb_w(int state)
 		m_printer->write_txd(state);
 }
 
-void univac_state::aux_rxd_w(int state)
+WRITE_LINE_MEMBER(univac_state::aux_rxd_w)
 {
 	m_aux_rxd = state;
 	if (!m_loopback_control)
 		m_sio->rxb_w(state);
 }
 
-void univac_state::sio_rtsb_w(int state)
+WRITE_LINE_MEMBER(univac_state::sio_rtsb_w)
 {
 	m_sio_rtsb = state;
 	if (m_loopback_control)
@@ -384,7 +385,7 @@ void univac_state::sio_rtsb_w(int state)
 		m_printer->write_rts(state);
 }
 
-void univac_state::sio_wrdyb_w(int state)
+WRITE_LINE_MEMBER(univac_state::sio_wrdyb_w)
 {
 	m_sio_wrdyb = state;
 	if (m_loopback_control)
@@ -396,7 +397,7 @@ void univac_state::sio_wrdyb_w(int state)
 		m_keyboard->ready_w(state);
 }
 
-void univac_state::aux_dsr_w(int state)
+WRITE_LINE_MEMBER(univac_state::aux_dsr_w)
 {
 	m_aux_dsr = state;
 	if (!m_loopback_control)
@@ -406,13 +407,13 @@ void univac_state::aux_dsr_w(int state)
 	}
 }
 
-void univac_state::loopback_rxcb_w(int state)
+WRITE_LINE_MEMBER(univac_state::loopback_rxcb_w)
 {
 	if (m_loopback_control)
 		m_sio->rxcb_w(state);
 }
 
-void univac_state::porte6_w(int state)
+WRITE_LINE_MEMBER(univac_state::porte6_w)
 {
 	//m_beep->set_state(state); // not sure what belongs here, but it isn't the beeper
 }

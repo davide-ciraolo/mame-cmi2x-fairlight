@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/asst128_dsk.cpp
+    formats/asst128_dsk.c
 
     asst128 format
 
@@ -14,17 +14,17 @@ asst128_format::asst128_format() : upd765_format(formats)
 {
 }
 
-const char *asst128_format::name() const noexcept
+const char *asst128_format::name() const
 {
 	return "asst128";
 }
 
-const char *asst128_format::description() const noexcept
+const char *asst128_format::description() const
 {
 	return "ASST128 disk image";
 }
 
-const char *asst128_format::extensions() const noexcept
+const char *asst128_format::extensions() const
 {
 	return "img";
 }

@@ -1,15 +1,13 @@
 // license:BSD-3-Clause
 // copyright-holders:Hans Andersson
-
 /*************************************************************************
 
-    atari\tank8_a.cpp
+    audio\tank8.c
 
 *************************************************************************/
 #include "emu.h"
-
-#include "tank8_a.h"
-
+#include "tank8.h"
+#include "sound/discrete.h"
 
 
 /************************************************************************/

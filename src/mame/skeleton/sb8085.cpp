@@ -47,9 +47,6 @@
 #include "machine/i8155.h"
 #include "machine/i8251.h"
 
-
-namespace {
-
 class sb8085_state : public driver_device
 {
 public:
@@ -81,12 +78,12 @@ private:
 	void mem_w(offs_t offset, u8 data);
 	u8 in_r(offs_t offset);
 	void out_w(offs_t offset, u8 data);
-	void phantom_disable_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(phantom_disable_w);
 
-	void printer_select_w(int state);
-	void usart_txd_w(int state);
-	void crt_rts_w(int state);
-	void printer_rts_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(printer_select_w);
+	DECLARE_WRITE_LINE_MEMBER(usart_txd_w);
+	DECLARE_WRITE_LINE_MEMBER(crt_rts_w);
+	DECLARE_WRITE_LINE_MEMBER(printer_rts_w);
 
 	void mem_map(address_map &map);
 	void io_map(address_map &map);
@@ -199,13 +196,13 @@ void sb8085_state::out_w(offs_t offset, u8 data)
 		m_s100->sout_w(offset, data);
 }
 
-void sb8085_state::phantom_disable_w(int state)
+WRITE_LINE_MEMBER(sb8085_state::phantom_disable_w)
 {
 	if (!state)
 		m_phantom = true;
 }
 
-void sb8085_state::printer_select_w(int state)
+WRITE_LINE_MEMBER(sb8085_state::printer_select_w)
 {
 	if (state && m_printer_select)
 	{
@@ -223,7 +220,7 @@ void sb8085_state::printer_select_w(int state)
 	}
 }
 
-void sb8085_state::usart_txd_w(int state)
+WRITE_LINE_MEMBER(sb8085_state::usart_txd_w)
 {
 	m_usart_txd = state;
 	if (m_printer_select)
@@ -232,14 +229,14 @@ void sb8085_state::usart_txd_w(int state)
 		m_crt->write_txd(state);
 }
 
-void sb8085_state::crt_rts_w(int state)
+WRITE_LINE_MEMBER(sb8085_state::crt_rts_w)
 {
 	m_crt_rts = state;
 	if (!m_printer_select)
 		m_usart->write_cts(state);
 }
 
-void sb8085_state::printer_rts_w(int state)
+WRITE_LINE_MEMBER(sb8085_state::printer_rts_w)
 {
 	m_printer_rts = state;
 	if (m_printer_select)
@@ -323,8 +320,5 @@ ROM_START(sb8085)
 	ROM_LOAD("2.u20", 0x400, 0x400, CRC(2426af98) SHA1(b6e37041f997aeea13be79df10dc410f4b0c51a6))
 	ROM_LOAD("3.u21", 0x800, 0x400, CRC(088ad01b) SHA1(6832e63dc1769db09107bc09f4c2cfb158dd8d33))
 ROM_END
-
-} // anonymous namespace
-
 
 COMP(1977, sb8085, 0, 0, sb8085, sb8085, sb8085_state, empty_init, "Space Byte", "Space Byte 8085", MACHINE_NOT_WORKING | MACHINE_NO_SOUND_HW)

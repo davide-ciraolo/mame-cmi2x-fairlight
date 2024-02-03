@@ -132,10 +132,6 @@ SOURCE=..\..\..\Windows\FileIO.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\Windows\NtCheck.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\..\Windows\PropVariant.cpp
 # End Source File
 # Begin Source File
@@ -144,11 +140,11 @@ SOURCE=..\..\..\Windows\PropVariant.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\Windows\Registry.cpp
+SOURCE=..\..\..\Windows\Synchronization.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\Windows\Registry.h
+SOURCE=..\..\..\Windows\Synchronization.h
 # End Source File
 # Begin Source File
 
@@ -157,14 +153,6 @@ SOURCE=..\..\..\Windows\System.cpp
 # Begin Source File
 
 SOURCE=..\..\..\Windows\System.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Windows\SystemInfo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Windows\SystemInfo.h
 # End Source File
 # Begin Source File
 
@@ -181,10 +169,6 @@ SOURCE=..\..\..\Common\CommandLineParser.cpp
 # Begin Source File
 
 SOURCE=..\..\..\Common\CommandLineParser.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Common\Common.h
 # End Source File
 # Begin Source File
 
@@ -212,27 +196,7 @@ SOURCE=..\..\..\Common\IntToString.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\Common\LzFindPrepare.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Common\MyBuffer.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Common\MyBuffer2.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\..\Common\MyCom.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Common\MyInitGuid.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Common\MyLinux.h
 # End Source File
 # Begin Source File
 
@@ -241,10 +205,6 @@ SOURCE=..\..\..\Common\MyString.cpp
 # Begin Source File
 
 SOURCE=..\..\..\Common\MyString.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Common\MyTypes.h
 # End Source File
 # Begin Source File
 
@@ -294,14 +254,6 @@ SOURCE=..\..\..\Common\StringToInt.h
 
 SOURCE=..\..\..\Common\Types.h
 # End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Common\Wildcard.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\Common\Wildcard.h
-# End Source File
 # End Group
 # Begin Group "7zip Common"
 
@@ -348,14 +300,6 @@ SOURCE=..\..\Common\MethodProps.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\Common\StreamObjects.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Common\StreamObjects.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\Common\StreamUtils.cpp
 # End Source File
 # Begin Source File
@@ -373,6 +317,14 @@ SOURCE=..\..\UI\Common\Bench.cpp
 # Begin Source File
 
 SOURCE=..\..\UI\Common\Bench.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\UI\Common\LoadCodecs.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\UI\Common\LoadCodecs.h
 # End Source File
 # End Group
 # Begin Group "Console"
@@ -418,10 +370,6 @@ SOURCE=..\..\..\..\C\7zTypes.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\..\C\7zWindows.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\..\..\C\Alloc.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -431,12 +379,22 @@ SOURCE=..\..\..\..\C\Alloc.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\..\..\C\Bra.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\..\C\Bra.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\..\C\Bra86.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\..\C\Compiler.h
+SOURCE=..\..\..\..\C\BraIA64.c
+# SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
 
@@ -464,11 +422,6 @@ SOURCE=..\..\..\..\C\LzFindMt.c
 # Begin Source File
 
 SOURCE=..\..\..\..\C\LzFindMt.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\..\C\LzFindOpt.c
-# SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
 
@@ -514,22 +467,6 @@ SOURCE=..\..\..\..\C\Threads.c
 # Begin Source File
 
 SOURCE=..\..\..\..\C\Threads.h
-# End Source File
-# End Group
-# Begin Group "7zip"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\ICoder.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\IDecl.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\IProgress.h
 # End Source File
 # End Group
 # Begin Source File

@@ -5,8 +5,8 @@
     Sega X-Board hardware
 
 ***************************************************************************/
-#ifndef MAME_SEGA_SEGAXBD_H
-#define MAME_SEGA_SEGAXBD_H
+#ifndef MAME_INCLUDES_SEGAXBD_H
+#define MAME_INCLUDES_SEGAXBD_H
 
 #pragma once
 
@@ -91,11 +91,11 @@ protected:
 
 	// internal helpers
 	void update_main_irqs();
-	void m68k_reset_callback(int state);
+	DECLARE_WRITE_LINE_MEMBER(m68k_reset_callback);
 	void generic_iochip0_lamps_w(uint8_t data);
 
 	// compare/timer chip callbacks
-	void timer_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(timer_irq_w);
 
 	void pc_0_w(uint8_t data);
 	void pd_0_w(uint8_t data);
@@ -241,4 +241,4 @@ private:
 	uint8_t m_commram_bank = 0;
 };
 
-#endif // MAME_SEGA_SEGAXBD_H
+#endif // MAME_INCLUDES_SEGAXBD_H

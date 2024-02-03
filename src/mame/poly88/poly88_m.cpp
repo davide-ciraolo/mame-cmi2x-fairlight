@@ -129,7 +129,7 @@ TIMER_DEVICE_CALLBACK_MEMBER( poly88_state::kansas_r )
 	}
 }
 
-void poly88_state::cassette_clock_w(int state)
+WRITE_LINE_MEMBER(poly88_state::cassette_clock_w)
 {
 	// incoming @4800Hz (bit), 2400Hz (polyphase)
 	if (BIT(m_linec->read(), 7))
@@ -205,7 +205,7 @@ TIMER_DEVICE_CALLBACK_MEMBER(poly88_state::rtc_tick)
 	m_maincpu->set_input_line(0, HOLD_LINE);
 }
 
-void poly88_state::vi2_w(int state)
+WRITE_LINE_MEMBER(poly88_state::vi2_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -214,7 +214,7 @@ void poly88_state::vi2_w(int state)
 	}
 }
 
-void poly88_state::vi5_w(int state)
+WRITE_LINE_MEMBER(poly88_state::vi5_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -223,7 +223,7 @@ void poly88_state::vi5_w(int state)
 	}
 }
 
-void poly88_state::usart_ready_w(int state)
+WRITE_LINE_MEMBER(poly88_state::usart_ready_w)
 {
 	if (state)
 	{
@@ -310,5 +310,5 @@ SNAPSHOT_LOAD_MEMBER(poly88_state::snapshot_cb)
 		pos+=recordLen;
 	}
 	m_usart->reset();
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }

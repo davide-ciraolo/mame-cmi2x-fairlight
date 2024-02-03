@@ -47,7 +47,7 @@ protected:
 	required_ioport m_dsw;
 
 private:
-	void pci_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pci_irq_w);
 };
 
 

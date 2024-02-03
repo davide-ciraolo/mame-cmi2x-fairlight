@@ -24,7 +24,7 @@
 class font_module
 {
 public:
-	virtual ~font_module() = default;
+	virtual ~font_module() { }
 
 	/** attempt to allocate a font instance */
 	virtual osd_font::ptr font_alloc() = 0;

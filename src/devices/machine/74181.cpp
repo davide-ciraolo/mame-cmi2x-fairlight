@@ -132,7 +132,7 @@ void ttl74181_device::select_w(uint8_t data)
 	}
 }
 
-void ttl74181_device::mode_w(int state)
+WRITE_LINE_MEMBER( ttl74181_device::mode_w )
 {
 	if (m_m != state)
 	{
@@ -141,7 +141,7 @@ void ttl74181_device::mode_w(int state)
 	}
 }
 
-void ttl74181_device::carry_w(int state)
+WRITE_LINE_MEMBER( ttl74181_device::carry_w )
 {
 	if (m_c != state)
 	{

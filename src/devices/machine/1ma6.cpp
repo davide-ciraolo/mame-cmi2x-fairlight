@@ -181,7 +181,7 @@ uint8_t hp_1ma6_device::reg_r(offs_t offset)
 	return res;
 }
 
-void hp_1ma6_device::cart_out_w(int state)
+WRITE_LINE_MEMBER(hp_1ma6_device::cart_out_w)
 {
 	LOG_DBG("cart_out_w %d\n" , state);
 	if (state) {
@@ -190,7 +190,7 @@ void hp_1ma6_device::cart_out_w(int state)
 	}
 }
 
-void hp_1ma6_device::hole_w(int state)
+WRITE_LINE_MEMBER(hp_1ma6_device::hole_w)
 {
 	if (state) {
 		LOG_DBG("hole_w\n");
@@ -198,7 +198,7 @@ void hp_1ma6_device::hole_w(int state)
 	}
 }
 
-void hp_1ma6_device::tacho_tick_w(int state)
+WRITE_LINE_MEMBER(hp_1ma6_device::tacho_tick_w)
 {
 	if (state) {
 		LOG_DBG("tacho_tick_w\n");
@@ -206,7 +206,7 @@ void hp_1ma6_device::tacho_tick_w(int state)
 	}
 }
 
-void hp_1ma6_device::motion_w(int state)
+WRITE_LINE_MEMBER(hp_1ma6_device::motion_w)
 {
 	if (state) {
 		LOG_DBG("motion_w @%.6f st=%d\n" , machine().time().as_double() , m_cmd_state);
@@ -279,7 +279,7 @@ void hp_1ma6_device::motion_w(int state)
 	}
 }
 
-void hp_1ma6_device::rd_bit_w(int state)
+WRITE_LINE_MEMBER(hp_1ma6_device::rd_bit_w)
 {
 	LOG_RW("RD bit %d (st=%d,sr=%02x,i=%u)\n" , state , m_cmd_state , m_data_sr , m_bit_idx);
 	switch (m_cmd_state) {
@@ -319,7 +319,7 @@ void hp_1ma6_device::rd_bit_w(int state)
 	}
 }
 
-int hp_1ma6_device::wr_bit_r()
+READ_LINE_MEMBER(hp_1ma6_device::wr_bit_r)
 {
 	bool bit = m_cmd_state == CMD_WR_PREAMBLE ? false : BIT(m_data_sr , m_bit_idx);
 	if (m_bit_idx) {

@@ -2,28 +2,7 @@
 
 #include "StdAfx.h"
 
-// #include <stdio.h>
-
-#ifndef _WIN32
-// #include <grp.h>
-// #include <pwd.h>
-/*
-inclusion of <sys/sysmacros.h> by <sys/types.h> is deprecated since glibc 2.25.
-Since glibc 2.3.3, macros have been aliases for three GNU-specific
-functions: gnu_dev_makedev(), gnu_dev_major(), and gnu_dev_minor()
-*/
-// for major()/minor():
-#include <sys/types.h>
-#if defined(__FreeBSD__) || defined(BSD) || defined(__APPLE__)
-#else
-#ifndef major
-#include <sys/sysmacros.h>
-#endif
-#endif
-
-#endif // _WIN32
-
-#ifndef Z7_ST
+#ifndef _7ZIP_ST
 #include "../../../Windows/Synchronization.h"
 #endif
 
@@ -31,7 +10,6 @@ functions: gnu_dev_makedev(), gnu_dev_major(), and gnu_dev_minor()
 #include "../../../Common/IntToString.h"
 #include "../../../Common/StringConvert.h"
 #include "../../../Common/Wildcard.h"
-#include "../../../Common/UTFConvert.h"
 
 #include "../../../Windows/FileDir.h"
 #include "../../../Windows/FileName.h"
@@ -42,14 +20,14 @@ functions: gnu_dev_makedev(), gnu_dev_major(), and gnu_dev_minor()
 #include "UpdateCallback.h"
 
 #if defined(_WIN32) && !defined(UNDER_CE)
-#define Z7_USE_SECURITY_CODE
+#define _USE_SECURITY_CODE
 #include "../../../Windows/SecurityUtils.h"
 #endif
 
 using namespace NWindows;
 using namespace NFile;
 
-#ifndef Z7_ST
+#ifndef _7ZIP_ST
 static NSynchronization::CCriticalSection g_CriticalSection;
 #define MT_LOCK NSynchronization::CCriticalSectionLock lock(g_CriticalSection);
 #else
@@ -57,32 +35,12 @@ static NSynchronization::CCriticalSection g_CriticalSection;
 #endif
 
 
-#ifdef Z7_USE_SECURITY_CODE
+#ifdef _USE_SECURITY_CODE
 bool InitLocalPrivileges();
 #endif
 
 CArchiveUpdateCallback::CArchiveUpdateCallback():
-    PreserveATime(false),
-    ShareForWrite(false),
-    StopAfterOpenError(false),
-    StdInMode(false),
-    
-    KeepOriginalItemNames(false),
-    StoreNtSecurity(false),
-    StoreHardLinks(false),
-    StoreSymLinks(false),
-
-   #ifndef _WIN32
-    StoreOwnerId(false),
-    StoreOwnerName(false),
-   #endif
-
-    /*
-    , Need_ArcMTime_Report(false),
-    , ArcMTime_WasReported(false),
-    */
-    Need_LatestMTime(false),
-    LatestMTime_Defined(false),
+    _hardIndex_From((UInt32)(Int32)-1),
     
     Callback(NULL),
   
@@ -93,33 +51,38 @@ CArchiveUpdateCallback::CArchiveUpdateCallback():
     ArcItems(NULL),
     UpdatePairs(NULL),
     NewNames(NULL),
-    Comment(NULL),
-    CommentIndex(-1),
     
-    ProcessedItemsStatuses(NULL),
-    _hardIndex_From((UInt32)(Int32)-1)
+    ShareForWrite(false),
+    StdInMode(false),
+    
+    KeepOriginalItemNames(false),
+    StoreNtSecurity(false),
+    StoreHardLinks(false),
+    StoreSymLinks(false),
+    
+    ProcessedItemsStatuses(NULL)
 {
-  #ifdef Z7_USE_SECURITY_CODE
+  #ifdef _USE_SECURITY_CODE
   _saclEnabled = InitLocalPrivileges();
   #endif
 }
 
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::SetTotal(UInt64 size))
+STDMETHODIMP CArchiveUpdateCallback::SetTotal(UInt64 size)
 {
   COM_TRY_BEGIN
   return Callback->SetTotal(size);
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::SetCompleted(const UInt64 *completeValue))
+STDMETHODIMP CArchiveUpdateCallback::SetCompleted(const UInt64 *completeValue)
 {
   COM_TRY_BEGIN
   return Callback->SetCompleted(completeValue);
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::SetRatioInfo(const UInt64 *inSize, const UInt64 *outSize))
+STDMETHODIMP CArchiveUpdateCallback::SetRatioInfo(const UInt64 *inSize, const UInt64 *outSize)
 {
   COM_TRY_BEGIN
   return Callback->SetRatioInfo(inSize, outSize);
@@ -140,17 +103,17 @@ static const CStatProp kProps[] =
   { NULL, kpidIsAnti, VT_BOOL}
 };
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::EnumProperties(IEnumSTATPROPSTG **)
+STDMETHODIMP CArchiveUpdateCallback::EnumProperties(IEnumSTATPROPSTG **)
 {
-  return CStatPropEnumerator::CreateEnumerator(kProps, Z7_ARRAY_SIZE(kProps), enumerator);
+  return CStatPropEnumerator::CreateEnumerator(kProps, ARRAY_SIZE(kProps), enumerator);
 }
 */
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetUpdateItemInfo(UInt32 index,
-      Int32 *newData, Int32 *newProps, UInt32 *indexInArchive))
+STDMETHODIMP CArchiveUpdateCallback::GetUpdateItemInfo(UInt32 index,
+      Int32 *newData, Int32 *newProps, UInt32 *indexInArchive)
 {
   COM_TRY_BEGIN
-  RINOK(Callback->CheckBreak())
+  RINOK(Callback->CheckBreak());
   const CUpdatePair2 &up = (*UpdatePairs)[index];
   if (newData) *newData = BoolToInt(up.NewData);
   if (newProps) *newProps = BoolToInt(up.NewProps);
@@ -158,37 +121,35 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetUpdateItemInfo(UInt32 index,
   {
     *indexInArchive = (UInt32)(Int32)-1;
     if (up.ExistInArchive())
-      *indexInArchive = ArcItems ? (*ArcItems)[(unsigned)up.ArcIndex].IndexInServer : (UInt32)(Int32)up.ArcIndex;
+      *indexInArchive = (ArcItems == 0) ? up.ArcIndex : (*ArcItems)[up.ArcIndex].IndexInServer;
   }
   return S_OK;
   COM_TRY_END
 }
 
-
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetRootProp(PROPID propID, PROPVARIANT *value))
+STDMETHODIMP CArchiveUpdateCallback::GetRootProp(PROPID propID, PROPVARIANT *value)
 {
   NCOM::CPropVariant prop;
   switch (propID)
   {
     case kpidIsDir:  prop = true; break;
-    case kpidAttrib: if (ParentDirItem) prop = ParentDirItem->GetWinAttrib(); break;
-    case kpidCTime:  if (ParentDirItem) PropVariant_SetFrom_FiTime(prop, ParentDirItem->CTime); break;
-    case kpidATime:  if (ParentDirItem) PropVariant_SetFrom_FiTime(prop, ParentDirItem->ATime); break;
-    case kpidMTime:  if (ParentDirItem) PropVariant_SetFrom_FiTime(prop, ParentDirItem->MTime); break;
-    case kpidArcFileName:  if (!ArcFileName.IsEmpty()) prop = ArcFileName; break;
+    case kpidAttrib: if (ParentDirItem) prop = ParentDirItem->Attrib; break;
+    case kpidCTime:  if (ParentDirItem) prop = ParentDirItem->CTime; break;
+    case kpidATime:  if (ParentDirItem) prop = ParentDirItem->ATime; break;
+    case kpidMTime:  if (ParentDirItem) prop = ParentDirItem->MTime; break;
   }
   prop.Detach(value);
   return S_OK;
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetParent(UInt32 /* index */, UInt32 *parent, UInt32 *parentType))
+STDMETHODIMP CArchiveUpdateCallback::GetParent(UInt32 /* index */, UInt32 *parent, UInt32 *parentType)
 {
   *parentType = NParentType::kDir;
   *parent = (UInt32)(Int32)-1;
   return S_OK;
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetNumRawProps(UInt32 *numProps))
+STDMETHODIMP CArchiveUpdateCallback::GetNumRawProps(UInt32 *numProps)
 {
   *numProps = 0;
   if (StoreNtSecurity)
@@ -196,27 +157,25 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetNumRawProps(UInt32 *numProps))
   return S_OK;
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetRawPropInfo(UInt32 /* index */, BSTR *name, PROPID *propID))
+STDMETHODIMP CArchiveUpdateCallback::GetRawPropInfo(UInt32 /* index */, BSTR *name, PROPID *propID)
 {
   *name = NULL;
   *propID = kpidNtSecure;
   return S_OK;
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetRootRawProp(PROPID
+STDMETHODIMP CArchiveUpdateCallback::GetRootRawProp(PROPID
+    #ifdef _USE_SECURITY_CODE
     propID
-    , const void **data, UInt32 *dataSize, UInt32 *propType))
+    #endif
+    , const void **data, UInt32 *dataSize, UInt32 *propType)
 {
-  #ifndef Z7_USE_SECURITY_CODE
-  UNUSED_VAR(propID)
-  #endif
-
-  *data = NULL;
+  *data = 0;
   *dataSize = 0;
   *propType = 0;
   if (!StoreNtSecurity)
     return S_OK;
-  #ifdef Z7_USE_SECURITY_CODE
+  #ifdef _USE_SECURITY_CODE
   if (propID == kpidNtSecure)
   {
     if (StdInMode)
@@ -226,7 +185,7 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetRootRawProp(PROPID
     {
       if (ParentDirItem->SecureIndex < 0)
         return S_OK;
-      const CByteBuffer &buf = DirItems->SecureBlocks.Bufs[(unsigned)ParentDirItem->SecureIndex];
+      const CByteBuffer &buf = DirItems->SecureBlocks.Bufs[ParentDirItem->SecureIndex];
       *data = buf;
       *dataSize = (UInt32)buf.Size();
       *propType = NPropDataType::kRaw;
@@ -240,10 +199,12 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetRootRawProp(PROPID
   return S_OK;
 }
 
+//    #ifdef _USE_SECURITY_CODE
+//    #endif
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetRawProp(UInt32 index, PROPID propID, const void **data, UInt32 *dataSize, UInt32 *propType))
+STDMETHODIMP CArchiveUpdateCallback::GetRawProp(UInt32 index, PROPID propID, const void **data, UInt32 *dataSize, UInt32 *propType)
 {
-  *data = NULL;
+  *data = 0;
   *dataSize = 0;
   *propType = 0;
 
@@ -256,7 +217,7 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetRawProp(UInt32 index, PROPID propID, con
     const CUpdatePair2 &up = (*UpdatePairs)[index];
     if (up.UseArcProps && up.ExistInArchive() && Arc->GetRawProps)
       return Arc->GetRawProps->GetRawProp(
-          ArcItems ? (*ArcItems)[(unsigned)up.ArcIndex].IndexInServer : (UInt32)(Int32)up.ArcIndex,
+          ArcItems ? (*ArcItems)[up.ArcIndex].IndexInServer : up.ArcIndex,
           propID, data, dataSize, propType);
     {
       /*
@@ -266,30 +227,29 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetRawProp(UInt32 index, PROPID propID, con
       if (up.IsAnti)
         return S_OK;
       
-      #if defined(_WIN32) && !defined(UNDER_CE)
-      const CDirItem &di = DirItems->Items[(unsigned)up.DirIndex];
+      #ifndef UNDER_CE
+      const CDirItem &di = DirItems->Items[up.DirIndex];
       #endif
 
-      #ifdef Z7_USE_SECURITY_CODE
+      #ifdef _USE_SECURITY_CODE
       if (propID == kpidNtSecure)
       {
         if (!StoreNtSecurity)
           return S_OK;
         if (di.SecureIndex < 0)
           return S_OK;
-        const CByteBuffer &buf = DirItems->SecureBlocks.Bufs[(unsigned)di.SecureIndex];
+        const CByteBuffer &buf = DirItems->SecureBlocks.Bufs[di.SecureIndex];
         *data = buf;
         *dataSize = (UInt32)buf.Size();
         *propType = NPropDataType::kRaw;
       }
       else
       #endif
-      if (propID == kpidNtReparse)
       {
+        // propID == kpidNtReparse
         if (!StoreSymLinks)
           return S_OK;
-        #if defined(_WIN32) && !defined(UNDER_CE)
-        // we use ReparseData2 instead of ReparseData for WIM format
+        #ifndef UNDER_CE
         const CByteBuffer *buf = &di.ReparseData2;
         if (buf->Size() == 0)
           buf = &di.ReparseData;
@@ -309,7 +269,7 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetRawProp(UInt32 index, PROPID propID, con
   return S_OK;
 }
 
-#if defined(_WIN32) && !defined(UNDER_CE)
+#ifndef UNDER_CE
 
 static UString GetRelativePath(const UString &to, const UString &from)
 {
@@ -340,7 +300,7 @@ static UString GetRelativePath(const UString &to, const UString &from)
   unsigned k;
   
   for (k = i + 1; k < partsFrom.Size(); k++)
-    s += ".." STRING_PATH_SEPARATOR;
+    s += L".." WSTRING_PATH_SEPARATOR;
   
   for (k = i; k < partsTo.Size(); k++)
   {
@@ -354,7 +314,7 @@ static UString GetRelativePath(const UString &to, const UString &from)
 
 #endif
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetProperty(UInt32 index, PROPID propID, PROPVARIANT *value))
+STDMETHODIMP CArchiveUpdateCallback::GetProperty(UInt32 index, PROPID propID, PROPVARIANT *value)
 {
   COM_TRY_BEGIN
   const CUpdatePair2 &up = (*UpdatePairs)[index];
@@ -377,25 +337,21 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetProperty(UInt32 index, PROPID propID, PR
         prop.Detach(value);
         return S_OK;
       }
-      
-      #if !defined(UNDER_CE)
-
       if (up.DirIndex >= 0)
       {
-        const CDirItem &di = DirItems->Items[(unsigned)up.DirIndex];
-        
-        #ifdef _WIN32
+        #ifndef UNDER_CE
+        const CDirItem &di = DirItems->Items[up.DirIndex];
         // if (di.IsDir())
         {
           CReparseAttr attr;
           if (attr.Parse(di.ReparseData, di.ReparseData.Size()))
           {
-            const UString simpleName = attr.GetPath();
-            if (!attr.IsSymLink_WSL() && attr.IsRelative_Win())
+            UString simpleName = attr.GetPath();
+            if (attr.IsRelative())
               prop = simpleName;
             else
             {
-              const FString phyPath = DirItems->GetPhyPath((unsigned)up.DirIndex);
+              const FString phyPath = DirItems->GetPhyPath(up.DirIndex);
               FString fullPath;
               if (NDir::MyGetFullPathName(phyPath, fullPath))
               {
@@ -406,26 +362,8 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetProperty(UInt32 index, PROPID propID, PR
             return S_OK;
           }
         }
-        
-        #else // _WIN32
-
-        if (di.ReparseData.Size() != 0)
-        {
-          AString utf;
-          utf.SetFrom_CalcLen((const char *)(const Byte *)di.ReparseData, (unsigned)di.ReparseData.Size());
-
-          UString us;
-          if (ConvertUTF8ToUnicode(utf, us))
-          {
-            prop = us;
-            prop.Detach(value);
-            return S_OK;
-          }
-        }
-
-        #endif // _WIN32
+        #endif
       }
-      #endif // !defined(UNDER_CE)
     }
     else if (propID == kpidHardLink)
     {
@@ -433,7 +371,7 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetProperty(UInt32 index, PROPID propID, PR
       {
         const CKeyKeyValPair &pair = _map[_hardIndex_To];
         const CUpdatePair2 &up2 = (*UpdatePairs)[pair.Value];
-        prop = DirItems->GetLogPath((unsigned)up2.DirIndex);
+        prop = DirItems->GetLogPath(up2.DirIndex);
         prop.Detach(value);
         return S_OK;
       }
@@ -457,75 +395,30 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetProperty(UInt32 index, PROPID propID, PR
     }
   }
   else if (propID == kpidPath && up.NewNameIndex >= 0)
-    prop = (*NewNames)[(unsigned)up.NewNameIndex];
-  else if (propID == kpidComment
-      && CommentIndex >= 0
-      && (unsigned)CommentIndex == index
-      && Comment)
-    prop = *Comment;
+    prop = (*NewNames)[up.NewNameIndex];
   else if (propID == kpidShortName && up.NewNameIndex >= 0 && up.IsMainRenameItem)
   {
     // we can generate new ShortName here;
   }
   else if ((up.UseArcProps || (KeepOriginalItemNames && (propID == kpidPath || propID == kpidIsAltStream)))
       && up.ExistInArchive() && Archive)
-    return Archive->GetProperty(ArcItems ? (*ArcItems)[(unsigned)up.ArcIndex].IndexInServer : (UInt32)(Int32)up.ArcIndex, propID, value);
+    return Archive->GetProperty(ArcItems ? (*ArcItems)[up.ArcIndex].IndexInServer : up.ArcIndex, propID, value);
   else if (up.ExistOnDisk())
   {
-    const CDirItem &di = DirItems->Items[(unsigned)up.DirIndex];
+    const CDirItem &di = DirItems->Items[up.DirIndex];
     switch (propID)
     {
-      case kpidPath:  prop = DirItems->GetLogPath((unsigned)up.DirIndex); break;
+      case kpidPath:  prop = DirItems->GetLogPath(up.DirIndex); break;
       case kpidIsDir:  prop = di.IsDir(); break;
-      case kpidSize:  prop = (UInt64)(di.IsDir() ? (UInt64)0 : di.Size); break;
-      case kpidCTime:  PropVariant_SetFrom_FiTime(prop, di.CTime); break;
-      case kpidATime:  PropVariant_SetFrom_FiTime(prop, di.ATime); break;
-      case kpidMTime:  PropVariant_SetFrom_FiTime(prop, di.MTime); break;
-      case kpidAttrib:  prop = (UInt32)di.GetWinAttrib(); break;
-      case kpidPosixAttrib: prop = (UInt32)di.GetPosixAttrib(); break;
-    
-    #if defined(_WIN32)
+      case kpidSize:  prop = di.IsDir() ? (UInt64)0 : di.Size; break;
+      case kpidAttrib:  prop = di.Attrib; break;
+      case kpidCTime:  prop = di.CTime; break;
+      case kpidATime:  prop = di.ATime; break;
+      case kpidMTime:  prop = di.MTime; break;
       case kpidIsAltStream:  prop = di.IsAltStream; break;
+      #if defined(_WIN32) && !defined(UNDER_CE)
       // case kpidShortName:  prop = di.ShortName; break;
-    #else
-
-        #if defined(__APPLE__)
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wsign-conversion"
-        #endif
-
-      case kpidDeviceMajor:
-        /*
-        printf("\ndi.mode = %o\n", di.mode);
-        printf("\nst.st_rdev major = %d\n", (unsigned)major(di.rdev));
-        printf("\nst.st_rdev minor = %d\n", (unsigned)minor(di.rdev));
-        */
-        if (S_ISCHR(di.mode) || S_ISBLK(di.mode))
-          prop = (UInt32)major(di.rdev);
-        break;
-        
-      case kpidDeviceMinor:
-        if (S_ISCHR(di.mode) || S_ISBLK(di.mode))
-          prop = (UInt32)minor(di.rdev);
-        break;
-
-        #if defined(__APPLE__)
-        #pragma GCC diagnostic pop
-        #endif
-
-      // case kpidDevice: if (S_ISCHR(di.mode) || S_ISBLK(di.mode)) prop = (UInt64)(di.rdev); break;
-
-      case kpidUserId:  if (StoreOwnerId) prop = (UInt32)di.uid; break;
-      case kpidGroupId: if (StoreOwnerId) prop = (UInt32)di.gid; break;
-      case kpidUser:
-        if (di.OwnerNameIndex >= 0)
-          prop = DirItems->OwnerNameMap.Strings[(unsigned)di.OwnerNameIndex];
-        break;
-      case kpidGroup:
-        if (di.OwnerGroupIndex >= 0)
-          prop = DirItems->OwnerGroupMap.Strings[(unsigned)di.OwnerGroupIndex];
-        break;
-     #endif
+      #endif
     }
   }
   prop.Detach(value);
@@ -533,22 +426,11 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetProperty(UInt32 index, PROPID propID, PR
   COM_TRY_END
 }
 
-#ifndef Z7_ST
-static NSynchronization::CCriticalSection g_CS;
+#ifndef _7ZIP_ST
+static NSynchronization::CCriticalSection CS;
 #endif
 
-void CArchiveUpdateCallback::UpdateProcessedItemStatus(unsigned dirIndex)
-{
-  if (ProcessedItemsStatuses)
-  {
-    #ifndef Z7_ST
-    NSynchronization::CCriticalSectionLock lock(g_CS);
-    #endif
-    ProcessedItemsStatuses[dirIndex] = 1;
-  }
-}
-
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream2(UInt32 index, ISequentialInStream **inStream, UInt32 mode))
+STDMETHODIMP CArchiveUpdateCallback::GetStream2(UInt32 index, ISequentialInStream **inStream, UInt32 mode)
 {
   COM_TRY_BEGIN
   *inStream = NULL;
@@ -556,7 +438,7 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream2(UInt32 index, ISequentialInStrea
   if (!up.NewData)
     return E_FAIL;
   
-  RINOK(Callback->CheckBreak())
+  RINOK(Callback->CheckBreak());
   // RINOK(Callback->Finalize());
 
   bool isDir = IsDir(up);
@@ -565,10 +447,10 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream2(UInt32 index, ISequentialInStrea
   {
     UString name;
     if (up.ArcIndex >= 0)
-      name = (*ArcItems)[(unsigned)up.ArcIndex].Name;
+      name = (*ArcItems)[up.ArcIndex].Name;
     else if (up.DirIndex >= 0)
-      name = DirItems->GetLogPath((unsigned)up.DirIndex);
-    RINOK(Callback->GetStream(name, isDir, true, mode))
+      name = DirItems->GetLogPath(up.DirIndex);
+    RINOK(Callback->GetStream(name, isDir, true, mode));
     
     /* 9.33: fixed. Handlers expect real stream object for files, even for anti-file.
        so we return empty stream */
@@ -583,7 +465,7 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream2(UInt32 index, ISequentialInStrea
     return S_OK;
   }
   
-  RINOK(Callback->GetStream(DirItems->GetLogPath((unsigned)up.DirIndex), isDir, false, mode))
+  RINOK(Callback->GetStream(DirItems->GetLogPath(up.DirIndex), isDir, false, mode));
  
   if (isDir)
     return S_OK;
@@ -600,121 +482,32 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream2(UInt32 index, ISequentialInStrea
   }
   else
   {
-    #if !defined(UNDER_CE)
-    const CDirItem &di = DirItems->Items[(unsigned)up.DirIndex];
-    if (di.AreReparseData())
+    CInFileStream *inStreamSpec = new CInFileStream;
+    CMyComPtr<ISequentialInStream> inStreamLoc(inStreamSpec);
+
+    inStreamSpec->SupportHardLinks = StoreHardLinks;
+    inStreamSpec->Callback = this;
+    inStreamSpec->CallbackRef = index;
+
+    const FString path = DirItems->GetPhyPath(up.DirIndex);
+    _openFiles_Indexes.Add(index);
+    _openFiles_Paths.Add(path);
+
+    #if defined(_WIN32) && !defined(UNDER_CE)
+    if (DirItems->Items[up.DirIndex].AreReparseData())
     {
-      /*
-      // we still need DeviceIoControlOut() instead of Read
       if (!inStreamSpec->File.OpenReparse(path))
       {
         return Callback->OpenFileError(path, ::GetLastError());
       }
-      */
-      // 20.03: we use Reparse Data instead of real data
-
-      CBufInStream *inStreamSpec = new CBufInStream();
-      CMyComPtr<ISequentialInStream> inStreamLoc = inStreamSpec;
-      inStreamSpec->Init(di.ReparseData, di.ReparseData.Size());
-      *inStream = inStreamLoc.Detach();
-
-      UpdateProcessedItemStatus((unsigned)up.DirIndex);
-      return S_OK;
     }
-    #endif // !defined(UNDER_CE)
-
-    CInFileStream *inStreamSpec = new CInFileStream;
-    CMyComPtr<ISequentialInStream> inStreamLoc(inStreamSpec);
-
-   /*
-   // for debug:
-   #ifdef _WIN32
-    inStreamSpec->StoreOwnerName = true;
-    inStreamSpec->OwnerName = "user_name";
-    inStreamSpec->OwnerName += di.Name;
-    inStreamSpec->OwnerName += "11111111112222222222222333333333333";
-    inStreamSpec->OwnerGroup = "gname_";
-    inStreamSpec->OwnerGroup += inStreamSpec->OwnerName;
-   #endif
-   */
-
-   #ifndef _WIN32
-    inStreamSpec->StoreOwnerId = StoreOwnerId;
-    inStreamSpec->StoreOwnerName = StoreOwnerName;
-
-    // if (StoreOwner)
-    {
-      inStreamSpec->_uid = di.uid;
-      inStreamSpec->_gid = di.gid;
-      if (di.OwnerNameIndex >= 0)
-        inStreamSpec->OwnerName = DirItems->OwnerNameMap.Strings[(unsigned)di.OwnerNameIndex];
-      if (di.OwnerGroupIndex >= 0)
-        inStreamSpec->OwnerGroup = DirItems->OwnerGroupMap.Strings[(unsigned)di.OwnerGroupIndex];
-    }
-   #endif
-
-    inStreamSpec->SupportHardLinks = StoreHardLinks;
-    const bool preserveATime = (PreserveATime
-        || mode == NUpdateNotifyOp::kAnalyze);   // 22.00 : we don't change access time in Analyze pass.
-    inStreamSpec->Set_PreserveATime(preserveATime);
-
-    const FString path = DirItems->GetPhyPath((unsigned)up.DirIndex);
-    _openFiles_Indexes.Add(index);
-    _openFiles_Paths.Add(path);
-    // _openFiles_Streams.Add(inStreamSpec);
-
-    /* 21.02 : we set Callback/CallbackRef after _openFiles_Indexes adding
-       for correct working if exception was raised in GetPhyPath */
-    inStreamSpec->Callback = this;
-    inStreamSpec->CallbackRef = index;
-
+    else
+    #endif
     if (!inStreamSpec->OpenShared(path, ShareForWrite))
     {
-      bool isOpen = false;
-      if (preserveATime)
-      {
-        inStreamSpec->Set_PreserveATime(false);
-        isOpen = inStreamSpec->OpenShared(path, ShareForWrite);
-      }
-      if (!isOpen)
-      {
-        const DWORD error = ::GetLastError();
-        const HRESULT hres = Callback->OpenFileError(path, error);
-        if (hres == S_OK || hres == S_FALSE)
-        if (StopAfterOpenError ||
-            // v23: we check also for some critical errors:
-            #ifdef _WIN32
-              error == ERROR_NO_SYSTEM_RESOURCES
-            #else
-              error == EMFILE
-            #endif
-            )
-        {
-          if (error == 0)
-            return E_FAIL;
-          return HRESULT_FROM_WIN32(error);
-        }
-        return hres;
-      }
+      return Callback->OpenFileError(path, ::GetLastError());
     }
 
-    /*
-    {
-      // for debug:
-      Byte b = 0;
-      UInt32 processedSize = 0;
-      if (inStreamSpec->Read(&b, 1, &processedSize) != S_OK ||
-          processedSize != 1)
-        return E_FAIL;
-    }
-    */
-
-    if (Need_LatestMTime)
-    {
-      inStreamSpec->ReloadProps();
-    }
-
-    // #if defined(Z7_FILE_STREAMS_USE_WIN_FILE) || !defined(_WIN32)
     if (StoreHardLinks)
     {
       CStreamFileProps props;
@@ -726,8 +519,8 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream2(UInt32 index, ISequentialInStrea
           pair.Key1 = props.VolID;
           pair.Key2 = props.FileID_Low;
           pair.Value = index;
-          const unsigned numItems = _map.Size();
-          const unsigned pairIndex = _map.AddToUniqueSorted2(pair);
+          unsigned numItems = _map.Size();
+          unsigned pairIndex = _map.AddToUniqueSorted2(pair);
           if (numItems == _map.Size())
           {
             // const CKeyKeyValPair &pair2 = _map.Pairs[pairIndex];
@@ -739,9 +532,14 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream2(UInt32 index, ISequentialInStrea
         }
       }
     }
-    // #endif
 
-    UpdateProcessedItemStatus((unsigned)up.DirIndex);
+    if (ProcessedItemsStatuses)
+    {
+      #ifndef _7ZIP_ST
+      NSynchronization::CCriticalSectionLock lock(CS);
+      #endif
+      ProcessedItemsStatuses[(unsigned)up.DirIndex] = 1;
+    }
     *inStream = inStreamLoc.Detach();
   }
   
@@ -749,14 +547,14 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream2(UInt32 index, ISequentialInStrea
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::SetOperationResult(Int32 opRes))
+STDMETHODIMP CArchiveUpdateCallback::SetOperationResult(Int32 opRes)
 {
   COM_TRY_BEGIN
   return Callback->SetOperationResult(opRes);
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream(UInt32 index, ISequentialInStream **inStream))
+STDMETHODIMP CArchiveUpdateCallback::GetStream(UInt32 index, ISequentialInStream **inStream)
 {
   COM_TRY_BEGIN
   return GetStream2(index, inStream,
@@ -766,11 +564,9 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetStream(UInt32 index, ISequentialInStream
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::ReportOperation(UInt32 indexType, UInt32 index, UInt32 op))
+STDMETHODIMP CArchiveUpdateCallback::ReportOperation(UInt32 indexType, UInt32 index, UInt32 op)
 {
   COM_TRY_BEGIN
-
-  // if (op == NUpdateNotifyOp::kOpFinished) return Callback->ReportFinished(indexType, index);
 
   bool isDir = false;
 
@@ -782,11 +578,11 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::ReportOperation(UInt32 indexType, UInt32 in
       const CUpdatePair2 &up = (*UpdatePairs)[index];
       if (up.ExistOnDisk())
       {
-        name = DirItems->GetLogPath((unsigned)up.DirIndex);
-        isDir = DirItems->Items[(unsigned)up.DirIndex].IsDir();
+        name = DirItems->GetLogPath(up.DirIndex);
+        isDir = DirItems->Items[up.DirIndex].IsDir();
       }
     }
-    return Callback->ReportUpdateOperation(op, name.IsEmpty() ? NULL : name.Ptr(), isDir);
+    return Callback->ReportUpdateOpeartion(op, name.IsEmpty() ? NULL : name.Ptr(), isDir);
   }
   
   wchar_t temp[16];
@@ -805,9 +601,9 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::ReportOperation(UInt32 indexType, UInt32 in
       }
       else if (Arc)
       {
-        RINOK(Arc->GetItem_Path(index, s2))
+        RINOK(Arc->GetItemPath(index, s2));
         s = s2;
-        RINOK(Archive_IsItem_Dir(Arc->Archive, index, isDir))
+        RINOK(Archive_IsItem_Dir(Arc->Archive, index, isDir));
       }
     }
   }
@@ -821,12 +617,12 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::ReportOperation(UInt32 indexType, UInt32 in
   if (!s)
     s = L"";
 
-  return Callback->ReportUpdateOperation(op, s, isDir);
+  return Callback->ReportUpdateOpeartion(op, s, isDir);
 
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::ReportExtractResult(UInt32 indexType, UInt32 index, Int32 opRes))
+STDMETHODIMP CArchiveUpdateCallback::ReportExtractResult(UInt32 indexType, UInt32 index, Int32 opRes)
 {
   COM_TRY_BEGIN
 
@@ -860,12 +656,12 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::ReportExtractResult(UInt32 indexType, UInt3
         s = (*ArcItems)[index].Name;
       else if (Arc)
       {
-        RINOK(Arc->GetItem_Path(index, s2))
+        RINOK(Arc->GetItemPath(index, s2));
         s = s2;
       }
       if (Archive)
       {
-        RINOK(Archive_GetItemBoolProp(Archive, index, kpidEncrypted, isEncrypted))
+        RINOK(Archive_GetItemBoolProp(Archive, index, kpidEncrypted, isEncrypted));
       }
     }
   }
@@ -881,52 +677,7 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::ReportExtractResult(UInt32 indexType, UInt3
   COM_TRY_END
 }
 
-
-/*
-Z7_COM7F_IMF(CArchiveUpdateCallback::DoNeedArcProp(PROPID propID, Int32 *answer))
-{
-  *answer = 0;
-  if (Need_ArcMTime_Report && propID == kpidComboMTime)
-    *answer = 1;
-  return S_OK;
-}
-
-Z7_COM7F_IMF(CArchiveUpdateCallback::ReportProp(UInt32 indexType, UInt32 index, PROPID propID, const PROPVARIANT *value))
-{
-  if (indexType == NArchive::NEventIndexType::kArcProp)
-  {
-    if (propID == kpidComboMTime)
-    {
-      ArcMTime_WasReported = true;
-      if (value->vt == VT_FILETIME)
-      {
-        Reported_ArcMTime.Set_From_Prop(*value);
-        Reported_ArcMTime.Def = true;
-      }
-      else
-      {
-        Reported_ArcMTime.Clear();
-        if (value->vt != VT_EMPTY)
-          return E_FAIL; // for debug
-      }
-    }
-  }
-  return Callback->ReportProp(indexType, index, propID, value);
-}
-
-Z7_COM7F_IMF(CArchiveUpdateCallback::ReportRawProp(UInt32 indexType, UInt32 index,
-    PROPID propID, const void *data, UInt32 dataSize, UInt32 propType))
-{
-  return Callback->ReportRawProp(indexType, index, propID, data, dataSize, propType);
-}
-
-Z7_COM7F_IMF(CArchiveUpdateCallback::ReportFinished(UInt32 indexType, UInt32 index, Int32 opRes))
-{
-  return Callback->ReportFinished(indexType, index, opRes);
-}
-*/
-
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetVolumeSize(UInt32 index, UInt64 *size))
+STDMETHODIMP CArchiveUpdateCallback::GetVolumeSize(UInt32 index, UInt64 *size)
 {
   if (VolumesSizes.Size() == 0)
     return S_FALSE;
@@ -936,35 +687,35 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::GetVolumeSize(UInt32 index, UInt64 *size))
   return S_OK;
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::GetVolumeStream(UInt32 index, ISequentialOutStream **volumeStream))
+STDMETHODIMP CArchiveUpdateCallback::GetVolumeStream(UInt32 index, ISequentialOutStream **volumeStream)
 {
   COM_TRY_BEGIN
-  char temp[16];
+  FChar temp[16];
   ConvertUInt32ToString(index + 1, temp);
-  FString res (temp);
+  FString res = temp;
   while (res.Len() < 2)
     res.InsertAtFront(FTEXT('0'));
   FString fileName = VolName;
-  fileName.Add_Dot();
+  fileName += FTEXT('.');
   fileName += res;
   fileName += VolExt;
   COutFileStream *streamSpec = new COutFileStream;
   CMyComPtr<ISequentialOutStream> streamLoc(streamSpec);
   if (!streamSpec->Create(fileName, false))
-    return GetLastError_noZero_HRESULT();
+    return ::GetLastError();
   *volumeStream = streamLoc.Detach();
   return S_OK;
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::CryptoGetTextPassword2(Int32 *passwordIsDefined, BSTR *password))
+STDMETHODIMP CArchiveUpdateCallback::CryptoGetTextPassword2(Int32 *passwordIsDefined, BSTR *password)
 {
   COM_TRY_BEGIN
   return Callback->CryptoGetTextPassword2(passwordIsDefined, password);
   COM_TRY_END
 }
 
-Z7_COM7F_IMF(CArchiveUpdateCallback::CryptoGetTextPassword(BSTR *password))
+STDMETHODIMP CArchiveUpdateCallback::CryptoGetTextPassword(BSTR *password)
 {
   COM_TRY_BEGIN
   return Callback->CryptoGetTextPassword(password);
@@ -973,18 +724,15 @@ Z7_COM7F_IMF(CArchiveUpdateCallback::CryptoGetTextPassword(BSTR *password))
 
 HRESULT CArchiveUpdateCallback::InFileStream_On_Error(UINT_PTR val, DWORD error)
 {
-  #ifdef _WIN32 // FIX IT !!!
-  // why did we check only for ERROR_LOCK_VIOLATION ?
-  // if (error == ERROR_LOCK_VIOLATION)
-  #endif
+  if (error == ERROR_LOCK_VIOLATION)
   {
     MT_LOCK
-    const UInt32 index = (UInt32)val;
+    UInt32 index = (UInt32)val;
     FOR_VECTOR(i, _openFiles_Indexes)
     {
       if (_openFiles_Indexes[i] == index)
       {
-        RINOK(Callback->ReadingFileError(_openFiles_Paths[i], error))
+        RINOK(Callback->ReadingFileError(_openFiles_Paths[i], error));
         break;
       }
     }
@@ -992,35 +740,18 @@ HRESULT CArchiveUpdateCallback::InFileStream_On_Error(UINT_PTR val, DWORD error)
   return HRESULT_FROM_WIN32(error);
 }
 
-void CArchiveUpdateCallback::InFileStream_On_Destroy(CInFileStream *stream, UINT_PTR val)
+void CArchiveUpdateCallback::InFileStream_On_Destroy(UINT_PTR val)
 {
   MT_LOCK
-  if (Need_LatestMTime)
-  {
-    if (stream->_info_WasLoaded)
-    {
-      const CFiTime &ft = ST_MTIME(stream->_info);
-      if (!LatestMTime_Defined
-          || Compare_FiTime(&LatestMTime, &ft) < 0)
-        LatestMTime = ft;
-      LatestMTime_Defined = true;
-    }
-  }
-  const UInt32 index = (UInt32)val;
+  UInt32 index = (UInt32)val;
   FOR_VECTOR(i, _openFiles_Indexes)
   {
     if (_openFiles_Indexes[i] == index)
     {
       _openFiles_Indexes.Delete(i);
       _openFiles_Paths.Delete(i);
-      // _openFiles_Streams.Delete(i);
       return;
     }
   }
-  /* 21.02 : this function can be called in destructor.
-     And destructor can be called after some exception.
-     If we don't want to throw exception in desctructors or after another exceptions,
-     we must disable the code below that raises new exception.
-  */
-  // throw 20141125;
+  throw 20141125;
 }

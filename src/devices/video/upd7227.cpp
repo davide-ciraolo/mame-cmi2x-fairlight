@@ -101,7 +101,7 @@ uint32_t upd7227_device::screen_update(screen_device &screen, bitmap_ind16 &bitm
 //  cs_w - chip select
 //-------------------------------------------------
 
-void upd7227_device::cs_w(int state)
+WRITE_LINE_MEMBER( upd7227_device::cs_w )
 {
 	m_cs = state;
 }
@@ -111,7 +111,7 @@ void upd7227_device::cs_w(int state)
 //  cd_w - command/data select
 //-------------------------------------------------
 
-void upd7227_device::cd_w(int state)
+WRITE_LINE_MEMBER( upd7227_device::cd_w )
 {
 	m_cd = state;
 }
@@ -121,7 +121,7 @@ void upd7227_device::cd_w(int state)
 //  sck_w - serial clock
 //-------------------------------------------------
 
-void upd7227_device::sck_w(int state)
+WRITE_LINE_MEMBER( upd7227_device::sck_w )
 {
 	m_sck = state;
 }
@@ -131,7 +131,7 @@ void upd7227_device::sck_w(int state)
 //  si_w - serial input
 //-------------------------------------------------
 
-void upd7227_device::si_w(int state)
+WRITE_LINE_MEMBER( upd7227_device::si_w )
 {
 	m_si = state;
 }
@@ -141,7 +141,7 @@ void upd7227_device::si_w(int state)
 //  so_r - serial output/busy
 //-------------------------------------------------
 
-int upd7227_device::so_r()
+READ_LINE_MEMBER( upd7227_device::so_r )
 {
 	return m_so;
 }

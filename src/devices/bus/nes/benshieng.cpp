@@ -16,11 +16,12 @@
 
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -73,7 +74,7 @@ void nes_benshieng_device::pcb_reset()
 
 void nes_benshieng_device::write_h(offs_t offset, u8 data)
 {
-	LOG("benshieng write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("benshieng write_h, offset: %04x, data: %02x\n", offset, data));
 //  m_mmc_dipsetting = ioport("CARTDIPS")->read();
 
 	u8 bank = BIT(offset, 10, 2);

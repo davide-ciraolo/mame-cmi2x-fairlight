@@ -2,8 +2,6 @@
 
 #include "StdAfx.h"
 
-#include "../../../C/SwapBytes.h"
-
 #include "../../Common/MyCom.h"
 
 #include "../ICoder.h"
@@ -13,69 +11,72 @@
 namespace NCompress {
 namespace NByteSwap {
 
-Z7_CLASS_IMP_COM_1(CByteSwap2, ICompressFilter) };
-Z7_CLASS_IMP_COM_1(CByteSwap4, ICompressFilter) };
-
-Z7_COM7F_IMF(CByteSwap2::Init()) { return S_OK; }
-
-Z7_COM7F_IMF2(UInt32, CByteSwap2::Filter(Byte *data, UInt32 size))
+class CByteSwap2:
+  public ICompressFilter,
+  public CMyUnknownImp
 {
-  const UInt32 kMask = 2 - 1;
-  size &= ~kMask;
-  /*
-  if ((unsigned)(ptrdiff_t)data & kMask)
+public:
+  MY_UNKNOWN_IMP1(ICompressFilter);
+  INTERFACE_ICompressFilter(;)
+};
+
+class CByteSwap4:
+  public ICompressFilter,
+  public CMyUnknownImp
+{
+public:
+  MY_UNKNOWN_IMP1(ICompressFilter);
+  INTERFACE_ICompressFilter(;)
+};
+
+STDMETHODIMP CByteSwap2::Init() { return S_OK; }
+
+STDMETHODIMP_(UInt32) CByteSwap2::Filter(Byte *data, UInt32 size)
+{
+  const UInt32 kStep = 2;
+  if (size < kStep)
+    return 0;
+  size &= ~(kStep - 1);
+  
+  const Byte *end = data + (size_t)size;
+  
+  do
   {
-    if (size == 0)
-      return 0;
-    const Byte *end = data + (size_t)size;
-    do
-    {
-      const Byte b0 = data[0];
-      data[0] = data[1];
-      data[1] = b0;
-      data += kStep;
-    }
-    while (data != end);
+    Byte b0 = data[0];
+    data[0] = data[1];
+    data[1] = b0;
+    data += kStep;
   }
-  else
-  */
-  z7_SwapBytes2((UInt16 *)(void *)data, size >> 1);
+  while (data != end);
+
   return size;
 }
 
+STDMETHODIMP CByteSwap4::Init() { return S_OK; }
 
-Z7_COM7F_IMF(CByteSwap4::Init()) { return S_OK; }
-
-Z7_COM7F_IMF2(UInt32, CByteSwap4::Filter(Byte *data, UInt32 size))
+STDMETHODIMP_(UInt32) CByteSwap4::Filter(Byte *data, UInt32 size)
 {
-  const UInt32 kMask = 4 - 1;
-  size &= ~kMask;
-  /*
-  if ((unsigned)(ptrdiff_t)data & kMask)
+  const UInt32 kStep = 4;
+  if (size < kStep)
+    return 0;
+  size &= ~(kStep - 1);
+  
+  const Byte *end = data + (size_t)size;
+  
+  do
   {
-    if (size == 0)
-      return 0;
-    const Byte *end = data + (size_t)size;
-    do
-    {
-      const Byte b0 = data[0];
-      const Byte b1 = data[1];
-      data[0] = data[3];
-      data[1] = data[2];
-      data[2] = b1;
-      data[3] = b0;
-      data += kStep;
-    }
-    while (data != end);
+    Byte b0 = data[0];
+    Byte b1 = data[1];
+    data[0] = data[3];
+    data[1] = data[2];
+    data[2] = b1;
+    data[3] = b0;
+    data += kStep;
   }
-  else
-  */
-  z7_SwapBytes4((UInt32 *)(void *)data, size >> 2);
+  while (data != end);
+
   return size;
 }
-
-static struct C_SwapBytesPrepare { C_SwapBytesPrepare() { z7_SwapBytesPrepare(); } } g_SwapBytesPrepare;
-
 
 REGISTER_FILTER_CREATE(CreateFilter2, CByteSwap2())
 REGISTER_FILTER_CREATE(CreateFilter4, CByteSwap4())
@@ -83,7 +84,7 @@ REGISTER_FILTER_CREATE(CreateFilter4, CByteSwap4())
 REGISTER_CODECS_VAR
 {
   REGISTER_FILTER_ITEM(CreateFilter2, CreateFilter2, 0x20302, "Swap2"),
-  REGISTER_FILTER_ITEM(CreateFilter4, CreateFilter4, 0x20304, "Swap4"),
+  REGISTER_FILTER_ITEM(CreateFilter4, CreateFilter4, 0x20304, "Swap4")
 };
 
 REGISTER_CODECS(ByteSwap)

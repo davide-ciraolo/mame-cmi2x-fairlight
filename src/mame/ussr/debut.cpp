@@ -1,19 +1,18 @@
 // license:BSD-3-Clause
 // copyright-holders:hap
 // thanks-to:Berger
-/*******************************************************************************
+/******************************************************************************
 
 Дебют / Дебют-М (Debut) Chess Computer
 
 Released in 1994 in Russian Federation by ЭНЕРГОПРИБОР (Energopribor), Moscow.
 It's running the Mirage chess engine by Vladimir Rybinkin, originally made for MS-DOS.
-Also sold in 1996 as Феникс (Fenix), same ROM contents as Debut-M.
 
 TODO:
 - where does the interrupt come from?
 - Debut-M is an updated version? Or is it the same program as Debut with a redesigned case?
 
-********************************************************************************
+*******************************************************************************
 
 Hardware notes:
 - КР1810ВМ86 (i8086 clone), 16200K XTAL
@@ -42,7 +41,7 @@ Keypad legend:
 ВВ  - ввод позиции (enter position)
 СБ  - сброс / новая игра (reset / new game)
 
-*******************************************************************************/
+******************************************************************************/
 
 #include "emu.h"
 
@@ -54,7 +53,7 @@ Keypad legend:
 #include "speaker.h"
 
 // internal artwork
-#include "debutm.lh"
+#include "debutm.lh" // clickable
 
 
 namespace {
@@ -90,10 +89,6 @@ private:
 	output_finder<4> m_out_digit;
 	required_ioport m_inputs;
 
-	u8 m_latch[5] = { };
-	u8 m_dac_data = 0;
-	u8 m_lcd_update = 0;
-
 	// address maps
 	void main_map(address_map &map);
 	void main_io(address_map &map);
@@ -102,7 +97,11 @@ private:
 	INTERRUPT_GEN_MEMBER(interrupt);
 	u8 input_r(offs_t offset);
 	void latch_w(offs_t offset, u8 data);
-	void lcd_update_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(lcd_update_w);
+
+	u8 m_latch[5] = { };
+	u8 m_dac_data = 0;
+	u8 m_lcd_update = 0;
 };
 
 void debut_state::machine_start()
@@ -118,9 +117,9 @@ void debut_state::machine_start()
 
 
 
-/*******************************************************************************
+/******************************************************************************
     I/O
-*******************************************************************************/
+******************************************************************************/
 
 INTERRUPT_GEN_MEMBER(debut_state::interrupt)
 {
@@ -166,7 +165,7 @@ void debut_state::latch_w(offs_t offset, u8 data)
 	}
 }
 
-void debut_state::lcd_update_w(int state)
+WRITE_LINE_MEMBER(debut_state::lcd_update_w)
 {
 	// 8086 S5 also goes to the lcd panel
 	if (!state && m_lcd_update)
@@ -182,9 +181,9 @@ void debut_state::lcd_update_w(int state)
 
 
 
-/*******************************************************************************
+/******************************************************************************
     Address Maps
-*******************************************************************************/
+******************************************************************************/
 
 void debut_state::main_map(address_map &map)
 {
@@ -200,9 +199,9 @@ void debut_state::main_io(address_map &map)
 
 
 
-/*******************************************************************************
+/******************************************************************************
     Input Ports
-*******************************************************************************/
+******************************************************************************/
 
 static INPUT_PORTS_START( debutm )
 	PORT_START("IN.0")
@@ -221,9 +220,9 @@ INPUT_PORTS_END
 
 
 
-/*******************************************************************************
+/******************************************************************************
     Machine Configs
-*******************************************************************************/
+******************************************************************************/
 
 void debut_state::debutm(machine_config &config)
 {
@@ -250,9 +249,9 @@ void debut_state::debutm(machine_config &config)
 
 
 
-/*******************************************************************************
+/******************************************************************************
     ROM Definitions
-*******************************************************************************/
+******************************************************************************/
 
 ROM_START( debutm )
 	ROM_REGION( 0x10000, "maincpu", 0 )
@@ -264,9 +263,9 @@ ROM_END
 
 
 
-/*******************************************************************************
+/******************************************************************************
     Drivers
-*******************************************************************************/
+******************************************************************************/
 
-//    YEAR  NAME    PARENT  COMPAT  MACHINE  INPUT   CLASS        INIT        COMPANY, FULLNAME, FLAGS
-SYST( 1994, debutm, 0,      0,      debutm,  debutm, debut_state, empty_init, "Energopribor", "Debut-M", MACHINE_SUPPORTS_SAVE | MACHINE_CLICKABLE_ARTWORK )
+//    YEAR  NAME    PARENT CMP MACHINE INPUT   CLASS        INIT        COMPANY, FULLNAME, FLAGS
+CONS( 1994, debutm, 0,      0, debutm, debutm, debut_state, empty_init, "Energopribor", "Debut-M", MACHINE_SUPPORTS_SAVE | MACHINE_CLICKABLE_ARTWORK )

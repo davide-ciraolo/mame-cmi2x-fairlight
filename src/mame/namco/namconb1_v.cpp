@@ -107,7 +107,7 @@ void namconb1_state::video_update_common(screen_device &screen, bitmap_ind16 &bi
 	}
 } /* video_update_common */
 
-void namconb1_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(namconb1_state::screen_vblank)
 {
 	m_c355spr->vblank(state);
 	if (state)

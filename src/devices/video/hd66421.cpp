@@ -18,12 +18,8 @@
 
 //#define HD66421_BRIGHTNESS_DOES_NOT_WORK
 
-#define LOG_LEVEL0 (1U << 1)
-#define LOG_LEVEL1 (1U << 2)
-#define LOG_LEVEL2 (1U << 3)
-
-#define VERBOSE (LOG_LEVEL0)
-#include "logmacro.h"
+#define LOG_LEVEL  1
+#define _logerror(level,x)  do { if (LOG_LEVEL > level) logerror x; } while (0)
 
 #define HD66421_RAM_SIZE  (hd66421_device::WIDTH * hd66421_device::HEIGHT / 4) // 2-bits per pixel
 
@@ -156,25 +152,25 @@ void hd66421_device::device_start()
 
 uint8_t hd66421_device::reg_idx_r()
 {
-	LOGMASKED(LOG_LEVEL2, "reg_idx_r\n");
+	_logerror( 2, ("reg_idx_r\n"));
 	return m_cmd;
 }
 
 void hd66421_device::reg_idx_w(uint8_t data)
 {
-	LOGMASKED(LOG_LEVEL2, "reg_idx_w (%02X)\n", data);
+	_logerror( 2, ("reg_idx_w (%02X)\n", data));
 	m_cmd = data;
 }
 
 uint8_t hd66421_device::reg_dat_r()
 {
-	LOGMASKED(LOG_LEVEL2, "reg_dat_r\n");
+	_logerror( 2, ("reg_dat_r\n"));
 	return m_reg[m_cmd];
 }
 
 void hd66421_device::reg_dat_w(uint8_t data)
 {
-	LOGMASKED(LOG_LEVEL2, "reg_dat_w (%02X)\n", data);
+	_logerror( 2, ("reg_dat_w (%02X)\n", data));
 	m_reg[m_cmd] = data;
 
 	switch (m_cmd)
@@ -219,7 +215,7 @@ uint32_t hd66421_device::update_screen(screen_device &screen, bitmap_ind16 &bitm
 {
 	pen_t pen[4];
 
-	LOGMASKED(LOG_LEVEL1, "video_update_hd66421\n");
+	_logerror( 1, ("video_update_hd66421\n"));
 
 	// update palette
 	for (int i = 0; i < 4; i++)

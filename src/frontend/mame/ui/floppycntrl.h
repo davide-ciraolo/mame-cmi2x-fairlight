@@ -13,6 +13,7 @@
 #include "ui/imgcntrl.h"
 
 #include "imagedev/floppy.h"
+#include "formats/flopimg.h"
 
 #include <memory>
 

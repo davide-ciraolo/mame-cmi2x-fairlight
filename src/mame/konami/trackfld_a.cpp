@@ -119,7 +119,7 @@ void trackfld_audio_device::hyperspt_sound_w(offs_t offset, uint8_t data)
 
 
 
-void trackfld_audio_device::sh_irqtrigger_w(int state)
+WRITE_LINE_MEMBER(trackfld_audio_device::sh_irqtrigger_w)
 {
 	if (m_last_irq == 0 && state)
 	{

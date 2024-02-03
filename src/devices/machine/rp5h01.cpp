@@ -80,7 +80,7 @@ void rp5h01_device::device_reset()
     enable_w
 -------------------------------------------------*/
 
-void rp5h01_device::enable_w(int state)
+WRITE_LINE_MEMBER( rp5h01_device::enable_w )
 {
 	/* process the /CE signal and enable/disable the IC */
 	m_enabled = state ? 0 : 1;
@@ -90,7 +90,7 @@ void rp5h01_device::enable_w(int state)
     reset_w
 -------------------------------------------------*/
 
-void rp5h01_device::reset_w(int state)
+WRITE_LINE_MEMBER( rp5h01_device::reset_w )
 {
 	/* if it's not enabled, ignore */
 	if (!m_enabled)
@@ -111,7 +111,7 @@ void rp5h01_device::reset_w(int state)
     cs_w
 -------------------------------------------------*/
 
-void rp5h01_device::cs_w(int state)
+WRITE_LINE_MEMBER( rp5h01_device::cs_w )
 {
 	/* if it's not enabled, ignore */
 	if (!m_enabled)
@@ -128,7 +128,7 @@ void rp5h01_device::cs_w(int state)
     clock_w
 -------------------------------------------------*/
 
-void rp5h01_device::clock_w(int state)
+WRITE_LINE_MEMBER( rp5h01_device::clock_w )
 {
 	/* if it's not enabled, ignore */
 	if (!m_enabled)
@@ -149,7 +149,7 @@ void rp5h01_device::clock_w(int state)
     test_w
 -------------------------------------------------*/
 
-void rp5h01_device::test_w(int state)
+WRITE_LINE_MEMBER( rp5h01_device::test_w )
 {
 	/* if it's not enabled, ignore */
 	if (!m_enabled)
@@ -163,7 +163,7 @@ void rp5h01_device::test_w(int state)
     counter_r
 -------------------------------------------------*/
 
-int rp5h01_device::counter_r()
+READ_LINE_MEMBER( rp5h01_device::counter_r )
 {
 	/* if it's not enabled, ignore */
 	if (!m_enabled)
@@ -177,7 +177,7 @@ int rp5h01_device::counter_r()
     data_r
 -------------------------------------------------*/
 
-int rp5h01_device::data_r()
+READ_LINE_MEMBER( rp5h01_device::data_r )
 {
 	/* if it's not enabled, ignore */
 	if (!m_enabled)

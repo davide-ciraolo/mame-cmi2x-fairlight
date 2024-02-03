@@ -10,9 +10,6 @@
 #ifndef MAME_LIB_UTIL_UTILFWD_H
 #define MAME_LIB_UTIL_UTILFWD_H
 
-// aviio.h
-class avi_file;
-
 // chd.h
 class chd_file;
 

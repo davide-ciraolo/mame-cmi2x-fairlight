@@ -1245,7 +1245,7 @@ TIMER_CALLBACK_MEMBER(avgdvg_device_base::run_state_machine)
  *
  ************************************/
 
-int avgdvg_device_base::done_r()
+READ_LINE_MEMBER(avgdvg_device_base::done_r)
 {
 	return m_sync_halt ? 1 : 0;
 }

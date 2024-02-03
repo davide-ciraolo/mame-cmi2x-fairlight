@@ -47,8 +47,6 @@ TODO:
 #include "bus/ti99x/990_dk.h"
 
 
-namespace {
-
 class ti990_4_state : public driver_device
 {
 public:
@@ -68,10 +66,10 @@ private:
 	void panel_write(offs_t offset, uint8_t data);
 	void external_operation(offs_t offset, uint8_t data);
 	uint8_t interrupt_level();
-	void fd_interrupt(int state);
-	void asrkey_interrupt(int state);
-	void vdtkey_interrupt(int state);
-	void line_interrupt(int state);
+	DECLARE_WRITE_LINE_MEMBER( fd_interrupt );
+	DECLARE_WRITE_LINE_MEMBER( asrkey_interrupt );
+	DECLARE_WRITE_LINE_MEMBER( vdtkey_interrupt );
+	DECLARE_WRITE_LINE_MEMBER( line_interrupt );
 
 	void crumap(address_map &map);
 	void crumap_v(address_map &map);
@@ -148,7 +146,7 @@ void ti990_4_state::reset_int_lines()
 /*
     Callback from the floppy controller.
 */
-void ti990_4_state::fd_interrupt(int state)
+WRITE_LINE_MEMBER(ti990_4_state::fd_interrupt)
 {
 	set_int_line(7, state);
 }
@@ -156,12 +154,12 @@ void ti990_4_state::fd_interrupt(int state)
 /*
     Connection to VDT
 */
-void ti990_4_state::vdtkey_interrupt(int state)
+WRITE_LINE_MEMBER(ti990_4_state::vdtkey_interrupt)
 {
 	set_int_line(3, state);
 }
 
-void ti990_4_state::line_interrupt(int state)
+WRITE_LINE_MEMBER(ti990_4_state::line_interrupt)
 {
 	if (m_ckon_state) set_int_line(5, state);
 }
@@ -169,7 +167,7 @@ void ti990_4_state::line_interrupt(int state)
 /*
     Callback from the terminal.
 */
-void ti990_4_state::asrkey_interrupt(int state)
+WRITE_LINE_MEMBER(ti990_4_state::asrkey_interrupt)
 {
 	set_int_line(6, state);
 }
@@ -358,9 +356,6 @@ ROM_START(ti990_4v)
 	/* VDT911 character definitions */
 	ROM_REGION(vdt911_device::chr_region_len, vdt911_chr_region, ROMREGION_ERASEFF)
 ROM_END
-
-} // anonymous namespace
-
 
 //    YEAR  NAME      PARENT   COMPAT  MACHINE   INPUT  CLASS          INIT        COMPANY              FULLNAME                                                           FLAGS
 COMP( 1976, ti990_4,  0,       0,      ti990_4,  0,     ti990_4_state, empty_init, "Texas Instruments", "TI Model 990/4 Microcomputer System",                             MACHINE_NOT_WORKING | MACHINE_NO_SOUND )

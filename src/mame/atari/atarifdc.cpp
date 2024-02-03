@@ -16,7 +16,6 @@
 #include "formats/atari_dsk.h"
 
 #include <cctype>
-#include <cstdarg>
 
 
 #define VERBOSE_SERIAL  0
@@ -719,7 +718,7 @@ void atari_fdc_device::serout_w(uint8_t data)
 	}
 }
 
-void atari_fdc_device::pia_cb2_w(int state)
+WRITE_LINE_MEMBER(atari_fdc_device::pia_cb2_w)
 {
 	if (!state)
 	{

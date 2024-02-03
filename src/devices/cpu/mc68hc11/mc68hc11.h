@@ -1,5 +1,5 @@
 // license:BSD-3-Clause
-// copyright-holders:Ville Linde, Angelo Salese, AJR
+// copyright-holders:Ville Linde, Angelo Salese
 #ifndef MAME_CPU_MC68HC11_MC68HC11_H
 #define MAME_CPU_MC68HC11_MC68HC11_H
 
@@ -8,7 +8,8 @@
 
 enum {
 	MC68HC11_IRQ_LINE           = 0,
-	MC68HC11_XIRQ_LINE          = 1
+	MC68HC11_TOC1_LINE          = 1,
+	MC68HC11_RTI_LINE           = 2
 };
 
 DECLARE_DEVICE_TYPE(MC68HC11A1, mc68hc11a1_device)
@@ -55,11 +56,12 @@ public:
 protected:
 	mc68hc11_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, uint16_t ram_size, uint16_t reg_block_size, uint16_t rom_size, uint16_t eeprom_size, uint8_t init_value, uint8_t config_mask, uint8_t option_mask);
 
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
-	// device_execute_interface implementation
+	// device_execute_interface overrides
 	virtual uint32_t execute_min_cycles() const noexcept override { return 1; }
 	virtual uint32_t execute_max_cycles() const noexcept override { return 41; }
 	virtual uint32_t execute_input_lines() const noexcept override { return 2; }
@@ -68,21 +70,20 @@ protected:
 	virtual void execute_run() override;
 	virtual void execute_set_input(int inputnum, int state) override;
 
-	// device_memory_interface implementation
+	// device_memory_interface overrides
 	virtual space_config_vector memory_space_config() const override;
 
-	// device_nvram_interface implementation
+	// device_nvram_interface overrides
+	virtual bool nvram_can_write() override;
 	virtual bool nvram_read(util::read_stream &file) override;
 	virtual bool nvram_write(util::write_stream &file) override;
 	virtual void nvram_default() override;
 
-	// device_state_interface implementation
+	// device_state_interface overrides
 	virtual void state_string_export(const device_state_entry &entry, std::string &str) const override;
 
-	// device_disasm_interface implementation
+	// device_disasm_interface overrides
 	virtual std::unique_ptr<util::disasm_interface> create_disassembler() override;
-
-	void set_irq_state(uint8_t irqn, bool state);
 
 	virtual void mc68hc11_reg_map(memory_view::memory_view_entry &block, offs_t base) = 0;
 
@@ -166,9 +167,7 @@ private:
 	uint8_t m_adctl;
 	int m_ad_channel;
 
-	uint32_t m_irq_state;
-	bool m_irq_asserted;
-
+	uint8_t m_irq_state[3];
 	memory_access<16, 0, 0, ENDIANNESS_BIG>::cache m_cache;
 	memory_access<16, 0, 0, ENDIANNESS_BIG>::specific m_program;
 	devcb_read8::array<8> m_port_input_cb;

@@ -39,9 +39,9 @@ private:
 	uint8_t m_out0 = 0U;
 	uint8_t m_out1 = 0U;
 	uint8_t m_out2 = 0U;
-	void pit8253_out0_changed(int state);
-	void pit8253_out1_changed(int state);
-	void pit8253_out2_changed(int state);
+	DECLARE_WRITE_LINE_MEMBER(pit8253_out0_changed);
+	DECLARE_WRITE_LINE_MEMBER(pit8253_out1_changed);
+	DECLARE_WRITE_LINE_MEMBER(pit8253_out2_changed);
 	I8275_DRAW_CHARACTER_MEMBER(display_pixels);
 
 	required_device<speaker_sound_device> m_speaker;
@@ -158,19 +158,19 @@ INPUT_PORTS_END
 
 static const double speaker_levels[] = {-1.0, -0.33333, 0.33333, 1.0};
 
-void apogee_state::pit8253_out0_changed(int state)
+WRITE_LINE_MEMBER(apogee_state::pit8253_out0_changed)
 {
 	m_out0 = state;
 	m_speaker->level_w(m_out0+m_out1+m_out2);
 }
 
-void apogee_state::pit8253_out1_changed(int state)
+WRITE_LINE_MEMBER(apogee_state::pit8253_out1_changed)
 {
 	m_out1 = state;
 	m_speaker->level_w(m_out0+m_out1+m_out2);
 }
 
-void apogee_state::pit8253_out2_changed(int state)
+WRITE_LINE_MEMBER(apogee_state::pit8253_out2_changed)
 {
 	m_out2 = state;
 	m_speaker->level_w(m_out0+m_out1+m_out2);
@@ -208,20 +208,18 @@ void apogee_state::machine_start()
 
 I8275_DRAW_CHARACTER_MEMBER(apogee_state::display_pixels)
 {
-	using namespace i8275_attributes;
 	rgb_t const *const palette = m_palette->palette()->entry_list_raw();
-	uint8_t const *const charmap = &m_chargen[BIT(attrcode, GPA0) ? 0x400 : 0];
+	uint8_t const *const charmap = &m_chargen[(gpa & 1) * 0x400];
 	uint8_t pixels = charmap[(linecount & 7) + (charcode << 3)] ^ 0xff;
-	if (BIT(attrcode, VSP))
+	if (vsp)
 		pixels = 0;
 
-	if (BIT(attrcode, LTEN))
+	if (lten)
 		pixels = 0xff;
 
-	if (BIT(attrcode, RVV))
+	if (rvv)
 		pixels ^= 0xff;
 
-	bool hlgt = BIT(attrcode, HLGT);
 	for(int i=0;i<6;i++)
 		bitmap.pix(y, x + i) = palette[(pixels >> (5-i)) & 1 ? (hlgt ? 2 : 1) : 0];
 }

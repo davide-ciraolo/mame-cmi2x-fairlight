@@ -38,9 +38,7 @@ The keyboard has a sticker that proclaims it was made by Fujitsu Limited.
 #include "bus/rs232/keyboard.h"
 #include "emupal.h"
 #include "screen.h"
-
-
-namespace {
+#include "formats/imd_dsk.h"
 
 class peoplepc_state : public driver_device
 {
@@ -86,11 +84,12 @@ private:
 	void charram_w(offs_t offset, uint16_t data);
 	void dmapg_w(uint8_t data);
 	void p7c_w(uint8_t data);
-	void tc_w(int state);
-	void hrq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(tc_w);
+	DECLARE_WRITE_LINE_MEMBER(hrq_w);
 	uint8_t memory_read_byte(offs_t offset);
 	void memory_write_byte(offs_t offset, uint8_t data);
-	void floppy_load(floppy_image_device *dev);
+	static void floppy_formats(format_registration &fr);
+	image_init_result floppy_load(floppy_image_device *dev);
 	void floppy_unload(floppy_image_device *dev);
 
 	uint8_t m_dma0pg = 0, m_p7c = 0;
@@ -166,12 +165,12 @@ void peoplepc_state::p7c_w(uint8_t data)
 	m_crtc->set_hpixels_per_column(BIT(data, 1) ? 16 : 8);
 }
 
-void peoplepc_state::tc_w(int state)
+WRITE_LINE_MEMBER(peoplepc_state::tc_w)
 {
 	m_fdc->tc_w(state);
 }
 
-void peoplepc_state::hrq_w(int state)
+WRITE_LINE_MEMBER(peoplepc_state::hrq_w)
 {
 	m_maincpu->set_input_line(INPUT_LINE_HALT, state);
 	m_dmac->hlda_w(state);
@@ -189,9 +188,10 @@ void peoplepc_state::memory_write_byte(offs_t offset, uint8_t data)
 	prog_space.write_byte(offset | (m_dma0pg << 16), data);
 }
 
-void peoplepc_state::floppy_load(floppy_image_device *dev)
+image_init_result peoplepc_state::floppy_load(floppy_image_device *dev)
 {
 	dev->mon_w(0);
+	return image_init_result::PASS;
 }
 
 void peoplepc_state::floppy_unload(floppy_image_device *dev)
@@ -247,6 +247,12 @@ void peoplepc_state::peoplepc_io(address_map &map)
 static void peoplepc_floppies(device_slot_interface &device)
 {
 	device.option_add("525qd", FLOPPY_525_QD);
+}
+
+void peoplepc_state::floppy_formats(format_registration &fr)
+{
+	fr.add_mfm_containers();
+	fr.add(FLOPPY_IMD_FORMAT);
 }
 
 void peoplepc_keyboard_devices(device_slot_interface &device)
@@ -314,8 +320,8 @@ void peoplepc_state::olypeopl(machine_config &config)
 	UPD765A(config, m_fdc, XTAL(8'000'000)/2, true, true);
 	m_fdc->intrq_wr_callback().set("pic8259_0", FUNC(pic8259_device::ir2_w));
 	m_fdc->drq_wr_callback().set(m_dmac, FUNC(i8257_device::dreq0_w));
-	FLOPPY_CONNECTOR(config, "upd765:0", peoplepc_floppies, "525qd", floppy_image_device::default_mfm_floppy_formats);
-	FLOPPY_CONNECTOR(config, "upd765:1", peoplepc_floppies, "525qd", floppy_image_device::default_mfm_floppy_formats);
+	FLOPPY_CONNECTOR(config, "upd765:0", peoplepc_floppies, "525qd", peoplepc_state::floppy_formats);
+	FLOPPY_CONNECTOR(config, "upd765:1", peoplepc_floppies, "525qd", peoplepc_state::floppy_formats);
 
 	I8251(config, m_8251key, XTAL(14'745'600)/6);
 	m_8251key->rxrdy_handler().set("pic8259_1", FUNC(pic8259_device::ir1_w));
@@ -352,8 +358,5 @@ ROM_START( olypeopl )
 	ROM_REGION(0x400, "kbdmcu", 0)
 	ROM_LOAD( "m1.bin", 0x000, 0x400, NO_DUMP )
 ROM_END
-
-} // anonymous namespace
-
 
 COMP( 1983, olypeopl, 0, 0, olypeopl, 0, peoplepc_state, empty_init, "Olympia International", "People PC", MACHINE_NOT_WORKING|MACHINE_NO_SOUND)

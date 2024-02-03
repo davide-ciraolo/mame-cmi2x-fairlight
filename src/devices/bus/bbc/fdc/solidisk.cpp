@@ -11,11 +11,9 @@
 
 **********************************************************************/
 
+
 #include "emu.h"
 #include "solidisk.h"
-
-#include "formats/acorn_dsk.h"
-#include "formats/fsd_dsk.h"
 
 
 //**************************************************************************
@@ -228,14 +226,14 @@ INPUT_CHANGED_MEMBER(bbc_stlfdc_device::fdc_changed)
 	device_reset();
 }
 
-void bbc_stlfdc_device::motor_w(int state)
+WRITE_LINE_MEMBER(bbc_stlfdc_device::motor_w)
 {
 	if (m_floppy[0]->get_device()) m_floppy[0]->get_device()->mon_w(!state);
 	if (m_floppy[1]->get_device()) m_floppy[1]->get_device()->mon_w(!state);
 	m_i8271->ready_w(!state);
 }
 
-void bbc_stlfdc_device::side_w(int state)
+WRITE_LINE_MEMBER(bbc_stlfdc_device::side_w)
 {
 	if (m_floppy[0]->get_device()) m_floppy[0]->get_device()->ss_w(state);
 	if (m_floppy[1]->get_device()) m_floppy[1]->get_device()->ss_w(state);

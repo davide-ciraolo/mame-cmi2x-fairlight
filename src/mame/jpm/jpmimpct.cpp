@@ -124,6 +124,8 @@ jpmtouch_device::jpmtouch_device(const machine_config &mconfig, device_type type
 
 void jpmtouch_device::device_start()
 {
+	m_rxd_handler.resolve_safe();
+
 	save_item(NAME(m_touch_data));
 	save_item(NAME(m_sendpos));
 	save_item(NAME(m_sending));
@@ -246,19 +248,6 @@ void jpmimpct_state::machine_start()
 {
 	m_digits.resolve();
 	m_lamp_output.resolve();
-	m_pwrled.resolve();
-	m_statled.resolve();
-
-	save_item(NAME(m_optic_pattern));
-	save_item(NAME(m_payen));
-	save_item(NAME(m_hopinhibit));
-	save_item(NAME(m_slidesout));
-	save_item(NAME(m_hopper));
-	save_item(NAME(m_motor));
-	save_item(NAME(m_volume_latch));
-	save_item(NAME(m_global_volume));
-	save_item(NAME(m_coinstate));
-
 }
 
 void jpmimpct_state::machine_reset()
@@ -375,8 +364,8 @@ uint16_t jpmimpct_state::jpmio_r()
 
 void jpmimpct_state::pwrled_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 {
-	m_pwrled = !(data & 0x100);
-	m_statled = !(data & 0x200);
+	output().set_value("PWRLED",!(data&0x100));
+	output().set_value("STATLED",!(data&0x200));
 }
 
 void jpmimpct_state::reels_0123_w(offs_t offset, uint16_t data, uint16_t mem_mask)
@@ -1104,7 +1093,7 @@ INPUT_PORTS_END
  *
  *************************************/
 
-void jpmimpct_video_state::tms_irq(int state)
+WRITE_LINE_MEMBER(jpmimpct_video_state::tms_irq)
 {
 	m_tms_irq = state;
 	update_irqs();
@@ -1126,7 +1115,7 @@ void jpmimpct_video_state::tms_irq(int state)
 // B2 = Hopper Low
 // B3 = 20p Hopper Opto
 
-int jpmimpct_state::hopper_b_0_r()
+READ_LINE_MEMBER( jpmimpct_state::hopper_b_0_r )
 {
 	uint8_t retval = 0x01;
 
@@ -1147,7 +1136,7 @@ int jpmimpct_state::hopper_b_0_r()
 	return retval;
 }
 
-int jpmimpct_state::hopper_b_3_r()
+READ_LINE_MEMBER( jpmimpct_state::hopper_b_3_r )
 {
 	uint8_t retval = 0x01;
 
@@ -1181,7 +1170,7 @@ int jpmimpct_state::hopper_b_3_r()
 //    if (StatBtns & 0x20) // Top Up switch
 //    retval &= ~0x20;
 
-int jpmimpct_state::hopper_c_4_r()
+READ_LINE_MEMBER(jpmimpct_state::hopper_c_4_r)
 {
 	uint8_t retval = 0x01;
 
@@ -1193,7 +1182,7 @@ int jpmimpct_state::hopper_c_4_r()
 	return retval;
 }
 
-int jpmimpct_state::hopper_c_6_r()
+READ_LINE_MEMBER(jpmimpct_state::hopper_c_6_r)
 {
 	uint8_t retval = 0x01;
 
@@ -1205,7 +1194,7 @@ int jpmimpct_state::hopper_c_6_r()
 	return retval;
 }
 
-int jpmimpct_state::hopper_c_7_r()
+READ_LINE_MEMBER(jpmimpct_state::hopper_c_7_r)
 {
 	uint8_t retval = 0x01;
 
@@ -1286,7 +1275,7 @@ TIMER_DEVICE_CALLBACK_MEMBER(jpmimpct_state::duart_set_ip5)
  *
  *************************************/
 
-void jpmimpct_state::duart_irq_handler(int state)
+WRITE_LINE_MEMBER(jpmimpct_state::duart_irq_handler)
 {
 	// triggers IRQ 5
 	m_maincpu->set_input_line(5, state);

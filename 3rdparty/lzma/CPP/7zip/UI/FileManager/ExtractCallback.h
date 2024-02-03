@@ -1,42 +1,42 @@
 // ExtractCallback.h
 
-#ifndef ZIP7_INC_EXTRACT_CALLBACK_H
-#define ZIP7_INC_EXTRACT_CALLBACK_H
+#ifndef __EXTRACT_CALLBACK_H
+#define __EXTRACT_CALLBACK_H
 
 #include "../../../../C/Alloc.h"
 
 #include "../../../Common/MyCom.h"
 #include "../../../Common/StringConvert.h"
 
-#ifndef Z7_SFX
+#ifndef _SFX
 #include "../Agent/IFolderArchive.h"
 #endif
 
 #include "../Common/ArchiveExtractCallback.h"
 #include "../Common/ArchiveOpenCallback.h"
 
-#ifndef Z7_NO_CRYPTO
+#ifndef _NO_CRYPTO
 #include "../../IPassword.h"
 #endif
 
-#ifndef Z7_SFX
+#ifndef _SFX
 #include "IFolder.h"
 #endif
 
 #include "ProgressDialog2.h"
 
-#ifdef Z7_LANG
-// #include "LangUtils.h"
+#ifdef LANG
+#include "LangUtils.h"
 #endif
 
-#ifndef Z7_SFX
+#ifndef _SFX
 
 class CGrowBuf
 {
   Byte *_items;
   size_t _size;
 
-  Z7_CLASS_NO_COPY(CGrowBuf)
+  CLASS_NO_COPY(CGrowBuf);
 
 public:
   bool ReAlloc_KeepData(size_t newSize, size_t keepSize)
@@ -52,7 +52,7 @@ public:
     return true;
   }
 
-  CGrowBuf(): _items(NULL), _size(0) {}
+  CGrowBuf(): _items(0), _size(0) {}
   ~CGrowBuf() { MyFree(_items); }
 
   operator Byte *() { return _items; }
@@ -92,11 +92,10 @@ struct CVirtFile
     IsAltStream(false) {}
 };
 
-
-Z7_CLASS_IMP_NOQIB_1(
-  CVirtFileSystem,
-  ISequentialOutStream
-)
+class CVirtFileSystem:
+  public ISequentialOutStream,
+  public CMyUnknownImp
+{
   UInt64 _totalAllocSize;
 
   size_t _pos;
@@ -157,86 +156,104 @@ public:
   HRESULT CloseFile(const FString &path);
   HRESULT FlushToDisk(bool closeLast);
   size_t GetPos() const { return _pos; }
+
+  MY_UNKNOWN_IMP
+  STDMETHOD(Write)(const void *data, UInt32 size, UInt32 *processedSize);
 };
 
 #endif
   
-class CExtractCallbackImp Z7_final:
-  public IFolderArchiveExtractCallback,
-  /* IExtractCallbackUI:
-       before v23.00 : it         included IFolderArchiveExtractCallback
-       since  v23.00 : it doesn't include  IFolderArchiveExtractCallback
-  */
-  public IExtractCallbackUI, // NON-COM interface since 23.00
-  public IOpenCallbackUI,    // NON-COM interface
+class CExtractCallbackImp:
+  public IExtractCallbackUI, // it includes IFolderArchiveExtractCallback
+  public IOpenCallbackUI,
   public IFolderArchiveExtractCallback2,
- #ifndef Z7_SFX
+  #ifndef _SFX
   public IFolderOperationsExtractCallback,
   public IFolderExtractToStreamCallback,
   public ICompressProgressInfo,
- #endif
- #ifndef Z7_NO_CRYPTO
+  #endif
+  #ifndef _NO_CRYPTO
   public ICryptoGetTextPassword,
- #endif
+  #endif
   public CMyUnknownImp
 {
-  Z7_COM_QI_BEGIN2(IFolderArchiveExtractCallback)
-  Z7_COM_QI_ENTRY(IFolderArchiveExtractCallback2)
- #ifndef Z7_SFX
-  Z7_COM_QI_ENTRY(IFolderOperationsExtractCallback)
-  Z7_COM_QI_ENTRY(IFolderExtractToStreamCallback)
-  Z7_COM_QI_ENTRY(ICompressProgressInfo)
- #endif
- #ifndef Z7_NO_CRYPTO
-  Z7_COM_QI_ENTRY(ICryptoGetTextPassword)
- #endif
-  Z7_COM_QI_END
-  Z7_COM_ADDREF_RELEASE
+  HRESULT MessageError(const char *message, const FString &path);
+  void Add_ArchiveName_Error();
+public:
+  MY_QUERYINTERFACE_BEGIN2(IFolderArchiveExtractCallback)
+  MY_QUERYINTERFACE_ENTRY(IFolderArchiveExtractCallback2)
+  #ifndef _SFX
+  MY_QUERYINTERFACE_ENTRY(IFolderOperationsExtractCallback)
+  MY_QUERYINTERFACE_ENTRY(IFolderExtractToStreamCallback)
+  MY_QUERYINTERFACE_ENTRY(ICompressProgressInfo)
+  #endif
+  #ifndef _NO_CRYPTO
+  MY_QUERYINTERFACE_ENTRY(ICryptoGetTextPassword)
+  #endif
+  MY_QUERYINTERFACE_END
+  MY_ADDREF_RELEASE
 
-  Z7_IFACE_IMP(IExtractCallbackUI)
-  Z7_IFACE_IMP(IOpenCallbackUI)
-  Z7_IFACE_COM7_IMP(IProgress)
-  Z7_IFACE_COM7_IMP(IFolderArchiveExtractCallback)
-  Z7_IFACE_COM7_IMP(IFolderArchiveExtractCallback2)
- #ifndef Z7_SFX
-  Z7_IFACE_COM7_IMP(IFolderOperationsExtractCallback)
-  Z7_IFACE_COM7_IMP(IFolderExtractToStreamCallback)
-  Z7_IFACE_COM7_IMP(ICompressProgressInfo)
- #endif
- #ifndef Z7_NO_CRYPTO
-  Z7_IFACE_COM7_IMP(ICryptoGetTextPassword)
- #endif
+  INTERFACE_IProgress(;)
+  INTERFACE_IOpenCallbackUI(;)
+  INTERFACE_IFolderArchiveExtractCallback(;)
+  INTERFACE_IFolderArchiveExtractCallback2(;)
+  // STDMETHOD(SetTotalFiles)(UInt64 total);
+  // STDMETHOD(SetCompletedFiles)(const UInt64 *value);
 
+  INTERFACE_IExtractCallbackUI(;)
 
+  #ifndef _SFX
+  // IFolderOperationsExtractCallback
+  STDMETHOD(AskWrite)(
+      const wchar_t *srcPath,
+      Int32 srcIsFolder,
+      const FILETIME *srcTime,
+      const UInt64 *srcSize,
+      const wchar_t *destPathRequest,
+      BSTR *destPathResult,
+      Int32 *writeAnswer);
+  STDMETHOD(ShowMessage)(const wchar_t *message);
+  STDMETHOD(SetCurrentFilePath)(const wchar_t *filePath);
+  STDMETHOD(SetNumFiles)(UInt64 numFiles);
+  INTERFACE_IFolderExtractToStreamCallback(;)
+  STDMETHOD(SetRatioInfo)(const UInt64 *inSize, const UInt64 *outSize);
+  #endif
+
+  // ICryptoGetTextPassword
+  #ifndef _NO_CRYPTO
+  STDMETHOD(CryptoGetTextPassword)(BSTR *password);
+  #endif
+
+private:
   UString _currentArchivePath;
   bool _needWriteArchivePath;
 
-  bool _isFolder;
   UString _currentFilePath;
-  UString _filePath;
+  bool _isFolder;
 
- #ifndef Z7_SFX
-  bool _needUpdateStat;
-  bool _newVirtFileWasAdded;
   bool _isAltStream;
-  bool _curSize_Defined;
   UInt64 _curSize;
+  bool _curSizeDefined;
+  UString _filePath;
   // bool _extractMode;
   // bool _testMode;
+  bool _newVirtFileWasAdded;
+  bool _needUpdateStat;
+
+
+  HRESULT SetCurrentFilePath2(const wchar_t *filePath);
+  void AddError_Message(LPCWSTR message);
+
+  #ifndef _SFX
   bool _hashStreamWasUsed;
   COutStreamWithHash *_hashStreamSpec;
   CMyComPtr<ISequentialOutStream> _hashStream;
   IHashCalc *_hashCalc; // it's for stat in Test operation
- #endif
-
-  HRESULT SetCurrentFilePath2(const wchar_t *filePath);
-  void AddError_Message(LPCWSTR message);
-  HRESULT MessageError(const char *message, const FString &path);
-  void Add_ArchiveName_Error();
+  #endif
 
 public:
 
-  #ifndef Z7_SFX
+  #ifndef _SFX
   CVirtFileSystem *VirtFileSystemSpec;
   CMyComPtr<ISequentialOutStream> VirtFileSystem;
   #endif
@@ -246,7 +263,7 @@ public:
   bool StreamMode;
 
   CProgressDialog *ProgressDialog;
-  #ifndef Z7_SFX
+  #ifndef _SFX
   UInt64 NumFolders;
   UInt64 NumFiles;
   bool NeedAddFile;
@@ -255,7 +272,7 @@ public:
   bool ThereAreMessageErrors;
   NExtract::NOverwriteMode::EEnum OverwriteMode;
 
-  #ifndef Z7_NO_CRYPTO
+  #ifndef _NO_CRYPTO
   bool PasswordIsDefined;
   bool PasswordWasAsked;
   UString Password;
@@ -265,7 +282,6 @@ public:
   UString _lang_Extracting;
   UString _lang_Testing;
   UString _lang_Skipping;
-  UString _lang_Reading;
   UString _lang_Empty;
 
   bool _totalFilesDefined;
@@ -273,25 +289,27 @@ public:
   bool MultiArcMode;
 
   CExtractCallbackImp():
-    #ifndef Z7_SFX
-    _hashCalc(NULL),
-    #endif
-    ProcessAltStreams(true),
-    StreamMode(false),
-    OverwriteMode(NExtract::NOverwriteMode::kAsk),
-    #ifndef Z7_NO_CRYPTO
+    #ifndef _NO_CRYPTO
     PasswordIsDefined(false),
     PasswordWasAsked(false),
     #endif
+    OverwriteMode(NExtract::NOverwriteMode::kAsk),
+    StreamMode(false),
+    ProcessAltStreams(true),
+    
     _totalFilesDefined(false),
     _totalBytesDefined(false),
     MultiArcMode(false)
+    
+    #ifndef _SFX
+    , _hashCalc(NULL)
+    #endif
     {}
    
   ~CExtractCallbackImp();
   void Init();
 
-  #ifndef Z7_SFX
+  #ifndef _SFX
   void SetHashCalc(IHashCalc *hashCalc) { _hashCalc = hashCalc; }
 
   void SetHashMethods(IHashCalc *hash)

@@ -56,6 +56,11 @@ void amiga_keyboard_bus_device::device_start()
 {
 	// get connected keyboard
 	m_kbd = get_card_device();
+
+	// resolve callbacks
+	m_kclk_handler.resolve_safe();
+	m_kdat_handler.resolve_safe();
+	m_krst_handler.resolve_safe();
 }
 
 //-------------------------------------------------
@@ -70,7 +75,7 @@ void amiga_keyboard_bus_device::device_reset()
 //  host to module interface
 //-------------------------------------------------
 
-void amiga_keyboard_bus_device::kdat_in_w(int state)
+WRITE_LINE_MEMBER( amiga_keyboard_bus_device::kdat_in_w )
 {
 	if (m_kbd)
 		m_kbd->kdat_w(state);

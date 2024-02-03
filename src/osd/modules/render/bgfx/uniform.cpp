@@ -7,12 +7,10 @@
 //============================================================
 
 #include "uniform.h"
-
 #include <cstring>
-#include <utility>
 
-bgfx_uniform::bgfx_uniform(std::string &&name, bgfx::UniformType::Enum type)
-	: m_name(std::move(name))
+bgfx_uniform::bgfx_uniform(std::string name, bgfx::UniformType::Enum type)
+	: m_name(name)
 	, m_type(type)
 {
 	m_handle = BGFX_INVALID_HANDLE;

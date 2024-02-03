@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/iq151_dsk.cpp
+    formats/iq151_dsk.c
 
     iq151 format
 
@@ -14,17 +14,17 @@ iq151_format::iq151_format() : upd765_format(formats)
 {
 }
 
-const char *iq151_format::name() const noexcept
+const char *iq151_format::name() const
 {
 	return "iq151";
 }
 
-const char *iq151_format::description() const noexcept
+const char *iq151_format::description() const
 {
 	return "IQ151 disk image";
 }
 
-const char *iq151_format::extensions() const noexcept
+const char *iq151_format::extensions() const
 {
 	return "iqd";
 }

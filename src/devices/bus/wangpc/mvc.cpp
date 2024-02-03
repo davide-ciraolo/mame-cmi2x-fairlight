@@ -126,7 +126,7 @@ MC6845_UPDATE_ROW( wangpc_mvc_device::crtc_update_row )
 	}
 }
 
-void wangpc_mvc_device::vsync_w(int state)
+WRITE_LINE_MEMBER( wangpc_mvc_device::vsync_w )
 {
 	if (OPTION_VSYNC && state)
 	{

@@ -77,6 +77,8 @@ TODO: 68230 device
 #include "softlist.h"
 #include "speaker.h"
 
+#include "formats/imd_dsk.h"
+
 
 namespace {
 
@@ -121,13 +123,15 @@ private:
 
 	void fdc_select_w(uint8_t data);
 
-	void duart1_irq(int state);
-	[[maybe_unused]] void duart2_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(duart1_irq);
+	[[maybe_unused]] DECLARE_WRITE_LINE_MEMBER(duart2_irq);
 
-	void irq5_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq5_w);
 
-	void keyboard_clock_w(int state);
-	void keyboard_data_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(keyboard_clock_w);
+	DECLARE_WRITE_LINE_MEMBER(keyboard_data_w);
+
+	static void floppy_formats(format_registration &fr);
 
 	void pt68k2_mem(address_map &map);
 	void pt68k4_mem(address_map &map);
@@ -154,13 +158,19 @@ private:
 	bool m_irq5_duart1 = false, m_irq5_isa = false;
 };
 
+void pt68k4_state::floppy_formats(format_registration &fr)
+{
+	fr.add_mfm_containers();
+	fr.add(FLOPPY_IMD_FORMAT);
+}
+
 static void pt68k_floppies(device_slot_interface &device)
 {
 	device.option_add("525dd", FLOPPY_525_DD);
 }
 
 // XT keyboard interface - done in TTL instead of an 804x
-void pt68k4_state::keyboard_clock_w(int state)
+WRITE_LINE_MEMBER(pt68k4_state::keyboard_clock_w)
 {
 //  printf("KCLK: %d\n", state ? 1 : 0);
 
@@ -190,7 +200,7 @@ void pt68k4_state::keyboard_clock_w(int state)
 	m_kclk = (state == ASSERT_LINE) ? true : false;
 }
 
-void pt68k4_state::keyboard_data_w(int state)
+WRITE_LINE_MEMBER(pt68k4_state::keyboard_data_w)
 {
 //  printf("KDATA: %d\n", state ? 1 : 0);
 	m_kdata = (state == ASSERT_LINE) ? 0x80 : 0x00;
@@ -371,19 +381,19 @@ void pt68k4_state::irq5_update()
 	}
 }
 
-void pt68k4_state::duart1_irq(int state)
+WRITE_LINE_MEMBER(pt68k4_state::duart1_irq)
 {
 	m_irq5_duart1 = state;
 	irq5_update();
 }
 
-void pt68k4_state::irq5_w(int state)
+WRITE_LINE_MEMBER(pt68k4_state::irq5_w)
 {
 	m_irq5_isa = state;
 	irq5_update();
 }
 
-void pt68k4_state::duart2_irq(int state)
+WRITE_LINE_MEMBER(pt68k4_state::duart2_irq)
 {
 	m_maincpu->set_input_line(M68K_IRQ_4, state);
 }
@@ -420,8 +430,8 @@ void pt68k4_state::pt68k2(machine_config &config)
 	M48T02(config, TIMEKEEPER_TAG, 0);
 
 	WD1772(config, m_wdfdc, 16_MHz_XTAL / 2);
-	FLOPPY_CONNECTOR(config, m_floppy_connector[0], pt68k_floppies, "525dd", floppy_image_device::default_mfm_floppy_formats);
-	FLOPPY_CONNECTOR(config, m_floppy_connector[1], pt68k_floppies, "525dd", floppy_image_device::default_mfm_floppy_formats);
+	FLOPPY_CONNECTOR(config, m_floppy_connector[0], pt68k_floppies, "525dd", pt68k4_state::floppy_formats);
+	FLOPPY_CONNECTOR(config, m_floppy_connector[1], pt68k_floppies, "525dd", pt68k4_state::floppy_formats);
 
 	ISA8(config, m_isa, 0);
 	m_isa->set_custom_spaces();

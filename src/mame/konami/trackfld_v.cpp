@@ -99,7 +99,7 @@ void trackfld_state::trackfld_colorram_w(offs_t offset, uint8_t data)
 	m_bg_tilemap->mark_tile_dirty(offset);
 }
 
-void trackfld_state::flipscreen_w(int state)
+WRITE_LINE_MEMBER(trackfld_state::flipscreen_w)
 {
 	flip_screen_set(state);
 	machine().tilemap().mark_all_dirty();

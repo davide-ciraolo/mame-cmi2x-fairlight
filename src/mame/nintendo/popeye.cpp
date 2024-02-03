@@ -17,11 +17,10 @@ Notes:
 
 #include "emu.h"
 #include "popeye.h"
-
 #include "machine/eepromser.h"
 #include "machine/netlist.h"
 #include "netlist/devices/net_lib.h"
-
+#include "screen.h"
 #include "speaker.h"
 #include "nl_popeye.h"
 
@@ -104,7 +103,7 @@ void tpp2_state::refresh_w(offs_t offset, uint8_t data)
 	m_watchdog_enabled = ((offset >> 9) & 1) != 0;
 }
 
-void tnx1_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(tnx1_state::screen_vblank)
 {
 	if (state)
 	{
@@ -118,7 +117,7 @@ void tnx1_state::screen_vblank(int state)
 	}
 }
 
-void tpp2_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(tpp2_state::screen_vblank)
 {
 	tnx1_state::screen_vblank(state);
 
@@ -282,12 +281,7 @@ protected:
 };
 
 
-INPUT_CHANGED_MEMBER(tnx1_state::change_il)
-{
-	m_screen->set_video_attributes((newval == 2) ? VIDEO_ALWAYS_UPDATE : 0);
-}
-
-int tnx1_state::dsw1_read()
+READ_LINE_MEMBER(tnx1_state::dsw1_read)
 {
 	return m_io_dsw1->read() >> m_dswbit;
 }
@@ -369,14 +363,13 @@ static INPUT_PORTS_START( skyskipr )
 	PORT_DIPSETTING(    0x80, DEF_STR( Cocktail ) )
 
 	PORT_START("MCONF")
-	PORT_CONFNAME( 0x03, 0x00, "Interlace mode" ) PORT_CHANGED_MEMBER(DEVICE_SELF, tnx1_state, change_il, 0)
+	PORT_CONFNAME( 0x03, 0x00, "Interlace mode" )
 	PORT_CONFSETTING(    0x00, "False Progressive" )
 	PORT_CONFSETTING(    0x01, "Interlaced (scanline skip)" )
 	PORT_CONFSETTING(    0x02, "Interlaced (bitmap)" )
 INPUT_PORTS_END
 
-
-int tpp1_state::pop_field_r()
+READ_LINE_MEMBER( tnx1_state::pop_field_r )
 {
 	return m_field ^ 1;
 }
@@ -407,7 +400,7 @@ static INPUT_PORTS_START( popeye )
 	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_UNKNOWN ) /* probably unused */
 	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_START1 )
 	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_START2 )
-	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_CUSTOM ) PORT_READ_LINE_MEMBER(tpp1_state, pop_field_r) // inverted init e/o signal (even odd)
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_CUSTOM ) PORT_READ_LINE_MEMBER(tnx1_state, pop_field_r) // inverted init e/o signal (even odd)
 	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_COIN2 )
 	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_SERVICE1 )
 	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_COIN1 )
@@ -455,10 +448,11 @@ static INPUT_PORTS_START( popeye )
 	PORT_DIPSETTING(    0x80, DEF_STR( Cocktail ) )
 
 	PORT_START("MCONF")
-	PORT_CONFNAME( 0x03, 0x00, "Interlace mode" ) PORT_CHANGED_MEMBER(DEVICE_SELF, tnx1_state, change_il, 0)
+	PORT_CONFNAME( 0x03, 0x00, "Interlace mode" )
 	PORT_CONFSETTING(    0x00, "False Progressive" )
 	PORT_CONFSETTING(    0x01, "Interlaced (scanline skip)" )
 	PORT_CONFSETTING(    0x02, "Interlaced (bitmap)" )
+
 INPUT_PORTS_END
 
 
@@ -544,15 +538,15 @@ void tnx1_state::config(machine_config &config)
 	m_maincpu->refresh_cb().set(FUNC(tnx1_state::refresh_w));
 
 	/* video hardware */
-	// FIXME: 59.94 screen refresh is the NTSC standard
-	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
-	m_screen->set_refresh_hz(59.94);
-	m_screen->set_vblank_time(ATTOSECONDS_IN_USEC(0));
-	m_screen->set_size(32*16, 32*16);
-	m_screen->set_visarea(0*16, 32*16-1, 2*16, 30*16-1);
-	m_screen->set_palette(m_palette);
-	m_screen->set_screen_update(FUNC(tnx1_state::screen_update));
-	m_screen->screen_vblank().set(FUNC(tnx1_state::screen_vblank));
+	// FIXME: 59.94 screen refresch is the NTSC standard
+	auto &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
+	screen.set_refresh_hz(59.94)
+		.set_vblank_time(ATTOSECONDS_IN_USEC(0))
+		.set_size(32*16, 32*16)
+		.set_visarea(0*16, 32*16-1, 2*16, 30*16-1)
+		.set_palette(m_palette)
+		.set_screen_update(FUNC(tnx1_state::screen_update));
+	screen.screen_vblank().set(FUNC(tnx1_state::screen_vblank));
 
 	GFXDECODE(config, m_gfxdecode, m_palette, gfx_popeye);
 	PALETTE(config, m_palette, FUNC(tnx1_state::tnx1_palette), 16 + 16*2 + 8*4);

@@ -55,13 +55,16 @@
 #include "screen.h"
 #include "tilemap.h"
 
-#define LOG_AUDIO (1U << 1)
-
-#define VERBOSE (LOG_AUDIO)
-#include "logmacro.h"
-
 
 namespace {
+
+
+//**************************************************************************
+//  CONSTANTS / MACROS
+//**************************************************************************
+
+#define LOG_AUDIO 1
+
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -313,7 +316,8 @@ static constexpr const char* const sample_names[] =
 
 void mmagic_state::audio_w(uint8_t data)
 {
-	LOGMASKED(LOG_AUDIO, "audio_w: %02x\n", data);
+	if (LOG_AUDIO)
+		logerror("audio_w: %02x\n", data);
 
 	data ^= 0xff;
 	if (data != m_audio)

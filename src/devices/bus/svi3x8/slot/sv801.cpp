@@ -89,12 +89,12 @@ void sv801_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void sv801_device::intrq_w(int state)
+WRITE_LINE_MEMBER( sv801_device::intrq_w )
 {
 	m_irq = state;
 }
 
-void sv801_device::drq_w(int state)
+WRITE_LINE_MEMBER( sv801_device::drq_w )
 {
 	m_drq = state;
 }

@@ -16,7 +16,6 @@
 #include "machine/pit8253.h"
 #include "machine/ram.h"
 #include "sound/spkrdev.h"
-
 #include "speaker.h"
 
 
@@ -56,7 +55,7 @@ void ibm5160_mb_device::pc_page_w(offs_t offset, uint8_t data)
 }
 
 
-void ibm5160_mb_device::pc_dma_hrq_changed(int state)
+WRITE_LINE_MEMBER( ibm5160_mb_device::pc_dma_hrq_changed )
 {
 	m_maincpu->set_input_line(INPUT_LINE_HALT, state ? ASSERT_LINE : CLEAR_LINE);
 
@@ -127,7 +126,7 @@ void ibm5160_mb_device::pc_dma8237_0_dack_w(uint8_t data)
 }
 
 
-void ibm5160_mb_device::pc_dma8237_out_eop(int state)
+WRITE_LINE_MEMBER( ibm5160_mb_device::pc_dma8237_out_eop )
 {
 	m_cur_eop = state == ASSERT_LINE;
 	if(m_dma_channel != -1)
@@ -150,10 +149,10 @@ void ibm5160_mb_device::pc_select_dma_channel(int channel, bool state)
 	}
 }
 
-void ibm5160_mb_device::pc_dack0_w(int state) { pc_select_dma_channel(0, state); }
-void ibm5160_mb_device::pc_dack1_w(int state) { pc_select_dma_channel(1, state); }
-void ibm5160_mb_device::pc_dack2_w(int state) { pc_select_dma_channel(2, state); }
-void ibm5160_mb_device::pc_dack3_w(int state) { pc_select_dma_channel(3, state); }
+WRITE_LINE_MEMBER( ibm5160_mb_device::pc_dack0_w ) { pc_select_dma_channel(0, state); }
+WRITE_LINE_MEMBER( ibm5160_mb_device::pc_dack1_w ) { pc_select_dma_channel(1, state); }
+WRITE_LINE_MEMBER( ibm5160_mb_device::pc_dack2_w ) { pc_select_dma_channel(2, state); }
+WRITE_LINE_MEMBER( ibm5160_mb_device::pc_dack3_w ) { pc_select_dma_channel(3, state); }
 
 /*************************************************************
  *
@@ -161,13 +160,13 @@ void ibm5160_mb_device::pc_dack3_w(int state) { pc_select_dma_channel(3, state);
  *
  *************************************************************/
 
-void ibm5160_mb_device::pc_speaker_set_spkrdata(int state)
+WRITE_LINE_MEMBER(ibm5160_mb_device::pc_speaker_set_spkrdata)
 {
 	m_pc_spkrdata = state ? 1 : 0;
 	m_speaker->level_w(m_pc_spkrdata & m_pit_out2);
 }
 
-void ibm5160_mb_device::pic_int_w(int state)
+WRITE_LINE_MEMBER(ibm5160_mb_device::pic_int_w)
 {
 	m_int_callback(state);
 }
@@ -179,7 +178,7 @@ void ibm5160_mb_device::pic_int_w(int state)
  *
  *************************************************************/
 
-void ibm5160_mb_device::pc_pit8253_out1_changed(int state)
+WRITE_LINE_MEMBER( ibm5160_mb_device::pc_pit8253_out1_changed )
 {
 	/* Trigger DMA channel #0 */
 	if ( m_out1 == 0 && state == 1 && m_u73_q2 == 0 )
@@ -191,13 +190,13 @@ void ibm5160_mb_device::pc_pit8253_out1_changed(int state)
 }
 
 
-void ibm5160_mb_device::pc_pit8253_out2_changed(int state)
+WRITE_LINE_MEMBER( ibm5160_mb_device::pc_pit8253_out2_changed )
 {
 	m_pit_out2 = state ? 1 : 0;
 	m_speaker->level_w(m_pc_spkrdata & m_pit_out2);
 }
 
-void ibm5150_mb_device::pc_pit8253_out2_changed(int state)
+WRITE_LINE_MEMBER( ibm5150_mb_device::pc_pit8253_out2_changed )
 {
 	ibm5160_mb_device::pc_pit8253_out2_changed(state);
 	m_cassette->output(m_pit_out2 ? 1.0 : -1.0);
@@ -259,7 +258,7 @@ void ibm5150_mb_device::pc_pit8253_out2_changed(int state)
  *       ON  ON  - one disk drive
  *
  **********************************************************/
-void ibm5150_mb_device::keyboard_clock_w(int state)
+WRITE_LINE_MEMBER( ibm5150_mb_device::keyboard_clock_w )
 {
 	if (!m_ppi_keyboard_clear && !state && !m_ppi_shift_enable)
 	{
@@ -273,7 +272,7 @@ void ibm5150_mb_device::keyboard_clock_w(int state)
 	}
 }
 
-void ec1841_mb_device::keyboard_clock_w(int state)
+WRITE_LINE_MEMBER( ec1841_mb_device::keyboard_clock_w )
 {
 	if (!m_ppi_keyboard_clear && !state && !m_ppi_shift_enable)
 	{
@@ -287,7 +286,7 @@ void ec1841_mb_device::keyboard_clock_w(int state)
 	}
 }
 
-void ibm5160_mb_device::keyboard_clock_w(int state)
+WRITE_LINE_MEMBER( ibm5160_mb_device::keyboard_clock_w )
 {
 	if (!m_ppi_keyboard_clear && !state && !m_ppi_shift_enable)
 	{
@@ -302,7 +301,7 @@ void ibm5160_mb_device::keyboard_clock_w(int state)
 }
 
 
-void ibm5160_mb_device::keyboard_data_w(int state)
+WRITE_LINE_MEMBER( ibm5160_mb_device::keyboard_data_w )
 {
 	m_ppi_data_signal = state;
 }
@@ -400,7 +399,7 @@ void ibm5160_mb_device::nmi_enable_w(uint8_t data)
 		m_nmi_callback(CLEAR_LINE);
 }
 
-void ibm5160_mb_device::iochck_w(int state)
+WRITE_LINE_MEMBER( ibm5160_mb_device::iochck_w )
 {
 	if (m_nmi_enabled && !state)
 		m_nmi_callback(ASSERT_LINE);
@@ -553,6 +552,21 @@ void ibm5160_mb_device::map(address_map &map)
 	map(0x0060, 0x006f).rw("ppi8255", FUNC(i8255_device::read), FUNC(i8255_device::write));
 	map(0x0080, 0x008f).w(FUNC(ibm5160_mb_device::pc_page_w));
 	map(0x00a0, 0x00a1).w(FUNC(ibm5160_mb_device::nmi_enable_w));
+}
+
+
+//-------------------------------------------------
+//  device_resolve_objects - resolve objects that
+//  may be needed for other devices to set
+//  initial conditions at start time
+//-------------------------------------------------
+
+void ibm5160_mb_device::device_resolve_objects()
+{
+	m_int_callback.resolve_safe();
+	m_nmi_callback.resolve_safe();
+	m_kbdclk_callback.resolve_safe();
+	m_kbddata_callback.resolve_safe();
 }
 
 

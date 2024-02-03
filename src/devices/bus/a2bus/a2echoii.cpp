@@ -27,9 +27,9 @@
 #include "sound/tms5220.h"
 #include "speaker.h"
 
-#define LOG_READYQ (1U << 1)
-#define LOG_READ   (1U << 2)
-#define LOG_WRITE  (1U << 3)
+#define LOG_READYQ (1 << 0)
+#define LOG_READ (1 << 1)
+#define LOG_WRITE (1 << 2)
 
 //#define VERBOSE (LOG_READYQ | LOG_READ | LOG_WRITE)
 #include "logmacro.h"
@@ -70,8 +70,8 @@ protected:
 	virtual bool take_c800() override;
 
 private:
-	//void tms_irq_callback(int state);
-	void tms_readyq_callback(int state);
+	//DECLARE_WRITE_LINE_MEMBER(tms_irq_callback);
+	DECLARE_WRITE_LINE_MEMBER(tms_readyq_callback);
 	uint8_t m_writelatch_data; // 74ls373 latch
 	bool m_readlatch_flag; // 74c74 1st half
 	bool m_writelatch_flag; // 74c74 2nd half
@@ -140,13 +140,13 @@ void a2bus_echoii_device::device_reset()
 }
 
 /*
-void a2bus_echoii_device::tms_irq_callback(int state)
+WRITE_LINE_MEMBER(a2bus_echoii_device::tms_irq_callback)
 {
     update_irq_to_maincpu();
 }
 */
 
-void a2bus_echoii_device::tms_readyq_callback(int state)
+WRITE_LINE_MEMBER(a2bus_echoii_device::tms_readyq_callback)
 {
 	if (state == ASSERT_LINE)
 	{

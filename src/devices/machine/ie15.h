@@ -42,17 +42,18 @@ public:
 	auto rs232_conn_txd_handler() { return m_rs232_conn_txd_handler.bind(); }
 	auto rs232_conn_dtr_handler() { return m_rs232_conn_dtr_handler.bind(); }
 	auto rs232_conn_rts_handler() { return m_rs232_conn_rts_handler.bind(); }
-	void rs232_conn_dcd_w(int state);
-	void rs232_conn_dsr_w(int state);
-	void rs232_conn_ri_w(int state);
-	void rs232_conn_cts_w(int state);
-	void rs232_conn_rxd_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_dcd_w);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_dsr_w);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_ri_w);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_cts_w);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_rxd_w);
 
-	void update_serial(int state);
+	DECLARE_WRITE_LINE_MEMBER(update_serial);
 
 protected:
 	ie15_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
 
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
@@ -75,7 +76,7 @@ private:
 	void ie15core(machine_config &config);
 
 	void kbd_put(uint16_t data);
-	void kbd_sdv(int state);
+	DECLARE_WRITE_LINE_MEMBER(kbd_sdv);
 	void mem_w(uint8_t data);
 	uint8_t mem_r();
 	void mem_addr_lo_w(uint8_t data);

@@ -43,14 +43,11 @@ enum
 enum
 {
 	STATE_IDLE = 0,
-	STATE_START,
 	STATE_COMMAND,
 	STATE_ADDRESS,
 	STATE_DATA_IN,
-	STATE_DUMMY_OUT,
 	STATE_DATA_OUT,
-	STATE_ERASE,
-	STATE_WRITE
+	STATE_ERASE
 };
 
 
@@ -76,11 +73,11 @@ inline uint16_t nmc9306_device::read(offs_t offset)
 //  nmc9306_device - constructor
 //-------------------------------------------------
 
-inline void nmc9306_device::write(offs_t offset, u16 data)
+inline void nmc9306_device::write(offs_t offset, uint16_t data)
 {
 	if (m_ewen)
 	{
-		m_register[offset] = data;
+		m_register[offset] &= data;
 	}
 }
 
@@ -107,19 +104,11 @@ inline void nmc9306_device::erase(offs_t offset)
 //  nmc9306_device - constructor
 //-------------------------------------------------
 
-nmc9306_device::nmc9306_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
-	device_t(mconfig, NMC9306, tag, owner, clock),
-	device_nvram_interface(mconfig, *this),
-	m_bits(0),
-	m_state(STATE_IDLE),
-	m_command(0),
-	m_address(0),
-	m_data(0),
-	m_ewen(false),
-	m_cs(0),
-	m_sk(0),
-	m_do(0),
-	m_di(0)
+nmc9306_device::nmc9306_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: device_t(mconfig, NMC9306, tag, owner, clock),
+		device_nvram_interface(mconfig, *this),
+		m_state(STATE_IDLE),
+		m_ewen(false)
 {
 }
 
@@ -153,8 +142,6 @@ void nmc9306_device::device_start()
 
 void nmc9306_device::nvram_default()
 {
-	for (auto & elem : m_register)
-		elem = 0xffff;
 }
 
 
@@ -186,66 +173,8 @@ bool nmc9306_device::nvram_write(util::write_stream &file)
 //  cs_w - chip select input
 //-------------------------------------------------
 
-void nmc9306_device::cs_w(int state)
+WRITE_LINE_MEMBER( nmc9306_device::cs_w )
 {
-	if (m_cs != state)
-	{
-		LOG("NMC9306 CS %u\n", state);
-
-		if (m_cs && !state)
-		{
-			switch ((m_command >> 2) & 0x03)
-			{
-			case OTHER:
-				switch (m_command & 0x03)
-				{
-				case WRAL:
-					if (m_state == STATE_WRITE)
-					{
-						LOG("NMC9306 WRAL\n");
-						for (int address = 0; address < 16; address++)
-						{
-							write(address, m_data);
-						}
-					}
-					break;
-
-				case ERAL:
-					if (m_state == STATE_ERASE)
-					{
-						LOG("NMC9306 ERAL\n");
-						for (int address = 0; address < 16; address++)
-						{
-							erase(address);
-						}
-					}
-					break;
-				}
-				break;
-
-			case WRITE:
-				if (m_state == STATE_WRITE)
-				{
-					LOG("NMC9306 WRITE %u:%04x\n", m_address, m_data);
-					write(m_address, m_data);
-				}
-				break;
-
-			case ERASE:
-				if (m_state == STATE_ERASE)
-				{
-					LOG("NMC9306 ERASE %u\n", m_address);
-					erase(m_address);
-				}
-				break;
-			}
-
-			m_state = STATE_IDLE;
-			m_bits = 0;
-			m_do = 0;
-		}
-	}
-
 	m_cs = state;
 }
 
@@ -254,35 +183,20 @@ void nmc9306_device::cs_w(int state)
 //  ck_w - serial clock input
 //-------------------------------------------------
 
-void nmc9306_device::sk_w(int state)
+WRITE_LINE_MEMBER( nmc9306_device::sk_w )
 {
-	if (!m_cs) return;
-	if (m_sk == state) return;
-
-	LOG("NMC9306 SK %u\n", state);
-
 	m_sk = state;
 
-	if (m_sk && ((m_state == STATE_DUMMY_OUT) || (m_state == STATE_DATA_OUT))) return;
-	if (!m_sk && (m_state != STATE_DUMMY_OUT) && (m_state != STATE_DATA_OUT)) return;
+	if (!m_cs || !m_sk) return;
 
 	switch (m_state)
 	{
 	case STATE_IDLE:
 		LOG("NMC9306 Idle %u\n", m_di);
 
-		if (!m_di)
-		{
-			// start bit received
-			m_state = STATE_START;
-		}
-		break;
-
-	case STATE_START:
-		LOG("NMC9306 Start %u\n", m_di);
-
 		if (m_di)
 		{
+			// start bit received
 			m_state = STATE_COMMAND;
 			m_bits = 0;
 		}
@@ -293,8 +207,6 @@ void nmc9306_device::sk_w(int state)
 
 		m_command <<= 1;
 		m_command |= m_di;
-		m_command &= 0xf;
-
 		m_bits++;
 
 		if (m_bits == 4)
@@ -309,8 +221,6 @@ void nmc9306_device::sk_w(int state)
 
 		m_address <<= 1;
 		m_address |= m_di;
-		m_address &= 0xf;
-
 		m_bits++;
 
 		if (m_bits == 4)
@@ -327,13 +237,11 @@ void nmc9306_device::sk_w(int state)
 					break;
 
 				case WRAL:
-					LOG("NMC9306 Command WRAL\n");
-					m_state = STATE_DATA_IN;
+					LOG("NMC9306 WRAL\n");
 					break;
 
 				case ERAL:
-					LOG("NMC9306 Command ERAL\n");
-					m_state = ERASE;
+					LOG("NMC9306 ERAL\n");
 					break;
 
 				case EWEN:
@@ -345,19 +253,20 @@ void nmc9306_device::sk_w(int state)
 				break;
 
 			case WRITE:
-				LOG("NMC9306 Command WRITE %u\n", m_address);
+				LOG("NMC9306 WRITE %u\n", m_address & 0x0f);
 				m_state = STATE_DATA_IN;
 				break;
 
 			case READ:
-				m_data = read(m_address);
-				LOG("NMC9306 READ %u:%04x\n", m_address, m_data);
-				m_state = STATE_DUMMY_OUT;
+				LOG("NMC9306 READ %u\n", m_address & 0x0f);
+				m_data = read(m_address & 0x0f);
+				m_state = STATE_DATA_OUT;
 				break;
 
 			case ERASE:
-				LOG("NMC9306 Command ERASE %u\n", m_address);
-				m_state = ERASE;
+				LOG("NMC9306 ERASE %u\n", m_address & 0x0f);
+				erase(m_address & 0x0f);
+				m_state = STATE_ERASE;
 				break;
 			}
 
@@ -370,29 +279,21 @@ void nmc9306_device::sk_w(int state)
 
 		m_data <<= 1;
 		m_data |= m_di;
-
 		m_bits++;
 
 		if (m_bits == 16)
 		{
-			m_state = STATE_WRITE;
+			write(m_address & 0x0f, m_data);
+
+			m_state = STATE_IDLE;
 		}
 		break;
 
-	case STATE_DUMMY_OUT:
-		m_do = 0;
-
-		LOG("NMC9306 Dummy Bit OUT %u\n", m_do);
-
-		m_state = STATE_DATA_OUT;
-		break;
-
 	case STATE_DATA_OUT:
+		LOG("NMC9306 Data Bit OUT %u\n", m_di);
+
 		m_do = BIT(m_data, 15);
 		m_data <<= 1;
-
-		LOG("NMC9306 Data Bit OUT %u\n", m_do);
-
 		m_bits++;
 
 		if (m_bits == 16)
@@ -408,7 +309,7 @@ void nmc9306_device::sk_w(int state)
 //  di_w - serial data input
 //-------------------------------------------------
 
-void nmc9306_device::di_w(int state)
+WRITE_LINE_MEMBER( nmc9306_device::di_w )
 {
 	m_di = state;
 }
@@ -418,7 +319,7 @@ void nmc9306_device::di_w(int state)
 //  do_r - serial data output
 //-------------------------------------------------
 
-int nmc9306_device::do_r()
+READ_LINE_MEMBER( nmc9306_device::do_r )
 {
 	return m_do;
 }

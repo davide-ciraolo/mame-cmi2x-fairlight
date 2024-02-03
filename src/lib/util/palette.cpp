@@ -8,12 +8,12 @@
 
 ******************************************************************************/
 
-#include "palette.h"
-
-#include <algorithm>
 #include <cassert>
-#include <cmath>
+
+#include "palette.h"
 #include <cstdlib>
+#include <cmath>
+#include <algorithm>
 
 
 //**************************************************************************
@@ -44,7 +44,9 @@ inline rgb_t palette_t::adjust_palette_entry(rgb_t entry, float brightness, floa
 //  dirty_state - constructor
 //-------------------------------------------------
 
-palette_client::dirty_state::dirty_state() : m_mindirty(0), m_maxdirty(0)
+palette_client::dirty_state::dirty_state()
+	: m_mindirty(0),
+		m_maxdirty(0)
 {
 }
 
@@ -54,7 +56,7 @@ palette_client::dirty_state::dirty_state() : m_mindirty(0), m_maxdirty(0)
 //  min/max values
 //-------------------------------------------------
 
-const uint32_t *palette_client::dirty_state::dirty_list(uint32_t &mindirty, uint32_t &maxdirty) noexcept
+const uint32_t *palette_client::dirty_state::dirty_list(uint32_t &mindirty, uint32_t &maxdirty)
 {
 	// fill in the mindirty/maxdirty
 	mindirty = m_mindirty;
@@ -90,7 +92,7 @@ void palette_client::dirty_state::resize(uint32_t colors)
 //  mark_dirty - mark a single entry dirty
 //-------------------------------------------------
 
-void palette_client::dirty_state::mark_dirty(uint32_t index) noexcept
+void palette_client::dirty_state::mark_dirty(uint32_t index)
 {
 	m_dirty[index / 32] |= 1 << (index % 32);
 	m_mindirty = std::min(m_mindirty, index);
@@ -103,7 +105,7 @@ void palette_client::dirty_state::mark_dirty(uint32_t index) noexcept
 //  entries as clean
 //-------------------------------------------------
 
-void palette_client::dirty_state::reset() noexcept
+void palette_client::dirty_state::reset()
 {
 	// erase relevant entries in the new live one
 	if (m_mindirty <= m_maxdirty)
@@ -166,18 +168,20 @@ palette_client::~palette_client()
 //  list for a client
 //-------------------------------------------------
 
-const uint32_t *palette_client::dirty_list(uint32_t &mindirty, uint32_t &maxdirty) noexcept
+const uint32_t *palette_client::dirty_list(uint32_t &mindirty, uint32_t &maxdirty)
 {
 	// if nothing to report, report nothing and don't swap
-	uint32_t const *const result = m_live->dirty_list(mindirty, maxdirty);
-	if (result)
-	{
-		// swap the live and previous lists
-		std::swap(m_live, m_previous);
+	const uint32_t *result = m_live->dirty_list(mindirty, maxdirty);
+	if (result == nullptr)
+		return nullptr;
 
-		// reset new live one and return the pointer to the previous
-		m_live->reset();
-	}
+	// swap the live and previous lists
+	dirty_state *temp = m_live;
+	m_live = m_previous;
+	m_previous = temp;
+
+	// reset new live one and return the pointer to the previous
+	m_live->reset();
 	return result;
 }
 
@@ -262,7 +266,7 @@ palette_t::~palette_t()
 //  palette_t - destructor
 //-------------------------------------------------
 
-void palette_t::deref() noexcept
+void palette_t::deref()
 {
 	if (--m_refcount == 0)
 		delete this;

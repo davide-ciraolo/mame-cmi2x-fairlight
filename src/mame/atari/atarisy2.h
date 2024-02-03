@@ -8,6 +8,7 @@
 
 #include "cpu/m6502/m6502.h"
 #include "cpu/t11/t11.h"
+#include "machine/bankdev.h"
 #include "machine/gen_latch.h"
 #include "slapstic.h"
 #include "machine/timer.h"
@@ -126,6 +127,7 @@ private:
 	void int_enable_w(uint8_t data);
 	INTERRUPT_GEN_MEMBER(sound_irq_gen);
 	void sound_irq_ack_w(uint8_t data);
+	DECLARE_WRITE_LINE_MEMBER(boost_interleave_hack);
 	void bankselect_w(offs_t offset, uint16_t data);
 	uint16_t switch_r();
 	uint8_t switch_6502_r();
@@ -145,7 +147,7 @@ private:
 	TILE_GET_INFO_MEMBER(get_alpha_tile_info);
 	TILE_GET_INFO_MEMBER(get_playfield_tile_info);
 	uint32_t screen_update_atarisy2(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void vblank_int(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank_int);
 	TIMER_CALLBACK_MEMBER(delayed_int_enable_w);
 	TIMER_CALLBACK_MEMBER(reset_yscroll_callback);
 	void yscroll_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);

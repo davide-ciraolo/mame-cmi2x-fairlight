@@ -82,6 +82,7 @@ bfm_dm01_device::bfm_dm01_device(const machine_config &mconfig, const char *tag,
 void bfm_dm01_device::device_start()
 {
 	m_dotmatrix.resolve();
+	m_busy_cb.resolve_safe();
 
 	save_item(NAME(m_data_avail));
 	save_item(NAME(m_control));
@@ -166,7 +167,7 @@ uint8_t bfm_dm01_device::mux_r()
 
 void bfm_dm01_device::mux_w(uint8_t data)
 {
-	auto profile = g_profiler.start(PROFILER_USER2);
+	g_profiler.start(PROFILER_USER2);
 
 	if (m_xcounter < BYTES_PER_ROW)
 	{
@@ -202,6 +203,8 @@ void bfm_dm01_device::mux_w(uint8_t data)
 			}
 		}
 	}
+
+	g_profiler.stop();
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -2,7 +2,7 @@
 // copyright-holders:R. Belmont, Olivier Galibert
 /*********************************************************************
 
-    formats/esq8_dsk.cpp
+    formats/esq8_dsk.c
 
     Formats for 8-bit Ensoniq synthesizers and samplers
 
@@ -55,22 +55,22 @@ esq8img_format::esq8img_format()
 {
 }
 
-const char *esq8img_format::name() const noexcept
+const char *esq8img_format::name() const
 {
 	return "esq8";
 }
 
-const char *esq8img_format::description() const noexcept
+const char *esq8img_format::description() const
 {
 	return "Ensoniq Mirage/SQ-80 floppy disk image";
 }
 
-const char *esq8img_format::extensions() const noexcept
+const char *esq8img_format::extensions() const
 {
 	return "img";
 }
 
-bool esq8img_format::supports_save() const noexcept
+bool esq8img_format::supports_save() const
 {
 	return true;
 }
@@ -103,7 +103,7 @@ int esq8img_format::identify(util::random_read &io, uint32_t form_factor, const 
 	return 0;
 }
 
-bool esq8img_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool esq8img_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	int track_count, head_count, sector_count;
 	find_size(io, track_count, head_count, sector_count);
@@ -138,12 +138,12 @@ bool esq8img_format::load(util::random_read &io, uint32_t form_factor, const std
 		}
 	}
 
-	image.set_variant(floppy_image::DSDD);
+	image->set_variant(floppy_image::DSDD);
 
 	return true;
 }
 
-bool esq8img_format::save(util::random_read_write &io, const std::vector<uint32_t> &variants, const floppy_image &image) const
+bool esq8img_format::save(util::random_read_write &io, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	uint64_t file_offset = 0;
 	int track_count, head_count, sector_count;

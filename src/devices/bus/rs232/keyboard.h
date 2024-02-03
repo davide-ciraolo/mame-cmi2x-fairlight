@@ -18,9 +18,9 @@ public:
 
 	virtual ioport_constructor device_input_ports() const override;
 
-	virtual void input_txd(int state) override;
+	virtual DECLARE_WRITE_LINE_MEMBER( input_txd ) override;
 
-	void update_serial(int state);
+	DECLARE_WRITE_LINE_MEMBER(update_serial);
 
 protected:
 	serial_keyboard_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);

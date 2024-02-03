@@ -57,15 +57,13 @@ ToDo: verify QS1000 hook-up
 */
 
 #include "emu.h"
-
 #include "cpu/arm7/arm7.h"
 #include "cpu/arm7/arm7core.h"
 #include "machine/gen_latch.h"
-#include "machine/i2cmem.h"
-//#include "machine/nandflash.h"
 #include "machine/s3c2410.h"
+//#include "machine/smartmed.h"
+#include "machine/i2cmem.h"
 #include "sound/qs1000.h"
-
 #include "emupal.h"
 #include "screen.h"
 #include "speaker.h"
@@ -106,16 +104,16 @@ public:
 	{
 	}
 
-	void ghosteo(machine_config &config) ATTR_COLD;
-	void touryuu(machine_config &config) ATTR_COLD;
-	void bballoon(machine_config &config) ATTR_COLD;
+	void ghosteo(machine_config &config);
+	void touryuu(machine_config &config);
+	void bballoon(machine_config &config);
 
-	void init_touryuu() ATTR_COLD;
-	void init_bballoon() ATTR_COLD;
+	void init_touryuu();
+	void init_bballoon();
 
 protected:
-	virtual void machine_start() override ATTR_COLD;
-	virtual void machine_reset() override ATTR_COLD;
+	virtual void machine_start() override;
+	virtual void machine_reset() override;
 
 private:
 	required_device<cpu_device> m_maincpu;
@@ -145,11 +143,11 @@ private:
 	void s3c2410_nand_address_w(uint8_t data);
 	uint8_t s3c2410_nand_data_r();
 	void s3c2410_nand_data_w(uint8_t data);
-	void s3c2410_i2c_scl_w(int state);
-	int s3c2410_i2c_sda_r();
-	void s3c2410_i2c_sda_w(int state);
-	void bballoon_map(address_map &map) ATTR_COLD;
-	void touryuu_map(address_map &map) ATTR_COLD;
+	DECLARE_WRITE_LINE_MEMBER(s3c2410_i2c_scl_w );
+	DECLARE_READ_LINE_MEMBER(s3c2410_i2c_sda_r );
+	DECLARE_WRITE_LINE_MEMBER(s3c2410_i2c_sda_w );
+	void bballoon_map(address_map &map);
+	void touryuu_map(address_map &map);
 };
 
 
@@ -394,13 +392,13 @@ void ghosteo_state::s3c2410_nand_data_w(uint8_t data)
 
 // I2C
 
-void ghosteo_state::s3c2410_i2c_scl_w(int state)
+WRITE_LINE_MEMBER(ghosteo_state::s3c2410_i2c_scl_w )
 {
 //  logerror( "s3c2410_i2c_scl_w %d\n", state ? 1 : 0);
 	m_i2cmem->write_scl(state);
 }
 
-int ghosteo_state::s3c2410_i2c_sda_r()
+READ_LINE_MEMBER(ghosteo_state::s3c2410_i2c_sda_r )
 {
 	int state;
 	state = m_i2cmem->read_sda();
@@ -408,7 +406,7 @@ int ghosteo_state::s3c2410_i2c_sda_r()
 	return state;
 }
 
-void ghosteo_state::s3c2410_i2c_sda_w(int state)
+WRITE_LINE_MEMBER(ghosteo_state::s3c2410_i2c_sda_w )
 {
 //  logerror( "s3c2410_i2c_sda_w %d\n", state ? 1 : 0);
 	m_i2cmem->write_sda(state);
@@ -642,7 +640,8 @@ void ghosteo_state::ghosteo(machine_config &config)
 	m_s3c2410->nand_data_r_callback().set(FUNC(ghosteo_state::s3c2410_nand_data_r));
 	m_s3c2410->nand_data_w_callback().set(FUNC(ghosteo_state::s3c2410_nand_data_w));
 
-//  samsung_k9f5608u0d_device &nand(SAMSUNG_K9F5608U0D(config, "nand", 0));  // or another variant with ID 0xEC 0x75 ?
+//  nand_device &nand(NAND(config, "nand", 0));
+//  nand.set_nand_type(nand_device::chip::K9F5608U0D);    // or another variant with ID 0xEC 0x75 ?
 //  nand.rnb_wr_callback().set(m_s3c2410, FUNC(s3c2410_device::s3c24xx_pin_frnb_w));
 
 	I2C_24C16(config, "i2cmem", 0); // M24CL16-S

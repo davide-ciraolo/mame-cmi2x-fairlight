@@ -81,17 +81,17 @@ void bagman_state::bagman_palette(palette_device &palette) const
 	}
 }
 
-void bagman_state::flipscreen_x_w(int state)
+WRITE_LINE_MEMBER(bagman_state::flipscreen_x_w)
 {
 	flip_screen_x_set(state);
 }
 
-void bagman_state::flipscreen_y_w(int state)
+WRITE_LINE_MEMBER(bagman_state::flipscreen_y_w)
 {
 	flip_screen_y_set(state);
 }
 
-void bagman_state::video_enable_w(int state)
+WRITE_LINE_MEMBER(bagman_state::video_enable_w)
 {
 	m_video_enable = state;
 }

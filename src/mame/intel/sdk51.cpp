@@ -16,9 +16,6 @@
 #include "machine/i8243.h"
 #include "machine/i8251.h"
 
-
-namespace {
-
 class sdk51_state : public driver_device
 {
 public:
@@ -57,8 +54,8 @@ private:
 
 	u8 upibus_r();
 	void upibus_w(u8 data);
-	void display_clock_w(int state);
-	void upiobf_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(display_clock_w);
+	DECLARE_WRITE_LINE_MEMBER(upiobf_w);
 	void serial_control_w(u8 data);
 
 	required_device<mcs51_cpu_device> m_maincpu;
@@ -127,7 +124,7 @@ void sdk51_state::serial_control_w(u8 data)
 	m_serial_control = data;
 }
 
-void sdk51_state::display_clock_w(int state)
+WRITE_LINE_MEMBER(sdk51_state::display_clock_w)
 {
 	if (!m_display_clock && state)
 		m_kdtime = ((m_kdtime << 1) & 0xfffffe) | BIT(m_upi->p1_r(), 6);
@@ -135,7 +132,7 @@ void sdk51_state::display_clock_w(int state)
 	m_display_clock = state;
 }
 
-void sdk51_state::upiobf_w(int state)
+WRITE_LINE_MEMBER(sdk51_state::upiobf_w)
 {
 	if (m_upiobf != bool(state))
 	{
@@ -320,8 +317,5 @@ ROM_START(sdk51)
 	ROM_REGION(0x0200, "cycles", 0)
 	ROM_LOAD("u63-3622a.bin", 0x000, 0x200, CRC(85cbd498) SHA1(f0214b6d02d6d153b5fafd9adf5a23013373c9c4)) // pin 9 output stuck high but not used
 ROM_END
-
-} // anonymous namespace
-
 
 COMP(1981, sdk51, 0, 0, sdk51, sdk51, sdk51_state, empty_init, "Intel", "MCS-51 System Design Kit", MACHINE_IS_SKELETON)

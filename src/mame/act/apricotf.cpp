@@ -74,7 +74,8 @@ public:
 		, m_ctc(*this, Z80CTC_TAG)
 		, m_sio(*this, Z80SIO2_TAG)
 		, m_fdc(*this, WD2797_TAG)
-		, m_floppy(*this, WD2797_TAG ":%u", 0U)
+		, m_floppy0(*this, WD2797_TAG ":0")
+		, m_floppy1(*this, WD2797_TAG ":1")
 		, m_centronics(*this, CENTRONICS_TAG)
 		, m_cent_data_out(*this, "cent_data_out")
 		, m_irqs(*this, "irqs")
@@ -94,7 +95,8 @@ private:
 	required_device<z80ctc_device> m_ctc;
 	required_device<z80sio_device> m_sio;
 	required_device<wd2797_device> m_fdc;
-	required_device_array<floppy_connector, 2> m_floppy;
+	required_device<floppy_connector> m_floppy0;
+	required_device<floppy_connector> m_floppy1;
 	required_device<centronics_device> m_centronics;
 	required_device<output_latch_device> m_cent_data_out;
 	required_device<input_merger_device> m_irqs;
@@ -107,8 +109,8 @@ private:
 	u16 palette_r(offs_t offset);
 	void palette_w(offs_t offset, u16 data, u16 mem_mask = ~0);
 	void system_w(offs_t offset, u8 data);
-	void ctc_z1_w(int state);
-	void ctc_z2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(ctc_z1_w);
+	DECLARE_WRITE_LINE_MEMBER(ctc_z2_w);
 	void m1_w(u8 data);
 
 	int m_40_80 = 0;
@@ -215,15 +217,15 @@ void f1_state::system_w(offs_t offset, u8 data)
 		break;
 
 	case 1: // drive select
-		m_fdc->set_floppy(m_floppy[!BIT(data, 0)]->get_device());
+		m_fdc->set_floppy(BIT(data, 0) ? m_floppy0->get_device() : m_floppy1->get_device());
 		break;
 
 	case 3: // drive head load
 		break;
 
 	case 5: // drive motor on
-		m_floppy[0]->get_device()->mon_w(!BIT(data, 0));
-		m_floppy[1]->get_device()->mon_w(!BIT(data, 0));
+		m_floppy0->get_device()->mon_w(!BIT(data, 0));
+		m_floppy1->get_device()->mon_w(!BIT(data, 0));
 		break;
 
 	case 7: // video lines (1=200, 0=256)
@@ -310,13 +312,13 @@ INPUT_PORTS_END
 //  Z80CTC
 //-------------------------------------------------
 
-void f1_state::ctc_z1_w(int state)
+WRITE_LINE_MEMBER(f1_state::ctc_z1_w)
 {
 	m_sio->rxcb_w(state);
 	m_sio->txcb_w(state);
 }
 
-void f1_state::ctc_z2_w(int state)
+WRITE_LINE_MEMBER(f1_state::ctc_z2_w)
 {
 	m_sio->txca_w(state);
 }

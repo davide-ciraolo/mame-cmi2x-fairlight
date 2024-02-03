@@ -36,9 +36,6 @@ http://www.dragons-lair-project.com/tech/pages/dl2.asp
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
-
 #define MAIN_CLOCK XTAL(30'000'000)
 
 class dlair2_state : public driver_device
@@ -340,8 +337,6 @@ ROM_START( spacea91_13e )
 	DISK_REGION( "laserdisc" )
 	DISK_IMAGE_READONLY( "spaceace91", 0, NO_DUMP )
 ROM_END
-
-} // anonymous namespace
 
 
 GAME( 1991, dlair2,       0,        dlair2,  dlair2, dlair2_state, empty_init, ROT0, "Leland Corporation", "Dragon's Lair 2: Time Warp (US v3.19)", MACHINE_IS_SKELETON )

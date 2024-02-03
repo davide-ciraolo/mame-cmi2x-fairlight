@@ -61,6 +61,9 @@ void pc_kbdc_device::device_resolve_objects()
 	device_pc_kbd_interface *const pc_kbd = get_card_device();
 	if (pc_kbd)
 		pc_kbd->set_pc_kbdc(this);
+
+	m_out_clock_cb.resolve_safe();
+	m_out_data_cb.resolve_safe();
 }
 
 void pc_kbdc_device::device_start()
@@ -123,28 +126,28 @@ void pc_kbdc_device::update_data_state(bool fromkb)
 }
 
 
-void pc_kbdc_device::clock_write_from_mb(int state)
+WRITE_LINE_MEMBER(pc_kbdc_device::clock_write_from_mb)
 {
 	m_mb_clock_state = state;
 	update_clock_state(false);
 }
 
 
-void pc_kbdc_device::data_write_from_mb(int state)
+WRITE_LINE_MEMBER(pc_kbdc_device::data_write_from_mb)
 {
 	m_mb_data_state = state;
 	update_data_state(false);
 }
 
 
-void pc_kbdc_device::clock_write_from_kb(int state)
+WRITE_LINE_MEMBER(pc_kbdc_device::clock_write_from_kb)
 {
 	m_kb_clock_state = state;
 	update_clock_state(true);
 }
 
 
-void pc_kbdc_device::data_write_from_kb(int state)
+WRITE_LINE_MEMBER(pc_kbdc_device::data_write_from_kb)
 {
 	m_kb_data_state = state;
 	update_data_state(true);
@@ -176,12 +179,12 @@ device_pc_kbd_interface::~device_pc_kbd_interface()
 }
 
 
-void device_pc_kbd_interface::clock_write(int state)
+WRITE_LINE_MEMBER(device_pc_kbd_interface::clock_write)
 {
 }
 
 
-void device_pc_kbd_interface::data_write(int state)
+WRITE_LINE_MEMBER(device_pc_kbd_interface::data_write)
 {
 }
 

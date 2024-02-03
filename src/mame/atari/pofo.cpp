@@ -136,9 +136,9 @@ private:
 	void counter_w(offs_t offset, uint8_t data);
 	void contrast_w(uint8_t data);
 
-	void eint_w(int state);
-	void wake_w(int state);
-	void keyboard_int_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( eint_w );
+	DECLARE_WRITE_LINE_MEMBER( wake_w );
+	DECLARE_WRITE_LINE_MEMBER( keyboard_int_w );
 
 	void portfolio_palette(palette_device &palette) const;
 	TIMER_DEVICE_CALLBACK_MEMBER(system_tick);
@@ -201,7 +201,7 @@ void portfolio_state::trigger_interrupt(int level)
 //  eint_w - external interrupt
 //-------------------------------------------------
 
-void portfolio_state::eint_w(int state)
+WRITE_LINE_MEMBER( portfolio_state::eint_w )
 {
 	if (state)
 	{
@@ -214,12 +214,12 @@ void portfolio_state::eint_w(int state)
 //  wake_w - wake
 //-------------------------------------------------
 
-void portfolio_state::wake_w(int state)
+WRITE_LINE_MEMBER( portfolio_state::wake_w )
 {
 	// TODO
 }
 
-void portfolio_state::keyboard_int_w(int state)
+WRITE_LINE_MEMBER( portfolio_state::keyboard_int_w )
 {
 	if (state)
 	{

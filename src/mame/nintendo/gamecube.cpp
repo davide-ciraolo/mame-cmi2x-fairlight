@@ -13,8 +13,6 @@
 #include "cpu/powerpc/ppc.h"
 
 
-namespace {
-
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
@@ -238,8 +236,6 @@ ROM_START( gcbr ) // DOL-002(BRA); NTSC gamecube board, outputs video with PAL-M
 	ROM_REGION(0x2000, "dsp_rom", 0)
 	ROM_LOAD("dsp_rom.bin", 0x0000, 0x2000, CRC(47daaa65) SHA1(3c6cc6e04fdd0b2a392d7a6ed769455444846be7))
 ROM_END
-
-} // anonymous namespace
 
 
 //**************************************************************************

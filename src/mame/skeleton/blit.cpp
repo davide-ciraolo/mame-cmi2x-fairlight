@@ -44,8 +44,9 @@
 #define RS232_K_TAG "keyboard"
 
 
-#define LOG_PIA       (1U << 1)
-#define LOG_DEBUG     (1U << 2)
+//#define LOG_GENERAL (1U <<  0) //defined in logmacro.h already
+#define LOG_PIA       (1U <<  1)
+#define LOG_DEBUG     (1U <<  2)
 
 //#define VERBOSE (LOG_DEBUG)
 //#define LOG_OUTPUT_FUNC osd_printf_info
@@ -72,7 +73,7 @@ public:
 		, m_sysrom(*this, M68K_TAG)
 	{ }
 
-	void system_clock_write(int state);
+	DECLARE_WRITE_LINE_MEMBER(system_clock_write);
 
 	void start_write(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	void vblank_ack(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
@@ -156,7 +157,7 @@ void blit_state::start_write(offs_t offset, uint16_t data, uint16_t mem_mask)
 	m_videostart = data << 1;
 }
 
-void blit_state::system_clock_write(int state)
+WRITE_LINE_MEMBER(blit_state::system_clock_write)
 {
 	m_acia0->write_txc(state);
 	m_acia0->write_rxc(state);

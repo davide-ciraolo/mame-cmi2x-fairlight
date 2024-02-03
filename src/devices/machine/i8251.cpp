@@ -85,6 +85,24 @@ v5x_scu_device::v5x_scu_device(const machine_config &mconfig, const char *tag, d
 
 
 //-------------------------------------------------
+//  device_resolve_objects - resolve objects that
+//  may be needed for other devices to set
+//  initial conditions at start time
+//-------------------------------------------------
+
+void i8251_device::device_resolve_objects()
+{
+	// resolve callbacks
+	m_txd_handler.resolve_safe();
+	m_rts_handler.resolve_safe();
+	m_dtr_handler.resolve_safe();
+	m_rxrdy_handler.resolve_safe();
+	m_txrdy_handler.resolve_safe();
+	m_txempty_handler.resolve_safe();
+	m_syndet_handler.resolve_safe();
+}
+
+//-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
 
@@ -808,14 +826,14 @@ void i8251_device::write(offs_t offset, uint8_t data)
 }
 
 
-void i8251_device::write_rxd(int state)
+WRITE_LINE_MEMBER(i8251_device::write_rxd)
 {
 	m_rxd = state;
 	LOGBITS("8251: Presented a %d\n", m_rxd);
 	//  device_serial_interface::rx_w(state);
 }
 
-void i8251_device::write_cts(int state)
+WRITE_LINE_MEMBER(i8251_device::write_cts)
 {
 	m_cts = state;
 
@@ -827,12 +845,12 @@ void i8251_device::write_cts(int state)
 	}
 }
 
-void i8251_device::write_dsr(int state)
+WRITE_LINE_MEMBER(i8251_device::write_dsr)
 {
 	m_dsr = !state;
 }
 
-void i8251_device::write_rxc(int state)
+WRITE_LINE_MEMBER(i8251_device::write_rxc)
 {
 	if (!m_rxc && state)
 	{
@@ -848,7 +866,7 @@ void i8251_device::write_rxc(int state)
 	m_rxc = state;
 }
 
-void i8251_device::write_txc(int state)
+WRITE_LINE_MEMBER(i8251_device::write_txc)
 {
 	if (m_txc != state)
 	{
@@ -860,7 +878,7 @@ void i8251_device::write_txc(int state)
 }
 
 // forcibly kill hunt mode
-void i8251_device::write_syn(int state)
+WRITE_LINE_MEMBER(i8251_device::write_syn)
 {
 	if (m_syndet_pin && state)    // must be set as input
 	{
@@ -870,7 +888,7 @@ void i8251_device::write_syn(int state)
 	}
 }
 
-int i8251_device::txrdy_r()
+READ_LINE_MEMBER(i8251_device::txrdy_r)
 {
 	return is_tx_enabled() && (m_status & I8251_STATUS_TX_READY) != 0;
 }

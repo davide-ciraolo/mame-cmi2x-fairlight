@@ -44,8 +44,8 @@ public:
 	bool lock();
 	void ca();
 
-	void ext_w(int state);
-	void drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( ext_w );
+	DECLARE_WRITE_LINE_MEMBER( drq_w );
 
 	// register
 	enum

@@ -265,7 +265,7 @@ private:
 	void palette(palette_device &palette) const;
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	void draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void adpcm_int(int state);
+	DECLARE_WRITE_LINE_MEMBER(adpcm_int);
 
 	void sound_map(address_map &map);
 };
@@ -661,7 +661,7 @@ void base_state::sound_bankselect_w(uint8_t data)
 	m_audiobank->set_entry(data & 0x01);
 }
 
-void base_state::adpcm_int(int state)
+WRITE_LINE_MEMBER(base_state::adpcm_int)
 {
 	if (state)
 	{

@@ -1914,9 +1914,9 @@ char *i386_disassembler::hexstring(uint32_t value, int digits)
 	static char buffer[20];
 	buffer[0] = '0';
 	if (digits)
-		snprintf(&buffer[1], 19, "%0*Xh", digits, value);
+		sprintf(&buffer[1], "%0*Xh", digits, value);
 	else
-		snprintf(&buffer[1], 19, "%Xh", value);
+		sprintf(&buffer[1], "%Xh", value);
 	return (buffer[1] >= '0' && buffer[1] <= '9') ? &buffer[1] : &buffer[0];
 }
 
@@ -1925,9 +1925,9 @@ char *i386_disassembler::hexstring64(uint32_t lo, uint32_t hi)
 	static char buffer[40];
 	buffer[0] = '0';
 	if (hi != 0)
-		snprintf(&buffer[1], 39, "%X%08Xh", hi, lo);
+		sprintf(&buffer[1], "%X%08Xh", hi, lo);
 	else
-		snprintf(&buffer[1], 39, "%Xh", lo);
+		sprintf(&buffer[1], "%Xh", lo);
 	return (buffer[1] >= '0' && buffer[1] <= '9') ? &buffer[1] : &buffer[0];
 }
 

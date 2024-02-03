@@ -1,19 +1,17 @@
 // LimitedStreams.h
 
-#ifndef ZIP7_INC_LIMITED_STREAMS_H
-#define ZIP7_INC_LIMITED_STREAMS_H
+#ifndef __LIMITED_STREAMS_H
+#define __LIMITED_STREAMS_H
 
 #include "../../Common/MyBuffer.h"
 #include "../../Common/MyCom.h"
 #include "../../Common/MyVector.h"
 #include "../IStream.h"
 
-#include "StreamUtils.h"
-
-Z7_CLASS_IMP_COM_1(
-  CLimitedSequentialInStream
-  , ISequentialInStream
-)
+class CLimitedSequentialInStream:
+  public ISequentialInStream,
+  public CMyUnknownImp
+{
   CMyComPtr<ISequentialInStream> _stream;
   UInt64 _size;
   UInt64 _pos;
@@ -27,22 +25,26 @@ public:
     _pos = 0;
     _wasFinished = false;
   }
+ 
+  MY_UNKNOWN_IMP1(ISequentialInStream)
+
+  STDMETHOD(Read)(void *data, UInt32 size, UInt32 *processedSize);
   UInt64 GetSize() const { return _pos; }
   UInt64 GetRem() const { return _size - _pos; }
   bool WasFinished() const { return _wasFinished; }
 };
 
-
-Z7_CLASS_IMP_IInStream(
-  CLimitedInStream
-)
+class CLimitedInStream:
+  public IInStream,
+  public CMyUnknownImp
+{
   CMyComPtr<IInStream> _stream;
   UInt64 _virtPos;
   UInt64 _physPos;
   UInt64 _size;
   UInt64 _startOffset;
 
-  HRESULT SeekToPhys() { return InStream_SeekSet(_stream, _physPos); }
+  HRESULT SeekToPhys() { return _stream->Seek(_physPos, STREAM_SEEK_SET, NULL); }
 public:
   void SetStream(IInStream *stream) { _stream = stream; }
   HRESULT InitAndSeek(UInt64 startOffset, UInt64 size)
@@ -53,15 +55,21 @@ public:
     _size = size;
     return SeekToPhys();
   }
+ 
+  MY_UNKNOWN_IMP2(ISequentialInStream, IInStream)
+
+  STDMETHOD(Read)(void *data, UInt32 size, UInt32 *processedSize);
+  STDMETHOD(Seek)(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition);
+
   HRESULT SeekToStart() { return Seek(0, STREAM_SEEK_SET, NULL); }
 };
 
 HRESULT CreateLimitedInStream(IInStream *inStream, UInt64 pos, UInt64 size, ISequentialInStream **resStream);
 
-
-Z7_CLASS_IMP_IInStream(
-  CClusterInStream
-)
+class CClusterInStream:
+  public IInStream,
+  public CMyUnknownImp
+{
   UInt64 _virtPos;
   UInt64 _physPos;
   UInt32 _curRem;
@@ -72,7 +80,7 @@ public:
   CRecordVector<UInt32> Vector;
   UInt64 StartOffset;
 
-  HRESULT SeekToPhys() { return InStream_SeekSet(Stream, _physPos); }
+  HRESULT SeekToPhys() { return Stream->Seek(_physPos, STREAM_SEEK_SET, NULL); }
 
   HRESULT InitAndSeek()
   {
@@ -86,52 +94,57 @@ public:
     }
     return S_OK;
   }
+
+  MY_UNKNOWN_IMP2(ISequentialInStream, IInStream)
+
+  STDMETHOD(Read)(void *data, UInt32 size, UInt32 *processedSize);
+  STDMETHOD(Seek)(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition);
 };
-
-
-
-const UInt64 k_SeekExtent_Phy_Type_ZeroFill = (UInt64)(Int64)-1;
 
 struct CSeekExtent
 {
-  UInt64 Virt;
   UInt64 Phy;
-
-  void SetAs_ZeroFill() { Phy = k_SeekExtent_Phy_Type_ZeroFill; }
-  bool Is_ZeroFill() const { return Phy == k_SeekExtent_Phy_Type_ZeroFill; }
+  UInt64 Virt;
 };
 
-
-Z7_CLASS_IMP_IInStream(
-  CExtentsStream
-)
-  UInt64 _virtPos;
+class CExtentsStream:
+  public IInStream,
+  public CMyUnknownImp
+{
   UInt64 _phyPos;
-  unsigned _prevExtentIndex;
+  UInt64 _virtPos;
+  bool _needStartSeek;
+
+  HRESULT SeekToPhys() { return Stream->Seek(_phyPos, STREAM_SEEK_SET, NULL); }
+
 public:
   CMyComPtr<IInStream> Stream;
   CRecordVector<CSeekExtent> Extents;
 
+  MY_UNKNOWN_IMP2(ISequentialInStream, IInStream)
+  STDMETHOD(Read)(void *data, UInt32 size, UInt32 *processedSize);
+  STDMETHOD(Seek)(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition);
   void ReleaseStream() { Stream.Release(); }
+
   void Init()
   {
     _virtPos = 0;
-    _phyPos = (UInt64)0 - 1; // we need Seek() for Stream
-    _prevExtentIndex = 0;
+    _phyPos = 0;
+    _needStartSeek = true;
   }
 };
 
-
-
-Z7_CLASS_IMP_COM_1(
-  CLimitedSequentialOutStream
-  , ISequentialOutStream
-)
+class CLimitedSequentialOutStream:
+  public ISequentialOutStream,
+  public CMyUnknownImp
+{
   CMyComPtr<ISequentialOutStream> _stream;
   UInt64 _size;
   bool _overflow;
   bool _overflowIsAllowed;
 public:
+  MY_UNKNOWN_IMP1(ISequentialOutStream)
+  STDMETHOD(Write)(const void *data, UInt32 size, UInt32 *processedSize);
   void SetStream(ISequentialOutStream *stream) { _stream = stream; }
   void ReleaseStream() { _stream.Release(); }
   void Init(UInt64 size, bool overflowIsAllowed = false)
@@ -145,9 +158,10 @@ public:
 };
 
 
-Z7_CLASS_IMP_IInStream(
-  CTailInStream
-)
+class CTailInStream:
+  public IInStream,
+  public CMyUnknownImp
+{
   UInt64 _virtPos;
 public:
   CMyComPtr<IInStream> Stream;
@@ -157,13 +171,19 @@ public:
   {
     _virtPos = 0;
   }
-  HRESULT SeekToStart() { return InStream_SeekSet(Stream, Offset); }
+ 
+  MY_UNKNOWN_IMP2(ISequentialInStream, IInStream)
+
+  STDMETHOD(Read)(void *data, UInt32 size, UInt32 *processedSize);
+  STDMETHOD(Seek)(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition);
+
+  HRESULT SeekToStart() { return Stream->Seek(Offset, STREAM_SEEK_SET, NULL); }
 };
 
-
-Z7_CLASS_IMP_IInStream(
-  CLimitedCachedInStream
-)
+class CLimitedCachedInStream:
+  public IInStream,
+  public CMyUnknownImp
+{
   CMyComPtr<IInStream> _stream;
   UInt64 _virtPos;
   UInt64 _physPos;
@@ -174,7 +194,8 @@ Z7_CLASS_IMP_IInStream(
   size_t _cacheSize;
   size_t _cachePhyPos;
 
-  HRESULT SeekToPhys() { return InStream_SeekSet(_stream, _physPos); }
+
+  HRESULT SeekToPhys() { return _stream->Seek(_physPos, STREAM_SEEK_SET, NULL); }
 public:
   CByteBuffer Buffer;
 
@@ -195,27 +216,37 @@ public:
     return SeekToPhys();
   }
  
+  MY_UNKNOWN_IMP2(ISequentialInStream, IInStream)
+
+  STDMETHOD(Read)(void *data, UInt32 size, UInt32 *processedSize);
+  STDMETHOD(Seek)(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition);
+
   HRESULT SeekToStart() { return Seek(0, STREAM_SEEK_SET, NULL); }
 };
 
-
-class CTailOutStream Z7_final :
+class CTailOutStream:
   public IOutStream,
   public CMyUnknownImp
 {
-  Z7_IFACES_IMP_UNK_2(ISequentialOutStream, IOutStream)
-
   UInt64 _virtPos;
   UInt64 _virtSize;
 public:
   CMyComPtr<IOutStream> Stream;
   UInt64 Offset;
   
+  virtual ~CTailOutStream() {}
+
+  MY_UNKNOWN_IMP2(ISequentialOutStream, IOutStream)
+
   void Init()
   {
     _virtPos = 0;
     _virtSize = 0;
   }
+
+  STDMETHOD(Write)(const void *data, UInt32 size, UInt32 *processedSize);
+  STDMETHOD(Seek)(Int64 offset, UInt32 seekOrigin, UInt64 *newPosition);
+  STDMETHOD(SetSize)(UInt64 newSize);
 };
 
 #endif

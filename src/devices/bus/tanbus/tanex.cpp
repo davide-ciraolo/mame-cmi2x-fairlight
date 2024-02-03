@@ -366,12 +366,12 @@ TIMER_DEVICE_CALLBACK_MEMBER(tanbus_tanex_device::read_cassette)
 		m_via6522[0]->write_cb2(1);
 }
 
-void tanbus_tanex_device::bus_so_w(int state)
+WRITE_LINE_MEMBER(tanbus_tanex_device::bus_so_w)
 {
 	m_tanbus->so_w(state);
 }
 
-void tanbus_tanex_device::bus_irq_w(int state)
+WRITE_LINE_MEMBER(tanbus_tanex_device::bus_irq_w)
 {
 	m_tanbus->irq_w(state);
 }
@@ -401,12 +401,12 @@ void tanbus_tanex_device::via_0_out_b(uint8_t data)
 	m_cassette->output(data & 0x80 ? +1.0 : -1.0);
 }
 
-void tanbus_tanex_device::via_0_out_ca2(int state)
+WRITE_LINE_MEMBER(tanbus_tanex_device::via_0_out_ca2)
 {
 	LOG("via_0_out_ca2 %d\n", state);
 }
 
-void tanbus_tanex_device::via_0_out_cb2(int state)
+WRITE_LINE_MEMBER(tanbus_tanex_device::via_0_out_cb2)
 {
 	LOG("via_0_out_cb2 %d\n", state);
 }
@@ -425,12 +425,12 @@ void tanbus_tanex_device::via_1_out_b(uint8_t data)
 	LOG("via_1_out_b %02X\n", data);
 }
 
-void tanbus_tanex_device::via_1_out_ca2(int state)
+WRITE_LINE_MEMBER(tanbus_tanex_device::via_1_out_ca2)
 {
 	LOG("via_1_out_ca2 %d\n", state);
 }
 
-void tanbus_tanex_device::via_1_out_cb2(int state)
+WRITE_LINE_MEMBER(tanbus_tanex_device::via_1_out_cb2)
 {
 	LOG("via_1_out_cb2 %d\n", state);
 }

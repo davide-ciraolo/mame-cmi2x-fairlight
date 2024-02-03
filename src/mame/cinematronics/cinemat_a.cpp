@@ -322,7 +322,7 @@ TIMER_CALLBACK_MEMBER( demon_state::synced_sound_w )
 }
 
 
-void demon_state::demon_sound4_w(int state)
+WRITE_LINE_MEMBER(demon_state::demon_sound4_w)
 {
 	/* watch for a 0->1 edge on bit 4 ("shift in") to clock in the new data */
 	if (state)

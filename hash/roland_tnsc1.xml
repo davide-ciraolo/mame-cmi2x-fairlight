@@ -1,8 +1,10 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
-
+license:CC0
+-->
+<softwarelist name="roland_tnsc1" description="Roland TN-SC1 Music Style Cards">
+<!--
     Known cards:
       Dumped Serial    Type             Name               Contents
           No TN-SC1-01 Music Style Card Country            Bluegrass, Tex / Mex, Country Waltz, Country Rock
@@ -19,13 +21,8 @@ license:CC0-1.0
           No TN-SC1-12 Music Style Card Dance 2            Bossanova 2, Samba 3, Lambada, Son
           No TN-SC1-13 Music Style Card Dance 3            Boogie 2, Rock 'n' Roll 3, Shuffle 2, Rag Time
           No TN-SC1-14 Music Style Card Dance 4            16 Beat 4, Blues, Slow Swing, Slow Soul 2
-
-Releases according to http://www.rolandmuseum.de/indizees/roland_ch.html:
-    TN-SC1-01..09: 1989
-    TN-SC1-10..14: 1990
 -->
 
-<softwarelist name="roland_tnsc1" description="Roland TN-SC1 Music Style Cards">
 	<software name="tnsc102" supported="no">
 		<!--
 		    1. M'Town
@@ -34,7 +31,7 @@ Releases according to http://www.rolandmuseum.de/indizees/roland_ch.html:
 		    4. Slow Soul
 		-->
 		<description>50's and 60's (TN-SC1-02)</description>
-		<year>1989</year>
+		<year>19??</year>
 		<publisher>Roland</publisher>
 		<part name="cart" interface="roland_tnsc1">
 			<dataarea name="rom" size="0x8000">
@@ -51,7 +48,7 @@ Releases according to http://www.rolandmuseum.de/indizees/roland_ch.html:
 		    4. Big Rock
 		-->
 		<description>70's and 80's (TN-SC1-03)</description>
-		<year>1989</year>
+		<year>19??</year>
 		<publisher>Roland</publisher>
 		<part name="cart" interface="roland_tnsc1">
 			<dataarea name="rom" size="0x8000">
@@ -68,7 +65,7 @@ Releases according to http://www.rolandmuseum.de/indizees/roland_ch.html:
 		    4. Caribbean
 		-->
 		<description>Around the World 2 (TN-SC1-05)</description>
-		<year>1989</year>
+		<year>19??</year>
 		<publisher>Roland</publisher>
 		<part name="cart" interface="roland_tnsc1">
 			<dataarea name="rom" size="0x8000">
@@ -85,7 +82,7 @@ Releases according to http://www.rolandmuseum.de/indizees/roland_ch.html:
 		    4. Ballad 3
 		-->
 		<description>Piano Bar (TN-SC1-06)</description>
-		<year>1989</year>
+		<year>19??</year>
 		<publisher>Roland</publisher>
 		<part name="cart" interface="roland_tnsc1">
 			<dataarea name="rom" size="0x8000">
@@ -102,7 +99,7 @@ Releases according to http://www.rolandmuseum.de/indizees/roland_ch.html:
 		    4. Paso Doble
 		-->
 		<description>Latin (TN-SC1-07)</description>
-		<year>1989</year>
+		<year>19??</year>
 		<publisher>Roland</publisher>
 		<part name="cart" interface="roland_tnsc1">
 			<dataarea name="rom" size="0x8000">

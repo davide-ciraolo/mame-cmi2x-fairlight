@@ -43,11 +43,12 @@ public:
 	auto reset_callback() { return m_reset_callback.bind(); }
 
 	// line handler
-	void keyout_w(int state);
+	inline DECLARE_WRITE_LINE_MEMBER(keyout_w);
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_config_complete() override;
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 
 	// called from keyboard
@@ -94,7 +95,7 @@ extern void z29_keyboards(device_slot_interface &slot);
 //  INLINE FUNCTIONS
 //**************************************************************************
 
-inline void z29_keyboard_port_device::keyout_w(int state)
+WRITE_LINE_MEMBER(z29_keyboard_port_device::keyout_w)
 {
 	 if (m_kbd != nullptr)
 		m_kbd->receive_data(state);

@@ -1,6 +1,6 @@
 // license:BSD-3-Clause
 // copyright-holders:Luca Elia, David Haywood, Angelo Salese
-/**************************************************************************************************
+/***************************************************************************
 
     Imagetek I4100 / I4220 / I4300 device files
 
@@ -18,18 +18,15 @@
       but the right palette is not at 00-ff.
       Related to the unknown table in the RAM mapped just before the palette?
       Update: the colors should have a common bank of 0xb (so 0x8bxx), it's unknown why the values
-      diverges, the blitter is responsible of the upload;
-    - gunmast title screen scroll right to left is jerky, again blitter
-      (uploads a sequence of destination values where bit 7 is first off then on
-      1900 -> 1980 -> 1800 -> 1880 -> ... -> 000 -> 080)
-    - Some gfx problems in ladykill, 3kokushi, puzzli, gakusai seem related to how we handle
+      diverges, the blitter is responsible of the upload fwiw;
+    - Some gfx problems in ladykill, 3kokushi, puzzli, gakusai, seem related to how we handle
       windows, wrapping, read-modify-write areas;
     - puzzli: emulate hblank irq and fix video routines here (water effect not emulated,
       confirmed on PCB ref). Are the screen_ctrl_w "led" bits actually buffer latches
       for the layers? They get written in the middle of the screen, may also be v2 specific.
     - Unemulated/Unverified scrolling in flip screen.
 
-===================================================================================================
+============================================================================
 
                     driver by   Luca Elia (l.elia@tin.it)
 
@@ -67,27 +64,18 @@
         and height)
 
 
-**************************************************************************************************/
+***************************************************************************/
 
 #include "emu.h"
 #include "imagetek_i4100.h"
 
 #include <algorithm>
 
-#define LOG_WARN   (1U << 1)
-#define LOG_INT    (1U << 2)
-#define LOG_BLIT   (1U << 3)
-#define LOG_BLITOP (1U << 4)
-
-#define VERBOSE (LOG_GENERAL | LOG_WARN)
-//#define LOG_OUTPUT_FUNC osd_printf_info
-
+#define LOG_INT (1 << 1U)
+//#define VERBOSE (LOG_INT)
 #include "logmacro.h"
 
-#define LOGWARN(...)    LOGMASKED(LOG_WARN, __VA_ARGS__)
-#define LOGINT(...)     LOGMASKED(LOG_INT, __VA_ARGS__)
-#define LOGBLIT(...)    LOGMASKED(LOG_BLIT, __VA_ARGS__)
-#define LOGBLITOP(...)  LOGMASKED(LOG_BLITOP, __VA_ARGS__)
+#define LOGINT(...) LOGMASKED(LOG_INT, __VA_ARGS__)
 
 //**************************************************************************
 //  GLOBAL VARIABLES
@@ -395,10 +383,15 @@ void imagetek_i4100_device::device_start()
 
 	m_gfxrom_size = m_gfxrom.bytes();
 
+	m_irq_cb.resolve_safe();
 	m_blit_done_timer = timer_alloc(FUNC(imagetek_i4100_device::blit_done), this);
 
 	m_spritelist = std::make_unique<sprite_t []>(0x1000 / 8);
 	m_sprite_end = m_spritelist.get();
+
+	m_ext_ctrl_0_cb.resolve_safe();
+	m_ext_ctrl_1_cb.resolve_safe();
+	m_ext_ctrl_2_cb.resolve_safe();
 }
 
 void imagetek_i4300_device::device_start()
@@ -641,13 +634,7 @@ void imagetek_i4100_device::layer_priority_w(offs_t offset, uint16_t data, uint1
 	m_layer_priority[1] = (data >> 2) & 3;
 	m_layer_priority[0] = (data >> 0) & 3;
 	if ((data >> 6) != 0)
-	{
-		LOGWARN("%s warning: layer_priority_w write with %04x %04x\n"
-			, this->tag()
-			, data
-			, mem_mask
-		);
-	}
+		logerror("%s warning: layer_priority_w write with %04x %04x\n",this->tag(),data,mem_mask);
 }
 
 /*************************************************************
@@ -667,7 +654,7 @@ void imagetek_i4100_device::background_color_w(offs_t offset, uint16_t data, uin
 
 	m_background_color &= 0x0fff;
 	if (data & 0xf000)
-		LOGWARN("%s warning: background_color_w write with %04x %04x\n", this->tag(), data, mem_mask);
+		logerror("%s warning: background_color_w write with %04x %04x\n",this->tag(),data,mem_mask);
 }
 
 /***************************************************************************
@@ -722,8 +709,8 @@ void imagetek_i4100_device::screen_ctrl_w(offs_t offset, uint16_t data, uint16_t
 	m_screen_blank = BIT(data,1);
 	m_screen_flip = BIT(data,0);
 
-	if (data & 0xf81c)
-		LOGWARN("%s warning: screen_ctrl_w write with %04x %04x\n", this->tag(), data, mem_mask);
+	if (data & 0xff1c)
+		logerror("%s warning: screen_ctrl_w write with %04x %04x\n", this->tag(), data, mem_mask);
 }
 
 
@@ -772,7 +759,7 @@ void imagetek_i4100_device::crtc_unlock_w(offs_t offset, uint16_t data, uint16_t
 {
 	m_crtc_unlock = BIT(data,0);
 	if (data & ~1)
-		LOGWARN("%s warning: unlock register write with %04x %04x\n",this->tag(),data,mem_mask);
+		logerror("%s warning: unlock register write with %04x %04x\n",this->tag(),data,mem_mask);
 }
 
 /***************************************************************************
@@ -893,7 +880,7 @@ void imagetek_i4100_device::blitter_w(offs_t offset, uint16_t data, uint16_t mem
 		int const shift = (dst_offs & 0x80) ? 0 : 8;
 		u16 const mask  = (dst_offs & 0x80) ? 0x00ff : 0xff00;
 
-		LOGBLIT("Blitter start %08X, %08X, %08X\n", tmap, src_offs, dst_offs);
+//      logerror("%s Blitter regs %08X, %08X, %08X\n", machine().describe_context(), tmap, src_offs, dst_offs);
 
 		dst_offs >>= 7 + 1;
 		switch (tmap)
@@ -903,7 +890,7 @@ void imagetek_i4100_device::blitter_w(offs_t offset, uint16_t data, uint16_t mem
 			case 3:
 				break;
 			default:
-				LOGWARN("%s Blitter unknown destination: %08X\n", machine().describe_context(), tmap);
+				logerror("%s Blitter unknown destination: %08X\n", machine().describe_context(), tmap);
 				return;
 		}
 
@@ -913,10 +900,9 @@ void imagetek_i4100_device::blitter_w(offs_t offset, uint16_t data, uint16_t mem
 
 			src_offs %= m_gfxrom_size;
 			b1 = m_gfxrom[src_offs];
-
-			LOGBLITOP("%s Blitter opcode %02X at %06X\n", machine().describe_context(), b1, src_offs);
-
+//          logerror("%s Blitter opcode %02X at %06X\n", machine().describe_context(), b1, src_offs);
 			src_offs++;
+
 			count = ((~b1) & 0x3f) + 1;
 
 			switch ((b1 & 0xc0) >> 6)
@@ -929,12 +915,11 @@ void imagetek_i4100_device::blitter_w(offs_t offset, uint16_t data, uint16_t mem
 				       another blit. */
 				if (b1 == 0)
 				{
-					LOGBLITOP("END\n");
 					m_blit_done_timer->adjust(attotime::from_usec(500));
 					return;
 				}
 
-				LOGBLITOP("COPY\n");
+				/* Copy */
 				while (count--)
 				{
 					src_offs %= m_gfxrom_size;
@@ -949,7 +934,6 @@ void imagetek_i4100_device::blitter_w(offs_t offset, uint16_t data, uint16_t mem
 
 			case 1:
 				/* Fill with an increasing value */
-				LOGBLITOP("FILL INC\n");
 				src_offs %= m_gfxrom_size;
 				b2 = m_gfxrom[src_offs];
 				src_offs++;
@@ -965,7 +949,6 @@ void imagetek_i4100_device::blitter_w(offs_t offset, uint16_t data, uint16_t mem
 
 			case 2:
 				/* Fill with a fixed value */
-				LOGBLITOP("FILL FIX\n");
 				src_offs %= m_gfxrom_size;
 				b2 = m_gfxrom[src_offs] << shift;
 				src_offs++;
@@ -982,21 +965,18 @@ void imagetek_i4100_device::blitter_w(offs_t offset, uint16_t data, uint16_t mem
 				/* Skip to the next line ?? */
 				if (b1 == 0xc0)
 				{
-					LOGBLITOP("SKIP LINE\n");
 					dst_offs +=   0x100;
 					dst_offs &= ~(0x100 - 1);
 					dst_offs |=  (0x100 - 1) & (m_blitter_regs[0x0a / 2] >> (7 + 1));
 				}
 				else
 				{
-					LOGBLITOP("SKIP %d\n", count);
 					dst_offs += count;
 				}
 				break;
 
-			// shouldn't happen
 			default:
-				//("%s Blitter unknown opcode %02X at %06X\n",machine().describe_context(),b1,src_offs-1);
+				//logerror("%s Blitter unknown opcode %02X at %06X\n",machine().describe_context(),b1,src_offs-1);
 				return;
 			}
 
@@ -1457,7 +1437,7 @@ u32 imagetek_i4100_device::screen_update(screen_device &screen, bitmap_rgb32 &bi
 	return 0;
 }
 
-void imagetek_i4100_device::screen_eof(int state)
+WRITE_LINE_MEMBER(imagetek_i4100_device::screen_eof)
 {
 	if (state)
 	{

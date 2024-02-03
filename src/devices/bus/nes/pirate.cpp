@@ -21,11 +21,12 @@
 
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -268,7 +269,7 @@ void nes_eh8813a_device::pcb_reset()
 
 void nes_agci_device::write_h(offs_t offset, u8 data)
 {
-	LOG("agci write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("agci write_h, offset: %04x, data: %02x\n", offset, data));
 
 	// this pcb is subject to bus conflict
 	// bit 0 is always determined by the ROM value at the offset due to a resistor on the board
@@ -292,7 +293,7 @@ void nes_agci_device::write_h(offs_t offset, u8 data)
 
 void nes_dreamtech_device::write_l(offs_t offset, u8 data)
 {
-	LOG("dreamtech write_l, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("dreamtech write_l, offset: %04x, data: %02x\n", offset, data));
 
 	offset += 0x100;
 	if (offset >= 0x1000)
@@ -313,7 +314,7 @@ void nes_dreamtech_device::write_l(offs_t offset, u8 data)
 
 void nes_fukutake_device::write_l(offs_t offset, uint8_t data)
 {
-	LOG("fukutake write_l, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("fukutake write_l, offset: %04x, data: %02x\n", offset, data));
 	offset += 0x100;
 
 	if (offset >= 0x200 && offset < 0x400)
@@ -329,7 +330,7 @@ void nes_fukutake_device::write_l(offs_t offset, uint8_t data)
 
 uint8_t nes_fukutake_device::read_l(offs_t offset)
 {
-	LOG("fukutake read_l, offset: %04x\n", offset);
+	LOG_MMC(("fukutake read_l, offset: %04x\n", offset));
 	offset += 0x100;
 
 	if (offset >= 0x200 && offset < 0x400)
@@ -349,13 +350,13 @@ uint8_t nes_fukutake_device::read_l(offs_t offset)
 
 void nes_fukutake_device::write_m(offs_t offset, uint8_t data)
 {
-	LOG("fukutake write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("fukutake write_m, offset: %04x, data: %02x\n", offset, data));
 	m_prgram[((m_latch * 0x2000) + offset) & (m_prgram.size() - 1)] = data;
 }
 
 uint8_t nes_fukutake_device::read_m(offs_t offset)
 {
-	LOG("fukutake read_m, offset: %04x\n", offset);
+	LOG_MMC(("fukutake read_m, offset: %04x\n", offset));
 	return m_prgram[((m_latch * 0x2000) + offset) & (m_prgram.size() - 1)];
 }
 
@@ -386,7 +387,7 @@ void nes_futuremedia_device::hblank_irq(int scanline, bool vblank, bool blanked)
 
 void nes_futuremedia_device::write_h(offs_t offset, u8 data)
 {
-	LOG("futuremedia write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("futuremedia write_h, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset)
 	{
@@ -442,7 +443,7 @@ void nes_futuremedia_device::write_h(offs_t offset, u8 data)
 
 void nes_magseries_device::write_h(offs_t offset, u8 data)
 {
-	LOG("magseries write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("magseries write_h, offset: %04x, data: %02x\n", offset, data));
 
 	prg32(data >> 1);
 	chr8(data, CHRROM);
@@ -465,7 +466,7 @@ void nes_magseries_device::write_h(offs_t offset, u8 data)
 
 void nes_daou306_device::write_h(offs_t offset, u8 data)
 {
-	LOG("daou306 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("daou306 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	if (offset >= 0x4000 && offset < 0x4010)
 	{
@@ -494,7 +495,7 @@ void nes_daou306_device::write_h(offs_t offset, u8 data)
 
 void nes_cc21_device::write_h(offs_t offset, u8 data)
 {
-	LOG("cc21 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("cc21 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	set_nt_mirroring(BIT(offset, 0) ? PPU_MIRROR_HIGH : PPU_MIRROR_LOW);
 	chr4_0(BIT(offset, 0), CHRROM);
@@ -512,13 +513,13 @@ void nes_cc21_device::write_h(offs_t offset, u8 data)
 
  iNES: mapper 176
 
- In MAME: Supported.
+ In MESS: Supported.
 
  -------------------------------------------------*/
 
 void nes_xiaozy_device::write_l(offs_t offset, uint8_t data)
 {
-	LOG("xiaozy write_l, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("xiaozy write_l, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset)
 	{
@@ -539,7 +540,7 @@ void nes_xiaozy_device::write_l(offs_t offset, uint8_t data)
 
 void nes_edu2k_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("edu2k write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("edu2k write_h, offset: %04x, data: %02x\n", offset, data));
 
 	prg32(data & 0x1f);
 	m_latch = BIT(data, 6, 2);
@@ -547,13 +548,13 @@ void nes_edu2k_device::write_h(offs_t offset, uint8_t data)
 
 void nes_edu2k_device::write_m(offs_t offset, uint8_t data)
 {
-	LOG("edu2k write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("edu2k write_m, offset: %04x, data: %02x\n", offset, data));
 	m_prgram[((m_latch * 0x2000) + offset) & (m_prgram.size() - 1)] = data;
 }
 
 uint8_t nes_edu2k_device::read_m(offs_t offset)
 {
-	LOG("edu2k read_m, offset: %04x\n", offset);
+	LOG_MMC(("edu2k read_m, offset: %04x\n", offset));
 	return m_prgram[((m_latch * 0x2000) + offset) & (m_prgram.size() - 1)];
 }
 
@@ -588,7 +589,7 @@ void nes_jy830623c_device::hblank_irq(int scanline, bool vblank, bool blanked)
 
 		if (m_irq_enable && !blanked && !m_irq_count && prior_count)
 		{
-			LOG("irq fired, scanline: %d\n", scanline);
+			LOG_MMC(("irq fired, scanline: %d\n", scanline));
 			set_irq_line(ASSERT_LINE);
 		}
 	}
@@ -606,7 +607,7 @@ void nes_jy830623c_device::update_banks()
 
 void nes_jy830623c_device::write_m(offs_t offset, u8 data)
 {
-	LOG("jy830623c write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("jy830623c write_m, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x1003)
 	{
@@ -633,7 +634,7 @@ void nes_jy830623c_device::write_m(offs_t offset, u8 data)
 
 void nes_jy830623c_device::write_h(offs_t offset, u8 data)
 {
-	LOG("jy830623c write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("jy830623c write_h, offset: %04x, data: %02x\n", offset, data));
 
 	if (offset < 0x2000)
 	{
@@ -648,13 +649,13 @@ void nes_jy830623c_device::write_h(offs_t offset, u8 data)
 
  Games: Gaau Hok Gwong Cheung
 
- In MAME: Preliminary Supported
+ In MESS: Preliminary Supported
 
  -------------------------------------------------*/
 
 void nes_43272_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("unl_43272 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("unl_43272 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	if ((m_latch & 0x81) == 0x81)
 		prg32(BIT(m_latch, 3, 3));
@@ -666,7 +667,7 @@ void nes_43272_device::write_h(offs_t offset, uint8_t data)
 uint8_t nes_43272_device::read_h(offs_t offset)
 {
 	uint8_t mask = (m_latch & 0x400) ? 0xfe : 0xff;
-	LOG("unl_43272 read_h, offset: %04x\n", offset);
+	LOG_MMC(("unl_43272 read_h, offset: %04x\n", offset));
 
 	return hi_access_rom(offset & mask);
 }
@@ -686,7 +687,7 @@ uint8_t nes_43272_device::read_h(offs_t offset)
 
 void nes_eh8813a_device::write_h(offs_t offset, u8 data)
 {
-	LOG("unl_eh8813a write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("unl_eh8813a write_h, offset: %04x, data: %02x\n", offset, data));
 
 	if (!BIT(m_latch, 8))
 	{
@@ -706,7 +707,7 @@ void nes_eh8813a_device::write_h(offs_t offset, u8 data)
 
 u8 nes_eh8813a_device::read_h(offs_t offset)
 {
-	LOG("unl_eh8813a read_h, offset: %04x\n", offset);
+	LOG_MMC(("unl_eh8813a read_h, offset: %04x\n", offset));
 
 	if (BIT(m_latch, 6))
 		offset = (offset & ~0x0f) | m_jumper;  // TODO: jumper setting that controls which menu appears is 0 for now
@@ -741,7 +742,7 @@ void nes_fujiya_device::pcb_reset()
 
 void nes_fujiya_device::write_m(offs_t offset, uint8_t data)
 {
-	LOG("fujiya write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("fujiya write_m, offset: %04x, data: %02x\n", offset, data));
 	offset += 0x6000;
 
 	if (offset == 0x6502 || offset == 0x7000)
@@ -750,7 +751,7 @@ void nes_fujiya_device::write_m(offs_t offset, uint8_t data)
 
 uint8_t nes_fujiya_device::read_m(offs_t offset)
 {
-	LOG("fujiya read_m, offset: %04x\n", offset);
+	LOG_MMC(("fujiya read_m, offset: %04x\n", offset));
 	offset += 0x6000;
 
 	if (offset == 0x7001 || offset == 0x7777)

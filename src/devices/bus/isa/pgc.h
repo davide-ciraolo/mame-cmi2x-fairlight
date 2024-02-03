@@ -41,7 +41,7 @@ protected:
 private:
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
-	void vblank_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank_irq);
 	IRQ_CALLBACK_MEMBER(irq_callback);
 
 	void vram_w(offs_t offset, uint8_t data);

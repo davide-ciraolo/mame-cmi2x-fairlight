@@ -15,10 +15,8 @@
 #include "drivenum.h"
 #include "emuopts.h"
 #include "fileio.h"
-#include "main.h"
 #include "softlist.h"
 
-// lib/util
 #include "corestr.h"
 #include "xmlfile.h"
 #include "zippath.h"
@@ -40,9 +38,6 @@ image_manager::image_manager(running_machine &machine)
 	// make sure that any required devices have been allocated
 	for (device_image_interface &image : image_interface_enumerator(machine.root_device()))
 	{
-		// see if region-based chds are available
-		image.check_preset_images();
-
 		// ignore things not user loadable
 		if (!image.user_loadable())
 			continue;
@@ -54,32 +49,27 @@ image_manager::image_manager(running_machine &machine)
 		if (!startup_image.empty())
 		{
 			// we do have a startup image specified - load it
-			std::pair<std::error_condition, std::string> result(image_error::UNSPECIFIED, std::string());
+			image_init_result result = image_init_result::FAIL;
 
 			// try as a softlist
 			if (software_name_parse(startup_image))
-			{
-				osd_printf_verbose("%s: attempting to load software item %s\n", image.device().tag(), startup_image);
 				result = image.load_software(startup_image);
-			}
 
 			// failing that, try as an image
-			if (result.first)
-			{
-				osd_printf_verbose("%s: attempting to load media image %s\n", image.device().tag(), startup_image);
+			if (result != image_init_result::PASS)
 				result = image.load(startup_image);
-			}
 
 			// failing that, try creating it (if appropriate)
-			if (result.first && image.support_command_line_image_creation())
-			{
-				osd_printf_verbose("%s: attempting to create media image %s\n", image.device().tag(), startup_image);
+			if (result != image_init_result::PASS && image.support_command_line_image_creation())
 				result = image.create(startup_image);
-			}
 
 			// did the image load fail?
-			if (result.first)
+			if (result != image_init_result::PASS)
 			{
+				// retrieve image error message
+				std::string image_err = std::string(image.error());
+				std::string startup_image_name = startup_image;
+
 				// unload the bad image
 				image.unload();
 
@@ -88,18 +78,11 @@ image_manager::image_manager(running_machine &machine)
 				if (machine.options().write_config())
 					write_config(machine.options(), nullptr, &machine.system());
 
-				// retrieve image error message
-				throw emu_fatalerror(EMU_ERR_DEVICE,
-						!result.second.empty()
-							? "Device %1$s load (-%2$s %3$s) failed: %4$s (%5$s:%6$d %7$s)"
-							: "Device %1$s load (-%2$s %3$s) failed: %7$s (%5$s:%6$d)",
+				throw emu_fatalerror(EMU_ERR_DEVICE, "Device %s load (-%s %s) failed: %s",
 						image.device().name(),
 						image.instance_name(),
-						startup_image,
-						result.second,
-						result.first.category().name(),
-						result.first.value(),
-						result.first.message());
+						startup_image_name,
+						image_err);
 			}
 		}
 	}
@@ -258,14 +241,13 @@ void image_manager::postdevice_init()
 	/* make sure that any required devices have been allocated */
 	for (device_image_interface &image : image_interface_enumerator(machine().root_device()))
 	{
-		auto [result, image_err] = image.finish_load();
+		image_init_result result = image.finish_load();
 
 		/* did the image load fail? */
-		if (result)
+		if (result != image_init_result::PASS)
 		{
 			/* retrieve image error message */
-			if (image_err.empty())
-				image_err = result.message();
+			std::string image_err = std::string(image.error());
 
 			/* unload all images */
 			unload_all();

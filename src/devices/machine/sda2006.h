@@ -17,10 +17,10 @@ public:
 	sda2006_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock = 0);
 
 	// I/O operations
-	int read_data();
-	void write_data(int state);
-	void write_clock(int state);
-	void write_enable(int state);
+	DECLARE_READ_LINE_MEMBER(read_data);
+	DECLARE_WRITE_LINE_MEMBER(write_data);
+	DECLARE_WRITE_LINE_MEMBER(write_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_enable);
 
 protected:
 	// device-level overrides

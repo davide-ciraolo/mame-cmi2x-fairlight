@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
+license:CC0
 -->
-<softwarelist name="mac_hdflop" description="Apple Macintosh high density disk images">
+<softwarelist name="mac_hdflop" description="Macintosh High Density Disk images">
 
 <!-- Operating system disks -->
 

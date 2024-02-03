@@ -2,19 +2,15 @@
 // copyright-holders:Aaron Giles, Vas Crabb
 //============================================================
 //
-//  memoryviewinfo.cpp - Win32 debug window handling
+//  memoryviewinfo.c - Win32 debug window handling
 //
 //============================================================
 
 #include "emu.h"
 #include "memoryviewinfo.h"
 
-#include "util/xmlfile.h"
-
 #include "strconv.h"
 
-
-namespace osd::debugger::win {
 
 memoryview_info::memoryview_info(debugger_windows_interface &debugger, debugwin_info &owner, HWND parent) :
 	debugview_info(debugger, owner, parent, DVT_MEMORY)
@@ -24,12 +20,6 @@ memoryview_info::memoryview_info(debugger_windows_interface &debugger, debugwin_
 
 memoryview_info::~memoryview_info()
 {
-}
-
-
-char const *memoryview_info::expression() const
-{
-	return view<debug_view_memory>()->expression();
 }
 
 
@@ -93,32 +83,6 @@ void memoryview_info::set_address_radix(int radix)
 }
 
 
-void memoryview_info::restore_configuration_from_node(util::xml::data_node const &node)
-{
-	debug_view_memory &memview(*view<debug_view_memory>());
-	memview.set_reverse(0 != node.get_attribute_int(ATTR_WINDOW_MEMORY_REVERSE_COLUMNS, memview.reverse() ? 1 : 0));
-	memview.set_physical(0 != node.get_attribute_int(ATTR_WINDOW_MEMORY_ADDRESS_MODE, memview.physical() ? 1 : 0));
-	memview.set_address_radix(node.get_attribute_int(ATTR_WINDOW_MEMORY_ADDRESS_RADIX, memview.address_radix()));
-	memview.set_data_format(debug_view_memory::data_format(node.get_attribute_int(ATTR_WINDOW_MEMORY_DATA_FORMAT, int(memview.get_data_format()))));
-	memview.set_chunks_per_row(node.get_attribute_int(ATTR_WINDOW_MEMORY_ROW_CHUNKS, memview.chunks_per_row()));
-
-	debugview_info::restore_configuration_from_node(node);
-}
-
-
-void memoryview_info::save_configuration_to_node(util::xml::data_node &node)
-{
-	debugview_info::save_configuration_to_node(node);
-
-	debug_view_memory &memview(*view<debug_view_memory>());
-	node.set_attribute_int(ATTR_WINDOW_MEMORY_REVERSE_COLUMNS, memview.reverse() ? 1 : 0);
-	node.set_attribute_int(ATTR_WINDOW_MEMORY_ADDRESS_MODE, memview.physical() ? 1 : 0);
-	node.set_attribute_int(ATTR_WINDOW_MEMORY_ADDRESS_RADIX, memview.address_radix());
-	node.set_attribute_int(ATTR_WINDOW_MEMORY_DATA_FORMAT, int(memview.get_data_format()));
-	node.set_attribute_int(ATTR_WINDOW_MEMORY_ROW_CHUNKS, memview.chunks_per_row());
-}
-
-
 void memoryview_info::add_items_to_context_menu(HMENU menu)
 {
 	debugview_info::add_items_to_context_menu(menu);
@@ -143,30 +107,29 @@ void memoryview_info::update_context_menu(HMENU menu)
 			debug_view_xy const pos = memview.cursor_position();
 			offs_t const address = space->byte_to_address(memview.addressAtCursorPosition(pos));
 			offs_t a = address & space->logaddrmask();
-			address_space *tspace;
-			if (!space->device().memory().translate(space->spacenum(), device_memory_interface::TR_READ, a, tspace))
+			if (!space->device().memory().translate(space->spacenum(), TRANSLATE_READ_DEBUG, a))
 			{
 				m_lastpc = "Bad address";
 			}
 			else
 			{
-				uint64_t memval = tspace->unmap();
-				auto dis = tspace->device().machine().disable_side_effects();
-				switch (tspace->data_width())
+				uint64_t memval = space->unmap();
+				auto dis = space->device().machine().disable_side_effects();
+				switch (space->data_width())
 				{
-				case  8: memval = tspace->read_byte(a);            break;
-				case 16: memval = tspace->read_word_unaligned(a);  break;
-				case 32: memval = tspace->read_dword_unaligned(a); break;
-				case 64: memval = tspace->read_qword_unaligned(a); break;
+				case  8: memval = space->read_byte(a);            break;
+				case 16: memval = space->read_word_unaligned(a);  break;
+				case 32: memval = space->read_dword_unaligned(a); break;
+				case 64: memval = space->read_qword_unaligned(a); break;
 				}
 
 				offs_t const pc = source.device()->debug()->track_mem_pc_from_space_address_data(
-						tspace->spacenum(),
+						space->spacenum(),
 						address,
 						memval);
 				if (pc != offs_t(-1))
 				{
-					if (tspace->is_octal())
+					if (space->is_octal())
 						m_lastpc = util::string_format("Address %o written at PC=%o", address, pc);
 					else
 						m_lastpc = util::string_format("Address %x written at PC=%x", address, pc);
@@ -204,5 +167,3 @@ void memoryview_info::handle_context_menu(unsigned command)
 	};
 
 }
-
-} // namespace osd::debugger::win

@@ -1,4 +1,4 @@
-7z Format description (18.06)
+7z Format description (4.59)
 ----------------------------
 
 This file contains description of 7z archive format. 
@@ -175,7 +175,7 @@ SignatureHeader
   ArchiveVersion
   {
     BYTE Major;   // now = 0
-    BYTE Minor;   // now = 4
+    BYTE Minor;   // now = 2
   };
 
   UINT32 StartHeaderCRC;
@@ -399,7 +399,7 @@ FilesInfo
           UINT64 DataIndex
         []
         for(Definded Items)
-          REAL_UINT64 Time
+          UINT64 Time
         []
       
       kNames:     (0x11)

@@ -173,11 +173,10 @@ function tick (event) {
 			start = 0;
 		}
 	}
-	//Pad with latest if we're underrunning:
-	var idx = (index == 0 ? bufferSize : index) - 1;
+	//Pad with silence if we're underrunning:
 	while (index < 4096) {
-		buffers[0][index] = buffers[0][idx];
-		buffers[1][index++] = buffers[1][idx];
+		buffers[0][index] = 0;
+		buffers[1][index++] = 0;
 	}
 	//Deep inside the bowels of vendors bugs,
 	//we're using watchdog for a firefox bug,

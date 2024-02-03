@@ -100,12 +100,12 @@ a2bus_agat840k_hle_device::a2bus_agat840k_hle_device(const machine_config &mconf
 {
 }
 
-void a2bus_agat840k_hle_device::index_0_w(int state)
+WRITE_LINE_MEMBER(a2bus_agat840k_hle_device::index_0_w)
 {
 	index_callback(0, state);
 }
 
-void a2bus_agat840k_hle_device::index_1_w(int state)
+WRITE_LINE_MEMBER(a2bus_agat840k_hle_device::index_1_w)
 {
 	index_callback(1, state);
 }

@@ -43,7 +43,7 @@ DEFINE_DEVICE_TYPE(C64_PARTNER, c64_partner_cartridge_device, "c64_partner", "C6
 //  INPUT_PORTS( c64_partner )
 //-------------------------------------------------
 
-void c64_partner_cartridge_device::nmi_w(int state)
+WRITE_LINE_MEMBER( c64_partner_cartridge_device::nmi_w )
 {
 	if (!state && !m_a6 && !m_nmi)
 	{

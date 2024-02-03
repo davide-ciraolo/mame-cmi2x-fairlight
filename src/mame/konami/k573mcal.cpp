@@ -24,8 +24,6 @@
 
 #include "machine/timehelp.h"
 
-#include "multibyte.h"
-
 k573mcal_device::k573mcal_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
 	jvs_device(mconfig, KONAMI_573_MASTER_CALENDAR, tag, owner, clock),
 	m_in1(*this, "IN1"),
@@ -87,54 +85,62 @@ int k573mcal_device::handle_message(const uint8_t* send_buffer, uint32_t send_si
 		system_time systime;
 		machine().base_datetime(systime);
 
-		*recv_buffer++ = 0x01; // status, must be 1
-		*recv_buffer++ = uint8_t(systime.local_time.year % 100);
-		*recv_buffer++ = uint8_t(systime.local_time.month + 1);
-		*recv_buffer++ = systime.local_time.mday;
-		*recv_buffer++ = systime.local_time.weekday;
-		*recv_buffer++ = systime.local_time.hour;
-		*recv_buffer++ = systime.local_time.minute;
-		*recv_buffer++ = seconds; // Can't be the same value twice in a row
+		uint8_t resp[] = {
+			0x01, // status, must be 1
+			uint8_t(systime.local_time.year % 100),
+			uint8_t(systime.local_time.month + 1),
+			systime.local_time.mday,
+			systime.local_time.weekday,
+			systime.local_time.hour,
+			systime.local_time.minute,
+			seconds // Can't be the same value twice in a row
+		};
+
 		seconds = (seconds + 1) % 60;
 
+		memcpy(recv_buffer, resp, sizeof(resp));
+		recv_buffer += sizeof(resp);
 		return 1;
 	}
 
 	case 0x71: {
-		// msg: 71 00 00 80 -> Offset = 0x0000, requested size = 0x80 bytes
-		// msg: 71 00 20 10 -> Offset = 0x0020, requested size = 0x10 bytes
-		// "Master Calendar ROM". Contents are specific to the game being initialized.
-		// Only encountered and tested on Hornet games.
+		// msg: 71 ff ff 01
 
-		// msg: 71 ff ff 01 -> Offset = 0xffff, requested size = 0x01 bytes, special request for the area specification flag? Used by Sys573
-		*recv_buffer++ = 0x01; // status, must be 1
-		*recv_buffer++ = uint8_t(m_in1->read() & 0x0f); // Area specification
+		uint8_t resp[] = {
+			0x01, // status, must be 1
+			uint8_t(m_in1->read() & 0x0f), // Area specification
+		};
 
+		memcpy(recv_buffer, resp, sizeof(resp));
+		recv_buffer += sizeof(resp);
 		return 4;
 	}
 
 	case 0x7c: {
 		// msg: 7c 7f 00 04
-		const uint16_t val = get_u16be(&send_buffer[1]);
+		const uint16_t val = (send_buffer[1] << 8) | send_buffer[2];
 
 		if (val == 0x7f00) {
 			// Return main ID
-			*recv_buffer++ = 0x01; // status, must be 1
-			put_u32be(recv_buffer, mainId);
-			recv_buffer += 4;
+			uint8_t resp[] = {
+				0x01, // status, must be 1
+				uint8_t((mainId >> 24) & 0xff), uint8_t((mainId >> 16) & 0xff), uint8_t((mainId >> 8) & 0xff), uint8_t(mainId & 0xff),
+			};
+
+			memcpy(recv_buffer, resp, sizeof(resp));
+			recv_buffer += sizeof(resp);
 		}
 		else if (val == 0x8000) {
-			using namespace std::literals;
-			static const std::string_view init_complete = "<INIT COMPLETE!>"sv;
-
 			// Return sub ID
-			*recv_buffer++ = 0x01; // status, must be 1
-			memcpy(recv_buffer, init_complete.data(), init_complete.size());
-			recv_buffer += init_complete.size();
-			put_u32be(recv_buffer, subId);
-			recv_buffer += 4;
-			put_u32be(recv_buffer, ~subId);
-			recv_buffer += 4;
+			uint8_t resp[] = {
+				0x01, // status, must be 1
+				'<', 'I', 'N', 'I', 'T', ' ', 'C', 'O', 'M', 'P', 'L', 'E', 'T', 'E', '!', '>',
+				uint8_t((subId >> 24) & 0xff), uint8_t((subId >> 16) & 0xff), uint8_t((subId >> 8) & 0xff), uint8_t(subId & 0xff),
+				uint8_t((~subId >> 24) & 0xff), uint8_t((~subId >> 16) & 0xff), uint8_t((~subId >> 8) & 0xff), uint8_t(~subId & 0xff),
+			};
+
+			memcpy(recv_buffer, resp, sizeof(resp));
+			recv_buffer += sizeof(resp);
 		}
 
 		return 4;
@@ -142,13 +148,18 @@ int k573mcal_device::handle_message(const uint8_t* send_buffer, uint32_t send_si
 
 	case 0x7d: {
 		// msg: 7d 80 10 08 00 00 00 01 ff ff ff fe
-		const uint16_t val = get_u16be(&send_buffer[1]);
+		const uint16_t val = (send_buffer[1] << 8) | send_buffer[2];
 
 		if (val == 0x8010) {
 			// Set next sub ID
-			subId = get_u32be(&send_buffer[4]);
+			subId = (send_buffer[4] << 24) | (send_buffer[5] << 16) | (send_buffer[6] << 8) | send_buffer[7];
 
-			*recv_buffer++ = 0x01; // status, must be 1
+			uint8_t resp[] = {
+				0x01, // status, must be 1
+			};
+
+			memcpy(recv_buffer, resp, sizeof(resp));
+			recv_buffer += sizeof(resp);
 		}
 
 		return 12;
@@ -162,9 +173,14 @@ int k573mcal_device::handle_message(const uint8_t* send_buffer, uint32_t send_si
 		// 000000000000B5 is ???
 
 		// msg: 7e xx
-		// status: 0x01 - Breaks loop, sends next byte
-		//         0x04 - Resends byte
-		*recv_buffer++ = 0x01;
+		uint8_t resp[] = {
+			// 0x01 - Breaks loop, sends next byte
+			// 0x04 - Resends byte
+			0x01,
+		};
+
+		memcpy(recv_buffer, resp, sizeof(resp));
+		recv_buffer += sizeof(resp);
 
 		return 2;
 	}

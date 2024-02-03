@@ -49,7 +49,7 @@ void itt1700_keyboard_device::device_start()
 //  line1_w - write from host to control line 1
 //-------------------------------------------------
 
-void itt1700_keyboard_device::line1_w(int state)
+WRITE_LINE_MEMBER(itt1700_keyboard_device::line1_w)
 {
 	m_line1_state = state;
 }
@@ -58,7 +58,7 @@ void itt1700_keyboard_device::line1_w(int state)
 //  line2_w - write from host to control line 2
 //-------------------------------------------------
 
-void itt1700_keyboard_device::line2_w(int state)
+WRITE_LINE_MEMBER(itt1700_keyboard_device::line2_w)
 {
 	m_line2_state = state;
 }
@@ -67,7 +67,7 @@ void itt1700_keyboard_device::line2_w(int state)
 //  clock_w - write clock pulse from host
 //-------------------------------------------------
 
-void itt1700_keyboard_device::clock_w(int state)
+WRITE_LINE_MEMBER(itt1700_keyboard_device::clock_w)
 {
 	if (state && !m_clock)
 	{
@@ -85,7 +85,7 @@ void itt1700_keyboard_device::clock_w(int state)
 //  sense_r - poll return line
 //-------------------------------------------------
 
-int itt1700_keyboard_device::sense_r()
+READ_LINE_MEMBER(itt1700_keyboard_device::sense_r)
 {
 	return !BIT(m_keys[m_scan_counter >> 3]->read(), m_scan_counter & 7);
 }

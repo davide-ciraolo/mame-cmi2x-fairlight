@@ -65,7 +65,7 @@ void acorn_cass_device::device_start()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void acorn_cass_device::cass_w(int state)
+WRITE_LINE_MEMBER(acorn_cass_device::cass_w)
 {
 	m_cass_state = state;
 }

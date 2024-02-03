@@ -178,7 +178,7 @@ uint8_t a2bus_agat7_ports_device::read_portc()
 	return (m_centronics_busy << 7) | m_printer_cfg->read();
 }
 
-void a2bus_agat7_ports_device::write_centronics_busy(int state)
+WRITE_LINE_MEMBER(a2bus_agat7_ports_device::write_centronics_busy)
 {
 	m_centronics_busy = state;
 }

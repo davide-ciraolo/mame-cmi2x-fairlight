@@ -128,7 +128,7 @@ private:
 	uint8_t portA_r();
 	void portB_w(uint8_t data);
 
-	void _30hz_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(_30hz_irq);
 	void audio_map(address_map &map);
 	void main_map(address_map &map);
 	void mcu_io_map(address_map &map);
@@ -393,7 +393,7 @@ void junofrst_state::machine_reset()
 	m_irq_toggle = 0;
 }
 
-void junofrst_state::_30hz_irq(int state)
+WRITE_LINE_MEMBER(junofrst_state::_30hz_irq)
 {
 	/* flip flops cause the interrupt to be signalled every other frame */
 	if (state)

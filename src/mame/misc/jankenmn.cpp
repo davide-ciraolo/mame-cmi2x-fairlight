@@ -155,9 +155,6 @@
 
 #include "jankenmn.lh"
 
-
-namespace {
-
 #define MASTER_CLOCK        XTAL(2'500'000)
 
 
@@ -171,7 +168,7 @@ public:
 		, m_lamps(*this, "lamp%u", 0U)
 	{ }
 
-	int hopper_status_r();
+	DECLARE_READ_LINE_MEMBER(hopper_status_r);
 
 	void jankenmn(machine_config &config);
 
@@ -253,7 +250,7 @@ void jankenmn_state::lamps3_w(uint8_t data)
 		logerror("payout: %02X\n", (data & 0x04));
 }
 
-int jankenmn_state::hopper_status_r()
+READ_LINE_MEMBER(jankenmn_state::hopper_status_r)
 {
 	// temp workaround, needs hopper
 	return machine().rand();
@@ -432,8 +429,6 @@ ROM_START( jankenmn )
 	ROM_REGION( 0x4000, "temp", 0 )
 	ROM_LOAD( "pcg1.bin",   0x0000, 0x4000,  CRC(a9c5aa2e) SHA1(c3b81eeefa5c442231cd26615aaf6c682063b26f) )
 ROM_END
-
-} // anonymous namespace
 
 
 /*********************************************

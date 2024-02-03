@@ -24,10 +24,8 @@
 
 /* AT keyboard documentation comes from www.beyondlogic.org and HelpPC documentation */
 
-/* for logging of keyboard read/writes */
-#define LOG_KEYBOARD (1U << 1)
-#define VERBOSE (0)
-#include "logmacro.h"
+/* to enable logging of keyboard read/writes */
+#define LOG_KEYBOARD    0
 
 
 /*
@@ -327,17 +325,16 @@ void pc_keyboard_device::device_start()
 		ioport_accept_char_delegate(&pc_keyboard_device::accept_char, this),
 		ioport_charqueue_empty_delegate(&pc_keyboard_device::charqueue_empty, this));
 
+	m_out_keypress_func.resolve_safe();
 	m_keyboard_timer = timer_alloc(FUNC(at_keyboard_device::poll_keys), this);
 }
 
 void at_keyboard_device::device_start()
 {
-	pc_keyboard_device::device_start();
-
-	m_leds.resolve();
-
 	save_item(NAME(m_scan_code_set));
 	save_item(NAME(m_input_state));
+	pc_keyboard_device::device_start();
+	m_leds.resolve();
 }
 
 void pc_keyboard_device::device_reset()
@@ -381,7 +378,8 @@ void pc_keyboard_device::enable(int state)
 /* insert a code into the buffer */
 void pc_keyboard_device::queue_insert(uint8_t data)
 {
-	LOGMASKED(LOG_KEYBOARD, "keyboard queueing %.2x\n", data);
+	if (LOG_KEYBOARD)
+		logerror("keyboard queueing %.2x\n",data);
 
 	m_queue[m_head] = data;
 	m_head++;
@@ -624,7 +622,8 @@ uint8_t pc_keyboard_device::read()
 
 	data = m_queue[m_tail];
 
-	LOGMASKED(LOG_KEYBOARD, "read(): Keyboard Read 0x%02x\n", data);
+	if (LOG_KEYBOARD)
+		logerror("read(): Keyboard Read 0x%02x\n",data);
 
 	m_tail++;
 	m_tail %= std::size(m_queue);
@@ -691,7 +690,8 @@ SeeAlso: #P046
 
 void at_keyboard_device::write(uint8_t data)
 {
-	LOGMASKED(LOG_KEYBOARD, "keyboard write %.2x\n", data);
+	if (LOG_KEYBOARD)
+		logerror("keyboard write %.2x\n",data);
 
 	switch (m_input_state)
 	{

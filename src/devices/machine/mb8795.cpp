@@ -38,14 +38,19 @@ void mb8795_device::check_irq()
 	bool old_irq_rx = irq_rx;
 	irq_tx = txstat & txmask;
 	irq_rx = rxstat & rxmask;
-	if(irq_tx != old_irq_tx)
+	if(irq_tx != old_irq_tx && !irq_tx_cb.isnull())
 		irq_tx_cb(irq_tx);
-	if(irq_rx != old_irq_rx)
+	if(irq_rx != old_irq_rx && !irq_rx_cb.isnull())
 		irq_rx_cb(irq_rx);
 }
 
 void mb8795_device::device_start()
 {
+	irq_tx_cb.resolve();
+	irq_rx_cb.resolve();
+	drq_tx_cb.resolve();
+	drq_rx_cb.resolve();
+
 	memset(mac, 0, 6);
 	timer_tx = timer_alloc(FUNC(mb8795_device::tx_update), this);
 	timer_rx = timer_alloc(FUNC(mb8795_device::rx_update), this);
@@ -180,7 +185,7 @@ void mb8795_device::mac_w(offs_t offset, uint8_t data)
 {
 	if(offset < 6) {
 		mac[offset] = data;
-		set_mac(mac);
+		set_mac((const char *)mac);
 	}
 }
 
@@ -198,7 +203,8 @@ void mb8795_device::tx_dma_w(uint8_t data, bool eof)
 	}
 
 	drq_tx = false;
-	drq_tx_cb(drq_tx);
+	if(!drq_tx_cb.isnull())
+		drq_tx_cb(drq_tx);
 
 	if(eof) {
 		logerror("send packet, dest=%02x.%02x.%02x.%02x.%02x.%02x len=%04x loopback=%s\n",
@@ -226,7 +232,8 @@ void mb8795_device::tx_dma_w(uint8_t data, bool eof)
 void mb8795_device::rx_dma_r(uint8_t &data, bool &eof)
 {
 	drq_rx = false;
-	drq_rx_cb(drq_rx);
+	if(!drq_rx_cb.isnull())
+		drq_rx_cb(drq_rx);
 
 	if(rxlen) {
 		data = rxbuf[0];
@@ -319,13 +326,15 @@ bool mb8795_device::recv_is_multicast()
 TIMER_CALLBACK_MEMBER(mb8795_device::tx_update)
 {
 	drq_tx = true;
-	drq_tx_cb(drq_tx);
+	if(!drq_tx_cb.isnull())
+		drq_tx_cb(drq_tx);
 }
 
 TIMER_CALLBACK_MEMBER(mb8795_device::rx_update)
 {
 	if(rxlen) {
 		drq_rx = true;
-		drq_rx_cb(drq_rx);
+		if(!drq_rx_cb.isnull())
+			drq_rx_cb(drq_rx);
 	}
 }

@@ -1,10 +1,9 @@
 // Common/MyTypes.h
 
-#ifndef ZIP7_INC_COMMON_MY_TYPES_H
-#define ZIP7_INC_COMMON_MY_TYPES_H
+#ifndef __COMMON_MY_TYPES_H
+#define __COMMON_MY_TYPES_H
 
 #include "../../C/7zTypes.h"
-#include "Common.h"
 
 typedef int HRes;
 
@@ -26,12 +25,11 @@ struct CBoolPair
     Val = true;
     Def = true;
   }
-
-  void SetVal_as_Defined(bool val)
-  {
-    Val = val;
-    Def = true;
-  }
 };
+
+#define CLASS_NO_COPY(cls) \
+  private: \
+  cls(const cls &); \
+  cls &operator=(const cls &);
 
 #endif

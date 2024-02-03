@@ -163,9 +163,6 @@ ZDIPSW      EQU 0FFH    ; Configuration dip switches
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
-
 class z100_state : public driver_device
 {
 public:
@@ -208,22 +205,22 @@ private:
 	void z100_vram_w(offs_t offset, uint8_t data);
 	void kbd_col_w(uint8_t data);
 	uint8_t kbd_rows_r();
-	int kbd_shift_row_r();
-	void beep_update(int state);
+	DECLARE_READ_LINE_MEMBER(kbd_shift_row_r);
+	DECLARE_WRITE_LINE_MEMBER(beep_update);
 	void floppy_select_w(uint8_t data);
 	void floppy_motor_w(uint8_t data);
 	uint8_t tmr_status_r();
 	void tmr_status_w(uint8_t data);
-	void timer_flipflop0_w(int state);
-	void timer_flipflop1_w(int state);
-	void vidint_w(int state);
-	void vidint_enable_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(timer_flipflop0_w);
+	DECLARE_WRITE_LINE_MEMBER(timer_flipflop1_w);
+	DECLARE_WRITE_LINE_MEMBER(vidint_w);
+	DECLARE_WRITE_LINE_MEMBER(vidint_enable_w);
 
 	u8 get_slave_ack(offs_t offset);
 	void video_pia_A_w(u8 data);
 	void video_pia_B_w(u8 data);
-	void video_pia_CA2_w(int state);
-	void video_pia_CB2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(video_pia_CA2_w);
+	DECLARE_WRITE_LINE_MEMBER(video_pia_CB2_w);
 
 	MC6845_UPDATE_ROW(update_row);
 
@@ -395,7 +392,7 @@ uint8_t z100_state::kbd_rows_r()
 	return 0xff;
 }
 
-int z100_state::kbd_shift_row_r()
+READ_LINE_MEMBER(z100_state::kbd_shift_row_r)
 {
 	if ((m_kbd_col & 0x0c) == 0x0c)
 		return m_keys[m_kbd_col]->read();
@@ -403,7 +400,7 @@ int z100_state::kbd_shift_row_r()
 	return 1;
 }
 
-void z100_state::beep_update(int state)
+WRITE_LINE_MEMBER(z100_state::beep_update)
 {
 	m_beeper->set_state(m_keyclick->q_r() | m_keybeep->q_r());
 }
@@ -434,7 +431,7 @@ void z100_state::tmr_status_w(uint8_t data)
 		m_picm->ir2_w(0);
 }
 
-void z100_state::timer_flipflop0_w(int state)
+WRITE_LINE_MEMBER(z100_state::timer_flipflop0_w)
 {
 	if (state)
 	{
@@ -443,7 +440,7 @@ void z100_state::timer_flipflop0_w(int state)
 	}
 }
 
-void z100_state::timer_flipflop1_w(int state)
+WRITE_LINE_MEMBER(z100_state::timer_flipflop1_w)
 {
 	if (state)
 	{
@@ -452,7 +449,7 @@ void z100_state::timer_flipflop1_w(int state)
 	}
 }
 
-void z100_state::vidint_w(int state)
+WRITE_LINE_MEMBER(z100_state::vidint_w)
 {
 	m_pia[1]->pa4_w(state);
 
@@ -460,7 +457,7 @@ void z100_state::vidint_w(int state)
 		m_pia[1]->ca2_w(1);
 }
 
-void z100_state::vidint_enable_w(int state)
+WRITE_LINE_MEMBER(z100_state::vidint_enable_w)
 {
 	m_vidint_enable = state;
 	if (!m_vidint_enable)
@@ -720,7 +717,7 @@ void z100_state::video_pia_B_w(u8 data)
 }
 
 /* clear screen */
-void z100_state::video_pia_CA2_w(int state)
+WRITE_LINE_MEMBER( z100_state::video_pia_CA2_w )
 {
 	int i;
 
@@ -728,7 +725,7 @@ void z100_state::video_pia_CA2_w(int state)
 		m_gvram[i] = m_clr_val;
 }
 
-void z100_state::video_pia_CB2_w(int state)
+WRITE_LINE_MEMBER( z100_state::video_pia_CB2_w )
 {
 	m_clr_val = (state & 1) ? 0x00 : 0xff;
 }
@@ -900,8 +897,6 @@ ROM_START( z100 )
 	ROM_REGION(0x0100, "vrmm", 0) // TBP18S22 Video RAM Mapping Module
 	ROM_LOAD("444-127.u370", 0x0000, 0x0100, CRC(ac386f6b) SHA1(2b62b939d704d90edf59923a8a1a51ef1902f4d7) BAD_DUMP)
 ROM_END
-
-} // anonymous namespace
 
 
 /* Driver */

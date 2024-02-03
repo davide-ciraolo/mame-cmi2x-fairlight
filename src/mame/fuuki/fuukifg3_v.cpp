@@ -214,7 +214,7 @@ u32 fuuki32_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap, co
 	return 0;
 }
 
-void fuuki32_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(fuuki32_state::screen_vblank)
 {
 	// rising edge
 	if (state)

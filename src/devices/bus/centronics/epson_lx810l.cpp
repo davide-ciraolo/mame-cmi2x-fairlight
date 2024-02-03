@@ -522,7 +522,7 @@ void epson_lx810l_device::cr_stepper(uint8_t data)
 	}
 }
 
-void epson_lx810l_device::e05a30_ready(int state)
+WRITE_LINE_MEMBER( epson_lx810l_device::e05a30_ready )
 {
 	// must be longer than attotime::zero - 0.09 is minimum to initialize properly
 	m_maincpu->pulse_input_line(INPUT_LINE_NMI, attotime::from_double(0.09));
@@ -533,7 +533,7 @@ void epson_lx810l_device::e05a30_ready(int state)
     Extended Timer Output
 ***************************************************************************/
 
-void epson_lx810l_device::co0_w(int state)
+WRITE_LINE_MEMBER( epson_lx810l_device::co0_w )
 {
 	/* Printhead is being fired on !state. */
 	if (!state) {

@@ -5,8 +5,8 @@
  * includes/amstrad.h
  *
  ****************************************************************************/
-#ifndef MAME_AMSTRAD_AMSTRAD_H
-#define MAME_AMSTRAD_AMSTRAD_H
+#ifndef MAME_INCLUDES_AMSTRAD_H
+#define MAME_INCLUDES_AMSTRAD_H
 
 #pragma once
 
@@ -38,6 +38,12 @@
 #include "machine/ram.h"
 #include "imagedev/cassette.h"
 #include "bus/centronics/ctronics.h"
+#include "bus/centronics/comxpl80.h"
+#include "bus/centronics/epson_ex800.h"
+#include "bus/centronics/epson_lx800.h"
+#include "bus/centronics/epson_lx810l.h"
+#include "bus/centronics/printer.h"
+#include "bus/centronics/digiblst.h"
 #include "bus/generic/slot.h"
 #include "bus/generic/carts.h"
 #include "emupal.h"
@@ -211,8 +217,6 @@ private:
 	void aleste_msx_mapper(offs_t offset, uint8_t data);
 	uint8_t amstrad_cpc_io_r(offs_t offset);
 	void amstrad_cpc_io_w(offs_t offset, uint8_t data);
-	uint8_t amstrad_cpc_mem_r(offs_t offset);
-	void amstrad_cpc_mem_w(offs_t offset, uint8_t data);
 	uint8_t amstrad_psg_porta_read();
 	void amstrad_plus_seqcheck(int data);
 	DECLARE_MACHINE_START(amstrad);
@@ -231,23 +235,23 @@ private:
 	DECLARE_MACHINE_RESET(aleste);
 	void aleste_palette(palette_device &palette) const;
 	uint32_t screen_update_amstrad(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void screen_vblank_amstrad(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank_amstrad);
 	TIMER_CALLBACK_MEMBER(amstrad_pc2_low);
 	TIMER_CALLBACK_MEMBER(amstrad_video_update_timer);
 	TIMER_CALLBACK_MEMBER(cb_set_resolution);
-	void amstrad_hsync_changed(int state);
-	void amstrad_plus_hsync_changed(int state);
-	void amstrad_vsync_changed(int state);
-	void amstrad_plus_vsync_changed(int state);
-	void amstrad_de_changed(int state);
-	void amstrad_plus_de_changed(int state);
+	DECLARE_WRITE_LINE_MEMBER(amstrad_hsync_changed);
+	DECLARE_WRITE_LINE_MEMBER(amstrad_plus_hsync_changed);
+	DECLARE_WRITE_LINE_MEMBER(amstrad_vsync_changed);
+	DECLARE_WRITE_LINE_MEMBER(amstrad_plus_vsync_changed);
+	DECLARE_WRITE_LINE_MEMBER(amstrad_de_changed);
+	DECLARE_WRITE_LINE_MEMBER(amstrad_plus_de_changed);
 	uint8_t amstrad_ppi_porta_r();
 	void amstrad_ppi_porta_w(uint8_t data);
 	uint8_t amstrad_ppi_portb_r();
 	void amstrad_ppi_portc_w(uint8_t data);
 
 	device_t* get_expansion_device(const char* tag);
-	void cpc_romdis(int state);
+	DECLARE_WRITE_LINE_MEMBER( cpc_romdis );
 	void rom_select(uint8_t data);
 
 	static void amstrad_floppy_formats(format_registration &fr);
@@ -261,14 +265,14 @@ private:
 	void amstrad_rethinkMemory();
 	DECLARE_SNAPSHOT_LOAD_MEMBER(snapshot_cb);
 
-	void write_centronics_busy(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_busy);
 
 	void amstrad_io(address_map &map);
 	void amstrad_mem(address_map &map);
 
 	required_memory_region m_region_maincpu;
 	optional_memory_region m_region_user1;
-	memory_bank_array_creator<16> m_banks;
+	required_memory_bank_array<16> m_banks;
 	optional_ioport_array<11> m_io_kbrow;
 	optional_ioport_array<4> m_io_analog;
 	optional_ioport_array<3> m_io_mouse;
@@ -315,4 +319,4 @@ private:
 void cpc_exp_cards(device_slot_interface &device);
 void cpcplus_exp_cards(device_slot_interface &device);
 
-#endif // MAME_AMSTRAD_AMSTRAD_H
+#endif // MAME_INCLUDES_AMSTRAD_H

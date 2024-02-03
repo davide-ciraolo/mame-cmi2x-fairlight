@@ -180,7 +180,7 @@ void jaguar_state::update_gpu_irq()
 }
 
 
-void jaguar_state::external_int(int state)
+WRITE_LINE_MEMBER( jaguar_state::external_int )
 {
 	if (state != CLEAR_LINE)
 		m_gpu_irq_state |= 1;

@@ -79,9 +79,6 @@
 #define LOGCENT(...) LOGMASKED(LOG_CENT, __VA_ARGS__)
 #define LOGRAM(...)  LOGMASKED(LOG_RAM, __VA_ARGS__)
 
-
-namespace {
-
 class myb3k_state : public driver_device
 {
 public:
@@ -121,15 +118,15 @@ private:
 	void myb3k_map(address_map &map);
 
 	/* Interrupt controller */
-	void pic_int_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( pic_int_w );
 
 	/* Parallel port */
 	uint8_t ppi_portb_r();
 	void ppi_portc_w(uint8_t data);
 
 	/* DMA controller */
-	void hrq_w(int state);
-	void tc_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( hrq_w );
+	DECLARE_WRITE_LINE_MEMBER( tc_w );
 	void dma_segment_w(uint8_t data);
 	uint8_t dma_memory_read_byte(offs_t offset);
 	void dma_memory_write_byte(offs_t offset, uint8_t data);
@@ -141,26 +138,26 @@ private:
 	void io_dack1_w(uint8_t data) { LOGDMA("io_dack1_w: %02x\n", data); m_isabus->dack_w(1, data); }
 	void io_dack2_w(uint8_t data) { LOGDMA("io_dack2_w: %02x\n", data); m_isabus->dack_w(2, data); }
 	void io_dack3_w(uint8_t data) { LOGDMA("io_dack3_w: %02x\n", data); m_isabus->dack_w(3, data); }
-	void dack0_w(int state) { LOGDMA("dack0_w: %d\n", state); select_dma_channel(0, state); }
-	void dack1_w(int state) { LOGDMA("dack1_w: %d\n", state); select_dma_channel(1, state); }
-	void dack2_w(int state) { LOGDMA("dack2_w: %d\n", state); select_dma_channel(2, state); }
-	void dack3_w(int state) { LOGDMA("dack3_w: %d\n", state); select_dma_channel(3, state); }
+	DECLARE_WRITE_LINE_MEMBER( dack0_w ){ LOGDMA("dack0_w: %d\n", state); select_dma_channel(0, state); }
+	DECLARE_WRITE_LINE_MEMBER( dack1_w ){ LOGDMA("dack1_w: %d\n", state); select_dma_channel(1, state); }
+	DECLARE_WRITE_LINE_MEMBER( dack2_w ){ LOGDMA("dack2_w: %d\n", state); select_dma_channel(2, state); }
+	DECLARE_WRITE_LINE_MEMBER( dack3_w ){ LOGDMA("dack3_w: %d\n", state); select_dma_channel(3, state); }
 
 	/* Timer */
-	void pit_out1_changed(int state);
+	DECLARE_WRITE_LINE_MEMBER( pit_out1_changed );
 
 	/* Video controller */
 	MC6845_UPDATE_ROW(crtc_update_row);
 
 	/* ISA+ Expansion bus */
-	void isa_irq5_w(int state);
-	void isa_irq7_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( isa_irq5_w );
+	DECLARE_WRITE_LINE_MEMBER( isa_irq7_w );
 
 	/* Centronics  */
-	void centronics_ack_w(int state);
-	void centronics_busy_w(int state);
-	void centronics_perror_w(int state);
-	void centronics_select_w(int state);
+	DECLARE_WRITE_LINE_MEMBER (centronics_ack_w);
+	DECLARE_WRITE_LINE_MEMBER (centronics_busy_w);
+	DECLARE_WRITE_LINE_MEMBER (centronics_perror_w);
+	DECLARE_WRITE_LINE_MEMBER (centronics_select_w);
 
 	/* Keyboard */
 	uint8_t myb3k_kbd_r();
@@ -757,7 +754,7 @@ void myb3k_state::select_dma_channel(int channel, bool state)
 	}
 }
 
-void myb3k_state::tc_w(int state)
+WRITE_LINE_MEMBER( myb3k_state::tc_w )
 {
 	LOGDMA("tc_w: %d\n", state);
 	if (m_dma_channel != -1 && (state == ASSERT_LINE) != m_cur_tc)
@@ -765,7 +762,7 @@ void myb3k_state::tc_w(int state)
 	m_cur_tc = state == ASSERT_LINE;
 }
 
-void myb3k_state::pic_int_w(int state)
+WRITE_LINE_MEMBER(myb3k_state::pic_int_w)
 {
 	LOGPIC("pic_int_w: %d\n", state);
 	m_maincpu->set_input_line(0, state);
@@ -787,7 +784,7 @@ void myb3k_state::pic_ir7_w(int source, int state)
 		m_pic8259->ir7_w(state);
 }
 
-void myb3k_state::pit_out1_changed(int state)
+WRITE_LINE_MEMBER( myb3k_state::pit_out1_changed )
 {
 	LOGPIT("pit_out1_changed: %d\n", state);
 	m_speaker->level_w(state);
@@ -799,7 +796,7 @@ void myb3k_state::dma_segment_w(uint8_t data)
 	m_dma_page[(data >> 6) & 3] = data & 0x0f;
 }
 
-void myb3k_state::hrq_w(int state)
+WRITE_LINE_MEMBER(myb3k_state::hrq_w)
 {
 	LOGDMA("hrq_w: %d\n", state);
 
@@ -873,21 +870,21 @@ void myb3k_state::ppi_portc_w(uint8_t data)
 }
 
 /* ISA IRQ5 handler */
-void myb3k_state::isa_irq5_w(int state)
+WRITE_LINE_MEMBER (myb3k_state::isa_irq5_w)
 {
 	LOGCENT("isa_irq5_w %d\n", state);
 	pic_ir5_w(ISA_IRQ5, state);
 }
 
 /* ISA IRQ7 handler */
-void myb3k_state::isa_irq7_w(int state)
+WRITE_LINE_MEMBER (myb3k_state::isa_irq7_w)
 {
 	LOGCENT("isa_irq7_w %d\n", state);
 	pic_ir7_w(ISA_IRQ7, state);
 }
 
 /* Centronics ACK handler */
-void myb3k_state::centronics_ack_w(int state)
+WRITE_LINE_MEMBER (myb3k_state::centronics_ack_w)
 {
 	LOGCENT("centronics_ack_w %d\n", state);
 	pic_ir7_w(CENT_ACK, state);
@@ -896,7 +893,7 @@ void myb3k_state::centronics_ack_w(int state)
 /* Centronics BUSY handler
  * The busy line is enterring the schematics from the connector but is lost to its way to the status latch
  * but there is only two possibilities, either D0 or D1  */
-void myb3k_state::centronics_busy_w(int state)
+WRITE_LINE_MEMBER (myb3k_state::centronics_busy_w)
 {
 	LOGCENT("centronics_busy_w %d\n", state);
 	if (state == ASSERT_LINE)
@@ -906,7 +903,7 @@ void myb3k_state::centronics_busy_w(int state)
 }
 
 /* Centronics PERROR handler */
-void myb3k_state::centronics_perror_w(int state)
+WRITE_LINE_MEMBER (myb3k_state::centronics_perror_w)
 {
 	LOGCENT("centronics_perror_w %d\n", state);
 	if (state == ASSERT_LINE)
@@ -916,7 +913,7 @@ void myb3k_state::centronics_perror_w(int state)
 }
 
 /* Centronics SELECT handler - The centronics select signal is not used by this hardware */
-void myb3k_state::centronics_select_w(int state)
+WRITE_LINE_MEMBER (myb3k_state::centronics_select_w)
 {
 	LOGCENT("centronics_select_w %d - not used by machine\n", state);
 }
@@ -1069,9 +1066,6 @@ ROM_START( stepone )
 	ROM_LOAD( "steponechrg-v2.07.bin", 0xc000, 0x2000, CRC(8284a391) SHA1(7203c5e9d83be37c1c195946fbee5c53b1bce391))
 	ROM_LOAD( "steponebios-v2.07.bin", 0xe000, 0x2000, CRC(322c1618) SHA1(a7a3cc2af7cc9556007d98014714ba656f6e79d1))
 ROM_END
-
-} // anonymous namespace
-
 
 //    YEAR  NAME     PARENT  COMPAT  MACHINE  INPUT  CLASS        INIT        COMPANY       FULLNAME        FLAGS
 COMP( 1982, myb3k,   0,      0,      myb3k,   myb3k, myb3k_state, empty_init, "Matsushita", "MyBrain 3000", 0)

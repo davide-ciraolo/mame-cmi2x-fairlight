@@ -43,8 +43,8 @@ public:
 	uint8_t read();
 	void write(uint8_t data);
 
-	void te_w(int state);
-	void pe_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( te_w );
+	DECLARE_WRITE_LINE_MEMBER( pe_w );
 
 protected:
 	// device-level overrides

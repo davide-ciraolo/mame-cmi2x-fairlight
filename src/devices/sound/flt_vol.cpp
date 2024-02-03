@@ -15,7 +15,7 @@ filter_volume_device::filter_volume_device(const machine_config &mconfig, const 
 	device_t(mconfig, FILTER_VOLUME, tag, owner, clock),
 	device_sound_interface(mconfig, *this),
 	m_stream(nullptr),
-	m_gain(1.0f)
+	m_gain(0)
 {
 }
 
@@ -26,7 +26,9 @@ filter_volume_device::filter_volume_device(const machine_config &mconfig, const 
 
 void filter_volume_device::device_start()
 {
+	m_gain = 1.0;
 	m_stream = stream_alloc(1, 1, SAMPLE_RATE_OUTPUT_ADAPTIVE);
+
 	save_item(NAME(m_gain));
 }
 
@@ -42,11 +44,8 @@ void filter_volume_device::sound_stream_update(sound_stream &stream, std::vector
 }
 
 
-filter_volume_device &filter_volume_device::set_gain(float gain)
+void filter_volume_device::flt_volume_set_volume(float volume)
 {
-	if (m_stream)
-		m_stream->update();
-	m_gain = gain;
-
-	return *this;
+	m_stream->update();
+	m_gain = volume;
 }

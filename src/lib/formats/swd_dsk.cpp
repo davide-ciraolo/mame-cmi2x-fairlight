@@ -2,7 +2,7 @@
 // copyright-holders:MetalliC
 /*********************************************************************
 
-    formats/swd_dsk.cpp
+    formats/swd_dsk.c
 
     Swift Disc disk images
 
@@ -14,17 +14,17 @@ swd_format::swd_format() : wd177x_format(formats)
 {
 }
 
-const char *swd_format::name() const noexcept
+const char *swd_format::name() const
 {
 	return "swd";
 }
 
-const char *swd_format::description() const noexcept
+const char *swd_format::description() const
 {
 	return "SWD floppy disk image";
 }
 
-const char *swd_format::extensions() const noexcept
+const char *swd_format::extensions() const
 {
 	return "swd";
 }

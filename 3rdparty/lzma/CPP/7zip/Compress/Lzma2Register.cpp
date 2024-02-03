@@ -6,7 +6,7 @@
 
 #include "Lzma2Decoder.h"
 
-#ifndef Z7_EXTRACT_ONLY
+#ifndef EXTRACT_ONLY
 #include "Lzma2Encoder.h"
 #endif
 

@@ -116,7 +116,7 @@ void cpc_musicmachine_device::irqsel_w(uint8_t data)
 		m_irq_select = false;
 }
 
-void cpc_musicmachine_device::irq_w(int state)
+WRITE_LINE_MEMBER(cpc_musicmachine_device::irq_w)
 {
 	if(m_irq_select)
 		m_slot->nmi_w(state);

@@ -12,6 +12,8 @@
  TYPE DEFINITIONS
  ***************************************************************************/
 
+#define A78SLOT_ROM_REGION_TAG ":cart:rom"
+
 /* PCB */
 enum
 {
@@ -56,7 +58,7 @@ public:
 	virtual void write_30xx(offs_t offset, uint8_t data) {}
 	virtual void write_40xx(offs_t offset, uint8_t data) {}
 
-	void rom_alloc(uint32_t size);
+	void rom_alloc(uint32_t size, const char *tag);
 	void ram_alloc(uint32_t size);
 	void nvram_alloc(uint32_t size);
 	uint8_t* get_rom_base() { return m_rom; }
@@ -89,19 +91,19 @@ class a78_cart_slot_device : public device_t,
 public:
 	// construction/destruction
 	template <typename T>
-	a78_cart_slot_device(machine_config const &mconfig, char const *tag, device_t *owner, uint32_t clock, T &&opts, char const *dflt)
-		: a78_cart_slot_device(mconfig, tag, owner, clock)
+	a78_cart_slot_device(machine_config const &mconfig, char const *tag, device_t *owner, T &&opts, char const *dflt)
+		: a78_cart_slot_device(mconfig, tag, owner, (uint32_t)0)
 	{
 		option_reset();
 		opts(*this);
 		set_default_option(dflt);
 		set_fixed(false);
 	}
-	a78_cart_slot_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
+	a78_cart_slot_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock = 0);
 	virtual ~a78_cart_slot_device();
 
-	// device_image_interface implementation
-	virtual std::pair<std::error_condition, std::string> call_load() override;
+	// image-level overrides
+	virtual image_init_result call_load() override;
 	virtual void call_unload() override;
 
 	virtual bool is_reset_on_load() const noexcept override { return true; }
@@ -109,7 +111,7 @@ public:
 	virtual const char *file_extensions() const noexcept override { return "a78"; }
 	virtual u32 unhashed_header_length() const noexcept override { return 128; }
 
-	// device_slot_interface implementation
+	// slot interface overrides
 	virtual std::string get_default_card_software(get_default_card_software_hook &hook) const override;
 
 	int get_cart_type() { return m_type; }
@@ -126,15 +128,15 @@ public:
 	void write_40xx(offs_t offset, uint8_t data);
 
 private:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 
-	std::pair<std::error_condition, std::string> verify_header(const uint8_t *header);
-	int validate_header(int head, bool log) const;
-	void internal_header_logging(const uint8_t *header, uint32_t len);
-
-	device_a78_cart_interface *m_cart;
+	device_a78_cart_interface*       m_cart;
 	int m_type;
+
+	image_verify_result verify_header(char *header);
+	int validate_header(int head, bool log) const;
+	void internal_header_logging(uint8_t *header, uint32_t len);
 };
 
 

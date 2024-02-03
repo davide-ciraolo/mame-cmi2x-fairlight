@@ -58,12 +58,8 @@ tiki100_bus_device::tiki100_bus_device(const machine_config &mconfig, const char
 	m_irq_cb(*this),
 	m_nmi_cb(*this),
 	m_busrq_cb(*this),
-	m_in_mrq_cb(*this, 0),
+	m_in_mrq_cb(*this),
 	m_out_mrq_cb(*this)
-{
-}
-
-tiki100_bus_device::~tiki100_bus_device()
 {
 }
 
@@ -74,6 +70,12 @@ tiki100_bus_device::~tiki100_bus_device()
 
 void tiki100_bus_device::device_start()
 {
+	// resolve callbacks
+	m_irq_cb.resolve_safe();
+	m_nmi_cb.resolve_safe();
+	m_busrq_cb.resolve_safe();
+	m_in_mrq_cb.resolve();
+	m_out_mrq_cb.resolve();
 }
 
 
@@ -83,7 +85,7 @@ void tiki100_bus_device::device_start()
 
 void tiki100_bus_device::add_card(device_tiki100bus_card_interface &card)
 {
-	m_device_list.emplace_back(card);
+	m_device_list.append(card);
 
 	card.m_bus = this;
 }
@@ -95,8 +97,13 @@ void tiki100_bus_device::add_card(device_tiki100bus_card_interface &card)
 
 uint8_t tiki100_bus_device::mrq_r(offs_t offset, uint8_t data, bool &mdis)
 {
-	for (device_tiki100bus_card_interface &entry : m_device_list)
-		data &= entry.mrq_r(offset, data, mdis);
+	device_tiki100bus_card_interface *entry = m_device_list.first();
+
+	while (entry)
+	{
+		data &= entry->mrq_r(offset, data, mdis);
+		entry = entry->next();
+	}
 
 	return data;
 }
@@ -108,8 +115,13 @@ uint8_t tiki100_bus_device::mrq_r(offs_t offset, uint8_t data, bool &mdis)
 
 void tiki100_bus_device::mrq_w(offs_t offset, uint8_t data)
 {
-	for (device_tiki100bus_card_interface &entry : m_device_list)
-		entry.mrq_w(offset, data);
+	device_tiki100bus_card_interface *entry = m_device_list.first();
+
+	while (entry)
+	{
+		entry->mrq_w(offset, data);
+		entry = entry->next();
+	}
 }
 
 
@@ -119,8 +131,13 @@ void tiki100_bus_device::mrq_w(offs_t offset, uint8_t data)
 
 uint8_t tiki100_bus_device::iorq_r(offs_t offset, uint8_t data)
 {
-	for (device_tiki100bus_card_interface &entry : m_device_list)
-		data &= entry.iorq_r(offset, data);
+	device_tiki100bus_card_interface *entry = m_device_list.first();
+
+	while (entry)
+	{
+		data &= entry->iorq_r(offset, data);
+		entry = entry->next();
+	}
 
 	return data;
 }
@@ -132,8 +149,13 @@ uint8_t tiki100_bus_device::iorq_r(offs_t offset, uint8_t data)
 
 void tiki100_bus_device::iorq_w(offs_t offset, uint8_t data)
 {
-	for (device_tiki100bus_card_interface &entry : m_device_list)
-		entry.iorq_w(offset, data);
+	device_tiki100bus_card_interface *entry = m_device_list.first();
+
+	while (entry)
+	{
+		entry->iorq_w(offset, data);
+		entry = entry->next();
+	}
 }
 
 
@@ -141,10 +163,15 @@ void tiki100_bus_device::iorq_w(offs_t offset, uint8_t data)
 //  busak_w - bus acknowledge write
 //-------------------------------------------------
 
-void tiki100_bus_device::busak_w(int state)
+WRITE_LINE_MEMBER( tiki100_bus_device::busak_w )
 {
-	for (device_tiki100bus_card_interface &entry : m_device_list)
-		entry.busak_w(state);
+	device_tiki100bus_card_interface *entry = m_device_list.first();
+
+	while (entry)
+	{
+		entry->busak_w(state);
+		entry = entry->next();
+	}
 }
 
 
@@ -160,7 +187,8 @@ void tiki100_bus_device::busak_w(int state)
 device_tiki100bus_card_interface::device_tiki100bus_card_interface(const machine_config &mconfig, device_t &device) :
 	device_interface(device, "tiki100bus"),
 	m_bus(nullptr),
-	m_busak(CLEAR_LINE)
+	m_busak(CLEAR_LINE),
+	m_next(nullptr)
 {
 	m_slot = dynamic_cast<tiki100_bus_slot_device *>(device.owner());
 }

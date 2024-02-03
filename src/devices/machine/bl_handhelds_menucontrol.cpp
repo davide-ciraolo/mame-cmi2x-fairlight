@@ -14,12 +14,12 @@ bl_handhelds_menucontrol_device::bl_handhelds_menucontrol_device(const machine_c
 {
 }
 
-int bl_handhelds_menucontrol_device::status_r()
+READ_LINE_MEMBER(bl_handhelds_menucontrol_device::status_r)
 {
 	return m_clockstate;
 }
 
-int bl_handhelds_menucontrol_device::data_r()
+READ_LINE_MEMBER(bl_handhelds_menucontrol_device::data_r)
 {
 	return m_responsebit;
 }
@@ -156,7 +156,7 @@ void bl_handhelds_menucontrol_device::handle_command()
 	}
 }
 
-void bl_handhelds_menucontrol_device::clock_w(int state)
+WRITE_LINE_MEMBER(bl_handhelds_menucontrol_device::clock_w)
 {
 	if (state)
 	{
@@ -178,12 +178,12 @@ void bl_handhelds_menucontrol_device::clock_w(int state)
 	}
 }
 
-void bl_handhelds_menucontrol_device::data_w(int state)
+WRITE_LINE_MEMBER(bl_handhelds_menucontrol_device::data_w)
 {
 	m_commandbit = state;
 }
 
-void bl_handhelds_menucontrol_device::reset_w(int state)
+WRITE_LINE_MEMBER(bl_handhelds_menucontrol_device::reset_w)
 {
 	m_datashifterpos = 0;
 }

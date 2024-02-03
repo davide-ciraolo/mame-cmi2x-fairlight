@@ -20,12 +20,12 @@
 DEFINE_DEVICE_TYPE(COP452, cop452_device, "cop452", "National Semiconductor COP452 frequency generator")
 
 cop452_device::cop452_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
-	: device_t(mconfig, COP452, tag, owner, clock)
+: device_t(mconfig, COP452, tag, owner, clock)
 	, m_out_handlers(*this)
 {
 }
 
-void cop452_device::cs_w(int state)
+WRITE_LINE_MEMBER(cop452_device::cs_w)
 {
 	m_cs = state;
 	if (m_cs) {
@@ -35,7 +35,7 @@ void cop452_device::cs_w(int state)
 	}
 }
 
-void cop452_device::sk_w(int state)
+WRITE_LINE_MEMBER(cop452_device::sk_w)
 {
 	if (!m_cs && !m_sk && state) {
 		// Rising edge on SK
@@ -132,12 +132,12 @@ void cop452_device::sk_w(int state)
 	m_sk = state;
 }
 
-void cop452_device::di_w(int state)
+WRITE_LINE_MEMBER(cop452_device::di_w)
 {
 	m_di = state;
 }
 
-int cop452_device::do_r()
+READ_LINE_MEMBER(cop452_device::do_r)
 {
 	// TODO:
 	return 0;
@@ -145,6 +145,8 @@ int cop452_device::do_r()
 
 void cop452_device::device_start()
 {
+	m_out_handlers.resolve_all_safe();
+
 	m_timers[0] = timer_alloc(FUNC(cop452_device::timer_tick), this);
 	m_timers[1] = timer_alloc(FUNC(cop452_device::timer_tick), this);
 

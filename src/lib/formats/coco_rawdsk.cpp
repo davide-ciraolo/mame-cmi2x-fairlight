@@ -13,17 +13,17 @@ coco_rawdsk_format::coco_rawdsk_format() : wd177x_format(formats)
 {
 }
 
-const char *coco_rawdsk_format::name() const noexcept
+const char *coco_rawdsk_format::name() const
 {
 	return "coco_rawdsk";
 }
 
-const char *coco_rawdsk_format::description() const noexcept
+const char *coco_rawdsk_format::description() const
 {
 	return "CoCo Raw Disk";
 }
 
-const char *coco_rawdsk_format::extensions() const noexcept
+const char *coco_rawdsk_format::extensions() const
 {
 	return "raw";
 }

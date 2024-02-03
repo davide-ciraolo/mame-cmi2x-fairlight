@@ -44,7 +44,7 @@ menu_video_targets::~menu_video_targets()
 {
 }
 
-void menu_video_targets::populate()
+void menu_video_targets::populate(float &customtop, float &custombottom)
 {
 	// find the targets
 	for (unsigned targetnum = 0; ; targetnum++)
@@ -68,7 +68,7 @@ void menu_video_targets::populate()
     menu
 -------------------------------------------------*/
 
-bool menu_video_targets::handle(event const *ev)
+void menu_video_targets::handle(event const *ev)
 {
 	if (ev && (ev->iptkey == IPT_UI_SELECT))
 	{
@@ -80,8 +80,6 @@ bool menu_video_targets::handle(event const *ev)
 				*target,
 				&machine().video().snapshot_target() == target);
 	}
-
-	return false;
 }
 
 
@@ -113,7 +111,7 @@ menu_video_options::~menu_video_options()
 {
 }
 
-void menu_video_options::populate()
+void menu_video_options::populate(float &customtop, float &custombottom)
 {
 	uintptr_t ref;
 
@@ -149,10 +147,10 @@ void menu_video_options::populate()
 	// add a rotate item
 	switch (m_target.orientation())
 	{
-	case ROT0:      subtext = "None";       break;
-	case ROT90:     subtext = u8"CW 90°";   break;
-	case ROT180:    subtext = u8"180°";     break;
-	case ROT270:    subtext = u8"CCW 90°";  break;
+	case ROT0:      subtext = "None";                   break;
+	case ROT90:     subtext = "CW 90" UTF8_DEGREES;     break;
+	case ROT180:    subtext = "180" UTF8_DEGREES;       break;
+	case ROT270:    subtext = "CCW 90" UTF8_DEGREES;    break;
 	}
 	item_append(_("Rotate"), subtext, FLAG_LEFT_ARROW | FLAG_RIGHT_ARROW, reinterpret_cast<void *>(ITEM_ROTATE));
 
@@ -200,14 +198,9 @@ void menu_video_options::populate()
     menu
 -------------------------------------------------*/
 
-bool menu_video_options::handle(event const *ev)
+void menu_video_options::handle(event const *ev)
 {
-	auto const lockout_popup(
-			[this] ()
-			{
-				machine().popmessage(_("Cannot change options while recording!"));
-				return true;
-			});
+	auto const lockout_popup([this] () { machine().popmessage(_("Cannot change options while recording!")); });
 	bool const snap_lockout(m_snapshot && machine().video().is_recording());
 	bool changed(false);
 
@@ -345,7 +338,6 @@ bool menu_video_options::handle(event const *ev)
 	// if something changed, rebuild the menu
 	if (changed)
 		reset(reset_options::REMEMBER_REF);
-	return false;
 }
 
 } // namespace ui

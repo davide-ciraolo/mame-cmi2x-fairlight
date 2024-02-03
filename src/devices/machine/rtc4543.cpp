@@ -70,6 +70,8 @@ rtc4543_device::rtc4543_device(const machine_config &mconfig, device_type type, 
 
 void rtc4543_device::device_start()
 {
+	m_data_cb.resolve_safe();
+
 	// allocate timers
 	m_clock_timer = timer_alloc(FUNC(rtc4543_device::advance_clock), this);
 	m_clock_timer->adjust(attotime::from_hz(clock() / 32768), 0, attotime::from_hz(clock() / 32768));
@@ -130,7 +132,7 @@ void rtc4543_device::rtc_clock_updated(int year, int month, int day, int day_of_
 //  ce_w - chip enable write
 //-------------------------------------------------
 
-void rtc4543_device::ce_w(int state)
+WRITE_LINE_MEMBER( rtc4543_device::ce_w )
 {
 	if (!state && m_ce) // complete transfer
 	{
@@ -173,7 +175,7 @@ void rtc4543_device::ce_falling()
 //  wr_w - data direction line write
 //-------------------------------------------------
 
-void rtc4543_device::wr_w(int state)
+WRITE_LINE_MEMBER( rtc4543_device::wr_w )
 {
 	if (state != m_wr)
 		LOG("WR: %u\n", state);
@@ -186,7 +188,7 @@ void rtc4543_device::wr_w(int state)
 //  clk_w - serial clock write
 //-------------------------------------------------
 
-void rtc4543_device::clk_w(int state)
+WRITE_LINE_MEMBER( rtc4543_device::clk_w )
 {
 	if (m_ce)
 	{
@@ -244,7 +246,7 @@ void rtc4543_device::clk_falling()
 //  data_w - I/O write
 //-------------------------------------------------
 
-void rtc4543_device::data_w(int state)
+WRITE_LINE_MEMBER( rtc4543_device::data_w )
 {
 	m_data = state & 1;
 }
@@ -254,7 +256,7 @@ void rtc4543_device::data_w(int state)
 //  data_r - I/O read
 //-------------------------------------------------
 
-int rtc4543_device::data_r()
+READ_LINE_MEMBER( rtc4543_device::data_r )
 {
 	return m_data;
 }

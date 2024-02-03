@@ -42,12 +42,12 @@ protected:
 	}
 
 
-	virtual void input_tip(int state) override
+	virtual DECLARE_WRITE_LINE_MEMBER(input_tip) override
 	{
 		m_left_speaker->level_w(state);
 	}
 
-	virtual void input_ring(int state) override
+	virtual DECLARE_WRITE_LINE_MEMBER(input_ring) override
 	{
 		m_right_speaker->level_w(state);
 	}
@@ -91,13 +91,13 @@ protected:
 	}
 
 
-	virtual void input_tip(int state) override
+	virtual DECLARE_WRITE_LINE_MEMBER(input_tip) override
 	{
 		m_tip_state = bool(state);
 		m_speaker->level_w((m_tip_state || m_ring_state) ? 1 : 0);
 	}
 
-	virtual void input_ring(int state) override
+	virtual DECLARE_WRITE_LINE_MEMBER(input_ring) override
 	{
 		m_ring_state = bool(state);
 		m_speaker->level_w((m_tip_state || m_ring_state) ? 1 : 0);

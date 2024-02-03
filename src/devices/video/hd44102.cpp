@@ -2,17 +2,7 @@
 // copyright-holders:Curt Coder
 /**********************************************************************
 
-HD44102 Dot Matrix Liquid Crystal Graphic Display Column Driver
-
-Not to be confused with HD44100.
-Includes 4*50*8bit RAM.
-
-TODO:
-- properly emulate CS pins if needed? (there's 3, for enabling read and/or write)
-- add BS pin when needed (4-bit mode)
-- busy flag
-- reset state
-- what happens if Y address is invalid? (set to > 49)
+    HD44102 Dot Matrix Liquid Crystal Graphic Display Column Driver emulation
 
 **********************************************************************/
 
@@ -36,6 +26,7 @@ TODO:
 #define CONTROL_X_ADDRESS_MASK      0xc0
 #define CONTROL_DISPLAY_START_PAGE  0x3e
 
+
 #define STATUS_BUSY                 0x80    /* not supported */
 #define STATUS_COUNT_UP             0x40
 #define STATUS_DISPLAY_OFF          0x20
@@ -47,6 +38,28 @@ DEFINE_DEVICE_TYPE(HD44102, hd44102_device, "hd44102", "Hitachi HD44102 LCD Cont
 
 
 //**************************************************************************
+//  INLINE HELPERS
+//**************************************************************************
+
+//-------------------------------------------------
+//  count_up_or_down -
+//-------------------------------------------------
+
+inline void hd44102_device::count_up_or_down()
+{
+	if (m_status & STATUS_COUNT_UP)
+	{
+		if (++m_y > 49) m_y = 0;
+	}
+	else
+	{
+		if (--m_y < 0) m_y = 49;
+	}
+}
+
+
+
+//**************************************************************************
 //  LIVE DEVICE
 //**************************************************************************
 
@@ -54,10 +67,13 @@ DEFINE_DEVICE_TYPE(HD44102, hd44102_device, "hd44102", "Hitachi HD44102 LCD Cont
 //  hd44102_device - constructor
 //-------------------------------------------------
 
-hd44102_device::hd44102_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock) :
-	device_t(mconfig, HD44102, tag, owner, clock),
-	m_sx(0),
-	m_sy(0)
+hd44102_device::hd44102_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: device_t(mconfig, HD44102, tag, owner, clock),
+		device_video_interface(mconfig, *this),
+		m_cs2(0),
+		m_page(0),
+		m_x(0),
+		m_y(0)
 {
 }
 
@@ -68,26 +84,17 @@ hd44102_device::hd44102_device(const machine_config &mconfig, const char *tag, d
 
 void hd44102_device::device_start()
 {
-	// zerofill
-	m_status = 0;
-	m_output = 0;
-	m_page = 0;
-	m_x = 0;
-	m_y = 0;
-
-	memset(m_ram, 0, sizeof(m_ram));
-	memset(m_render_buf, 0, sizeof(m_render_buf));
-
 	// register for state saving
-	save_item(NAME(m_ram));
-	save_item(NAME(m_render_buf));
+	save_item(NAME(m_ram[0]));
+	save_item(NAME(m_ram[1]));
+	save_item(NAME(m_ram[2]));
+	save_item(NAME(m_ram[3]));
 	save_item(NAME(m_status));
 	save_item(NAME(m_output));
+	save_item(NAME(m_cs2));
 	save_item(NAME(m_page));
 	save_item(NAME(m_x));
 	save_item(NAME(m_y));
-	save_item(NAME(m_sx));
-	save_item(NAME(m_sy));
 }
 
 
@@ -105,9 +112,16 @@ void hd44102_device::device_reset()
 //  read - register read
 //-------------------------------------------------
 
-u8 hd44102_device::read(offs_t offset)
+uint8_t hd44102_device::read(offs_t offset)
 {
-	return (offset & 0x01) ? data_r() : status_r();
+	uint8_t data = 0;
+
+	if (m_cs2)
+	{
+		data = (offset & 0x01) ? data_r() : status_r();
+	}
+
+	return data;
 }
 
 
@@ -115,9 +129,12 @@ u8 hd44102_device::read(offs_t offset)
 //  write - register write
 //-------------------------------------------------
 
-void hd44102_device::write(offs_t offset, u8 data)
+void hd44102_device::write(offs_t offset, uint8_t data)
 {
-	(offset & 0x01) ? data_w(data) : control_w(data);
+	if (m_cs2)
+	{
+		(offset & 0x01) ? data_w(data) : control_w(data);
+	}
 }
 
 
@@ -125,7 +142,7 @@ void hd44102_device::write(offs_t offset, u8 data)
 //  status_r - status read
 //-------------------------------------------------
 
-u8 hd44102_device::status_r()
+uint8_t hd44102_device::status_r()
 {
 	return m_status;
 }
@@ -135,7 +152,7 @@ u8 hd44102_device::status_r()
 //  control_w - control write
 //-------------------------------------------------
 
-void hd44102_device::control_w(u8 data)
+void hd44102_device::control_w(uint8_t data)
 {
 	if (m_status & STATUS_BUSY) return;
 
@@ -193,30 +210,15 @@ void hd44102_device::control_w(u8 data)
 
 
 //-------------------------------------------------
-//  count_up_or_down -
-//-------------------------------------------------
-
-void hd44102_device::count_up_or_down()
-{
-	if (m_status & STATUS_COUNT_UP)
-	{
-		if (++m_y > 49) m_y = 0;
-	}
-	else
-	{
-		if (--m_y < 0) m_y = 49;
-	}
-}
-
-
-//-------------------------------------------------
 //  data_r - data read
 //-------------------------------------------------
 
-u8 hd44102_device::data_r()
+uint8_t hd44102_device::data_r()
 {
-	u8 data = m_output;
+	uint8_t data = m_output;
+
 	m_output = m_ram[m_x][m_y];
+
 	count_up_or_down();
 
 	return data;
@@ -227,36 +229,21 @@ u8 hd44102_device::data_r()
 //  data_w - data write
 //-------------------------------------------------
 
-void hd44102_device::data_w(u8 data)
+void hd44102_device::data_w(uint8_t data)
 {
 	m_ram[m_x][m_y] = data;
+
 	count_up_or_down();
 }
 
 
 //-------------------------------------------------
-//  render - render the pixels
+//  cs2_w - chip select 2 write
 //-------------------------------------------------
 
-const u8 *hd44102_device::render()
+void hd44102_device::cs2_w(int state)
 {
-	memset(m_render_buf, 0, sizeof(m_render_buf));
-
-	if (!(m_status & STATUS_DISPLAY_OFF))
-	{
-		for (int x = 0; x < 50; x++)
-		{
-			int z = m_page << 3;
-
-			for (int y = 0; y < 32; y++)
-			{
-				m_render_buf[z * 50 + x] = BIT(m_ram[z >> 3][x], z & 7);
-				z = (z + 1) & 0x1f;
-			}
-		}
-	}
-
-	return m_render_buf;
+	m_cs2 = state;
 }
 
 
@@ -264,21 +251,29 @@ const u8 *hd44102_device::render()
 //  update_screen - update screen
 //-------------------------------------------------
 
-u32 hd44102_device::screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
+uint32_t hd44102_device::screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
-	const u8 *src = render();
-
-	for (int x = 0; x < 50; x++)
+	for (int y = 0; y < 50; y++)
 	{
-		for (int y = 0; y < 32; y++)
+		int z = m_page << 3;
+
+		for (int x = 0; x < 32; x++)
 		{
-			int sx = m_sx + x;
-			int sy = m_sy + y;
+			uint8_t data = m_ram[z / 8][y];
+
+			int sy = m_sy + z;
+			int sx = m_sx + y;
 
 			if (cliprect.contains(sx, sy))
-				bitmap.pix(sy, sx) = src[y * 50 + x];
+			{
+				int color = (m_status & STATUS_DISPLAY_OFF) ? 0 : BIT(data, z % 8);
+
+				bitmap.pix(sy, sx) = color;
+			}
+
+			z++;
+			z %= 32;
 		}
 	}
-
 	return 0;
 }

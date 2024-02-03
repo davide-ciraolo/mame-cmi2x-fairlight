@@ -54,17 +54,17 @@ public:
 	void set_half_shift(bool half_shift) { m_half_shift = half_shift; }
 
 	// write handlers
-	void refresh_control(int state);
-	void character_generator_program(int state);
+	DECLARE_WRITE_LINE_MEMBER(refresh_control);
+	DECLARE_WRITE_LINE_MEMBER(character_generator_program);
 	void register_load(u8 rs, u16 addr);
 
 	// read handlers
-	int lrc_r();
+	DECLARE_READ_LINE_MEMBER(lrc_r);
 	u8 lc_r() { return m_lc; }
-	int lbre_r();
-	int hsync_r();
-	int vsync_r();
-	int vblank_r();
+	DECLARE_READ_LINE_MEMBER(lbre_r);
+	DECLARE_READ_LINE_MEMBER(hsync_r);
+	DECLARE_READ_LINE_MEMBER(vsync_r);
+	DECLARE_READ_LINE_MEMBER(vblank_r);
 
 	// address getters (TODO: accurate character-by-character emulation)
 	u16 top_of_page() const { return m_topr; }
@@ -81,8 +81,9 @@ protected:
 					  bool cursor_on_all_lines, int lbc_0_width, int hsync_serration,
 					  bool hsync_active, bool vsync_active, bool vblank_active);
 
-	// device_t implementation
+	// device-specific overrides
 	virtual void device_config_complete() override;
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_clock_changed() override;
 	virtual void device_reset() override;

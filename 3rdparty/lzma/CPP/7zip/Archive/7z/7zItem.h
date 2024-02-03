@@ -1,7 +1,7 @@
 // 7zItem.h
 
-#ifndef ZIP7_INC_7Z_ITEM_H
-#define ZIP7_INC_7Z_ITEM_H
+#ifndef __7Z_ITEM_H
+#define __7Z_ITEM_H
 
 #include "../../../Common/MyBuffer.h"
 #include "../../../Common/MyString.h"
@@ -26,17 +26,15 @@ struct CCoderInfo
   bool IsSimpleCoder() const { return NumStreams == 1; }
 };
 
-
 struct CBond
 {
   UInt32 PackIndex;
   UInt32 UnpackIndex;
 };
 
-
 struct CFolder
 {
-  Z7_CLASS_NO_COPY(CFolder)
+  CLASS_NO_COPY(CFolder)
 public:
   CObjArray2<CCoderInfo> Coders;
   CObjArray2<CBond> Bonds;
@@ -50,7 +48,7 @@ public:
   {
     FOR_VECTOR(i, PackStreams)
       if (PackStreams[i] == packStream)
-        return (int)i;
+        return i;
     return -1;
   }
 
@@ -58,7 +56,7 @@ public:
   {
     FOR_VECTOR(i, Bonds)
       if (Bonds[i].PackIndex == packStream)
-        return (int)i;
+        return i;
     return -1;
   }
   
@@ -89,7 +87,6 @@ public:
   }
 };
 
-
 struct CUInt32DefVector
 {
   CBoolVector Defs;
@@ -113,29 +110,8 @@ struct CUInt32DefVector
     Vals.ReserveDown();
   }
 
-  bool GetItem(unsigned index, UInt32 &value) const
-  {
-    if (index < Defs.Size() && Defs[index])
-    {
-      value = Vals[index];
-      return true;
-    }
-    value = 0;
-    return false;
-  }
-
   bool ValidAndDefined(unsigned i) const { return i < Defs.Size() && Defs[i]; }
-
-  bool CheckSize(unsigned size) const { return Defs.Size() == size || Defs.Size() == 0; }
-
-  void SetItem(unsigned index, bool defined, UInt32 value);
-  void if_NonEmpty_FillResedue_with_false(unsigned numItems)
-  {
-    if (Defs.Size() != 0 && Defs.Size() < numItems)
-      SetItem(numItems - 1, false, 0);
-  }
 };
-
 
 struct CUInt64DefVector
 {
@@ -165,15 +141,15 @@ struct CUInt64DefVector
     return false;
   }
   
-  bool CheckSize(unsigned size) const { return Defs.Size() == size || Defs.Size() == 0; }
-
   void SetItem(unsigned index, bool defined, UInt64 value);
-};
 
+  bool CheckSize(unsigned size) const { return Defs.Size() == size || Defs.Size() == 0; }
+};
 
 struct CFileItem
 {
   UInt64 Size;
+  UInt32 Attrib;
   UInt32 Crc;
   /*
   int Parent;
@@ -183,23 +159,23 @@ struct CFileItem
                   // stream in some folder. It can be empty stream
   bool IsDir;
   bool CrcDefined;
-
-  /*
-  void Clear()
-  {
-    HasStream = true;
-    IsDir = false;
-    CrcDefined = false;
-  }
+  bool AttribDefined;
 
   CFileItem():
-    // Parent(-1),
-    // IsAltStream(false),
+    /*
+    Parent(-1),
+    IsAltStream(false),
+    */
     HasStream(true),
     IsDir(false),
     CrcDefined(false),
+    AttribDefined(false)
       {}
-  */
+  void SetAttrib(UInt32 attrib)
+  {
+    AttribDefined = true;
+    Attrib = attrib;
+  }
 };
 
 }}

@@ -31,7 +31,6 @@ links {
 	"7z",
 	"ocore_" .. _OPTIONS["osd"],
 	ext_lib("zlib"),
-	ext_lib("zstd"),
 	ext_lib("utf8proc"),
 }
 
@@ -73,7 +72,6 @@ links {
 	"7z",
 	"ocore_" .. _OPTIONS["osd"],
 	ext_lib("zlib"),
-	ext_lib("zstd"),
 	ext_lib("flac"),
 	ext_lib("utf8proc"),
 }
@@ -162,7 +160,6 @@ links {
 	"7z",
 	"ocore_" .. _OPTIONS["osd"],
 	ext_lib("zlib"),
-	ext_lib("zstd"),
 	ext_lib("flac"),
 	ext_lib("utf8proc"),
 }
@@ -208,7 +205,6 @@ links {
 	"7z",
 	"ocore_" .. _OPTIONS["osd"],
 	ext_lib("zlib"),
-	ext_lib("zstd"),
 	ext_lib("flac"),
 	ext_lib("utf8proc"),
 }
@@ -255,7 +251,6 @@ links {
 	"7z",
 	"ocore_" .. _OPTIONS["osd"],
 	ext_lib("zlib"),
-	ext_lib("zstd"),
 	ext_lib("flac"),
 	ext_lib("utf8proc"),
 }
@@ -382,7 +377,6 @@ links {
 	"7z",
 	"ocore_" .. _OPTIONS["osd"],
 	ext_lib("zlib"),
-	ext_lib("zstd"),
 	ext_lib("flac"),
 	ext_lib("utf8proc"),
 }
@@ -560,7 +554,6 @@ links {
 	"7z",
 	"ocore_" .. _OPTIONS["osd"],
 	ext_lib("zlib"),
-	ext_lib("zstd"),
 	ext_lib("flac"),
 	ext_lib("utf8proc"),
 }
@@ -605,7 +598,6 @@ links {
 	"7z",
 	"ocore_" .. _OPTIONS["osd"],
 	ext_lib("zlib"),
-	ext_lib("zstd"),
 	ext_lib("flac"),
 	ext_lib("utf8proc"),
 }
@@ -653,7 +645,6 @@ links {
 	"7z",
 	"ocore_" .. _OPTIONS["osd"],
 	ext_lib("zlib"),
-	ext_lib("zstd"),
 	ext_lib("flac"),
 	ext_lib("utf8proc"),
 }
@@ -696,9 +687,11 @@ files {
 	MAME_DIR .. "src/tools/imgtool/formats/pc_dsk_legacy.cpp",
 	MAME_DIR .. "src/tools/imgtool/formats/pc_dsk_legacy.h",
 	MAME_DIR .. "src/tools/imgtool/modules/amiga.cpp",
+	MAME_DIR .. "src/tools/imgtool/modules/macbin.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/rsdos.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/dgndos.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/os9.cpp",
+	MAME_DIR .. "src/tools/imgtool/modules/mac.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/ti99.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/ti990hd.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/concept.cpp",
@@ -706,8 +699,11 @@ files {
 	MAME_DIR .. "src/tools/imgtool/modules/fat.h",
 	MAME_DIR .. "src/tools/imgtool/modules/pc_flop.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/pc_hard.cpp",
+	MAME_DIR .. "src/tools/imgtool/modules/prodos.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/vzdos.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/thomson.cpp",
+	MAME_DIR .. "src/tools/imgtool/modules/macutil.cpp",
+	MAME_DIR .. "src/tools/imgtool/modules/macutil.h",
 	MAME_DIR .. "src/tools/imgtool/modules/cybiko.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/cybikoxt.cpp",
 	MAME_DIR .. "src/tools/imgtool/modules/psion.cpp",
@@ -791,11 +787,14 @@ if (_OPTIONS["osd"] == "sdl") then
 	}
 
 	if _OPTIONS["targetos"]=="windows" then
-		if _OPTIONS["USE_LIBSDL"]~="1" then
+		if _OPTIONS["with-bundled-sdl2"]~=nil then
 			configuration { "mingw*"}
 				links {
-					"SDL2main",
 					"SDL2",
+					"imm32",
+					"version",
+					"ole32",
+					"oleaut32",
 				}
 			configuration { "vs*" }
 				links {
@@ -805,18 +804,41 @@ if (_OPTIONS["osd"] == "sdl") then
 				}
 			configuration { }
 		else
-			local str = backtick(sdlconfigcmd() .. " --libs | sed 's/ -lSDLmain//'")
-			addlibfromstring(str)
-			addoptionsfromstring(str)
+			if _OPTIONS["USE_LIBSDL"]~="1" then
+				configuration { "mingw*"}
+					links {
+						"SDL2main",
+						"SDL2",
+					}
+				configuration { "vs*" }
+					links {
+						"SDL2",
+						"imm32",
+						"version",
+					}
+				configuration { }
+			else
+				local str = backtick(sdlconfigcmd() .. " --libs | sed 's/ -lSDLmain//'")
+				addlibfromstring(str)
+				addoptionsfromstring(str)
+			end
+			configuration { "x32", "vs*" }
+				libdirs {
+					path.join(_OPTIONS["SDL_INSTALL_ROOT"],"lib","x86")
+				}
+			configuration { "x64", "vs*" }
+				libdirs {
+					path.join(_OPTIONS["SDL_INSTALL_ROOT"],"lib","x64")
+				}
 		end
-		configuration { "x32", "vs*" }
-			libdirs {
-				path.join(_OPTIONS["SDL_INSTALL_ROOT"],"lib","x86")
+	end
+
+	if BASE_TARGETOS=="unix" then
+		if _OPTIONS["with-bundled-sdl2"]~=nil then
+			links {
+				"SDL2",
 			}
-		configuration { "x64", "vs*" }
-			libdirs {
-				path.join(_OPTIONS["SDL_INSTALL_ROOT"],"lib","x64")
-			}
+		end
 	end
 
 	dofile("osd/sdl_cfg.lua")

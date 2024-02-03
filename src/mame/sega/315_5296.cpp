@@ -1,6 +1,5 @@
 // license:BSD-3-Clause
-// copyright-holders:hap
-// thanks-to:Charles MacDonald
+// copyright-holders:hap, Charles MacDonald
 /**********************************************************************
 
     Sega 315-5296 I/O chip
@@ -33,9 +32,9 @@ DEFINE_DEVICE_TYPE(SEGA_315_5296, sega_315_5296_device, "315_5296", "Sega 315-52
 //  sega_315_5296_device - constructor
 //-------------------------------------------------
 
-sega_315_5296_device::sega_315_5296_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock) :
+sega_315_5296_device::sega_315_5296_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
 	device_t(mconfig, SEGA_315_5296, tag, owner, clock),
-	m_in_port_cb(*this, 0xff),
+	m_in_port_cb(*this),
 	m_out_port_cb(*this),
 	m_out_cnt_cb(*this),
 	m_dir_override(0xff)
@@ -48,6 +47,11 @@ sega_315_5296_device::sega_315_5296_device(const machine_config &mconfig, const 
 
 void sega_315_5296_device::device_start()
 {
+	// resolve callbacks
+	m_in_port_cb.resolve_all_safe(0xff);
+	m_out_port_cb.resolve_all_safe();
+	m_out_cnt_cb.resolve_all_safe();
+
 	// register for savestates
 	save_item(NAME(m_output_latch));
 	save_item(NAME(m_cnt));
@@ -77,7 +81,7 @@ void sega_315_5296_device::device_reset()
 
 //-------------------------------------------------
 
-u8 sega_315_5296_device::read(offs_t offset)
+uint8_t sega_315_5296_device::read(offs_t offset)
 {
 	offset &= 0x3f;
 
@@ -86,7 +90,7 @@ u8 sega_315_5296_device::read(offs_t offset)
 		// port A to H
 		case 0x0: case 0x1: case 0x2: case 0x3: case 0x4: case 0x5: case 0x6: case 0x7:
 			// if the port is configured as an output, return the last thing written
-			if (BIT(m_dir & m_dir_override, offset))
+			if (m_dir & m_dir_override & 1 << offset)
 				return m_output_latch[offset];
 
 			// otherwise, return an input port
@@ -118,7 +122,7 @@ u8 sega_315_5296_device::read(offs_t offset)
 }
 
 
-void sega_315_5296_device::write(offs_t offset, u8 data)
+void sega_315_5296_device::write(offs_t offset, uint8_t data)
 {
 	offset &= 0x3f;
 
@@ -127,7 +131,7 @@ void sega_315_5296_device::write(offs_t offset, u8 data)
 		// port A to H
 		case 0x0: case 0x1: case 0x2: case 0x3: case 0x4: case 0x5: case 0x6: case 0x7:
 			// if the port is configured as an output, write it
-			if (BIT(m_dir, offset))
+			if (m_dir & 1 << offset)
 				m_out_port_cb[offset](offset, data);
 
 			m_output_latch[offset] = data;
@@ -139,7 +143,7 @@ void sega_315_5296_device::write(offs_t offset, u8 data)
 			// note: When CNT2 is configured as clock output, bit 2 of this register has
 			// no effect on the output level of CNT2.
 			for (int i = 0; i < 3; i++)
-				m_out_cnt_cb[i](BIT(data, i));
+				m_out_cnt_cb[i](data >> i & 1);
 
 			// d3: CNT2 output mode (1= Clock output, 0= Programmable output)
 			// d4,5: CNT2 clock divider (0= CLK/4, 1= CLK/8, 2= CLK/16, 3= CLK/2)
@@ -153,10 +157,10 @@ void sega_315_5296_device::write(offs_t offset, u8 data)
 			// refresh output ports if the direction changed
 			for (int i = 0; i < 8; i++)
 			{
-				if (BIT(m_dir ^ data, i))
+				if ((m_dir ^ data) & (1 << i))
 				{
-					logerror("Port %c configured for %sput\n", 'A' + i, BIT(data, i) ? "out" : "in");
-					m_out_port_cb[i]((offs_t)i, BIT(data, i) ? m_output_latch[i] : 0);
+					logerror("Port %c configured for output\n", 'A' + i);
+					m_out_port_cb[i]((offs_t)i, (data & 1 << i) ? m_output_latch[i] : 0);
 				}
 			}
 

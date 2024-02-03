@@ -271,7 +271,7 @@ void wpc_dot_state::dmdbank_w(offs_t offset, uint8_t data)
 	}
 }
 
-void wpc_dot_state::snd_reply_w(int state)
+WRITE_LINE_MEMBER(wpc_dot_state::snd_reply_w)
 {
 	if(state)
 	{
@@ -280,12 +280,12 @@ void wpc_dot_state::snd_reply_w(int state)
 	}
 }
 
-void wpc_dot_state::irq_w(int state)
+WRITE_LINE_MEMBER(wpc_dot_state::irq_w)
 {
 	m_maincpu->set_input_line(M6809_IRQ_LINE,CLEAR_LINE);
 }
 
-void wpc_dot_state::firq_w(int state)
+WRITE_LINE_MEMBER(wpc_dot_state::firq_w)
 {
 	m_maincpu->set_input_line(M6809_FIRQ_LINE,CLEAR_LINE);
 }

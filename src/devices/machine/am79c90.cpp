@@ -44,8 +44,7 @@
 #include "emu.h"
 #include "am79c90.h"
 
-#include "multibyte.h"
-
+#define LOG_GENERAL (1U << 0)
 #define LOG_REG     (1U << 1)
 #define LOG_INIT    (1U << 2)
 #define LOG_RXTX    (1U << 3)
@@ -62,7 +61,7 @@ am7990_device_base::am7990_device_base(const machine_config &mconfig, device_typ
 	: device_t(mconfig, type, tag, owner, clock)
 	, device_network_interface(mconfig, *this, 10)
 	, m_intr_out_cb(*this)
-	, m_dma_in_cb(*this, 0)
+	, m_dma_in_cb(*this)
 	, m_dma_out_cb(*this)
 	, m_transmit_poll(nullptr)
 	, m_intr_out_state(1)
@@ -84,6 +83,10 @@ constexpr attotime am7990_device_base::TX_POLL_PERIOD;
 
 void am7990_device_base::device_start()
 {
+	m_intr_out_cb.resolve_safe();
+	m_dma_in_cb.resolve_safe(0);
+	m_dma_out_cb.resolve_safe();
+
 	m_transmit_poll = timer_alloc(FUNC(am7990_device_base::transmit_poll), this);
 	m_transmit_poll->adjust(TX_POLL_PERIOD, 0, TX_POLL_PERIOD);
 
@@ -286,7 +289,7 @@ void am7990_device_base::recv_complete_cb(int result)
 			LOGMASKED(LOG_RXTX, "receive complete rmd1 0x%04x rmd3 %d\n", m_rx_md[1], result & RMD3_MCNT);
 
 			m_dma_out_cb(ring_address | 2, m_rx_md[1]);
-			m_dma_out_cb(ring_address | 6, (m_rx_md[1] & RMD1_ERR) ? 0 : (result & RMD3_MCNT));
+			m_dma_out_cb(ring_address | 6, result & RMD3_MCNT);
 
 			// advance the ring
 			m_rx_ring_pos = (m_rx_ring_pos + 1) & m_rx_ring_mask;
@@ -439,8 +442,10 @@ void am7990_device_base::transmit()
 		u32 const crc = util::crc32_creator::simple(buf, length);
 
 		// insert the fcs
-		put_u32le(&buf[length], crc);
-		length += 4;
+		buf[length++] = crc >> 0;
+		buf[length++] = crc >> 8;
+		buf[length++] = crc >> 16;
+		buf[length++] = crc >> 24;
 	}
 
 	LOGMASKED(LOG_RXTX, "transmit sending packet length %d\n", length);
@@ -691,10 +696,13 @@ void am7990_device_base::initialize()
 
 	set_promisc(m_mode & MODE_PROM);
 
-	put_u16le(&m_physical_addr[0], init_block[1]);
-	put_u16le(&m_physical_addr[2], init_block[2]);
-	put_u16le(&m_physical_addr[4], init_block[3]);
-	set_mac(m_physical_addr);
+	m_physical_addr[0] = init_block[1];
+	m_physical_addr[1] = init_block[1] >> 8;
+	m_physical_addr[2] = init_block[2];
+	m_physical_addr[3] = init_block[2] >> 8;
+	m_physical_addr[4] = init_block[3];
+	m_physical_addr[5] = init_block[3] >> 8;
+	set_mac((char *)m_physical_addr);
 
 	m_logical_addr_filter = (u64(init_block[7]) << 48) | (u64(init_block[6]) << 32) | (u32(init_block[5]) << 16) | init_block[4];
 
@@ -741,9 +749,15 @@ void am7990_device_base::dma_in(u32 address, u8 *buf, int length)
 		u16 const word = m_dma_in_cb(address);
 
 		if (m_csr[3] & CSR3_BSWP)
-			put_u16be(&buf[0], word);
+		{
+			buf[0] = word >> 8;
+			buf[1] = word & 0xff;
+		}
 		else
-			put_u16le(&buf[0], word);
+		{
+			buf[0] = word & 0xff;
+			buf[1] = word >> 8;
+		}
 
 		buf += 2;
 		address += 2;
@@ -784,7 +798,7 @@ void am7990_device_base::dma_out(u32 address, u8 *buf, int length)
 	// word loop
 	while (length > 1)
 	{
-		u16 const word = (m_csr[3] & CSR3_BSWP) ? get_u16be(&buf[0]) : get_u16le(&buf[0]);
+		u16 const word = (m_csr[3] & CSR3_BSWP) ? (buf[0] << 8) | buf[1] : (buf[1] << 8) | buf[0];
 
 		m_dma_out_cb(address, word);
 

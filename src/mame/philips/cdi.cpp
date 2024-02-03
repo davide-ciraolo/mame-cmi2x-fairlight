@@ -51,7 +51,7 @@ TODO:
 #include "cdi.h"
 
 #include "cpu/m6805/m6805.h"
-#include "imagedev/cdromimg.h"
+#include "imagedev/chd_cd.h"
 #include "machine/timekpr.h"
 #include "sound/cdda.h"
 
@@ -67,11 +67,11 @@ TODO:
 // TODO: NTSC system clock is 30.2098 MHz; additional 4.9152 MHz XTAL provided for UART
 #define CLOCK_A 30_MHz_XTAL
 
-#define LOG_DVC             (1U << 1)
-#define LOG_QUIZARD_READS   (1U << 2)
-#define LOG_QUIZARD_WRITES  (1U << 3)
-#define LOG_QUIZARD_OTHER   (1U << 4)
-#define LOG_UART            (1U << 5)
+#define LOG_DVC             (1 << 1)
+#define LOG_QUIZARD_READS   (1 << 2)
+#define LOG_QUIZARD_WRITES  (1 << 3)
+#define LOG_QUIZARD_OTHER   (1 << 4)
+#define LOG_UART            (1 << 5)
 
 #define VERBOSE         (0)
 #include "logmacro.h"
@@ -134,17 +134,6 @@ void cdi_state::cdi910_mem(address_map &map)
 *************************/
 
 static INPUT_PORTS_START( cdi )
-	PORT_START("MOUSEX")
-	PORT_BIT(0xffff, 0x000, IPT_MOUSE_X) PORT_SENSITIVITY(100) PORT_KEYDELTA(2)
-
-	PORT_START("MOUSEY")
-	PORT_BIT(0xffff, 0x000, IPT_MOUSE_Y) PORT_SENSITIVITY(100) PORT_KEYDELTA(2)
-
-	PORT_START("MOUSEBTN")
-	PORT_BIT(0x01, IP_ACTIVE_HIGH, IPT_BUTTON1) PORT_CODE(MOUSECODE_BUTTON1) PORT_NAME("Button 1")
-	PORT_BIT(0x02, IP_ACTIVE_HIGH, IPT_BUTTON2) PORT_CODE(MOUSECODE_BUTTON2) PORT_NAME("Button 2")
-	PORT_BIT(0x04, IP_ACTIVE_HIGH, IPT_BUTTON3) PORT_CODE(MOUSECODE_BUTTON3) PORT_NAME("Button 3")
-	PORT_BIT(0xf8, IP_ACTIVE_HIGH, IPT_UNUSED)
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( cdimono2 )
@@ -195,21 +184,16 @@ void cdi_state::machine_reset()
 
 void quizard_state::machine_start()
 {
-	save_item(NAME(m_boot_press));
-
-	m_boot_timer = timer_alloc(FUNC(quizard_state::boot_press_tick), this);
-
-	set_data_frame(1, 8, PARITY_NONE, STOP_BITS_1);
-	set_rate(9600);
+	save_item(NAME(m_mcu_rx_from_cpu));
+	save_item(NAME(m_mcu_initial_byte));
 }
 
 void quizard_state::machine_reset()
 {
 	cdi_state::machine_reset();
 
-	m_boot_press = false;
-	m_boot_timer->adjust(attotime::from_seconds(13), 1);
-	m_mcu_p3 = 0x05; // RTS|RXD
+	m_mcu_rx_from_cpu = 0x00;
+	m_mcu_initial_byte = true;
 }
 
 
@@ -268,18 +252,6 @@ void cdi_state::bus_error_w(offs_t offset, uint16_t data)
 *  Quizard Protection *
 **********************/
 
-TIMER_CALLBACK_MEMBER(quizard_state::boot_press_tick)
-{
-	m_boot_press = (bool)param;
-	if (m_boot_press)
-		m_boot_timer->adjust(attotime::from_msec(250), 0);
-}
-
-uint8_t quizard_state::mcu_button_press()
-{
-	return (uint8_t)m_boot_press;
-}
-
 void quizard_state::mcu_rtsn_from_cpu(int state)
 {
 	LOGMASKED(LOG_UART, "MCU receiving RTSN from CPU: %d\n", state);
@@ -288,8 +260,16 @@ void quizard_state::mcu_rtsn_from_cpu(int state)
 void quizard_state::mcu_rx_from_cpu(uint8_t data)
 {
 	LOGMASKED(LOG_UART, "MCU receiving %02x from CPU\n", data);
+	if (m_mcu_initial_byte)
+	{
+		m_mcu_initial_byte = false;
+		return;
+	}
 
-	transmit_register_setup(data);
+	m_mcu_rx_from_cpu = data;
+
+	m_mcu->set_input_line(MCS51_RX_LINE, ASSERT_LINE);
+	m_mcu->set_input_line(MCS51_RX_LINE, CLEAR_LINE);
 }
 
 uint8_t quizard_state::mcu_p0_r()
@@ -317,8 +297,8 @@ uint8_t quizard_state::mcu_p2_r()
 
 uint8_t quizard_state::mcu_p3_r()
 {
-	LOGMASKED(LOG_QUIZARD_READS, "%s: MCU Port 3 Read (%02x)\n", machine().describe_context(), m_mcu_p3);
-	return m_mcu_p3;
+	LOGMASKED(LOG_QUIZARD_READS, "%s: MCU Port 3 Read (%02x)\n", machine().describe_context(), 0x04);
+	return 0x04;
 }
 
 void quizard_state::mcu_p0_w(uint8_t data)
@@ -339,8 +319,20 @@ void quizard_state::mcu_p2_w(uint8_t data)
 void quizard_state::mcu_p3_w(uint8_t data)
 {
 	LOGMASKED(LOG_QUIZARD_WRITES, "%s: MCU Port 3 Write (%02x)\n", machine().describe_context(), data);
-	rx_w(BIT(data, 1));
 	m_maincpu->uart_ctsn(BIT(data, 6));
+}
+
+void quizard_state::mcu_tx(uint8_t data)
+{
+	LOGMASKED(LOG_QUIZARD_OTHER, "%s: MCU transmitting %02x\n", machine().describe_context(), data);
+	m_maincpu->uart_rx(data);
+}
+
+uint8_t quizard_state::mcu_rx()
+{
+	uint8_t data = m_mcu_rx_from_cpu;
+	LOGMASKED(LOG_QUIZARD_OTHER, "%s: MCU receiving %02x\n", machine().describe_context(), data);
+	return data;
 }
 
 /*************************
@@ -458,9 +450,6 @@ void cdi_state::cdimono1_base(machine_config &config)
 	CDI_SLAVE_HLE(config, m_slave_hle, 0);
 	m_slave_hle->int_callback().set(m_maincpu, FUNC(scc68070_device::in2_w));
 
-	CDROM(config, m_cdrom);
-	m_cdrom->set_interface("cdi_cdrom");
-
 	/* sound hardware */
 	SPEAKER(config, "lspeaker").front_left();
 	SPEAKER(config, "rspeaker").front_right();
@@ -503,7 +492,7 @@ void cdi_state::cdimono2(machine_config &config)
 	M68HC05C8(config, m_servo, 4_MHz_XTAL);
 	M68HC05C8(config, m_slave, 4_MHz_XTAL);
 
-	CDROM(config, m_cdrom).set_interface("cdi_cdrom");
+	CDROM(config, "cdrom").set_interface("cdi_cdrom");
 	SOFTWARE_LIST(config, "cd_list").set_original("cdi").set_filter("!DVC");
 
 	/* sound hardware */
@@ -568,23 +557,18 @@ void cdi_state::cdimono1(machine_config &config)
 {
 	cdimono1_base(config);
 
-	m_slave_hle->read_mousex().set_ioport("MOUSEX");
-	m_slave_hle->read_mousey().set_ioport("MOUSEY");
-	m_slave_hle->read_mousebtn().set_ioport("MOUSEBTN");
-
+	CDROM(config, "cdrom").set_interface("cdi_cdrom");
 	SOFTWARE_LIST(config, "cd_list").set_original("cdi").set_filter("!DVC");
 }
 
 void quizard_state::quizard(machine_config &config)
 {
 	cdimono1_base(config);
-	m_cdrom->add_region("cdrom");
-
 	m_maincpu->set_addrmap(AS_PROGRAM, &quizard_state::cdimono1_mem);
 	m_maincpu->uart_rtsn_callback().set(FUNC(quizard_state::mcu_rtsn_from_cpu));
 	m_maincpu->uart_tx_callback().set(FUNC(quizard_state::mcu_rx_from_cpu));
 
-	I8751(config, m_mcu, 11.0592_MHz_XTAL);
+	I8751(config, m_mcu, 8000000);
 	m_mcu->port_in_cb<0>().set(FUNC(quizard_state::mcu_p0_r));
 	m_mcu->port_in_cb<1>().set(FUNC(quizard_state::mcu_p1_r));
 	m_mcu->port_in_cb<2>().set(FUNC(quizard_state::mcu_p2_r));
@@ -593,25 +577,8 @@ void quizard_state::quizard(machine_config &config)
 	m_mcu->port_out_cb<1>().set(FUNC(quizard_state::mcu_p1_w));
 	m_mcu->port_out_cb<2>().set(FUNC(quizard_state::mcu_p2_w));
 	m_mcu->port_out_cb<3>().set(FUNC(quizard_state::mcu_p3_w));
-
-	m_slave_hle->read_mousebtn().set(FUNC(quizard_state::mcu_button_press));
-}
-
-void quizard_state::tra_callback()
-{
-	if (transmit_register_get_data_bit())
-		m_mcu_p3 |= 1;
-	else
-		m_mcu_p3 &= ~1;
-}
-
-void quizard_state::rcv_complete()
-{
-	receive_register_extract();
-
-	const uint8_t data = get_received_char();
-	LOGMASKED(LOG_QUIZARD_OTHER, "%s: MCU transmitting %02x\n", machine().describe_context(), data);
-	m_maincpu->uart_rx(data);
+	m_mcu->serial_tx_cb().set(FUNC(quizard_state::mcu_tx));
+	m_mcu->serial_rx_cb().set(FUNC(quizard_state::mcu_rx));
 }
 
 /*************************
@@ -694,102 +661,72 @@ ROM_END
 
     MCU Notes:
     i8751 MCU dumps confirmed good on original hardware
-    Italian language MCU for Quizard 1 is dumped
     German language MCUs for Quizard 1 through 4 are dumped
     Czech language MCU for Quizard 4 is dumped
+    Italian language MCU for Quizard 1 is known to exist (IT 11 L2, not dumped)
     Alt. German language MCU for Quizard 2 is known to exist (DE 122 D3, not dumped)
 
 */
 
 
-#define QUIZARD_BIOS_ROM \
-	ROM_REGION(0x80000, "maincpu", 0) \
-	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
-
 //********************************************************
 //                     Quizard (1)
 //********************************************************
 
-#define QUIZARD1_CHD_10 \
-	DISK_REGION( "cdrom" ) \
-	DISK_IMAGE_READONLY( "quizard10", 0, SHA1(5715db50f0d5ffe06f47c0943f4bf0481ab6048e) ) // Dumped via BurnAtOnce 0.99.5, CHDMAN 0.163, TS-L633R drive
+ROM_START( quizard ) /* CD-ROM printed ??/?? */
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
-// CD-ROM printed 01/95
-#define QUIZARD1_CHD_12 \
-	DISK_REGION( "cdrom" ) \
-	DISK_IMAGE_READONLY( "quizard12", 0, BAD_DUMP SHA1(6e41683b96b74e903040842aeb18437ad7813c82) )
-
-#define QUIZARD1_CHD_17 \
-	DISK_REGION( "cdrom" ) \
-	DISK_IMAGE_READONLY( "quizard17", 0, BAD_DUMP SHA1(4bd698f076505b4e17be978481bce027eb47123b) )
-
-#define QUIZARD1_CHD_18 \
-	DISK_REGION( "cdrom" ) \
+	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard18", 0, BAD_DUMP SHA1(ede873b22957f2a707bbd3039e962ef2ca5aedbd) )
 
-// MCU Type: Intel D8751H MCU
-#define QUIZARD1_MCU_DE \
-	ROM_REGION(0x1000, "mcu", 0) \
-	ROM_LOAD( "de_11_d3.bin", 0x0000, 0x1000, CRC(95f45b6b) SHA1(51b34956539b1e2cf0306f243a970750f1e18d01) ) // German
-
-#define QUIZARD1_MCU_IT \
-	ROM_REGION(0x1000, "mcu", 0) \
-	ROM_LOAD( "it_11_i2.bin", 0x0000, 0x1000, CRC(e00dc02c) SHA1(e4ef1ea47c242879a99c9d54cfc008ae99a651cb) ) // Italian
-
-ROM_START( quizard )
-	QUIZARD_BIOS_ROM
-	QUIZARD1_CHD_18
-	QUIZARD1_MCU_DE
+	ROM_REGION(0x1000, "mcu", 0)
+	ROM_LOAD( "de_11_d3.bin", 0x0000, 0x1000, CRC(95f45b6b) SHA1(51b34956539b1e2cf0306f243a970750f1e18d01) ) // German language
 ROM_END
 
 ROM_START( quizard_17 )
-	QUIZARD_BIOS_ROM
-	QUIZARD1_CHD_17
-	QUIZARD1_MCU_DE
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
+
+	DISK_REGION( "cdrom" )
+	DISK_IMAGE_READONLY( "quizard17", 0, BAD_DUMP SHA1(4bd698f076505b4e17be978481bce027eb47123b) )
+
+	ROM_REGION(0x1000, "mcu", 0) // Intel D8751H MCU
+	ROM_LOAD( "de_11_d3.bin", 0x0000, 0x1000, CRC(95f45b6b) SHA1(51b34956539b1e2cf0306f243a970750f1e18d01) ) // German language
 ROM_END
 
-ROM_START( quizard_12 )
-	QUIZARD_BIOS_ROM
-	QUIZARD1_CHD_12
-	QUIZARD1_MCU_DE
+ROM_START( quizard_12 ) /* CD-ROM printed 01/95 */
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
+
+	DISK_REGION( "cdrom" )
+	DISK_IMAGE_READONLY( "quizard12", 0, BAD_DUMP SHA1(6e41683b96b74e903040842aeb18437ad7813c82) )
+
+	ROM_REGION(0x1000, "mcu", 0) // Intel D8751H MCU
+	ROM_LOAD( "de_11_d3.bin", 0x0000, 0x1000, CRC(95f45b6b) SHA1(51b34956539b1e2cf0306f243a970750f1e18d01) ) // German language
 ROM_END
 
 ROM_START( quizard_10 )
-	QUIZARD_BIOS_ROM
-	QUIZARD1_CHD_10
-	QUIZARD1_MCU_DE
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
+
+	// software: BurnAtOnce 0.99.5 / CHDMAN 0.163
+	// Drive: TS-L633R
+	DISK_REGION( "cdrom" )
+	DISK_IMAGE_READONLY( "quizard10", 0, SHA1(5715db50f0d5ffe06f47c0943f4bf0481ab6048e) )
+
+	ROM_REGION(0x1000, "mcu", 0) // Intel D8751H MCU
+	ROM_LOAD( "de_11_d3.bin", 0x0000, 0x1000, CRC(95f45b6b) SHA1(51b34956539b1e2cf0306f243a970750f1e18d01) ) // German language
 ROM_END
 
-ROM_START( quizardi )
-	QUIZARD_BIOS_ROM
-	QUIZARD1_CHD_18
-	QUIZARD1_MCU_IT
-ROM_END
-
-ROM_START( quizardi_17 )
-	QUIZARD_BIOS_ROM
-	QUIZARD1_CHD_17
-	QUIZARD1_MCU_IT
-ROM_END
-
-ROM_START( quizardi_12 )
-	QUIZARD_BIOS_ROM
-	QUIZARD1_CHD_12
-	QUIZARD1_MCU_IT
-ROM_END
-
-ROM_START( quizardi_10 )
-	QUIZARD_BIOS_ROM
-	QUIZARD1_CHD_10
-	QUIZARD1_MCU_IT
-ROM_END
 
 //********************************************************
 //                     Quizard 2
 //********************************************************
 
 ROM_START( quizard2 ) /* CD-ROM printed ??/?? */
-	QUIZARD_BIOS_ROM
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
 	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard23", 0, BAD_DUMP SHA1(cd909d9a54275d6f2d36e03e83eea996e781b4d3) )
@@ -799,7 +736,8 @@ ROM_START( quizard2 ) /* CD-ROM printed ??/?? */
 ROM_END
 
 ROM_START( quizard2_22 )
-	QUIZARD_BIOS_ROM
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
 	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard22", 0, BAD_DUMP SHA1(03c8fdcf27ead6e221691111e8c679b551099543) )
@@ -814,7 +752,8 @@ ROM_END
 //********************************************************
 
 ROM_START( quizard3 ) /* CD-ROM printed ??/?? */
-	QUIZARD_BIOS_ROM
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
 	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard34", 0, BAD_DUMP SHA1(37ad49b72b5175afbb87141d57bc8604347fe032) )
@@ -824,7 +763,8 @@ ROM_START( quizard3 ) /* CD-ROM printed ??/?? */
 ROM_END
 
 ROM_START( quizard3a ) /* CD-ROM printed ??/?? */
-	QUIZARD_BIOS_ROM
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
 	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard34", 0, BAD_DUMP SHA1(37ad49b72b5175afbb87141d57bc8604347fe032) )
@@ -834,7 +774,8 @@ ROM_START( quizard3a ) /* CD-ROM printed ??/?? */
 ROM_END
 
 ROM_START( quizard3_32 )
-	QUIZARD_BIOS_ROM
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
 	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard32", 0, BAD_DUMP SHA1(31e9fa2169aa44d799c37170b238134ab738e1a1) )
@@ -849,7 +790,8 @@ ROM_END
 //********************************************************
 
 ROM_START( quizard4 ) /* CD-ROM printed 09/98 */
-	QUIZARD_BIOS_ROM
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
 	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard4r42", 0, BAD_DUMP SHA1(a5d5c8950b4650b8753f9119dc7f1ccaa2aa5442) )
@@ -859,7 +801,8 @@ ROM_START( quizard4 ) /* CD-ROM printed 09/98 */
 ROM_END
 
 ROM_START( quizard4cz ) /* CD-ROM printed 09/98 */
-	QUIZARD_BIOS_ROM
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
 	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard4r42", 0, BAD_DUMP SHA1(a5d5c8950b4650b8753f9119dc7f1ccaa2aa5442) )
@@ -869,7 +812,8 @@ ROM_START( quizard4cz ) /* CD-ROM printed 09/98 */
 ROM_END
 
 ROM_START( quizard4_41 )
-	QUIZARD_BIOS_ROM
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
 	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard4r41", 0, BAD_DUMP SHA1(2c0484c6545aac8e00b318328c6edce6f5dde43d) )
@@ -879,24 +823,14 @@ ROM_START( quizard4_41 )
 ROM_END
 
 ROM_START( quizard4_40 ) /* CD-ROM printed 07/97 */
-	QUIZARD_BIOS_ROM
+	ROM_REGION(0x80000, "maincpu", 0)
+	ROM_LOAD( "cdi220b.rom", 0x000000, 0x80000, CRC(279683ca) SHA1(53360a1f21ddac952e95306ced64186a3fc0b93e) )
 
 	DISK_REGION( "cdrom" )
 	DISK_IMAGE_READONLY( "quizard4r40", 0, BAD_DUMP SHA1(288cc37a994e4f1cbd47aa8c92342879c6fc0b87) )
 
 	ROM_REGION(0x1000, "mcu", 0) // Intel D8751H MCU
 	ROM_LOAD( "de_142_d3.bin", 0x0000, 0x1000, CRC(77be0b40) SHA1(113b5c239480a2259f55e411ba8fb3972e6d4301) ) // German language
-ROM_END
-
-// only the CD was dumped, MCU not available
-ROM_START( quizardff ) /* CD-ROM printed 01/96 */
-	QUIZARD_BIOS_ROM
-
-	DISK_REGION( "cdrom" )
-	DISK_IMAGE_READONLY( "quizardff", 0, SHA1(ac533040379c1350066e778e3a86d1beb11c6f71) )
-
-	ROM_REGION(0x1000, "mcu", 0) // Intel D8751H MCU
-	ROM_LOAD( "8751.bin", 0x0000, 0x1000, NO_DUMP )
 ROM_END
 
 
@@ -919,22 +853,16 @@ GAME( 1995, quizard,     cdibios,  quizard,       quizard,  quizard_state, empty
 GAME( 1995, quizard_17,  quizard,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard (v1.7, German, i8751 DE 11 D3)", MACHINE_IMPERFECT_SOUND )
 GAME( 1995, quizard_12,  quizard,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard (v1.2, German, i8751 DE 11 D3)", MACHINE_IMPERFECT_SOUND )
 GAME( 1995, quizard_10,  quizard,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard (v1.0, German, i8751 DE 11 D3)", MACHINE_IMPERFECT_SOUND )
-GAME( 1995, quizardi,    quizard,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard (v1.8, Italian, i8751 IT 11 I2)", MACHINE_IMPERFECT_SOUND )
-GAME( 1995, quizardi_17, quizard,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard (v1.7, Italian, i8751 IT 11 I2)", MACHINE_IMPERFECT_SOUND )
-GAME( 1995, quizardi_12, quizard,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard (v1.2, Italian, i8751 IT 11 I2)", MACHINE_IMPERFECT_SOUND )
-GAME( 1995, quizardi_10, quizard,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard (v1.0, Italian, i8751 IT 11 I2)", MACHINE_IMPERFECT_SOUND )
 
 GAME( 1995, quizard2,    cdibios,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 2 (v2.3, German, i8751 DN 122 D3)", MACHINE_IMPERFECT_SOUND )
 GAME( 1995, quizard2_22, quizard2, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 2 (v2.2, German, i8751 DN 122 D3)", MACHINE_IMPERFECT_SOUND )
 
 // Quizard 3 and 4 will hang after starting a game (CDIC issues?)
-GAME( 1995, quizard3,    cdibios,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 3 (v3.4, German, i8751 DE 132 D3)", MACHINE_IMPERFECT_SOUND )
-GAME( 1995, quizard3a,   quizard3, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 3 (v3.4, German, i8751 DE 132 A1)", MACHINE_IMPERFECT_SOUND )
-GAME( 1996, quizard3_32, quizard3, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 3 (v3.2, German, i8751 DE 132 D3)", MACHINE_IMPERFECT_SOUND )
+GAME( 1995, quizard3,    cdibios,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 3 (v3.4, German, i8751 DE 132 D3)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_SOUND )
+GAME( 1995, quizard3a,   quizard3, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 3 (v3.4, German, i8751 DE 132 A1)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_SOUND )
+GAME( 1996, quizard3_32, quizard3, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 3 (v3.2, German, i8751 DE 132 D3)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_SOUND )
 
-GAME( 1998, quizard4,    cdibios,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 4 Rainbow (v4.2, German, i8751 DE 142 D3)", MACHINE_IMPERFECT_SOUND )
-GAME( 1998, quizard4cz,  quizard4, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 4 Rainbow (v4.2, Czech, i8751 TS142 CZ1)", MACHINE_IMPERFECT_SOUND )
-GAME( 1998, quizard4_41, quizard4, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 4 Rainbow (v4.1, German, i8751 DE 142 D3)", MACHINE_IMPERFECT_SOUND )
-GAME( 1997, quizard4_40, quizard4, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 4 Rainbow (v4.0, German, i8751 DE 142 D3)", MACHINE_IMPERFECT_SOUND )
-
-GAME( 1996, quizardff,   cdibios,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard Fun and Fascination (French Edition V1 - 01/96)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_SOUND )
+GAME( 1998, quizard4,    cdibios,  quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 4 Rainbow (v4.2, German, i8751 DE 142 D3)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_SOUND )
+GAME( 1998, quizard4cz,  quizard4, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 4 Rainbow (v4.2, Czech, i8751 TS142 CZ1)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_SOUND )
+GAME( 1998, quizard4_41, quizard4, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 4 Rainbow (v4.1, German, i8751 DE 142 D3)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_SOUND )
+GAME( 1997, quizard4_40, quizard4, quizard,       quizard,  quizard_state, empty_init,  ROT0, "TAB Austria",  "Quizard 4 Rainbow (v4.0, German, i8751 DE 142 D3)", MACHINE_NOT_WORKING | MACHINE_IMPERFECT_SOUND )

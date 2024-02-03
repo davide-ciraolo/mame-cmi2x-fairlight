@@ -83,9 +83,6 @@ Notes:
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
-
 class dblewing_state : public driver_device
 {
 public:
@@ -122,7 +119,7 @@ private:
 	required_device<decospr_device> m_sprgen;
 
 	uint8_t irq_latch_r();
-	void soundlatch_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(soundlatch_irq_w);
 	uint32_t screen_update_dblewing(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
 	DECO16IC_BANK_CB_MEMBER(bank_callback);
@@ -173,7 +170,7 @@ void dblewing_state::wf_protection_region_0_104_w(offs_t offset, uint16_t data, 
 	m_deco104->write_data( deco146_addr, data, mem_mask, cs );
 }
 
-void dblewing_state::soundlatch_irq_w(int state)
+WRITE_LINE_MEMBER( dblewing_state::soundlatch_irq_w )
 {
 	m_soundlatch_pending = bool(state);
 }
@@ -494,8 +491,6 @@ void dblewing_state::init_dblewing()
 
 	save_item(NAME(m_soundlatch_pending));
 }
-
-} // anonymous namespace
 
 
 GAME( 1993, dblewing,  0,        dblewing, dblewing, dblewing_state, init_dblewing, ROT90, "Mitchell", "Double Wings (set 1)", MACHINE_SUPPORTS_SAVE )

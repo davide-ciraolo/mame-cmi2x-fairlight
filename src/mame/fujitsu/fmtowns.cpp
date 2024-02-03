@@ -241,18 +241,13 @@ Notes:
 #include "speaker.h"
 #include <math.h>
 
-#define LOG_SYS        (1U << 1)
-#define LOG_CD         (1U << 2)
-#define LOG_CD_UNKNOWN (1U << 3)
-
-#define VERBOSE (LOG_GENERAL | LOG_CD_UNKNOWN)
-#include "logmacro.h"
-
 
 // CD controller IRQ types
 #define TOWNS_CD_IRQ_MPU 1
 #define TOWNS_CD_IRQ_DMA 2
 
+#define LOG_SYS 0
+#define LOG_CD 0
 
 enum
 {
@@ -263,6 +258,8 @@ enum
 	MOUSE_Y_HIGH,
 	MOUSE_Y_LOW
 };
+
+
 
 
 inline uint8_t towns_state::byte_to_bcd(uint8_t val)
@@ -331,40 +328,40 @@ uint8_t towns_state::towns_system_r(offs_t offset)
 	switch(offset)
 	{
 		case 0x00:
-			LOGMASKED(LOG_SYS, "SYS: port 0x20 read\n");
+			if(LOG_SYS) logerror("SYS: port 0x20 read\n");
 			return 0x00;
 		case 0x05:
-			LOGMASKED(LOG_SYS, "SYS: port 0x25 read\n");
+			if(LOG_SYS) logerror("SYS: port 0x25 read\n");
 			return 0x00;
 /*      case 0x06:
-            count = (m_towns_freerun_counter->elapsed() * ATTOSECONDS_TO_HZ(ATTOSECONDS_IN_USEC(1))).as_double();
+            count = (m_towns_freerun_counter->time_elapsed() * ATTOSECONDS_TO_HZ(ATTOSECONDS_IN_USEC(1))).as_double();
             return count & 0xff;
         case 0x07:
-            count = (m_towns_freerun_counter->elapsed() * ATTOSECONDS_TO_HZ(ATTOSECONDS_IN_USEC(1))).as_double();
+            count = (m_towns_freerun_counter->time_elapsed() * ATTOSECONDS_TO_HZ(ATTOSECONDS_IN_USEC(1))).as_double();
             return (count >> 8) & 0xff;
 */      case 0x06:
-			//LOGMASKED(LOG_SYS, "SYS: (0x26) timer read\n");
+			//if(LOG_SYS) logerror("SYS: (0x26) timer read\n");
 			return m_freerun_timer;
 		case 0x07:
 			return m_freerun_timer >> 8;
 		case 0x08:
-			//LOGMASKED(LOG_SYS, "SYS: (0x28) NMI mask read\n");
+			//if(LOG_SYS) logerror("SYS: (0x28) NMI mask read\n");
 			return m_nmi_mask & 0x01;
 		case 0x10:
-			LOGMASKED(LOG_SYS, "SYS: (0x30) Machine ID read\n");
+			if(LOG_SYS) logerror("SYS: (0x30) Machine ID read\n");
 			return (m_towns_machine_id >> 8) & 0xff;
 		case 0x11:
-			LOGMASKED(LOG_SYS, "SYS: (0x31) Machine ID read\n");
+			if(LOG_SYS) logerror("SYS: (0x31) Machine ID read\n");
 			return m_towns_machine_id & 0xff;
 		case 0x12:
 			/* Bit 0 = data, bit 6 = CLK, bit 7 = RESET, bit 5 is always 1? */
 			ret = (m_towns_serial_rom[m_towns_srom_position/8] & (1 << (m_towns_srom_position%8))) ? 1 : 0;
 			ret |= m_towns_srom_clk;
 			ret |= m_towns_srom_reset;
-			//LOGMASKED(LOG_SYS, "SYS: (0x32) Serial ROM read [0x%02x, pos=%i]\n",ret,towns_srom_position);
+			//if(LOG_SYS) logerror("SYS: (0x32) Serial ROM read [0x%02x, pos=%i]\n",ret,towns_srom_position);
 			return ret;
 		default:
-			//LOGMASKED(LOG_SYS, "SYS: Unknown system port read (0x%02x)\n",offset+0x20);
+			//if(LOG_SYS) logerror("SYS: Unknown system port read (0x%02x)\n",offset+0x20);
 			return 0x00;
 	}
 }
@@ -375,17 +372,17 @@ void towns_state::towns_system_w(offs_t offset, uint8_t data)
 	{
 		case 0x00:  // bit 7 = NMI vector protect, bit 6 = power off, bit 0 = software reset, bit 3 = A20 line?
 //          space.m_maincpu->set_input_line(INPUT_LINE_A20,(data & 0x08) ? CLEAR_LINE : ASSERT_LINE);
-			LOGMASKED(LOG_SYS, "SYS: port 0x20 write %02x\n",data);
+			if(LOG_SYS) logerror("SYS: port 0x20 write %02x\n",data);
 			break;
 		case 0x02:
-			LOGMASKED(LOG_SYS, "SYS: (0x22) power port write %02x\n",data);
+			if(LOG_SYS) logerror("SYS: (0x22) power port write %02x\n",data);
 			break;
 		case 0x08:
-			//LOGMASKED(LOG_SYS, "SYS: (0x28) NMI mask write %02x\n",data);
+			//if(LOG_SYS) logerror("SYS: (0x28) NMI mask write %02x\n",data);
 			m_nmi_mask = data & 0x01;
 			break;
 		case 0x12:
-			//LOGMASKED(LOG_SYS, "SYS: (0x32) Serial ROM write %02x\n",data);
+			//if(LOG_SYS) logerror("SYS: (0x32) Serial ROM write %02x\n",data);
 			// clocks on low-to-high transition
 			if((data & 0x40) && m_towns_srom_clk == 0) // CLK
 			{  // advance to next bit
@@ -399,8 +396,7 @@ void towns_state::towns_system_w(offs_t offset, uint8_t data)
 			m_towns_srom_reset = data & 0x80;
 			break;
 		default:
-			LOGMASKED(LOG_SYS, "SYS: Unknown system port write 0x%02x (0x%02x)\n",data,offset);
-			break;
+			if(LOG_SYS) logerror("SYS: Unknown system port write 0x%02x (0x%02x)\n",data,offset);
 	}
 }
 
@@ -460,7 +456,7 @@ TIMER_CALLBACK_MEMBER(towns_state::wait_end)
 
 uint8_t towns_state::towns_sys6c_r()
 {
-	LOGMASKED(LOG_SYS, "SYS: (0x6c) Timer? read\n");
+	if(LOG_SYS) logerror("SYS: (0x6c) Timer? read\n");
 	return 0x00;
 }
 
@@ -489,7 +485,7 @@ void towns_state::towns_dma_w(offs_t offset, uint8_t data)
  *  Floppy Disc Controller (MB8877A)
  */
 
-void towns_state::mb8877a_irq_w(int state)
+WRITE_LINE_MEMBER( towns_state::mb8877a_irq_w )
 {
 	if(m_towns_fdc_irq6mask == 0)
 		state = 0;
@@ -497,7 +493,7 @@ void towns_state::mb8877a_irq_w(int state)
 	if(IRQ_LOG) logerror("PIC: IRQ6 (FDC) set to %i\n",state);
 }
 
-void towns_state::mb8877a_drq_w(int state)
+WRITE_LINE_MEMBER( towns_state::mb8877a_drq_w )
 {
 	m_dma[0]->dmarq(state, 0);
 }
@@ -823,10 +819,10 @@ uint8_t towns_state::towns_sys5e8_r(offs_t offset)
 	switch(offset)
 	{
 		case 0x00:
-			LOGMASKED(LOG_SYS, "SYS: read RAM size port (%i)\n",m_ram->size());
+			if(LOG_SYS) logerror("SYS: read RAM size port (%i)\n",m_ram->size());
 			return m_ram->size()/1048576;
 		case 0x02:
-			LOGMASKED(LOG_SYS, "SYS: read port 5ec\n");
+			if(LOG_SYS) logerror("SYS: read port 5ec\n");
 			return m_compat_mode & 0x01;
 	}
 	return 0x00;
@@ -837,10 +833,10 @@ void towns_state::towns_sys5e8_w(offs_t offset, uint8_t data)
 	switch(offset)
 	{
 		case 0x00:
-			LOGMASKED(LOG_SYS, "SYS: wrote 0x%02x to port 5e8\n",data);
+			if(LOG_SYS) logerror("SYS: wrote 0x%02x to port 5e8\n",data);
 			break;
 		case 0x02:
-			LOGMASKED(LOG_SYS, "SYS: wrote 0x%02x to port 5ec\n",data);
+			if(LOG_SYS) logerror("SYS: wrote 0x%02x to port 5ec\n",data);
 			m_compat_mode = data & 0x01;
 			break;
 	}
@@ -898,27 +894,279 @@ void towns_state::towns_sound_ctrl_w(offs_t offset, uint8_t data)
 }
 
 // Controller ports
-// Joysticks are multiplexed, with fire buttons available when bits 0 and 1 of port 0x4d6 are high. (bits 2 and 3 for second port)
+// Joysticks are multiplexed, with fire buttons available when bits 0 and 1 of port 0x4d6 are high. (bits 2 and 3 for second port?)
+TIMER_CALLBACK_MEMBER(towns_state::mouse_timeout)
+{
+	m_towns_mouse_output = MOUSE_START;  // reset mouse data
+}
+
 uint8_t towns_state::towns_padport_r(offs_t offset)
 {
-	// Documentation indicates bit 7 is unused and should be ignored.
-	// Tatsujin Ou expects it to read as zero to navigate menus.
-	// Unclear whether it always reads as zero, or it's affected by something undocumented.
-	unsigned const pad = BIT(offset, 1);
-	return m_pad_ports[pad]->read() & (0x0f | (bitswap<3>(m_towns_pad_mask, pad + 4, (pad * 2) + 1, pad * 2) << 4));
+	uint8_t ret = 0x00;
+	uint32_t porttype = m_ctrltype->read();
+	uint8_t extra1;
+	uint8_t extra2;
+	uint32_t state;
+
+	offset >>= 1;
+	if(offset == 0)
+	{
+		if((porttype & 0x0f) == 0x01)
+		{
+			extra1 = m_joy1_ex->read();
+
+			if(m_towns_pad_mask & 0x10)
+				ret |= (m_joy1->read() & 0x3f) | 0x40;
+			else
+				ret |= (m_joy1->read() & 0x0f) | 0x30;
+
+			if(extra1 & 0x01) // Run button = left+right
+				ret &= ~0x0c;
+			if(extra1 & 0x02) // Select button = up+down
+				ret &= ~0x03;
+
+			if((extra1 & 0x10) && (m_towns_pad_mask & 0x01))
+				ret &= ~0x10;
+			if((extra1 & 0x20) && (m_towns_pad_mask & 0x02))
+				ret &= ~0x20;
+		}
+		else if((porttype & 0x0f) == 0x04)  // 6-button joystick
+		{
+			extra1 = m_6b_joy1_ex->read();
+
+			if(m_towns_pad_mask & 0x10)
+				ret |= 0x7f;
+			else
+				ret |= (m_6b_joy1->read() & 0x0f) | 0x70;
+
+			if(!(m_towns_pad_mask & 0x10))
+			{
+				if(extra1 & 0x01) // Run button = left+right
+					ret &= ~0x0c;
+				if(extra1 & 0x02) // Select button = up+down
+					ret &= ~0x03;
+				if((extra1 & 0x04) && (m_towns_pad_mask & 0x01))
+					ret &= ~0x10;
+				if((extra1 & 0x08) && (m_towns_pad_mask & 0x02))
+					ret &= ~0x20;
+			}
+			if(m_towns_pad_mask & 0x10)
+			{
+				if(extra1 & 0x10)
+					ret &= ~0x08;
+				if(extra1 & 0x20)
+					ret &= ~0x04;
+				if(extra1 & 0x40)
+					ret &= ~0x02;
+				if(extra1 & 0x80)
+					ret &= ~0x01;
+			}
+		}
+		else if((porttype & 0x0f) == 0x02)  // mouse
+		{
+			switch(m_towns_mouse_output)
+			{
+				case MOUSE_X_HIGH:
+					ret |= ((m_towns_mouse_x & 0xf0) >> 4);
+					break;
+				case MOUSE_X_LOW:
+					ret |= (m_towns_mouse_x & 0x0f);
+					break;
+				case MOUSE_Y_HIGH:
+					ret |= ((m_towns_mouse_y & 0xf0) >> 4);
+					break;
+				case MOUSE_Y_LOW:
+					ret |= (m_towns_mouse_y & 0x0f);
+					break;
+				case MOUSE_START:
+				case MOUSE_SYNC:
+					break;
+				default:
+					if(m_towns_mouse_output < MOUSE_Y_LOW)
+						ret |= 0x0f;
+			}
+
+			// button states are always visible
+			state = m_mouse1->read();
+			if(!(state & 0x01))
+				ret |= 0x10;
+			if(!(state & 0x02))
+				ret |= 0x20;
+			if(m_towns_pad_mask & 0x10)
+				ret |= 0x40;
+		}
+		else ret = 0x7f;
+	}
+	else if(offset == 1)  // second joystick port
+	{
+		if((porttype & 0xf0) == 0x10)
+		{
+			extra2 = m_joy2_ex->read();
+
+			if(m_towns_pad_mask & 0x20)
+				ret |= ((m_joy2->read() & 0x3f)) | 0x40;
+			else
+				ret |= ((m_joy2->read() & 0x0f)) | 0x30;
+
+			if(extra2 & 0x01)
+				ret &= ~0x0c;
+			if(extra2 & 0x02)
+				ret &= ~0x03;
+
+			if((extra2 & 0x10) && (m_towns_pad_mask & 0x04))
+				ret &= ~0x10;
+			if((extra2 & 0x20) && (m_towns_pad_mask & 0x08))
+				ret &= ~0x20;
+		}
+		else if((porttype & 0xf0) == 0x40)  // 6-button joystick
+		{
+			extra2 = m_6b_joy2_ex->read();
+
+			if(m_towns_pad_mask & 0x20)
+				ret |= 0x7f;
+			else
+				ret |= ((m_6b_joy2->read() & 0x0f)) | 0x70;
+
+			if(!(m_towns_pad_mask & 0x10))
+			{
+				if(extra2 & 0x01)
+					ret &= ~0x0c;
+				if(extra2 & 0x02)
+					ret &= ~0x03;
+				if((extra2 & 0x10) && (m_towns_pad_mask & 0x04))
+					ret &= ~0x10;
+				if((extra2 & 0x20) && (m_towns_pad_mask & 0x08))
+					ret &= ~0x20;
+			}
+			if(m_towns_pad_mask & 0x20)
+			{
+				if(extra2 & 0x10)
+					ret &= ~0x08;
+				if(extra2 & 0x20)
+					ret &= ~0x04;
+				if(extra2 & 0x40)
+					ret &= ~0x02;
+				if(extra2 & 0x80)
+					ret &= ~0x01;
+			}
+		}
+		else if((porttype & 0xf0) == 0x20)  // mouse
+		{
+			switch(m_towns_mouse_output)
+			{
+				case MOUSE_X_HIGH:
+					ret |= ((m_towns_mouse_x & 0xf0) >> 4);
+					break;
+				case MOUSE_X_LOW:
+					ret |= (m_towns_mouse_x & 0x0f);
+					break;
+				case MOUSE_Y_HIGH:
+					ret |= ((m_towns_mouse_y & 0xf0) >> 4);
+					break;
+				case MOUSE_Y_LOW:
+					ret |= (m_towns_mouse_y & 0x0f);
+					break;
+				case MOUSE_START:
+				case MOUSE_SYNC:
+					break;
+				default:
+					if(m_towns_mouse_output < MOUSE_Y_LOW)
+						ret |= 0x0f;
+			}
+
+			// button states are always visible
+			state = m_mouse1->read();
+			if(!(state & 0x01))
+				ret |= 0x10;
+			if(!(state & 0x02))
+				ret |= 0x20;
+			if(m_towns_pad_mask & 0x20)
+				ret |= 0x40;
+		}
+		else ret = 0x7f;
+	}
+
+	return ret;
 }
 
 void towns_state::towns_pad_mask_w(uint8_t data)
 {
-	m_towns_pad_mask = data;
+	uint8_t current_x,current_y;
+	uint32_t type = m_ctrltype->read();
 
-	m_pad_ports[0]->pin_6_w(BIT(data, 0));
-	m_pad_ports[0]->pin_7_w(BIT(data, 1));
-	m_pad_ports[0]->pin_8_w(BIT(data, 4));
-
-	m_pad_ports[1]->pin_6_w(BIT(data, 2));
-	m_pad_ports[1]->pin_7_w(BIT(data, 3));
-	m_pad_ports[1]->pin_8_w(BIT(data, 5));
+	m_towns_pad_mask = (data & 0xff);
+	if((type & 0x0f) == 0x02)  // mouse
+	{
+		if((m_towns_pad_mask & 0x10) != 0 && (m_prev_pad_mask & 0x10) == 0)
+		{
+			if(m_towns_mouse_output == MOUSE_START)
+			{
+				m_towns_mouse_output = MOUSE_X_HIGH;
+				current_x = m_mouse2->read();
+				current_y = m_mouse3->read();
+				m_towns_mouse_x = m_prev_x - current_x;
+				m_towns_mouse_y = m_prev_y - current_y;
+				m_prev_x = current_x;
+				m_prev_y = current_y;
+			}
+			else
+				m_towns_mouse_output++;
+			m_towns_mouse_timer->adjust(attotime::from_usec(600),0,attotime::zero);
+		}
+		if((m_towns_pad_mask & 0x10) == 0 && (m_prev_pad_mask & 0x10) != 0)
+		{
+			if(m_towns_mouse_output == MOUSE_START)
+			{
+				m_towns_mouse_output = MOUSE_SYNC;
+				current_x = m_mouse2->read();
+				current_y = m_mouse3->read();
+				m_towns_mouse_x = m_prev_x - current_x;
+				m_towns_mouse_y = m_prev_y - current_y;
+				m_prev_x = current_x;
+				m_prev_y = current_y;
+			}
+			else
+				m_towns_mouse_output++;
+			m_towns_mouse_timer->adjust(attotime::from_usec(600),0,attotime::zero);
+		}
+		m_prev_pad_mask = m_towns_pad_mask;
+	}
+	if((type & 0xf0) == 0x20)  // mouse
+	{
+		if((m_towns_pad_mask & 0x20) != 0 && (m_prev_pad_mask & 0x20) == 0)
+		{
+			if(m_towns_mouse_output == MOUSE_START)
+			{
+				m_towns_mouse_output = MOUSE_X_HIGH;
+				current_x = m_mouse2->read();
+				current_y = m_mouse3->read();
+				m_towns_mouse_x = m_prev_x - current_x;
+				m_towns_mouse_y = m_prev_y - current_y;
+				m_prev_x = current_x;
+				m_prev_y = current_y;
+			}
+			else
+				m_towns_mouse_output++;
+			m_towns_mouse_timer->adjust(attotime::from_usec(600),0,attotime::zero);
+		}
+		if((m_towns_pad_mask & 0x20) == 0 && (m_prev_pad_mask & 0x20) != 0)
+		{
+			if(m_towns_mouse_output == MOUSE_START)
+			{
+				m_towns_mouse_output = MOUSE_SYNC;
+				current_x = m_mouse2->read();
+				current_y = m_mouse3->read();
+				m_towns_mouse_x = m_prev_x - current_x;
+				m_towns_mouse_y = m_prev_y - current_y;
+				m_prev_x = current_x;
+				m_prev_y = current_y;
+			}
+			else
+				m_towns_mouse_output++;
+			m_towns_mouse_timer->adjust(attotime::from_usec(600),0,attotime::zero);
+		}
+		m_prev_pad_mask = m_towns_pad_mask;
+	}
 }
 
 uint8_t towns_state::towns_cmos_low_r(offs_t offset)
@@ -1165,7 +1413,7 @@ uint8_t towns_state::towns_cd_get_track()
 
 	for(track=1;track<99;track++)
 	{
-		if(cdrom->get_track_start(track) > lba)
+		if(cdrom->get_cdrom_file()->get_track_start(track) > lba)
 			break;
 	}
 	return track;
@@ -1199,7 +1447,7 @@ TIMER_CALLBACK_MEMBER(towns_state::towns_cdrom_read_byte)
 		{  // end of transfer
 			m_towns_cd.status &= ~0x10;  // no longer transferring by DMA
 			m_towns_cd.status &= ~0x20;  // no longer transferring by software
-			LOGMASKED(LOG_CD, "DMA1: end of transfer (LBA=%08x)\n",m_towns_cd.lba_current);
+			if(LOG_CD) logerror("DMA1: end of transfer (LBA=%08x)\n",m_towns_cd.lba_current);
 			if(m_towns_cd.lba_current >= m_towns_cd.lba_last)
 			{
 				m_towns_cd.extra_status = 0;
@@ -1213,7 +1461,7 @@ TIMER_CALLBACK_MEMBER(towns_state::towns_cdrom_read_byte)
 				m_towns_cd.extra_status = 0;
 				towns_cd_set_status(0x22,0x00,0x00,0x00);
 				towns_cdrom_set_irq(TOWNS_CD_IRQ_DMA,1);
-				m_cdrom->read_data(++m_towns_cd.lba_current,m_towns_cd.buffer,cdrom_file::CD_TRACK_MODE1);
+				m_cdrom->get_cdrom_file()->read_data(++m_towns_cd.lba_current,m_towns_cd.buffer,cdrom_file::CD_TRACK_MODE1);
 				m_towns_cd.read_timer->adjust(attotime::from_hz(300000),1);
 				m_towns_cd.buffer_ptr = -1;
 			}
@@ -1233,7 +1481,7 @@ uint8_t towns_state::towns_cdrom_read_byte_software()
 	{  // end of transfer
 		m_towns_cd.status &= ~0x10;  // no longer transferring by DMA
 		m_towns_cd.status &= ~0x20;  // no longer transferring by software
-		LOGMASKED(LOG_CD, "CD: end of software transfer (LBA=%08x)\n",m_towns_cd.lba_current);
+		if(LOG_CD) logerror("CD: end of software transfer (LBA=%08x)\n",m_towns_cd.lba_current);
 		if(m_towns_cd.lba_current >= m_towns_cd.lba_last)
 		{
 			m_towns_cd.extra_status = 0;
@@ -1244,7 +1492,7 @@ uint8_t towns_state::towns_cdrom_read_byte_software()
 		}
 		else
 		{
-			m_cdrom->read_data(++m_towns_cd.lba_current,m_towns_cd.buffer,cdrom_file::CD_TRACK_MODE1);
+			m_cdrom->get_cdrom_file()->read_data(++m_towns_cd.lba_current,m_towns_cd.buffer,cdrom_file::CD_TRACK_MODE1);
 			m_towns_cd.extra_status = 0;
 			towns_cd_set_status(0x21,0x00,0x00,0x00);
 			towns_cdrom_set_irq(TOWNS_CD_IRQ_DMA,1);
@@ -1276,14 +1524,14 @@ void towns_state::towns_cdrom_read(cdrom_image_device* device)
 	m_towns_cd.lba_current = msf_to_lbafm(lba1);
 	m_towns_cd.lba_last = msf_to_lbafm(lba2);
 
-	track = device->get_track(m_towns_cd.lba_current);
+	track = device->get_cdrom_file()->get_track(m_towns_cd.lba_current);
 
 	// parameter 7 = sector count?
 	// lemmings 2 sets this to 4 but hates 4 extra sectors being read
 //  if(m_towns_cd.parameter[1] != 0)
 //      m_towns_cd.lba_last += m_towns_cd.parameter[1];
 
-	LOGMASKED(LOG_CD, "CD: Mode 1 read from LBA next:%i last:%i track:%i\n",m_towns_cd.lba_current,m_towns_cd.lba_last,track);
+	if(LOG_CD) logerror("CD: Mode 1 read from LBA next:%i last:%i track:%i\n",m_towns_cd.lba_current,m_towns_cd.lba_last,track);
 
 	if(m_towns_cd.lba_current > m_towns_cd.lba_last)
 	{
@@ -1292,7 +1540,7 @@ void towns_state::towns_cdrom_read(cdrom_image_device* device)
 	}
 	else
 	{
-		device->read_data(m_towns_cd.lba_current,m_towns_cd.buffer,cdrom_file::CD_TRACK_MODE1);
+		device->get_cdrom_file()->read_data(m_towns_cd.lba_current,m_towns_cd.buffer,cdrom_file::CD_TRACK_MODE1);
 		if(m_towns_cd.software_tx)
 		{
 			m_towns_cd.status &= ~0x10;  // not a DMA transfer
@@ -1339,8 +1587,9 @@ void towns_state::towns_cdrom_play_cdda(cdrom_image_device* device)
 	m_towns_cd.cdda_current = msf_to_lbafm(lba1);
 	m_towns_cd.cdda_length = msf_to_lbafm(lba2) - m_towns_cd.cdda_current + 1;
 
+	m_cdda->set_cdrom(device->get_cdrom_file());
 	m_cdda->start_audio(m_towns_cd.cdda_current,m_towns_cd.cdda_length);
-	LOGMASKED(LOG_CD, "CD: CD-DA start from LBA:%i length:%i\n",m_towns_cd.cdda_current,m_towns_cd.cdda_length);
+	if(LOG_CD) logerror("CD: CD-DA start from LBA:%i length:%i\n",m_towns_cd.cdda_current,m_towns_cd.cdda_length);
 	if(m_towns_cd.command & 0x20)
 	{
 		m_towns_cd.extra_status = 1;
@@ -1356,7 +1605,7 @@ TIMER_CALLBACK_MEMBER(towns_state::towns_delay_cdda)
 void towns_state::towns_cdrom_execute_command(cdrom_image_device* device)
 {
 	towns_cdrom_set_irq(TOWNS_CD_IRQ_MPU,0); // TODO: this isn't sufficiently tested
-	if(!device->exists() && (m_towns_cd.command != 0xa0))
+	if((device->get_cdrom_file() == nullptr) && (m_towns_cd.command != 0xa0))
 	{  // No CD in drive
 		if(m_towns_cd.command & 0x20)
 		{
@@ -1375,7 +1624,7 @@ void towns_state::towns_cdrom_execute_command(cdrom_image_device* device)
 					m_towns_cd.extra_status = 1;
 					towns_cd_set_status(0x00,0x00,0x00,0x00);
 				}
-				LOGMASKED(LOG_CD, "CD: Command 0x00: SEEK\n");
+				if(LOG_CD) logerror("CD: Command 0x00: SEEK\n");
 				break;
 			case 0x01:  // unknown
 				if(m_towns_cd.command & 0x20)
@@ -1383,18 +1632,18 @@ void towns_state::towns_cdrom_execute_command(cdrom_image_device* device)
 					m_towns_cd.extra_status = 0;
 					towns_cd_set_status(0x00,0xff,0xff,0xff);
 				}
-				LOGMASKED(LOG_CD, "CD: Command 0x01: unknown\n");
+				if(LOG_CD) logerror("CD: Command 0x01: unknown\n");
 				break;
 			case 0x02:  // Read (MODE1)
-				LOGMASKED(LOG_CD, "CD: Command 0x02: READ MODE1\n");
+				if(LOG_CD) logerror("CD: Command 0x02: READ MODE1\n");
 				towns_cdrom_read(device);
 				break;
 			case 0x04:  // Play Audio Track
-				LOGMASKED(LOG_CD, "CD: Command 0x04: PLAY CD-DA\n");
+				if(LOG_CD) logerror("CD: Command 0x04: PLAY CD-DA\n");
 				m_towns_cdda_timer->adjust(attotime::from_msec(1),0,attotime::never);
 				break;
 			case 0x05:  // Read TOC
-				LOGMASKED(LOG_CD, "CD: Command 0x05: READ TOC\n");
+				if(LOG_CD) logerror("CD: Command 0x05: READ TOC\n");
 				if(m_towns_cd.command & 0x20)
 				{
 					m_towns_cd.extra_status = 1;
@@ -1407,17 +1656,17 @@ void towns_state::towns_cdrom_execute_command(cdrom_image_device* device)
 				}
 				break;
 			case 0x06:  // Read CD-DA state?
-				LOGMASKED(LOG_CD, "CD: Command 0x06: READ CD-DA STATE\n");
+				if(LOG_CD) logerror("CD: Command 0x06: READ CD-DA STATE\n");
 				m_towns_cd.extra_status = 1;
 				towns_cd_set_status(0x00,0x00,0x00,0x00);
 				break;
 			case 0x1f:  // unknown
-				LOGMASKED(LOG_CD, "CD: Command 0x1f: unknown\n");
+				if(LOG_CD) logerror("CD: Command 0x1f: unknown\n");
 				m_towns_cd.extra_status = 0;
 				towns_cd_set_status(0x00,0x00,0x00,0x00);
 				break;
 			case 0x80:  // set state
-				LOGMASKED(LOG_CD, "CD: Command 0x80: set state\n");
+				if(LOG_CD) logerror("CD: Command 0x80: set state\n");
 				if(m_towns_cd.command & 0x20)
 				{
 					m_towns_cd.extra_status = 0;
@@ -1434,7 +1683,7 @@ void towns_state::towns_cdrom_execute_command(cdrom_image_device* device)
 					m_towns_cd.extra_status = 0;
 					towns_cd_set_status(0x00,0x00,0x00,0x00);
 				}
-				LOGMASKED(LOG_CD, "CD: Command 0x81: set state (CDDASET)\n");
+				if(LOG_CD) logerror("CD: Command 0x81: set state (CDDASET)\n");
 				break;
 			case 0x84:   // Stop CD audio track  -- generates no status output?
 				if(m_towns_cd.command & 0x20)
@@ -1443,7 +1692,7 @@ void towns_state::towns_cdrom_execute_command(cdrom_image_device* device)
 					towns_cd_set_status(0x00,0x00,0x00,0x00);
 				}
 				m_cdda->pause_audio(1);
-				LOGMASKED(LOG_CD, "CD: Command 0x84: STOP CD-DA\n");
+				if(LOG_CD) logerror("CD: Command 0x84: STOP CD-DA\n");
 				break;
 			case 0x85:   // Stop CD audio track (difference from 0x84?)
 				if(m_towns_cd.command & 0x20)
@@ -1452,7 +1701,7 @@ void towns_state::towns_cdrom_execute_command(cdrom_image_device* device)
 					towns_cd_set_status(0x00,0x00,0x00,0x00);
 				}
 				m_cdda->pause_audio(1);
-				LOGMASKED(LOG_CD, "CD: Command 0x85: STOP CD-DA\n");
+				if(LOG_CD) logerror("CD: Command 0x85: STOP CD-DA\n");
 				break;
 			case 0x87:  // Resume CD-DA playback
 				if(m_towns_cd.command & 0x20)
@@ -1461,13 +1710,12 @@ void towns_state::towns_cdrom_execute_command(cdrom_image_device* device)
 					towns_cd_set_status(0x00,0x03,0x00,0x00);
 				}
 				m_cdda->pause_audio(0);
-				LOGMASKED(LOG_CD, "CD: Command 0x87: RESUME CD-DA\n");
+				if(LOG_CD) logerror("CD: Command 0x87: RESUME CD-DA\n");
 				break;
 			default:
 				m_towns_cd.extra_status = 0;
 				towns_cd_set_status(0x10,0x00,0x00,0x00);
-				LOGMASKED(LOG_CD_UNKNOWN, "CD: Unknown or unimplemented command %02x\n",m_towns_cd.command);
-				break;
+				logerror("CD: Unknown or unimplemented command %02x\n",m_towns_cd.command);
 		}
 	}
 }
@@ -1489,7 +1737,7 @@ uint8_t towns_state::towns_cdrom_r(offs_t offset)
 	switch(offset)
 	{
 		case 0x00:  // status
-			//LOGMASKED(LOG_CD, "CD: status read, returning %02x\n",towns_cd.status);
+			//if(LOG_CD) logerror("CD: status read, returning %02x\n",towns_cd.status);
 			return m_towns_cd.status;
 		case 0x01:  // command status
 			if(m_towns_cd.cmd_status_ptr >= 3)
@@ -1534,7 +1782,7 @@ uint8_t towns_state::towns_cdrom_r(offs_t offset)
 									break;
 								case 4: // st1 = last track number (BCD)
 									towns_cd_set_status(0x17,
-										byte_to_bcd(m_cdrom->get_last_track()),
+										byte_to_bcd(m_cdrom->get_cdrom_file()->get_last_track()),
 										0x00,0x00);
 									m_towns_cd.extra_status++;
 									break;
@@ -1543,7 +1791,7 @@ uint8_t towns_state::towns_cdrom_r(offs_t offset)
 									m_towns_cd.extra_status++;
 									break;
 								case 6:  // st1/2/3 = address of track 0xaa? (BCD)
-									addr = m_cdrom->get_track_start(0xaa);
+									addr = m_cdrom->get_cdrom_file()->get_track_start(0xaa);
 									addr = cdrom_file::lba_to_msf(addr + 150);
 									towns_cd_set_status(0x17,
 										(addr & 0xff0000) >> 16,(addr & 0x00ff00) >> 8,addr & 0x0000ff);
@@ -1553,19 +1801,19 @@ uint8_t towns_state::towns_cdrom_r(offs_t offset)
 									if(m_towns_cd.extra_status & 0x01)
 									{
 										towns_cd_set_status(0x16,
-											((m_cdrom->get_adr_control((m_towns_cd.extra_status/2)-3) & 0x0f) << 4)
-											| ((m_cdrom->get_adr_control((m_towns_cd.extra_status/2)-3) & 0xf0) >> 4),
+											((m_cdrom->get_cdrom_file()->get_adr_control((m_towns_cd.extra_status/2)-3) & 0x0f) << 4)
+											| ((m_cdrom->get_cdrom_file()->get_adr_control((m_towns_cd.extra_status/2)-3) & 0xf0) >> 4),
 											byte_to_bcd((m_towns_cd.extra_status/2)-2),0x00);
 										m_towns_cd.extra_status++;
 									}
 									else
 									{
 										int track = (m_towns_cd.extra_status/2)-4;
-										addr = m_cdrom->get_track_start(track);
+										addr = m_cdrom->get_cdrom_file()->get_track_start(track);
 										addr = cdrom_file::lba_to_msf(addr + 150);
 										towns_cd_set_status(0x17,
 											(addr & 0xff0000) >> 16,(addr & 0x00ff00) >> 8,addr & 0x0000ff);
-										if(track >= m_cdrom->get_last_track())
+										if(track >= m_cdrom->get_cdrom_file()->get_last_track())
 										{
 											m_towns_cd.extra_status = 0;
 										}
@@ -1619,7 +1867,7 @@ uint8_t towns_state::towns_cdrom_r(offs_t offset)
 				else
 					m_towns_cd.status &= ~0x02;
 			}
-			LOGMASKED(LOG_CD, "CD: reading command status port (%i), returning %02x\n",m_towns_cd.cmd_status_ptr,ret);
+			if(LOG_CD) logerror("CD: reading command status port (%i), returning %02x\n",m_towns_cd.cmd_status_ptr,ret);
 			m_towns_cd.cmd_status_ptr++;
 			if(m_towns_cd.cmd_status_ptr > 3)
 			{
@@ -1653,16 +1901,16 @@ void towns_state::towns_cdrom_w(offs_t offset, uint8_t data)
 			if(data & 0x40)
 				towns_cdrom_set_irq(TOWNS_CD_IRQ_DMA,0);
 			if(data & 0x04)
-				LOG("CD: sub MPU reset\n");
+				logerror("CD: sub MPU reset\n");
 			m_towns_cd.mpu_irq_enable = data & 0x02;
 			m_towns_cd.dma_irq_enable = data & 0x01;
-			LOGMASKED(LOG_CD, "CD: status write %02x\n",data);
+			if(LOG_CD) logerror("CD: status write %02x\n",data);
 			break;
 		case 0x01: // command
 			m_towns_cd.command = data;
 			towns_cdrom_execute_command(m_cdrom);
-			LOGMASKED(LOG_CD, "CD: command %02x sent\n",data);
-			LOGMASKED(LOG_CD, "CD: parameters: %02x %02x %02x %02x %02x %02x %02x %02x\n",
+			if(LOG_CD) logerror("CD: command %02x sent\n",data);
+			if(LOG_CD) logerror("CD: parameters: %02x %02x %02x %02x %02x %02x %02x %02x\n",
 				m_towns_cd.parameter[7],m_towns_cd.parameter[6],m_towns_cd.parameter[5],
 				m_towns_cd.parameter[4],m_towns_cd.parameter[3],m_towns_cd.parameter[2],
 				m_towns_cd.parameter[1],m_towns_cd.parameter[0]);
@@ -1671,7 +1919,7 @@ void towns_state::towns_cdrom_w(offs_t offset, uint8_t data)
 			for(x=7;x>0;x--)
 				m_towns_cd.parameter[x] = m_towns_cd.parameter[x-1];
 			m_towns_cd.parameter[0] = data;
-			LOGMASKED(LOG_CD, "CD: parameter %02x added\n",data);
+			if(LOG_CD) logerror("CD: parameter %02x added\n",data);
 			break;
 		case 0x03:
 			if(data & 0x08)  // software transfer
@@ -1692,11 +1940,10 @@ void towns_state::towns_cdrom_w(offs_t offset, uint8_t data)
 					m_towns_cd.read_timer->adjust(attotime::from_hz(300000),1);
 				}
 			}
-			LOGMASKED(LOG_CD, "CD: transfer mode write %02x\n",data);
+			if(LOG_CD) logerror("CD: transfer mode write %02x\n",data);
 			break;
 		default:
-			LOGMASKED(LOG_CD, "CD: write %02x to port %02x\n",data,offset*2);
-			break;
+			if(LOG_CD) logerror("CD: write %02x to port %02x\n",data,offset*2);
 	}
 }
 
@@ -1727,41 +1974,41 @@ void towns_state::towns_rtc_select_w(uint8_t data)
 	m_rtc->address_write_w(BIT(data, 0));
 }
 
-void towns_state::rtc_d0_w(int state)
+WRITE_LINE_MEMBER(towns_state::rtc_d0_w)
 {
 	m_rtc_d = (m_rtc_d & ~1) | (state ? 1 : 0);
 }
 
-void towns_state::rtc_d1_w(int state)
+WRITE_LINE_MEMBER(towns_state::rtc_d1_w)
 {
 	m_rtc_d = (m_rtc_d & ~2) | (state ? 2 : 0);
 }
 
-void towns_state::rtc_d2_w(int state)
+WRITE_LINE_MEMBER(towns_state::rtc_d2_w)
 {
 	m_rtc_d = (m_rtc_d & ~4) | (state ? 4 : 0);
 }
 
-void towns_state::rtc_d3_w(int state)
+WRITE_LINE_MEMBER(towns_state::rtc_d3_w)
 {
 	m_rtc_d = (m_rtc_d & ~8) | (state ? 8 : 0);
 }
 
-void towns_state::rtc_busy_w(int state)
+WRITE_LINE_MEMBER(towns_state::rtc_busy_w)
 {
 	// active low output
 	m_rtc_busy = !state;
 }
 
 // SCSI controller - I/O ports 0xc30 and 0xc32
-void towns_state::towns_scsi_irq(int state)
+WRITE_LINE_MEMBER(towns_state::towns_scsi_irq)
 {
 	m_pic_slave->ir0_w(state);
 	if(IRQ_LOG)
 		logerror("PIC: IRQ8 (SCSI) set to %i\n",state);
 }
 
-void towns_state::towns_scsi_drq(int state)
+WRITE_LINE_MEMBER(towns_state::towns_scsi_drq)
 {
 	m_dma[0]->dmarq(state, 1);  // SCSI HDs use channel 1
 }
@@ -1839,7 +2086,7 @@ uint8_t towns_state::towns_41ff_r()
 }
 
 // YM3438 interrupt (IRQ 13)
-void towns_state::towns_fm_irq(int state)
+WRITE_LINE_MEMBER(towns_state::towns_fm_irq)
 {
 	if(state)
 	{
@@ -1870,7 +2117,7 @@ RF5C68_SAMPLE_END_CB_MEMBER(towns_state::towns_pcm_irq)
 	}
 }
 
-void towns_state::towns_pit_out0_changed(int state)
+WRITE_LINE_MEMBER(towns_state::towns_pit_out0_changed)
 {
 	m_pit_out0 = state;
 
@@ -1885,7 +2132,7 @@ void towns_state::towns_pit_out0_changed(int state)
 	m_pic_master->ir0_w(m_timer0 || m_timer1);
 }
 
-void towns_state::towns_pit_out1_changed(int state)
+WRITE_LINE_MEMBER(towns_state::towns_pit_out1_changed)
 {
 	m_pit_out1 = state;
 
@@ -1900,13 +2147,13 @@ void towns_state::towns_pit_out1_changed(int state)
 	m_pic_master->ir0_w(m_timer0 || m_timer1);
 }
 
-void towns_state::pit_out2_changed(int state)
+WRITE_LINE_MEMBER( towns_state::pit_out2_changed )
 {
 	m_pit_out2 = state ? 1 : 0;
 	m_speaker->level_w(speaker_get_spk());
 }
 
-void towns_state::pit2_out1_changed(int state)
+WRITE_LINE_MEMBER( towns_state::pit2_out1_changed )
 {
 	m_i8251->write_rxc(state);
 	m_i8251->write_txc(state);
@@ -1943,26 +2190,26 @@ uint8_t towns_state::towns_serial_r(offs_t offset)
 	}
 }
 
-void towns_state::towns_serial_irq(int state)
+WRITE_LINE_MEMBER( towns_state::towns_serial_irq )
 {
 	m_serial_irq_source = state ? 0x01 : 0x00;
 	m_pic_master->ir2_w(state);
 	popmessage("Serial IRQ state: %i\n",state);
 }
 
-void towns_state::towns_rxrdy_irq(int state)
+WRITE_LINE_MEMBER( towns_state::towns_rxrdy_irq )
 {
 	if(m_serial_irq_enable & RXRDY_IRQ_ENABLE)
 		towns_serial_irq(state);
 }
 
-void towns_state::towns_txrdy_irq(int state)
+WRITE_LINE_MEMBER( towns_state::towns_txrdy_irq )
 {
 	if(m_serial_irq_enable & TXRDY_IRQ_ENABLE)
 		towns_serial_irq(state);
 }
 
-void towns_state::towns_syndet_irq(int state)
+WRITE_LINE_MEMBER( towns_state::towns_syndet_irq )
 {
 	if(m_serial_irq_enable & SYNDET_IRQ_ENABLE)
 		towns_serial_irq(state);
@@ -2192,6 +2439,18 @@ void towns_state::pcm_mem(address_map &map)
 
 /* Input ports */
 static INPUT_PORTS_START( towns )
+	PORT_START("ctrltype")
+	PORT_CONFNAME(0x0f, 0x01, "Joystick port 1")
+	PORT_CONFSETTING(0x00, "Nothing")
+	PORT_CONFSETTING(0x01, "Standard 2-button joystick")
+	PORT_CONFSETTING(0x02, "Mouse")
+	PORT_CONFSETTING(0x04, "6-button joystick")
+	PORT_CONFNAME(0xf0, 0x20, "Joystick port 2")
+	PORT_CONFSETTING(0x00, "Nothing")
+	PORT_CONFSETTING(0x10, "Standard 2-button joystick")
+	PORT_CONFSETTING(0x20, "Mouse")
+	PORT_CONFSETTING(0x40, "6-button joystick")
+
 	// Keyboard
 	PORT_START( "key1" )  // scancodes 0x00-0x1f
 	PORT_BIT(0x00000001,IP_ACTIVE_HIGH,IPT_UNUSED)
@@ -2326,6 +2585,97 @@ static INPUT_PORTS_START( towns )
 	PORT_BIT(0x08000000,IP_ACTIVE_HIGH,IPT_KEYBOARD) PORT_NAME("PF20")
 	PORT_BIT(0x10000000,IP_ACTIVE_HIGH,IPT_KEYBOARD) PORT_NAME("BREAK")
 	PORT_BIT(0x20000000,IP_ACTIVE_HIGH,IPT_KEYBOARD) PORT_NAME("COPY")
+
+	PORT_START("joy1")
+	PORT_BIT(0x00000001,IP_ACTIVE_LOW, IPT_JOYSTICK_UP) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000002,IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000004,IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000008,IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000010,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000020,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000040,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000080,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+
+	PORT_START("joy1_ex")
+	PORT_BIT(0x00000001,IP_ACTIVE_HIGH, IPT_START) PORT_NAME("1P Run") PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000002,IP_ACTIVE_HIGH, IPT_BUTTON3) PORT_NAME("1P Select") PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000004,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000008,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000010,IP_ACTIVE_HIGH, IPT_BUTTON1) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01) PORT_NAME("P1 A")
+	PORT_BIT(0x00000020,IP_ACTIVE_HIGH, IPT_BUTTON2) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01) PORT_NAME("P1 B")
+	PORT_BIT(0x00000040,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+	PORT_BIT(0x00000080,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x01)
+
+	PORT_START("joy2")
+	PORT_BIT(0x00000001,IP_ACTIVE_LOW, IPT_JOYSTICK_UP) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000002,IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000004,IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000008,IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000010,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000020,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000040,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000080,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+
+	PORT_START("joy2_ex")
+	PORT_BIT(0x00000001,IP_ACTIVE_HIGH, IPT_START) PORT_NAME("2P Run") PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000002,IP_ACTIVE_HIGH, IPT_BUTTON3) PORT_NAME("2P Select") PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000004,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000008,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000010,IP_ACTIVE_HIGH, IPT_BUTTON1) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10) PORT_NAME("P2 A")
+	PORT_BIT(0x00000020,IP_ACTIVE_HIGH, IPT_BUTTON2) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10) PORT_NAME("P2 B")
+	PORT_BIT(0x00000040,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+	PORT_BIT(0x00000080,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x10)
+
+	PORT_START("6b_joy1")
+		PORT_BIT(0x00000001,IP_ACTIVE_LOW, IPT_JOYSTICK_UP) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000002,IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000004,IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000008,IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000010,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000020,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000040,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000080,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+
+	PORT_START("6b_joy1_ex")
+		PORT_BIT(0x00000001,IP_ACTIVE_HIGH, IPT_START) PORT_NAME("1P Run") PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000002,IP_ACTIVE_HIGH, IPT_BUTTON7) PORT_NAME("1P Select") PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000004,IP_ACTIVE_HIGH, IPT_BUTTON1) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000008,IP_ACTIVE_HIGH, IPT_BUTTON2) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000010,IP_ACTIVE_HIGH, IPT_BUTTON3) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000020,IP_ACTIVE_HIGH, IPT_BUTTON4) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000040,IP_ACTIVE_HIGH, IPT_BUTTON5) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+		PORT_BIT(0x00000080,IP_ACTIVE_HIGH, IPT_BUTTON6) PORT_PLAYER(1) PORT_CONDITION("ctrltype", 0x0f, EQUALS, 0x04)
+
+	PORT_START("6b_joy2")
+		PORT_BIT(0x00000001,IP_ACTIVE_LOW, IPT_JOYSTICK_UP) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000002,IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000004,IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000008,IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000010,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000020,IP_ACTIVE_LOW, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000040,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000080,IP_ACTIVE_HIGH, IPT_UNUSED) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+
+	PORT_START("6b_joy2_ex")
+		PORT_BIT(0x00000001,IP_ACTIVE_HIGH, IPT_START) PORT_NAME("2P Run") PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000002,IP_ACTIVE_HIGH, IPT_BUTTON7) PORT_NAME("2P Select") PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000004,IP_ACTIVE_HIGH, IPT_BUTTON1) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000008,IP_ACTIVE_HIGH, IPT_BUTTON2) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000010,IP_ACTIVE_HIGH, IPT_BUTTON3) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000020,IP_ACTIVE_HIGH, IPT_BUTTON4) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000040,IP_ACTIVE_HIGH, IPT_BUTTON5) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+		PORT_BIT(0x00000080,IP_ACTIVE_HIGH, IPT_BUTTON6) PORT_PLAYER(2) PORT_CONDITION("ctrltype", 0xf0, EQUALS, 0x40)
+
+	PORT_START("mouse1")  // buttons
+	PORT_BIT( 0x00000001, IP_ACTIVE_HIGH, IPT_BUTTON1) PORT_NAME("Left mouse button") PORT_CODE(MOUSECODE_BUTTON1)
+	PORT_BIT( 0x00000002, IP_ACTIVE_HIGH, IPT_BUTTON2) PORT_NAME("Right mouse button") PORT_CODE(MOUSECODE_BUTTON2)
+
+	PORT_START("mouse2")  // X-axis
+	PORT_BIT( 0xff, 0x00, IPT_MOUSE_X) PORT_SENSITIVITY(100) PORT_KEYDELTA(0) PORT_PLAYER(1)
+
+	PORT_START("mouse3")  // Y-axis
+	PORT_BIT( 0xff, 0x00, IPT_MOUSE_Y) PORT_SENSITIVITY(100) PORT_KEYDELTA(0) PORT_PLAYER(1)
+
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( marty )
@@ -2351,6 +2701,7 @@ void towns_state::driver_start()
 	m_towns_serial_rom = std::make_unique<uint8_t[]>(256/8);
 	init_serial_rom();
 	m_towns_kb_timer = timer_alloc(FUNC(towns_state::poll_keyboard), this);
+	m_towns_mouse_timer = timer_alloc(FUNC(towns_state::mouse_timeout), this);
 	m_towns_wait_timer = timer_alloc(FUNC(towns_state::wait_end), this);
 	m_towns_freerun_counter = timer_alloc(FUNC(towns_state::freerun_inc), this);
 	m_towns_intervaltimer2 = timer_alloc(FUNC(towns_state::intervaltimer2_timeout), this);
@@ -2408,6 +2759,7 @@ void towns_state::machine_reset()
 	m_towns_kb_status = 0x18;
 	m_towns_kb_irq1_enable = 0;
 	m_towns_pad_mask = 0x7f;
+	m_towns_mouse_output = MOUSE_START;
 	m_towns_volume_select = 0;
 	m_intervaltimer2_period = 0;
 	m_intervaltimer2_timeout_flag = 0;
@@ -2480,10 +2832,6 @@ void towns_state::towns_base(machine_config &config)
 	m_maincpu->set_vblank_int("screen", FUNC(towns_state::towns_vsync_irq));
 	m_maincpu->set_irq_acknowledge_callback("pic8259_master", FUNC(pic8259_device::inta_cb));
 	//MCFG_MACHINE_RESET_OVERRIDE(towns_state,towns)
-
-	/* pad ports */
-	MSX_GENERAL_PURPOSE_PORT(config, m_pad_ports[0], msx_general_purpose_port_devices, "townspad");
-	MSX_GENERAL_PURPOSE_PORT(config, m_pad_ports[1], msx_general_purpose_port_devices, "mouse");
 
 	/* video hardware */
 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
@@ -2561,7 +2909,6 @@ void towns_state::towns_base(machine_config &config)
 	SOFTWARE_LIST(config, "fd_list_misc").set_original("fmtowns_flop_misc");
 
 	CDROM(config, m_cdrom, 0).set_interface("fmt_cdrom");
-	m_cdda->set_cdrom_tag(m_cdrom);
 	SOFTWARE_LIST(config, "cd_list").set_original("fmtowns_cd");
 
 	UPD71071(config, m_dma[0], 0);
@@ -2732,9 +3079,6 @@ void marty_state::marty(machine_config &config)
 	m_maincpu->set_addrmap(AS_IO, &marty_state::towns16_io);
 	m_maincpu->set_vblank_int("screen", FUNC(towns_state::towns_vsync_irq));
 	m_maincpu->set_irq_acknowledge_callback("pic8259_master", FUNC(pic8259_device::inta_cb));
-
-	m_pad_ports[0]->set_default_option("martypad");
-	m_pad_ports[1]->set_default_option(nullptr);
 
 	FLOPPY_CONNECTOR(config.replace(), m_flop[1], towns_floppies, nullptr, towns_state::floppy_formats);
 

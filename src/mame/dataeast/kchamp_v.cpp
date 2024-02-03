@@ -37,7 +37,7 @@ void kchamp_state::kchamp_colorram_w(offs_t offset, uint8_t data)
 	m_bg_tilemap->mark_tile_dirty(offset);
 }
 
-void kchamp_state::flipscreen_w(int state)
+WRITE_LINE_MEMBER(kchamp_state::flipscreen_w)
 {
 	flip_screen_set(state);
 }

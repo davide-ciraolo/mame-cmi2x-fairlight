@@ -45,8 +45,8 @@ public:
 	void init_wrally2();
 	void init_play2000();
 
-	void coin1_counter_w(int state);
-	void coin2_counter_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(coin1_counter_w);
+	DECLARE_WRITE_LINE_MEMBER(coin2_counter_w);
 
 	DECLARE_VIDEO_START(gaelco2);
 	DECLARE_VIDEO_START(gaelco2_dual);
@@ -75,8 +75,8 @@ private:
 	void shareram_w(offs_t offset, u8 data);
 	u8 shareram_r(offs_t offset);
 	void alighunt_coin_w(u16 data);
-	void coin3_counter_w(int state);
-	void coin4_counter_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(coin3_counter_w);
+	DECLARE_WRITE_LINE_MEMBER(coin4_counter_w);
 	u16 snowboar_protection_r();
 	void snowboar_protection_w(offs_t offset, u16 data, u16 mem_mask = ~0);
 	template<unsigned Layer> TILE_GET_INFO_MEMBER(get_tile_info);
@@ -156,7 +156,7 @@ public:
 
 	void wrally2(machine_config &config);
 
-	template <int N> int wrally2_analog_bit_r();
+	template <int N> DECLARE_READ_LINE_MEMBER(wrally2_analog_bit_r);
 
 private:
 	required_ioport m_analog0;
@@ -164,7 +164,7 @@ private:
 
 	uint8_t m_analog_ports[2]{};
 
-	void wrally2_adc_clk(int state);
-	void wrally2_adc_cs(int state);
+	DECLARE_WRITE_LINE_MEMBER(wrally2_adc_clk);
+	DECLARE_WRITE_LINE_MEMBER(wrally2_adc_cs);
 	void wrally2_map(address_map &map);
 };

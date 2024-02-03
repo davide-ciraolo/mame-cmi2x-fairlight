@@ -63,11 +63,11 @@ public:
 	auto tip_handler() { return m_tip_handler.bind(); }
 	auto ring_handler() { return m_ring_handler.bind(); }
 
-	void tip_w(int state);
-	void ring_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(tip_w);
+	DECLARE_WRITE_LINE_MEMBER(ring_w);
 
-	int tip_r() { return m_tip_in ? 1 : 0; }
-	int ring_r() { return m_ring_in ? 1 : 0; }
+	DECLARE_READ_LINE_MEMBER(tip_r) { return m_tip_in ? 1 : 0; }
+	DECLARE_READ_LINE_MEMBER(ring_r) { return m_ring_in ? 1 : 0; }
 
 protected:
 	ti8x_link_port_device(
@@ -95,9 +95,9 @@ private:
 class device_ti8x_link_port_interface : public device_interface
 {
 public:
-	void output_tip(int state)
+	DECLARE_WRITE_LINE_MEMBER(output_tip)
 	{ if (bool(state) != m_port->m_tip_in) m_port->m_tip_handler((m_port->m_tip_in = bool(state)) ? 1 : 0); }
-	void output_ring(int state)
+	DECLARE_WRITE_LINE_MEMBER(output_ring)
 	{ if (bool(state) != m_port->m_ring_in) m_port->m_ring_handler((m_port->m_ring_in = bool(state)) ? 1 : 0); }
 
 protected:
@@ -106,8 +106,8 @@ protected:
 	ti8x_link_port_device &port() { return *m_port; }
 
 private:
-	virtual void input_tip(int state) = 0;
-	virtual void input_ring(int state) = 0;
+	virtual DECLARE_WRITE_LINE_MEMBER(input_tip) = 0;
+	virtual DECLARE_WRITE_LINE_MEMBER(input_ring) = 0;
 
 	friend class ti8x_link_port_device;
 
@@ -149,8 +149,8 @@ private:
 		PENDING_1
 	};
 
-	virtual void input_tip(int state) override;
-	virtual void input_ring(int state) override;
+	virtual DECLARE_WRITE_LINE_MEMBER(input_tip) override;
+	virtual DECLARE_WRITE_LINE_MEMBER(input_ring) override;
 
 	virtual void bit_collision() = 0;
 	virtual void bit_send_timeout() = 0;

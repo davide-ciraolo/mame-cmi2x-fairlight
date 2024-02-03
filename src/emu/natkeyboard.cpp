@@ -15,9 +15,6 @@
 #include "emuopts.h"
 #include "unicode.h"
 
-// FIXME: allow OSD module headers to be included in a less ugly way
-#include "../osd/modules/lib/osdlib.h"
-
 #include <algorithm>
 #include <cstring>
 
@@ -508,10 +505,10 @@ void natural_keyboard::post_utf8(const char *text, size_t length, const attotime
 }
 
 
-void natural_keyboard::post_utf8(std::string_view text, const attotime &rate)
+void natural_keyboard::post_utf8(const std::string &text, const attotime &rate)
 {
 	if (!text.empty())
-		post_utf8(text.data(), text.size(), rate);
+		post_utf8(text.c_str(), text.size(), rate);
 }
 
 
@@ -593,10 +590,10 @@ void natural_keyboard::post_coded(const char *text, size_t length, const attotim
 }
 
 
-void natural_keyboard::post_coded(std::string_view text, const attotime &rate)
+void natural_keyboard::post_coded(const std::string &text, const attotime &rate)
 {
 	if (!text.empty())
-		post_coded(text.data(), text.size(), rate);
+		post_coded(text.c_str(), text.size(), rate);
 }
 
 

@@ -5,8 +5,8 @@
     Dynax blitter, "revision 2" (TC17G032AP-0246 custom DIP64)
 
 **********************************************************************/
-#ifndef MAME_DYNAX_DYNAX_BLITTER_REV2_H
-#define MAME_DYNAX_DYNAX_BLITTER_REV2_H
+#ifndef MAME_VIDEO_DYNAX_BLITTER_REV2_H
+#define MAME_VIDEO_DYNAX_BLITTER_REV2_H
 
 #pragma once
 
@@ -41,8 +41,12 @@ protected:
 	// delegated construction
 	dynax_blitter_rev2_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, u32 clock);
 
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
+
+	// device_rom_interface overrides
+	virtual void rom_bank_updated() override { }
 
 	// internal helpers
 	void plot_pixel(int x, int y, int pen);
@@ -80,6 +84,9 @@ public:
 	virtual void regs_w(offs_t offset, uint8_t data) override;
 
 private:
+	// device-level overrides
+	virtual void device_resolve_objects() override;
+
 	// device callbacks
 	devcb_write8 m_blit_dest_cb;
 };
@@ -88,4 +95,4 @@ private:
 DECLARE_DEVICE_TYPE(DYNAX_BLITTER_REV2, dynax_blitter_rev2_device)
 DECLARE_DEVICE_TYPE(CDRACULA_BLITTER, cdracula_blitter_device)
 
-#endif // MAME_DYNAX_DYNAX_BLITTER_REV2_H
+#endif // MAME_VIDEO_DYNAX_BLITTER_REV2_H

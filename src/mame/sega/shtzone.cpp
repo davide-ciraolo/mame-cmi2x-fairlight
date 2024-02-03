@@ -59,11 +59,9 @@ TODO:
 
 #include "emu.h"
 #include "sms.h"
-
 #include "cpu/z80/z80.h"
 #include "machine/nvram.h"
 #include "sound/beep.h"
-
 #include "emupal.h"
 #include "screen.h"
 #include "speaker.h"
@@ -74,18 +72,15 @@ namespace {
 class shtzone_state : public sms_state
 {
 public:
-	shtzone_state(const machine_config &mconfig, device_type type, const char *tag) :
-		sms_state(mconfig, type, tag),
+	shtzone_state(const machine_config &mconfig, device_type type, const char *tag)
+		: sms_state(mconfig, type, tag),
 		m_timercpu(*this, "timercpu"),
 		m_buzzer(*this, "buzzer"),
 		m_slots(*this, {"slot", "slot2", "slot3", "slot4", "slot5"}),
 		m_led(*this, "led")
-	{ }
+		{ }
 
 	void shtzone(machine_config &config);
-
-	DECLARE_CUSTOM_INPUT_MEMBER(gun_tl_p1_r);
-	DECLARE_CUSTOM_INPUT_MEMBER(gun_tl_p2_r);
 
 protected:
 	virtual void machine_start() override;
@@ -106,7 +101,7 @@ private:
 	void select_cart(uint8_t data);
 	void control_w(uint8_t data);
 	uint8_t cart_r(offs_t offset);
-	void int_callback(int state);
+	DECLARE_WRITE_LINE_MEMBER(int_callback);
 
 	void prg_map(address_map &map);
 };
@@ -171,7 +166,7 @@ void shtzone_state::control_w(uint8_t data)
 	m_control = data;
 }
 
-void shtzone_state::int_callback(int state)
+WRITE_LINE_MEMBER(shtzone_state::int_callback)
 {
 	if (BIT(m_control, 0))
 		m_timercpu->set_input_line(0, state);
@@ -194,35 +189,25 @@ void shtzone_state::prg_map(address_map &map)
 	map(0xdc00, 0xdc00).portr("IN1");
 }
 
-CUSTOM_INPUT_MEMBER(shtzone_state::gun_tl_p1_r)
-{
-	return BIT(m_port_ctrl1->in_r(), 4);
-}
-
-CUSTOM_INPUT_MEMBER(shtzone_state::gun_tl_p2_r)
-{
-	return BIT(m_port_ctrl2->in_r(), 4);
-}
 
 static INPUT_PORTS_START( shtzone )
 	PORT_START("IN0")
-	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_OTHER ) PORT_NAME("Select Game 1") PORT_CODE(KEYCODE_Z)
-	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_OTHER ) PORT_NAME("Select Game 2") PORT_CODE(KEYCODE_X)
-	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_OTHER ) PORT_NAME("Select Game 3") PORT_CODE(KEYCODE_C)
-	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_OTHER ) PORT_NAME("Select Game 4") PORT_CODE(KEYCODE_V)
-	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_OTHER ) PORT_NAME("Select Game 5") PORT_CODE(KEYCODE_B)
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_BUTTON1 ) // called Select button 1 in test mode
+	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_BUTTON2 ) // " 2
+	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_BUTTON3 ) // " 3
+	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_BUTTON4 ) // " 4
+	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_BUTTON5 ) // " 5
 	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_COIN1 )
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_COIN2 )
-	PORT_SERVICE_NO_TOGGLE(0x80, IP_ACTIVE_LOW )
+	PORT_SERVICE_NO_TOGGLE(0x80, IP_ACTIVE_LOW)
 
 	PORT_START("IN1")
-	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_SERVICE1 )
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_SERVICE1  )
 	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_UNKNOWN ) // does nothing in test mode
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN ) // "
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_UNKNOWN ) // "
-	// directly tied from Light Phaser TL pins
-	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_CUSTOM ) PORT_CUSTOM_MEMBER(shtzone_state, gun_tl_p1_r)
-	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_CUSTOM ) PORT_CUSTOM_MEMBER(shtzone_state, gun_tl_p2_r)
+	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_BUTTON6 ) // called gun 1 in test mode
+	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON7 ) // " 2
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNKNOWN ) // does nothing in test mode
 	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_UNKNOWN ) // active high or nothing on screen (?)
 
@@ -353,9 +338,6 @@ void shtzone_state::shtzone(machine_config &config)
 	for (int i = 1; i < 5; i++)
 		SMS_CART_SLOT(config, m_slots[i], sms_cart, nullptr);
 
-	m_port_ctrl1->set_default_option("lphaser");
-	m_port_ctrl2->set_default_option("lphaser");
-
 	m_has_bios_full = false;
 	m_has_pwr_led = false;
 }
@@ -372,7 +354,7 @@ ROM_START( shtzone )
 	ROM_FILL(0x0000, 0x4000, 0xff)
 ROM_END
 
-} // anonymous namespace
+} // Anonymous namespace
 
 
 GAME( 1987, shtzone, 0, shtzone, shtzone, shtzone_state, empty_init, ROT0, "Sega", "Shooting Zone System BIOS", MACHINE_NOT_WORKING | MACHINE_IS_BIOS_ROOT )

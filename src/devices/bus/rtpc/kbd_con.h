@@ -36,6 +36,7 @@ public:
 	void data_write_from_kb(int state);
 
 protected:
+	virtual void device_resolve_objects() override;
 	virtual void device_config_complete() override;
 	virtual void device_start() override;
 

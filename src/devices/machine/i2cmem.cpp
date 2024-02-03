@@ -25,8 +25,6 @@ there are two standard values.
 #include "emu.h"
 #include "machine/i2cmem.h"
 
-#include <cstdarg>
-
 constexpr int STATE_IDLE(0);
 constexpr int STATE_DEVSEL(1);
 constexpr int STATE_ADDRESSHIGH(2);
@@ -52,7 +50,7 @@ static inline void ATTR_PRINTF( 3, 4 ) verboselog( device_t *device, int n_level
 		va_list v;
 		char buf[ 32768 ];
 		va_start( v, s_fmt );
-		vsnprintf( buf, 32768, s_fmt, v );
+		vsprintf( buf, s_fmt, v );
 		va_end( v );
 		device->logerror( "%s: I2CMEM %s", device->machine().describe_context(), buf );
 	}
@@ -276,7 +274,7 @@ bool i2cmem_device::nvram_write( util::write_stream &file )
 //  READ/WRITE HANDLERS
 //**************************************************************************
 
-void i2cmem_device::write_e0(int state)
+WRITE_LINE_MEMBER( i2cmem_device::write_e0 )
 {
 	state &= 1;
 	if( m_e0 != state )
@@ -287,7 +285,7 @@ void i2cmem_device::write_e0(int state)
 }
 
 
-void i2cmem_device::write_e1(int state)
+WRITE_LINE_MEMBER( i2cmem_device::write_e1 )
 {
 	state &= 1;
 	if( m_e1 != state )
@@ -298,7 +296,7 @@ void i2cmem_device::write_e1(int state)
 }
 
 
-void i2cmem_device::write_e2(int state)
+WRITE_LINE_MEMBER( i2cmem_device::write_e2 )
 {
 	state &= 1;
 	if( m_e2 != state )
@@ -309,7 +307,7 @@ void i2cmem_device::write_e2(int state)
 }
 
 
-void i2cmem_device::write_sda(int state)
+WRITE_LINE_MEMBER( i2cmem_device::write_sda )
 {
 	state &= 1;
 	if( m_sdaw != state )
@@ -346,7 +344,7 @@ void i2cmem_device::write_sda(int state)
 	}
 }
 
-void i2cmem_device::write_scl(int state)
+WRITE_LINE_MEMBER( i2cmem_device::write_scl )
 {
 	if( m_scl != state )
 	{
@@ -551,7 +549,7 @@ void i2cmem_device::write_scl(int state)
 }
 
 
-void i2cmem_device::write_wc(int state)
+WRITE_LINE_MEMBER( i2cmem_device::write_wc )
 {
 	state &= 1;
 	if( m_wc != state )
@@ -562,7 +560,7 @@ void i2cmem_device::write_wc(int state)
 }
 
 
-int i2cmem_device::read_sda()
+READ_LINE_MEMBER( i2cmem_device::read_sda )
 {
 	int res = m_sdar & 1;
 	verboselog( this, 2, "read sda %d\n", res );

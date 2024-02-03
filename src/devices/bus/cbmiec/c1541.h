@@ -68,17 +68,17 @@ private:
 
 	inline void set_iec_data();
 
-	void via0_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( via0_irq_w );
 	virtual uint8_t via0_pa_r();
 	void via0_pa_w(uint8_t data);
 	uint8_t via0_pb_r();
 	void via0_pb_w(uint8_t data);
-	void via0_ca2_w(int state);
-	void via1_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( via0_ca2_w );
+	DECLARE_WRITE_LINE_MEMBER( via1_irq_w );
 	uint8_t via1_pb_r();
 	void via1_pb_w(uint8_t data);
-	void atn_w(int state);
-	void byte_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( atn_w );
+	DECLARE_WRITE_LINE_MEMBER( byte_w );
 
 	static void floppy_formats(format_registration &fr);
 

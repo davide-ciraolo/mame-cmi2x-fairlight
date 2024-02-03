@@ -29,8 +29,8 @@ protected:
 	virtual void device_add_mconfig(machine_config &config) override;
 	virtual void device_start() override;
 
-	virtual void input_tip(int state) override;
-	virtual void input_ring(int state) override;
+	virtual DECLARE_WRITE_LINE_MEMBER(input_tip) override;
+	virtual DECLARE_WRITE_LINE_MEMBER(input_ring) override;
 
 	TIMER_CALLBACK_MEMBER(poll_tick);
 
@@ -86,14 +86,14 @@ TIMER_CALLBACK_MEMBER(bit_socket_device::poll_tick)
 }
 
 
-void bit_socket_device::input_tip(int state)
+WRITE_LINE_MEMBER(bit_socket_device::input_tip)
 {
 	m_tip_in = bool(state);
 	m_stream->output((m_tip_in ? 0x01 : 0x00) | 0x02);
 }
 
 
-void bit_socket_device::input_ring(int state)
+WRITE_LINE_MEMBER(bit_socket_device::input_ring)
 {
 	m_ring_in = bool(state);
 	m_stream->output((m_ring_in ? 0x01 : 0x00) | 0x04);

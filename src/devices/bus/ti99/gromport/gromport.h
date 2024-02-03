@@ -44,10 +44,10 @@ public:
 	void write(offs_t offset, uint8_t data);
 	void crureadz(offs_t offset, uint8_t *value);
 	void cruwrite(offs_t offset, uint8_t data);
-	void ready_line(int state);
-	void romgq_line(int state);
+	DECLARE_WRITE_LINE_MEMBER(ready_line);
+	DECLARE_WRITE_LINE_MEMBER(romgq_line);
 	void set_gromlines(line_state mline, line_state moline, line_state gsq);
-	void gclock_in(int state);
+	DECLARE_WRITE_LINE_MEMBER(gclock_in);
 
 	void    cartridge_inserted();
 	bool    is_grom_idle();
@@ -83,12 +83,12 @@ public:
 	virtual void crureadz(offs_t offset, uint8_t *value) = 0;
 	virtual void cruwrite(offs_t offset, uint8_t data) = 0;
 
-	virtual void romgq_line(int state) = 0;
+	virtual DECLARE_WRITE_LINE_MEMBER(romgq_line) = 0;
 	virtual void set_gromlines(line_state mline, line_state moline, line_state gsq) =0;
 
-	virtual void gclock_in(int state) = 0;
+	virtual DECLARE_WRITE_LINE_MEMBER(gclock_in) = 0;
 
-	void ready_line(int state);
+	DECLARE_WRITE_LINE_MEMBER(ready_line);
 
 	virtual void insert(int index, bus::ti99::gromport::ti99_cartridge_device* cart) { m_gromport->cartridge_inserted(); }
 	virtual void remove(int index) { }

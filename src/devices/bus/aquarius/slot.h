@@ -14,6 +14,8 @@
 #include "imagedev/cartrom.h"
 
 
+#define AQUARIUS_CART_ROM_REGION_TAG ":cart:rom"
+
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
@@ -44,14 +46,14 @@ public:
 	auto irq_handler() { return m_irq_handler.bind(); }
 	auto nmi_handler() { return m_nmi_handler.bind(); }
 
-	// device_image_interface implementation
-	virtual std::pair<std::error_condition, std::string> call_load() override;
+	// image-level overrides
+	virtual image_init_result call_load() override;
 
 	virtual bool is_reset_on_load() const noexcept override { return true; }
 	virtual const char *image_interface() const noexcept override { return "aquarius_cart"; }
 	virtual const char *file_extensions() const noexcept override { return "rom,bin"; }
 
-	// device_slot_interface implementation
+	// slot interface overrides
 	virtual std::string get_default_card_software(get_default_card_software_hook &hook) const override;
 
 	// reading and writing
@@ -62,11 +64,11 @@ public:
 	uint8_t iorq_r(offs_t offset);
 	void iorq_w(offs_t offset, uint8_t data);
 
-	void irq_w(int state) { m_irq_handler(state); }
-	void nmi_w(int state) { m_nmi_handler(state); }
+	DECLARE_WRITE_LINE_MEMBER( irq_w ) { m_irq_handler(state); }
+	DECLARE_WRITE_LINE_MEMBER( nmi_w ) { m_nmi_handler(state); }
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 
 	device_aquarius_cartridge_interface *m_cart;
@@ -90,7 +92,7 @@ public:
 	virtual uint8_t iorq_r(offs_t offset) { return 0xff; }
 	virtual void iorq_w(offs_t offset, uint8_t data) { }
 
-	void rom_alloc(uint32_t size);
+	void rom_alloc(uint32_t size, const char *tag);
 	uint8_t* get_rom_base() { return m_rom; }
 	uint32_t get_rom_size() { return m_rom_size; }
 

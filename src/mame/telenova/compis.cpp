@@ -66,9 +66,6 @@
 #include "softlist_dev.h"
 #include "speaker.h"
 
-
-namespace {
-
 #define I80186_TAG      "ic1"
 #define I80130_TAG      "ic15"
 #define I8251A_TAG      "ic59"
@@ -146,18 +143,18 @@ public:
 	uint8_t ppi_pb_r();
 	void ppi_pc_w(uint8_t data);
 
-	void tmr0_w(int state);
-	void tmr1_w(int state);
-	void tmr2_w(int state);
-	void tmr5_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( tmr0_w );
+	DECLARE_WRITE_LINE_MEMBER( tmr1_w );
+	DECLARE_WRITE_LINE_MEMBER( tmr2_w );
+	DECLARE_WRITE_LINE_MEMBER( tmr5_w );
 
 	TIMER_DEVICE_CALLBACK_MEMBER( tape_tick );
 
 	int m_centronics_busy;
 	int m_centronics_select;
 
-	void write_centronics_busy(int state);
-	void write_centronics_select(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_busy);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_select);
 
 	int m_tmr0;
 	void compis(machine_config &config);
@@ -564,7 +561,7 @@ uint8_t compis_state::compis_irq_callback()
 	return m_osp->inta_r();
 }
 
-void compis_state::tmr0_w(int state)
+WRITE_LINE_MEMBER( compis_state::tmr0_w )
 {
 	m_tmr0 = state;
 
@@ -573,7 +570,7 @@ void compis_state::tmr0_w(int state)
 	m_maincpu->tmrin0_w(state);
 }
 
-void compis_state::tmr1_w(int state)
+WRITE_LINE_MEMBER( compis_state::tmr1_w )
 {
 	m_isbx0->mclk_w(state);
 	m_isbx1->mclk_w(state);
@@ -586,14 +583,14 @@ void compis_state::tmr1_w(int state)
 //  I80130_INTERFACE( osp_intf )
 //-------------------------------------------------
 
-void compis_state::tmr2_w(int state)
+WRITE_LINE_MEMBER( compis_state::tmr2_w )
 {
 	m_uart->write_rxc(state);
 	m_uart->write_txc(state);
 }
 
 
-void compis_state::tmr5_w(int state)
+WRITE_LINE_MEMBER( compis_state::tmr5_w )
 {
 	m_mpsc->rxca_w(state);
 	m_mpsc->txca_w(state);
@@ -603,12 +600,12 @@ void compis_state::tmr5_w(int state)
 //  I8255A interface
 //-------------------------------------------------
 
-void compis_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER(compis_state::write_centronics_busy)
 {
 	m_centronics_busy = state;
 }
 
-void compis_state::write_centronics_select(int state)
+WRITE_LINE_MEMBER(compis_state::write_centronics_select)
 {
 	m_centronics_select = state;
 }
@@ -877,7 +874,6 @@ ROM_END
 
 #define rom_compis2 rom_compis
 
-} // anonymous namespace
 
 
 //**************************************************************************

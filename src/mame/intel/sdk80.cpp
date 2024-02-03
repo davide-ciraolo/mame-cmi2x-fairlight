@@ -30,9 +30,6 @@ X<register identifier>                       Examine and modify registers
 #include "machine/clock.h"
 #include "bus/rs232/rs232.h"
 
-
-namespace {
-
 #define I8255A_0_TAG    "ppi8255_0"
 #define I8255A_1_TAG    "ppi8255_1"
 #define I8251A_TAG      "usart"
@@ -57,7 +54,7 @@ public:
 	void sdk80(machine_config &config);
 
 private:
-	void usart_clock_tick(int state);
+	DECLARE_WRITE_LINE_MEMBER( usart_clock_tick );
 
 	void sdk80_io(address_map &map);
 	void sdk80_mem(address_map &map);
@@ -101,7 +98,7 @@ static INPUT_PORTS_START( sdk80 )
 	PORT_DIPSETTING(    0x40, "75")
 INPUT_PORTS_END
 
-void sdk80_state::usart_clock_tick(int state)
+WRITE_LINE_MEMBER( sdk80_state::usart_clock_tick )
 {
 	uint8_t old_counter = m_usart_divide_counter;
 	m_usart_divide_counter++;
@@ -154,9 +151,6 @@ ROM_START( sdk80 )
 	//ROM_LOAD( "mcs80.a14", 0x0000, 0x0400, BAD_DUMP CRC(3ce7bd37) SHA1(04cc67875b53d4cdfefce07041af12be3acedf4f)) // Compiled from manual listing
 	ROM_LOAD( "mcs80.a14", 0x0000, 0x0400, BAD_DUMP CRC(9bb1c268) SHA1(e84e358f81f181f40f4f8d4c4f76370b7d82e615) ) // Compiled from corrected listing - see issue #6324
 ROM_END
-
-} // anonymous namespace
-
 
 /*    YEAR  NAME   PARENT  COMPAT  MACHINE  INPUT   CLASS        INIT        COMPANY   FULLNAME     FLAGS */
 COMP( 1975, sdk80, 0,      0,      sdk80,   sdk80,  sdk80_state, empty_init, "Intel",  "SDK-80",    MACHINE_NO_SOUND_HW )

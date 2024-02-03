@@ -27,8 +27,8 @@ public:
 	// construction/destruction
 	bbc_beebspch_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
-	void cb1_w(int state);
-	void cb2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(cb1_w);
+	DECLARE_WRITE_LINE_MEMBER(cb2_w);
 
 protected:
 	// device-level overrides

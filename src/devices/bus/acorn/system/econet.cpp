@@ -83,7 +83,7 @@ uint8_t acorn_econet_device::statid_r()
 	return 0xfe;
 }
 
-void acorn_econet_device::bus_irq_w(int state)
+WRITE_LINE_MEMBER(acorn_econet_device::bus_irq_w)
 {
 	m_bus->irq_w(state);
 }

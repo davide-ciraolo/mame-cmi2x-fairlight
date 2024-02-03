@@ -2,7 +2,7 @@
 // copyright-holders:R. Belmont
 /***************************************************************************
 
-    sh2fe.cpp
+    sh2fe.c
 
     Front end for SH-2 recompiler
 
@@ -10,6 +10,7 @@
 
 #include "emu.h"
 #include "sh2.h"
+#include "sh2comn.h"
 #include "cpu/drcfe.h"
 
 

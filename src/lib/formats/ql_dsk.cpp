@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/ql_dsk.cpp
+    formats/ql_dsk.c
 
     Sinclair QL disk image formats
 
@@ -14,17 +14,17 @@ ql_format::ql_format() : wd177x_format(formats)
 {
 }
 
-const char *ql_format::name() const noexcept
+const char *ql_format::name() const
 {
 	return "ql";
 }
 
-const char *ql_format::description() const noexcept
+const char *ql_format::description() const
 {
 	return "Sinclair QL disk image";
 }
 
-const char *ql_format::extensions() const noexcept
+const char *ql_format::extensions() const
 {
 	return "dsk,img";
 }

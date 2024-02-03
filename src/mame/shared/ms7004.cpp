@@ -13,7 +13,8 @@
 #include "speaker.h"
 
 
-#define LOG_DEBUG     (1U << 1)
+//#define LOG_GENERAL (1U <<  0) //defined in logmacro.h already
+#define LOG_DEBUG     (1U <<  1)
 
 //#define VERBOSE (LOG_GENERAL | LOG_DEBUG)
 //#define LOG_OUTPUT_FUNC printf
@@ -366,6 +367,8 @@ ms7004_device::ms7004_device(const machine_config &mconfig, const char *tag, dev
 
 void ms7004_device::device_start()
 {
+	m_tx_handler.resolve_safe();
+	m_rts_handler.resolve_safe();
 }
 
 
@@ -379,7 +382,7 @@ void ms7004_device::device_reset()
 }
 
 
-void ms7004_device::write_rxd(int state)
+WRITE_LINE_MEMBER(ms7004_device::write_rxd)
 {
 	m_maincpu->set_input_line(MCS48_INPUT_IRQ, state ? CLEAR_LINE : ASSERT_LINE);
 }
@@ -464,7 +467,7 @@ void ms7004_device::i8243_port_w(uint8_t data)
 //  t1_r -
 //-------------------------------------------------
 
-int ms7004_device::t1_r()
+READ_LINE_MEMBER(ms7004_device::t1_r)
 {
 	if (!BIT(m_p1, 4))
 		return m_keylatch;

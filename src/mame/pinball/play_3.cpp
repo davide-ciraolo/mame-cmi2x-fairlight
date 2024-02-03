@@ -110,15 +110,15 @@ private:
 	void port06_w(u8 data);
 	void flashman_port06_w(u8 data);
 	void port07_w(u8 data);
-	int clear_r();
-	int ef1_r();
-	int ef4_r();
+	DECLARE_READ_LINE_MEMBER(clear_r);
+	DECLARE_READ_LINE_MEMBER(ef1_r);
+	DECLARE_READ_LINE_MEMBER(ef4_r);
 	void clockcnt_w(u16 data);
-	void clock_w(int state);
-	void clock2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(clock_w);
+	DECLARE_WRITE_LINE_MEMBER(clock2_w);
 	void port01_a_w(u8 data);
 	u8 port02_a_r();
-	int clear_a_r();
+	DECLARE_READ_LINE_MEMBER(clear_a_r);
 
 	void terrlake_io(address_map &map);
 	void audio_io_map(address_map &map);
@@ -467,7 +467,7 @@ u8 play_3_state::port02_a_r()
 	return m_soundlatch;
 }
 
-int play_3_state::clear_r()
+READ_LINE_MEMBER( play_3_state::clear_r )
 {
 	// A hack to make the machine reset itself on boot
 	if (m_resetcnt < 0xff)
@@ -475,7 +475,7 @@ int play_3_state::clear_r()
 	return (m_resetcnt < 0xf0) ? 0 : 1;
 }
 
-int play_3_state::clear_a_r()
+READ_LINE_MEMBER( play_3_state::clear_a_r )
 {
 	// A hack to make the machine reset itself on boot
 	if (m_resetcnt_a < 0xff)
@@ -483,12 +483,12 @@ int play_3_state::clear_a_r()
 	return (m_resetcnt_a < 0xf0) ? 0 : 1;
 }
 
-int play_3_state::ef1_r()
+READ_LINE_MEMBER( play_3_state::ef1_r )
 {
 	return (!BIT(m_4020->count(), 10)); // inverted
 }
 
-int play_3_state::ef4_r()
+READ_LINE_MEMBER( play_3_state::ef4_r )
 {
 	return BIT(m_io_keyboard[9]->read(), 0); // inverted test/reset button - doesn't seem to do anything
 }
@@ -512,7 +512,7 @@ void play_3_state::clockcnt_w(u16 data)
 	}
 }
 
-void play_3_state::clock2_w(int state)
+WRITE_LINE_MEMBER( play_3_state::clock2_w )
 {
 	m_4013b->clock_w(state);
 	m_maincpu->ef3_w(state); // inverted

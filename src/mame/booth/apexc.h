@@ -1,7 +1,7 @@
 // license:GPL-2.0+
 // copyright-holders:Raphael Nabet, Robbbert
-#ifndef MAME_BOOTH_APEXC_H
-#define MAME_BOOTH_APEXC_H
+#ifndef MAME_INCLUDES_APEXC
+#define MAME_INCLUDES_APEXC
 
 #pragma once
 
@@ -81,4 +81,4 @@ private:
 	static const rgb_t palette_table[4];
 };
 
-#endif // MAME_BOOTH_APEXC_H
+#endif // MAME_INCLUDES_APEXC

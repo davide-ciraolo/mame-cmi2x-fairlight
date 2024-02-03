@@ -33,6 +33,9 @@
 //  CONSTANTS
 //============================================================
 
+#define RESIZE_STATE_NORMAL     0
+#define RESIZE_STATE_RESIZING   1
+#define RESIZE_STATE_PENDING    2
 
 
 
@@ -51,19 +54,17 @@ enum class win_window_focus
 class win_window_info  : public osd_window_t<HWND>
 {
 public:
-	enum
-	{
-		RESIZE_STATE_NORMAL,
-		RESIZE_STATE_RESIZING,
-		RESIZE_STATE_PENDING
-	};
-
-	win_window_info(running_machine &machine, render_module &renderprovider, int index, const std::shared_ptr<osd_monitor_info> &monitor, const osd_window_config *config);
+	win_window_info(running_machine &machine, int index, std::shared_ptr<osd_monitor_info> monitor, const osd_window_config *config);
 
 	bool attached_mode() const { return m_attached_mode; }
 	win_window_focus focus() const;
 
 	void update() override;
+
+	virtual bool win_has_menu() override
+	{
+		return GetMenu(platform_window()) ? true : false;
+	}
 
 	virtual osd_dim get_size() override
 	{
@@ -71,9 +72,6 @@ public:
 		GetClientRect(platform_window(), &client);
 		return osd_dim(client.right - client.left, client.bottom - client.top);
 	}
-
-	win_window_info *main_window() const { return m_main; }
-	void set_main_window(win_window_info &main) { m_main = &main; }
 
 	void capture_pointer() override;
 	void release_pointer() override;
@@ -84,12 +82,7 @@ public:
 
 	// static
 
-	static std::unique_ptr<win_window_info> create(
-			running_machine &machine,
-			render_module &renderprovider,
-			int index,
-			const std::shared_ptr<osd_monitor_info> &monitor,
-			const osd_window_config *config);
+	static void create(running_machine &machine, int index, std::shared_ptr<osd_monitor_info> monitor, const osd_window_config *config);
 
 	// static callbacks
 
@@ -124,9 +117,6 @@ public:
 	int                 m_lastclicky;
 	char16_t            m_last_surrogate;
 
-	HDC                 m_dc;       // only used by GDI renderer!
-	int                 m_resize_state;
-
 private:
 	void draw_video_contents(HDC dc, bool update);
 	int complete_create();
@@ -141,10 +131,15 @@ private:
 	void adjust_window_position_after_major_change();
 	void set_fullscreen(int fullscreen);
 
-	win_window_info *   m_main;
-	bool                m_attached_mode;
-
 	static POINT        s_saved_cursor_pos;
+
+	bool                m_attached_mode;
+};
+
+struct osd_draw_callbacks
+{
+	osd_renderer *(*create)(osd_window *window);
+	void (*exit)(void);
 };
 
 
@@ -155,15 +150,22 @@ private:
 bool winwindow_has_focus(void);
 void winwindow_update_cursor_state(running_machine &machine);
 
+extern LRESULT CALLBACK winwindow_video_window_proc_ui(HWND wnd, UINT message, WPARAM wparam, LPARAM lparam);
+
 void winwindow_toggle_full_screen(void);
 void winwindow_take_snap(void);
 void winwindow_take_video(void);
 void winwindow_toggle_fsfx(void);
 
+void winwindow_process_events_periodic(running_machine &machine);
+void winwindow_process_events(running_machine &machine, bool ingame, bool nodispatch);
+
 void winwindow_ui_pause(running_machine &machine, int pause);
 int winwindow_ui_is_paused(running_machine &machine);
 
 void winwindow_dispatch_message(running_machine &machine, MSG *message);
+
+extern int win_create_menu(running_machine &machine, HMENU *menus);
 
 
 

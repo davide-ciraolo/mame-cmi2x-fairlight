@@ -4,6 +4,20 @@
 
 #include "CommandLineParser.h"
 
+static bool IsString1PrefixedByString2_NoCase(const wchar_t *u, const char *a)
+{
+  for (;;)
+  {
+    char c = *a;
+    if (c == 0)
+      return true;
+    if ((unsigned char)MyCharLower_Ascii(c) != MyCharLower_Ascii(*u))
+      return false;
+    a++;
+    u++;
+  }
+}
+
 namespace NCommandLineParser {
 
 bool SplitCommandLine(const UString &src, UString &dest1, UString &dest2)
@@ -30,7 +44,7 @@ bool SplitCommandLine(const UString &src, UString &dest1, UString &dest2)
 
 void SplitCommandLine(const UString &s, UStringVector &parts)
 {
-  UString sTemp (s);
+  UString sTemp = s;
   sTemp.Trim();
   parts.Clear();
   for (;;)
@@ -45,17 +59,18 @@ void SplitCommandLine(const UString &s, UStringVector &parts)
 }
 
 
-static const char * const kStopSwitchParsing = "--";
+static const char *kStopSwitchParsing = "--";
 
 static bool inline IsItSwitchChar(wchar_t c)
 {
   return (c == '-');
 }
 
-CParser::CParser():
-  _switches(NULL),
-  StopSwitchIndex(-1)
+CParser::CParser(unsigned numSwitches):
+  _numSwitches(numSwitches),
+  _switches(0)
 {
+  _switches = new CSwitchResult[numSwitches];
 }
 
 CParser::~CParser()
@@ -66,7 +81,7 @@ CParser::~CParser()
 
 // if (s) contains switch then function updates switch structures
 // out: true, if (s) is a switch
-bool CParser::ParseString(const UString &s, const CSwitchForm *switchForms, unsigned numSwitches)
+bool CParser::ParseString(const UString &s, const CSwitchForm *switchForms)
 {
   if (s.IsEmpty() || !IsItSwitchChar(s[0]))
     return false;
@@ -75,16 +90,16 @@ bool CParser::ParseString(const UString &s, const CSwitchForm *switchForms, unsi
   unsigned switchIndex = 0;
   int maxLen = -1;
   
-  for (unsigned i = 0; i < numSwitches; i++)
+  for (unsigned i = 0; i < _numSwitches; i++)
   {
-    const char * const key = switchForms[i].Key;
+    const char *key = switchForms[i].Key;
     unsigned switchLen = MyStringLen(key);
     if ((int)switchLen <= maxLen || pos + switchLen > s.Len())
       continue;
-    if (IsString1PrefixedByString2_NoCase_Ascii((const wchar_t *)s + pos, key))
+    if (IsString1PrefixedByString2_NoCase((const wchar_t *)s + pos, key))
     {
       switchIndex = i;
-      maxLen = (int)switchLen;
+      maxLen = switchLen;
     }
   }
 
@@ -94,7 +109,7 @@ bool CParser::ParseString(const UString &s, const CSwitchForm *switchForms, unsi
     return false;
   }
 
-  pos += (unsigned)maxLen;
+  pos += maxLen;
   
   CSwitchResult &sw = _switches[switchIndex];
   const CSwitchForm &form = switchForms[switchIndex];
@@ -107,7 +122,7 @@ bool CParser::ParseString(const UString &s, const CSwitchForm *switchForms, unsi
 
   sw.ThereIs = true;
 
-  const unsigned rem = s.Len() - pos;
+  int rem = s.Len() - pos;
   if (rem < form.MinLen)
   {
     ErrorMessage = "Too short switch:";
@@ -146,10 +161,8 @@ bool CParser::ParseString(const UString &s, const CSwitchForm *switchForms, unsi
       break;
       
     case NSwitchType::kString:
-    {
-      sw.PostStrings.Add(s.Ptr(pos));
+      sw.PostStrings.Add((const wchar_t *)s + pos);
       return true;
-    }
   }
 
   if (pos != s.Len())
@@ -160,30 +173,23 @@ bool CParser::ParseString(const UString &s, const CSwitchForm *switchForms, unsi
   return true;
 }
 
-
-bool CParser::ParseStrings(const CSwitchForm *switchForms, unsigned numSwitches, const UStringVector &commandStrings)
+bool CParser::ParseStrings(const CSwitchForm *switchForms, const UStringVector &commandStrings)
 {
-  StopSwitchIndex = -1;
-  ErrorMessage.Empty();
   ErrorLine.Empty();
-  NonSwitchStrings.Clear();
-  delete []_switches;
-  _switches = NULL;
-  _switches = new CSwitchResult[numSwitches];
-  
+  bool stopSwitch = false;
   FOR_VECTOR (i, commandStrings)
   {
     const UString &s = commandStrings[i];
-    if (StopSwitchIndex < 0)
+    if (!stopSwitch)
     {
       if (s.IsEqualTo(kStopSwitchParsing))
       {
-        StopSwitchIndex = (int)NonSwitchStrings.Size();
+        stopSwitch = true;
         continue;
       }
       if (!s.IsEmpty() && IsItSwitchChar(s[0]))
       {
-        if (ParseString(s, switchForms, numSwitches))
+        if (ParseString(s, switchForms))
           continue;
         ErrorLine = s;
         return false;

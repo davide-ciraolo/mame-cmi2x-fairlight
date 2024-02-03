@@ -100,6 +100,18 @@ rst_neg_buffer_device::rst_neg_buffer_device(const machine_config &mconfig, cons
 
 
 //-------------------------------------------------
+//  device_resolve_objects - resolve objects that
+//  may be needed for other devices to set
+//  initial conditions at start time
+//-------------------------------------------------
+
+void rst_buffer_device::device_resolve_objects()
+{
+	m_int_cb.resolve_safe();
+}
+
+
+//-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
 

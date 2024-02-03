@@ -13,11 +13,20 @@
 #include "mdec.h"
 #include "dma.h"
 
-#define LOG_DMA     (1U << 1)
-#define LOG_COMMAND (1U << 2)
+#define VERBOSE_LEVEL ( 0 )
 
-#define VERBOSE ( 0 )
-#include "logmacro.h"
+static inline void ATTR_PRINTF(3,4) verboselog( device_t& device, int n_level, const char *s_fmt, ... )
+{
+	if( VERBOSE_LEVEL >= n_level )
+	{
+		va_list v;
+		char buf[ 32768 ];
+		va_start( v, s_fmt );
+		vsprintf( buf, s_fmt, v );
+		va_end( v );
+		device.logerror( "%s: %s", device.machine().describe_context(), buf );
+	}
+}
 
 DEFINE_DEVICE_TYPE(PSX_MDEC, psxmdec_device, "psxmdec", "Sony PSX MDEC")
 
@@ -157,7 +166,7 @@ static inline uint16_t mdec_unpack_run( uint16_t n_packed )
 
 static inline int32_t mdec_unpack_val( uint16_t n_packed )
 {
-	return util::sext<int32_t>( n_packed, 10 );
+	return ( ( (int32_t)n_packed ) << 22 ) >> 22;
 }
 
 uint32_t psxmdec_device::mdec_unpack( uint32_t *p_n_psxram, uint32_t n_address )
@@ -413,18 +422,18 @@ void psxmdec_device::dma_write( uint32_t *p_n_psxram, uint32_t n_address, int32_
 {
 	int n_index;
 
-	LOGMASKED( LOG_DMA, "mdec0_write( %08x, %08x )\n", n_address, n_size );
+	verboselog( *this, 2, "mdec0_write( %08x, %08x )\n", n_address, n_size );
 
 	switch( n_0_command >> 28 )
 	{
 	case 0x3:
-		LOGMASKED( LOG_COMMAND, "mdec decode %08x %08x %08x\n", n_0_command, n_address, n_size );
+		verboselog( *this, 1, "mdec decode %08x %08x %08x\n", n_0_command, n_address, n_size );
 		n_0_address = n_address;
 		n_0_size = n_size * 4;
 		n_1_status |= ( 1L << 29 );
 		break;
 	case 0x4:
-		LOGMASKED( LOG_COMMAND, "mdec quantize table %08x %08x %08x\n", n_0_command, n_address, n_size );
+		verboselog( *this, 1, "mdec quantize table %08x %08x %08x\n", n_0_command, n_address, n_size );
 		n_index = 0;
 		while( n_size > 0 )
 		{
@@ -448,7 +457,7 @@ void psxmdec_device::dma_write( uint32_t *p_n_psxram, uint32_t n_address, int32_
 		}
 		break;
 	case 0x6:
-		LOGMASKED( LOG_COMMAND, "mdec cosine table %08x %08x %08x\n", n_0_command, n_address, n_size );
+		verboselog( *this, 1, "mdec cosine table %08x %08x %08x\n", n_0_command, n_address, n_size );
 		n_index = 0;
 		while( n_size > 0 )
 		{
@@ -461,7 +470,7 @@ void psxmdec_device::dma_write( uint32_t *p_n_psxram, uint32_t n_address, int32_
 		mdec_cos_precalc();
 		break;
 	default:
-		logerror( "mdec unknown command %08x %08x %08x\n", n_0_command, n_address, n_size );
+		verboselog( *this, 0, "mdec unknown command %08x %08x %08x\n", n_0_command, n_address, n_size );
 		break;
 	}
 }
@@ -471,7 +480,7 @@ void psxmdec_device::dma_read( uint32_t *p_n_psxram, uint32_t n_address, int32_t
 	uint32_t n_this;
 	uint32_t n_nextaddress;
 
-	LOGMASKED( LOG_DMA, "mdec1_read( %08x, %08x )\n", n_address, n_size );
+	verboselog( *this, 2, "mdec1_read( %08x, %08x )\n", n_address, n_size );
 	if( ( n_0_command & ( 1L << 29 ) ) != 0 && n_0_size != 0 )
 	{
 		while( n_size > 0 )
@@ -536,11 +545,11 @@ void psxmdec_device::write(offs_t offset, uint32_t data)
 	switch( offset )
 	{
 	case 0:
-		LOG( "%s: mdec 0 command %08x\n", machine().describe_context(), data );
+		verboselog( *this, 2, "mdec 0 command %08x\n", data );
 		n_0_command = data;
 		break;
 	case 1:
-		LOG( "%s: mdec 1 command %08x\n", machine().describe_context(), data );
+		verboselog( *this, 2, "mdec 1 command %08x\n", data );
 		n_1_command = data;
 		break;
 	}
@@ -551,10 +560,10 @@ uint32_t psxmdec_device::read(offs_t offset)
 	switch( offset )
 	{
 	case 0:
-		LOG( "%s: mdec 0 status %08x\n", machine().describe_context(), 0 );
+		verboselog( *this, 2, "mdec 0 status %08x\n", 0 );
 		return 0;
 	case 1:
-		LOG( "%s: mdec 1 status %08x\n", machine().describe_context(), n_1_status );
+		verboselog( *this, 2, "mdec 1 status %08x\n", n_1_status );
 		return n_1_status;
 	}
 	return 0;

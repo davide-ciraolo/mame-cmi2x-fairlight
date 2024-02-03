@@ -1,10 +1,9 @@
 // Windows/ResourceString.h
 
-#ifndef ZIP7_INC_WINDOWS_RESOURCE_STRING_H
-#define ZIP7_INC_WINDOWS_RESOURCE_STRING_H
+#ifndef __WINDOWS_RESOURCE_STRING_H
+#define __WINDOWS_RESOURCE_STRING_H
 
 #include "../Common/MyString.h"
-#include "../Common/MyWindows.h"
 
 namespace NWindows {
 

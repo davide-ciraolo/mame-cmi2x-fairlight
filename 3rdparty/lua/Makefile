@@ -4,7 +4,7 @@
 # == CHANGE THE SETTINGS BELOW TO SUIT YOUR ENVIRONMENT =======================
 
 # Your platform. See PLATS for possible values.
-PLAT= guess
+PLAT= none
 
 # Where to install. The installation starts in the src and doc directories,
 # so take care if INSTALL_TOP is not an absolute path. See the local target.
@@ -36,7 +36,7 @@ RM= rm -f
 # == END OF USER SETTINGS -- NO NEED TO CHANGE ANYTHING BELOW THIS LINE =======
 
 # Convenience platforms targets.
-PLATS= guess aix bsd c89 freebsd generic linux linux-readline macosx mingw posix solaris
+PLATS= aix bsd c89 freebsd generic linux macosx mingw posix solaris
 
 # What to install.
 TO_BIN= lua luac
@@ -45,14 +45,17 @@ TO_LIB= liblua.a
 TO_MAN= lua.1 luac.1
 
 # Lua version and release.
-V= 5.4
+V= 5.3
 R= $V.4
 
 # Targets start here.
 all:	$(PLAT)
 
-$(PLATS) help test clean:
-	@cd src && $(MAKE) $@
+$(PLATS) clean:
+	cd src && $(MAKE) $@
+
+test:	dummy
+	src/lua -v
 
 install: dummy
 	cd src && $(MKDIR) $(INSTALL_BIN) $(INSTALL_INC) $(INSTALL_LIB) $(INSTALL_MAN) $(INSTALL_LMOD) $(INSTALL_CMOD)
@@ -70,10 +73,15 @@ uninstall:
 local:
 	$(MAKE) install INSTALL_TOP=../install
 
-# make may get confused with install/ if it does not support .PHONY.
+none:
+	@echo "Please do 'make PLATFORM' where PLATFORM is one of these:"
+	@echo "   $(PLATS)"
+	@echo "See doc/readme.html for complete instructions."
+
+# make may get confused with test/ and install/
 dummy:
 
-# Echo config parameters.
+# echo config parameters
 echo:
 	@cd src && $(MAKE) -s echo
 	@echo "PLAT= $(PLAT)"
@@ -93,14 +101,14 @@ echo:
 	@echo "INSTALL_EXEC= $(INSTALL_EXEC)"
 	@echo "INSTALL_DATA= $(INSTALL_DATA)"
 
-# Echo pkg-config data.
+# echo pkg-config data
 pc:
 	@echo "version=$R"
 	@echo "prefix=$(INSTALL_TOP)"
 	@echo "libdir=$(INSTALL_LIB)"
 	@echo "includedir=$(INSTALL_INC)"
 
-# Targets that do not create files (not all makes understand .PHONY).
-.PHONY: all $(PLATS) help test clean install uninstall local dummy echo pc
+# list targets that do not create files (but not all makes understand .PHONY)
+.PHONY: all $(PLATS) clean test install local none dummy echo pecho lecho
 
 # (end of Makefile)

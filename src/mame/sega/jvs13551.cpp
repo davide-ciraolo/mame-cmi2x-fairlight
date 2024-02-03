@@ -7,13 +7,13 @@
 
 DEFINE_DEVICE_TYPE(SEGA_837_13551, sega_837_13551_device, "jvs13551", "Sega 837-13551 I/O Board")
 
-void sega_837_13551_device::jvs13551_coin_1_w(int state)
+WRITE_LINE_MEMBER(sega_837_13551_device::jvs13551_coin_1_w)
 {
 	if(state)
 		inc_coin(0);
 }
 
-void sega_837_13551_device::jvs13551_coin_2_w(int state)
+WRITE_LINE_MEMBER(sega_837_13551_device::jvs13551_coin_2_w)
 {
 	if(state)
 		inc_coin(1);

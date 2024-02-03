@@ -231,7 +231,7 @@ void newbrain_fdc_device::moton(int state)
 //  fdc_int_w -
 //-------------------------------------------------
 
-void newbrain_fdc_device::fdc_int_w(int state)
+WRITE_LINE_MEMBER( newbrain_fdc_device::fdc_int_w )
 {
 	m_fdc_int = state;
 }

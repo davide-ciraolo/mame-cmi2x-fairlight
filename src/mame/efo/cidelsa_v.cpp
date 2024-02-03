@@ -93,7 +93,7 @@ CDP1869_PCB_READ_MEMBER( draco_state::draco_pcb_r )
 
 /* Predisplay Changed Handler */
 
-void cidelsa_state::prd_w(int state)
+WRITE_LINE_MEMBER( cidelsa_state::prd_w )
 {
 	/* invert PRD signal */
 	m_maincpu->set_input_line(COSMAC_INPUT_LINE_INT, state ? CLEAR_LINE : ASSERT_LINE);

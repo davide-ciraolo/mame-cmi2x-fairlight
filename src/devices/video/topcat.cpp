@@ -24,6 +24,7 @@ topcat_device::topcat_device(const machine_config &mconfig, const char *tag, dev
 
 void topcat_device::device_start()
 {
+	m_int_write_func.resolve_safe();
 	m_cursor_timer = timer_alloc(FUNC(topcat_device::cursor_callback), this);
 	m_cursor_timer->adjust(attotime::from_hz(3));
 
@@ -444,7 +445,7 @@ void topcat_device::ctrl_w(address_space &space, offs_t offset, uint16_t data, u
 	}
 }
 
-void topcat_device::vblank_w(int state)
+WRITE_LINE_MEMBER(topcat_device::vblank_w)
 {
 	if (state) {
 		m_vblank |= (m_plane_mask << 8);

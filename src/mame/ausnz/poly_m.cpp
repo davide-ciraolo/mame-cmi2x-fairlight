@@ -127,23 +127,23 @@ void poly_state::kbd_put(u8 data)
 	m_pia[1]->cb1_w(0);
 }
 
-int poly_state::kbd_shift_r()
+READ_LINE_MEMBER(poly_state::kbd_shift_r)
 {
 	return BIT(m_modifiers->read(), 1);
 }
 
-int poly_state::kbd_control_r()
+READ_LINE_MEMBER(poly_state::kbd_control_r)
 {
 	return BIT(m_modifiers->read(), 0);
 }
 
 
-void poly_state::ptm_o2_callback(int state)
+WRITE_LINE_MEMBER(poly_state::ptm_o2_callback)
 {
 	m_ptm->set_c1(state);
 }
 
-void poly_state::ptm_o3_callback(int state)
+WRITE_LINE_MEMBER(poly_state::ptm_o3_callback)
 {
 	m_speaker->level_w(state);
 }
@@ -165,7 +165,7 @@ void poly_state::network_w(offs_t offset, uint8_t data)
 	m_adlc->write(offset >> 1, data);
 }
 
-void poly_state::network_clk_w(int state)
+WRITE_LINE_MEMBER(poly_state::network_clk_w)
 {
 	m_adlc->rxc_w(state);
 	m_adlc->txc_w(state);
@@ -204,7 +204,7 @@ uint8_t polydev_state::drive_register_r()
 	return (m_current_floppy ? m_current_floppy->dskchg_r() : 1) << 1;
 }
 
-void polydev_state::motor_w(int state)
+WRITE_LINE_MEMBER(polydev_state::motor_w)
 {
 	if (m_current_floppy) m_current_floppy->mon_w(!state);
 }

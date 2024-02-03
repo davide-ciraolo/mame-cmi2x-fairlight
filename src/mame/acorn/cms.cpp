@@ -52,8 +52,6 @@
 #include "bus/acorn/bus.h"
 
 
-namespace {
-
 class cms_state : public driver_device
 {
 public:
@@ -77,7 +75,7 @@ protected:
 private:
 	void map_select_w(uint8_t data);
 	void page_select_w(uint8_t data);
-	void bus_nmi_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(bus_nmi_w);
 
 	required_device<cpu_device> m_maincpu;
 	required_memory_region m_rom;
@@ -148,7 +146,7 @@ void cms_state::machine_reset()
 }
 
 
-void cms_state::bus_nmi_w(int state)
+WRITE_LINE_MEMBER(cms_state::bus_nmi_w)
 {
 	m_maincpu->set_input_line(INPUT_LINE_NMI, state);
 }
@@ -206,8 +204,6 @@ ROM_START( cms6502 )
 	ROM_REGION(0x200, "proms", 0)
 	ROM_LOAD("bassys2.ic8", 0x0000, 0x0200, CRC(417ff0b4) SHA1(878718accb83f18456fefaf67a0e4a6a407113e4)) // 512x8
 ROM_END
-
-} // anonymous namespace
 
 
 /* Driver */

@@ -1,7 +1,7 @@
 // license:LGPL-2.1+
 // copyright-holders:David Haywood, Angelo Salese, Olivier Galibert, Mariusz Wojcieszek, R. Belmont
-#ifndef MAME_SEGA_SATURN_H
-#define MAME_SEGA_SATURN_H
+#ifndef MAME_INCLUDES_SATURN_H
+#define MAME_INCLUDES_SATURN_H
 
 #pragma once
 
@@ -9,7 +9,10 @@
 #include "bus/generic/carts.h"
 
 #include "cpu/m68000/m68000.h"
-#include "cpu/sh/sh7604.h"
+#include "cpu/sh/sh2.h"
+
+#include "debug/debugcon.h"
+#include "debug/debugcmd.h"
 
 #include "315-5881_crypt.h"
 #include "315-5838_317-0229_comp.h"
@@ -19,6 +22,7 @@
 
 #include "sound/scsp.h"
 
+#include "debugger.h"
 #include "emupal.h"
 #include "screen.h"
 
@@ -47,15 +51,15 @@ public:
 	void scsp_irq(offs_t offset, uint8_t data);
 
 	// SMPC HLE delegates
-	void master_sh2_reset_w(int state);
-	void master_sh2_nmi_w(int state);
-	void slave_sh2_reset_w(int state);
-	void sound_68k_reset_w(int state);
-	void system_reset_w(int state);
-	void system_halt_w(int state);
-	void dot_select_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(master_sh2_reset_w);
+	DECLARE_WRITE_LINE_MEMBER(master_sh2_nmi_w);
+	DECLARE_WRITE_LINE_MEMBER(slave_sh2_reset_w);
+	DECLARE_WRITE_LINE_MEMBER(sound_68k_reset_w);
+	DECLARE_WRITE_LINE_MEMBER(system_reset_w);
+	DECLARE_WRITE_LINE_MEMBER(system_halt_w);
+	DECLARE_WRITE_LINE_MEMBER(dot_select_w);
 
-	void m68k_reset_callback(int state);
+	DECLARE_WRITE_LINE_MEMBER(m68k_reset_callback);
 
 protected:
 	required_region_ptr<uint32_t> m_rom;
@@ -119,8 +123,8 @@ protected:
 		int       old_tvmd = 0;
 	}m_vdp2;
 
-	required_device<sh7604_device> m_maincpu;
-	required_device<sh7604_device> m_slave;
+	required_device<sh2_device> m_maincpu;
+	required_device<sh2_device> m_slave;
 	required_device<m68000_base_device> m_audiocpu;
 	required_device<scsp_device> m_scsp;
 	required_device<smpc_hle_device> m_smpc_hle;
@@ -436,9 +440,14 @@ protected:
 
 	} stv_rbg_cache_data;
 
-//  void scudsp_end_w(int state);
+//  DECLARE_WRITE_LINE_MEMBER(scudsp_end_w);
 //  uint16_t scudsp_dma_r(offs_t offset);
 //  void scudsp_dma_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
+
+//  void debug_scudma_command(int ref, const std::vector<std::string> &params);
+//  void debug_scuirq_command(int ref, const std::vector<std::string> &params);
+//  void debug_help_command(int ref, const std::vector<std::string> &params);
+//  void debug_commands(int ref, const std::vector<std::string> &params);
 };
 
 
@@ -456,4 +465,4 @@ protected:
 
 extern gfx_decode_entry const gfx_stv[];
 
-#endif // MAME_SEGA_SATURN_H
+#endif // MAME_INCLUDES_SATURN_H

@@ -18,8 +18,6 @@
 #include "softlist_dev.h"
 
 
-namespace {
-
 class casiorom_state : public driver_device
 {
 public:
@@ -43,7 +41,7 @@ DEVICE_IMAGE_LOAD_MEMBER(casiorom_state::cart_load)
 	uint32_t size = m_cart->common_get_size("rom");
 	m_cart->rom_alloc(size, GENERIC_ROM16_WIDTH, ENDIANNESS_LITTLE);
 	m_cart->common_load_rom(m_cart->get_rom_base(), size, "rom");
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void casiorom_state::casiorom(machine_config &config)
@@ -58,8 +56,6 @@ void casiorom_state::casiorom(machine_config &config)
 
 ROM_START( casiorom )
 ROM_END
-
-} // anonymous namespace
 
 
 CONS( 198?, casiorom, 0, 0, casiorom,  casiorom, casiorom_state, empty_init, "Casio", "Casio ROM Pack Software List holder", MACHINE_IS_SKELETON )

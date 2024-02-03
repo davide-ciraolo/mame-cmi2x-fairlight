@@ -53,7 +53,7 @@
 
     10000lmr xxxxxxxx yyyyyyyy xxxxxxxx yyyyyyyy
 
-    The Mouse systems rotatable protocol allows the host to infer
+    The Mouse systems rotatable protcol allows the host to infer
     rotation around the third axis at the cost of halving the maximum
     sustained movement speed.  The M-1 mouse has two sensors spaced 100
     counts apart horizontally.  If DIP switch 2 is on, the X and Y delta
@@ -239,13 +239,13 @@ void hle_msmouse_device_base::device_start()
 	machine().scheduler().synchronize(timer_expired_delegate(FUNC(hle_msmouse_device_base::start_mouse), this));
 }
 
-void hle_msmouse_device_base::input_dtr(int state)
+WRITE_LINE_MEMBER(hle_msmouse_device_base::input_dtr)
 {
 	m_dtr = state ? 1U : 0U;
 	check_enable();
 }
 
-void hle_msmouse_device_base::input_rts(int state)
+WRITE_LINE_MEMBER(hle_msmouse_device_base::input_rts)
 {
 	m_rts = state ? 1U : 0U;
 	check_enable();

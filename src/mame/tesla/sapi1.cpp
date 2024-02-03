@@ -105,8 +105,8 @@ private:
 	uint8_t port40_r();
 	uint8_t port41_r();
 	MC6845_UPDATE_ROW(crtc_update_row);
-	int si();
-	void so(int state);
+	DECLARE_READ_LINE_MEMBER(si);
+	DECLARE_WRITE_LINE_MEMBER(so);
 
 	uint32_t screen_update_sapi1(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	uint32_t screen_update_sapi3(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
@@ -127,7 +127,7 @@ private:
 	uint8_t m_refresh_counter = 0U;
 	uint8_t m_zps3_25 = 0U;
 	TIMER_DEVICE_CALLBACK_MEMBER(kansas_r);
-	void kansas_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(kansas_w);
 	u8 m_cass_data[4]{};
 	bool m_cassinbit = 0, m_cassoutbit = 0, m_cassold = 0;
 	bool m_ier = 0, m_iet = 0;
@@ -623,17 +623,17 @@ void sapi_state::port43_w(uint8_t data)
 	m_uart->transmit(~data);
 }
 
-int sapi_state::si()
+READ_LINE_MEMBER( sapi_state::si )
 {
 	return m_cassinbit;
 }
 
-void sapi_state::so(int state)
+WRITE_LINE_MEMBER( sapi_state::so )
 {
 	m_cassoutbit = state;
 }
 
-void sapi_state::kansas_w(int state)
+WRITE_LINE_MEMBER( sapi_state::kansas_w )
 {
 	if ((m_cass->get_state() & CASSETTE_MASK_UISTATE) == CASSETTE_RECORD)
 	{

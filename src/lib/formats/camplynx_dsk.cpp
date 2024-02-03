@@ -2,7 +2,7 @@
 // copyright-holders:Robbbert
 /*********************************************************************
 
-    formats/camplynx_dsk.cpp
+    formats/camplynx_dsk.c
 
     Camputers Lynx disk image format
 
@@ -25,17 +25,17 @@ camplynx_format::camplynx_format() : wd177x_format(formats)
 {
 }
 
-const char *camplynx_format::name() const noexcept
+const char *camplynx_format::name() const
 {
 	return "camplynx";
 }
 
-const char *camplynx_format::description() const noexcept
+const char *camplynx_format::description() const
 {
 	return "Camputers Lynx disk image";
 }
 
-const char *camplynx_format::extensions() const noexcept
+const char *camplynx_format::extensions() const
 {
 	return "ldf";
 }

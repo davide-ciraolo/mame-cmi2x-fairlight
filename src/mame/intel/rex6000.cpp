@@ -27,7 +27,6 @@
 
 
 #include "emu.h"
-
 #include "bus/rs232/rs232.h"
 #include "cpu/z80/z80.h"
 #include "machine/ins8250.h"
@@ -38,13 +37,10 @@
 #include "machine/timer.h"
 #include "imagedev/snapquik.h"
 #include "sound/beep.h"
-
 #include "emupal.h"
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
 
 #define MAKE_BANK(lo, hi)       ((lo) | ((hi)<<8))
 
@@ -85,8 +81,8 @@ public:
 	void rex6000_palettte(palette_device &palette) const;
 	DECLARE_QUICKLOAD_LOAD_MEMBER(quickload_rex6000);
 	DECLARE_INPUT_CHANGED_MEMBER(trigger_irq);
-	void serial_irq(int state);
-	void alarm_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(serial_irq);
+	DECLARE_WRITE_LINE_MEMBER(alarm_irq);
 
 	TIMER_DEVICE_CALLBACK_MEMBER(irq_timer1);
 	TIMER_DEVICE_CALLBACK_MEMBER(irq_timer2);
@@ -708,7 +704,7 @@ TIMER_DEVICE_CALLBACK_MEMBER(rex6000_state::sec_timer)
 	}
 }
 
-void rex6000_state::alarm_irq(int state)
+WRITE_LINE_MEMBER( rex6000_state::alarm_irq )
 {
 	if (!(m_irq_mask & IRQ_FLAG_ALARM) && state)
 	{
@@ -717,7 +713,7 @@ void rex6000_state::alarm_irq(int state)
 	}
 }
 
-void rex6000_state::serial_irq(int state)
+WRITE_LINE_MEMBER( rex6000_state::serial_irq )
 {
 	if (!(m_irq_mask & IRQ_FLAG_SERIAL))
 	{
@@ -734,7 +730,6 @@ void rex6000_state::rex6000_palettte(palette_device &palette) const
 
 QUICKLOAD_LOAD_MEMBER(rex6000_state::quickload_rex6000)
 {
-	// FIXME: this suffers buffer overruns on excessively short images and various kinds of invalid images
 	static const char magic[] = "ApplicationName:Addin";
 	uint32_t img_start = 0;
 
@@ -742,7 +737,7 @@ QUICKLOAD_LOAD_MEMBER(rex6000_state::quickload_rex6000)
 	image.fread(&data[0], image.length());
 
 	if(strncmp((const char*)&data[0], magic, 21))
-		return std::make_pair(image_error::INVALIDIMAGE, std::string());
+		return image_init_result::FAIL;
 
 	img_start = strlen((const char*)&data[0]) + 5;
 	img_start += 0xa0;  //skip the icon (40x32 pixel)
@@ -750,7 +745,7 @@ QUICKLOAD_LOAD_MEMBER(rex6000_state::quickload_rex6000)
 	for (uint32_t i=0; i<image.length() - img_start ;i++)
 		m_flash0b->write_raw(i, data[img_start + i]);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 int oz750_state::oz_wzd_extract_tag(const std::vector<uint8_t> &data, const char *tag, char *dest_buf)
@@ -798,7 +793,7 @@ QUICKLOAD_LOAD_MEMBER(oz750_state::quickload_oz750)
 
 	oz_wzd_extract_tag(data, "<DATA TYPE>", data_type);
 	if (strcmp(data_type, "MY PROGRAMS"))
-		return std::make_pair(image_error::INVALIDIMAGE, std::string());
+		return image_init_result::FAIL;
 
 	oz_wzd_extract_tag(data, "<TITLE>", app_name);
 	oz_wzd_extract_tag(data, "<DATA>", file_name);
@@ -808,7 +803,7 @@ QUICKLOAD_LOAD_MEMBER(oz750_state::quickload_oz750)
 	uint32_t img_start = oz_wzd_extract_tag(data, "<BIN>", nullptr);
 
 	if (img_start == 0)
-		return std::make_pair(image_error::INVALIDIMAGE, std::string());
+		return image_init_result::FAIL;
 
 	uint16_t icon_size = data[img_start++];
 
@@ -848,7 +843,7 @@ QUICKLOAD_LOAD_MEMBER(oz750_state::quickload_oz750)
 	for (int i=img_start; i<image.length(); i++)
 		flash->write_byte(pos++, data[i]);                      // data
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 
@@ -1056,9 +1051,6 @@ ROM_START( oz750 )
 	ROM_REGION( 0x200000, "flash1a", ROMREGION_ERASEFF )
 	ROM_LOAD( "oz750_1.bin", 0x0000, 0x100000, CRC(d74e97d7) SHA1(19d17393a9af85e07773feaf1aed5e2cfa80f7cc))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

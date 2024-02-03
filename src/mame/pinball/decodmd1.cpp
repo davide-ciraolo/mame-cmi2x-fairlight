@@ -100,31 +100,31 @@ void decodmd_type1_device::dmd_port_w(offs_t offset, uint8_t data)
 	}
 }
 
-void decodmd_type1_device::blank_w(int state)
+WRITE_LINE_MEMBER(decodmd_type1_device::blank_w)
 {
 	m_blank = state;
 	if (state)
 		output_data();
 }
 
-void decodmd_type1_device::status_w(int state)
+WRITE_LINE_MEMBER(decodmd_type1_device::status_w)
 {
 	m_status = state;
 }
 
-void decodmd_type1_device::rowdata_w(int state)
+WRITE_LINE_MEMBER(decodmd_type1_device::rowdata_w)
 {
 	m_rowdata = state;
 }
 
-void decodmd_type1_device::rowclock_w(int state)
+WRITE_LINE_MEMBER(decodmd_type1_device::rowclock_w)
 {
 	if (!state && m_rowclock)  // on negative edge
 		m_rowselect = (m_rowselect << 1) | m_rowdata;
 	m_rowclock = state;
 }
 
-void decodmd_type1_device::test_w(int state)
+WRITE_LINE_MEMBER(decodmd_type1_device::test_w)
 {
 	set_busy(B_SET, state);
 }

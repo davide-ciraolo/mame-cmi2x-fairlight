@@ -175,7 +175,7 @@ uint8_t dmv_k806_device::port1_r()
 	return data;
 }
 
-int dmv_k806_device::portt1_r()
+READ_LINE_MEMBER( dmv_k806_device::portt1_r )
 {
 	return BIT(m_jumpers->read(), 7) ? 0 : 1;
 }

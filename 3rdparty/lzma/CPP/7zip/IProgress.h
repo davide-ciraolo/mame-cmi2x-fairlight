@@ -1,20 +1,19 @@
 // IProgress.h
 
-#ifndef ZIP7_INC_IPROGRESS_H
-#define ZIP7_INC_IPROGRESS_H
+#ifndef __IPROGRESS_H
+#define __IPROGRESS_H
 
 #include "../Common/MyTypes.h"
 
 #include "IDecl.h"
 
-Z7_PURE_INTERFACES_BEGIN
+#define INTERFACE_IProgress(x) \
+  STDMETHOD(SetTotal)(UInt64 total) x; \
+  STDMETHOD(SetCompleted)(const UInt64 *completeValue) x; \
 
-#define Z7_IFACEM_IProgress(x) \
-  x(SetTotal(UInt64 total)) \
-  x(SetCompleted(const UInt64 *completeValue)) \
+DECL_INTERFACE(IProgress, 0, 5)
+{
+  INTERFACE_IProgress(PURE)
+};
 
-Z7_DECL_IFACE_7ZIP(IProgress, 0, 5)
-  { Z7_IFACE_COM7_PURE(IProgress) };
-
-Z7_PURE_INTERFACES_END
 #endif

@@ -44,7 +44,6 @@ public:
 	// standard options
 	static void default_options(device_slot_interface &slot);
 	static void iiandplus_options(device_slot_interface &slot);
-	static void joystick_options(device_slot_interface &slot);
 
 	// analog paddles
 	u8 pdl0_r();
@@ -53,20 +52,20 @@ public:
 	u8 pdl3_r();
 
 	// digital switches
-	int sw0_r();
-	int sw1_r();
-	int sw2_r();
-	int sw3_r();
+	DECLARE_READ_LINE_MEMBER(sw0_r);
+	DECLARE_READ_LINE_MEMBER(sw1_r);
+	DECLARE_READ_LINE_MEMBER(sw2_r);
+	DECLARE_READ_LINE_MEMBER(sw3_r);
 
 	// annunciator outputs
-	void an0_w(int state);
-	void an1_w(int state);
-	void an2_w(int state);
-	void an3_w(int state);
-	void an4_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(an0_w);
+	DECLARE_WRITE_LINE_MEMBER(an1_w);
+	DECLARE_WRITE_LINE_MEMBER(an2_w);
+	DECLARE_WRITE_LINE_MEMBER(an3_w);
+	DECLARE_WRITE_LINE_MEMBER(an4_w);
 
 	// utility strobe (active low)
-	void strobe_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(strobe_w);
 
 	// check if a device is connected
 	bool is_device_connected() { return (m_intf != nullptr); }
@@ -102,18 +101,18 @@ protected:
 	virtual u8 pdl1_r() { return 0; }
 	virtual u8 pdl2_r() { return 0; }
 	virtual u8 pdl3_r() { return 0; }
-	virtual int sw0_r() { return m_connector->has_sw_pullups() ? 1 : 0; }
-	virtual int sw1_r() { return m_connector->has_sw_pullups() ? 1 : 0; }
-	virtual int sw2_r() { return m_connector->has_sw_pullups() ? 1 : 0; }
-	virtual int sw3_r() { return m_connector->has_sw_pullups() ? 1 : 0; }
+	virtual DECLARE_READ_LINE_MEMBER(sw0_r) { return m_connector->has_sw_pullups() ? 1 : 0; }
+	virtual DECLARE_READ_LINE_MEMBER(sw1_r) { return m_connector->has_sw_pullups() ? 1 : 0; }
+	virtual DECLARE_READ_LINE_MEMBER(sw2_r) { return m_connector->has_sw_pullups() ? 1 : 0; }
+	virtual DECLARE_READ_LINE_MEMBER(sw3_r) { return m_connector->has_sw_pullups() ? 1 : 0; }
 
 	// optional output overrides
-	virtual void an0_w(int state) { }
-	virtual void an1_w(int state) { }
-	virtual void an2_w(int state) { }
-	virtual void an3_w(int state) { }
-	virtual void an4_w(int state) { }
-	virtual void strobe_w(int state) { }
+	virtual DECLARE_WRITE_LINE_MEMBER(an0_w) { }
+	virtual DECLARE_WRITE_LINE_MEMBER(an1_w) { }
+	virtual DECLARE_WRITE_LINE_MEMBER(an2_w) { }
+	virtual DECLARE_WRITE_LINE_MEMBER(an3_w) { }
+	virtual DECLARE_WRITE_LINE_MEMBER(an4_w) { }
+	virtual DECLARE_WRITE_LINE_MEMBER(strobe_w) { }
 
 private:
 	apple2_gameio_device *m_connector;

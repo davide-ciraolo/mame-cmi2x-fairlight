@@ -22,9 +22,6 @@
 #include "machine/mos6551.h"
 #include "screen.h"
 
-
-namespace {
-
 class ktm3_state : public driver_device
 {
 public:
@@ -42,8 +39,8 @@ public:
 
 	void ktm3(machine_config &config);
 
-	int ac_r();
-	template <int N> int sw_r();
+	DECLARE_READ_LINE_MEMBER(ac_r);
+	template <int N> DECLARE_READ_LINE_MEMBER(sw_r);
 
 protected:
 	virtual void machine_start() override;
@@ -58,7 +55,7 @@ private:
 	void pcpu_map(address_map &map);
 	void vcpu_map(address_map &map);
 
-	void signal_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(signal_w);
 
 	required_device<cpu_device> m_pcpu;
 	required_device<cpu_device> m_vcpu;
@@ -122,18 +119,18 @@ void ktm3_state::vcpu_map(address_map &map)
 	map(0x0300, 0x03ff).mirror(0xfc00).rom().region("program", 0x100);
 }
 
-void ktm3_state::signal_w(int state)
+WRITE_LINE_MEMBER(ktm3_state::signal_w)
 {
 	m_signal = state;
 }
 
-int ktm3_state::ac_r()
+READ_LINE_MEMBER(ktm3_state::ac_r)
 {
 	return m_signal;
 }
 
 template <int N>
-int ktm3_state::sw_r()
+READ_LINE_MEMBER(ktm3_state::sw_r)
 {
 	return BIT(m_option_sw->read(), N);
 }
@@ -297,8 +294,5 @@ ROM_START(ktm3)
 	ROM_REGION(0x800, "chargen", 0)
 	ROM_LOAD("02-0061-a.bin", 0x000, 0x800, CRC(9739e2ac) SHA1(672059b7618afb6c19632663d58a854ea9ec2401))
 ROM_END
-
-} // anonymous namespace
-
 
 COMP(1980, ktm3, 0, 0, ktm3, ktm3, ktm3_state, empty_init, "Synertek Systems", "KTM-3", MACHINE_NOT_WORKING | MACHINE_NO_SOUND_HW)

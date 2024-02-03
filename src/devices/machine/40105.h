@@ -44,11 +44,11 @@ public:
 	u8 read();
 	void write(u8 data);
 
-	void si_w(int state);
-	void so_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( si_w );
+	DECLARE_WRITE_LINE_MEMBER( so_w );
 
-	int dir_r();
-	int dor_r();
+	DECLARE_READ_LINE_MEMBER( dir_r );
+	DECLARE_READ_LINE_MEMBER( dor_r );
 
 protected:
 	// device-level overrides

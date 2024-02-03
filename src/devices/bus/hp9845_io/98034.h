@@ -54,7 +54,7 @@ private:
 	void np_io_map(address_map &map);
 	void np_program_map(address_map &map);
 
-	void ieee488_ctrl_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(ieee488_ctrl_w);
 
 	required_device<hp_nanoprocessor_device> m_cpu;
 	required_ioport m_sw1;

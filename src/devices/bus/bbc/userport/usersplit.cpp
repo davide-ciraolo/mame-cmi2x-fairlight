@@ -109,25 +109,25 @@ void bbc_usersplit_device::write_cb2(int state)
 }
 
 
-void bbc_usersplit_device::cb1a_w(int state)
+WRITE_LINE_MEMBER(bbc_usersplit_device::cb1a_w)
 {
 	if (m_selected == 0x00)
 		m_slot->cb1_w(state);
 }
 
-void bbc_usersplit_device::cb2a_w(int state)
+WRITE_LINE_MEMBER(bbc_usersplit_device::cb2a_w)
 {
 	if (m_selected == 0x00)
 		m_slot->cb2_w(state);
 }
 
-void bbc_usersplit_device::cb1b_w(int state)
+WRITE_LINE_MEMBER(bbc_usersplit_device::cb1b_w)
 {
 	if (m_selected == 0x01)
 		m_slot->cb1_w(state);
 }
 
-void bbc_usersplit_device::cb2b_w(int state)
+WRITE_LINE_MEMBER(bbc_usersplit_device::cb2b_w)
 {
 	if (m_selected == 0x01)
 		m_slot->cb2_w(state);

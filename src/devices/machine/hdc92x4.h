@@ -47,8 +47,8 @@ public:
 	// Accessors from the CPU side
 	uint8_t read(offs_t offset);
 	void write(offs_t offset, uint8_t data);
-	void reset(int state);
-	void dmaack(int state);
+	DECLARE_WRITE_LINE_MEMBER( reset );
+	DECLARE_WRITE_LINE_MEMBER( dmaack );
 
 	// Callbacks
 	auto intrq_cb() { return m_out_intrq.bind(); }

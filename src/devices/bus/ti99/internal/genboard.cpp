@@ -411,25 +411,25 @@
 ***************************************************************************/
 #include "emu.h"
 
-#define LOG_WARN     (1U << 1)
-#define LOG_DETAIL   (1U << 2)
-#define LOG_READ     (1U << 3)
-#define LOG_WRITE    (1U << 4)
-#define LOG_KEYBOARD (1U << 5)
-#define LOG_CLOCK    (1U << 6)
-#define LOG_READY    (1U << 7)
-#define LOG_SETTING  (1U << 8)
-#define LOG_CRU      (1U << 9)
-#define LOG_CRUKEY   (1U << 10)
-#define LOG_DECODE   (1U << 11)
-#define LOG_ADDRESS  (1U << 12)
-#define LOG_LINES    (1U << 13)
-#define LOG_WAIT     (1U << 14)
-#define LOG_GROM     (1U << 15)
-#define LOG_MAPPER   (1U << 16)
+#define LOG_WARN     (1U<<1)
+#define LOG_DETAIL   (1U<<2)
+#define LOG_READ     (1U<<3)
+#define LOG_WRITE    (1U<<4)
+#define LOG_KEYBOARD (1U<<5)
+#define LOG_CLOCK    (1U<<6)
+#define LOG_READY    (1U<<7)
+#define LOG_SETTING  (1U<<8)
+#define LOG_CRU      (1U<<9)
+#define LOG_CRUKEY   (1U<<10)
+#define LOG_DECODE   (1U<<11)
+#define LOG_ADDRESS  (1U<<12)
+#define LOG_LINES    (1U<<13)
+#define LOG_WAIT     (1U<<14)
+#define LOG_GROM      (1U<<15)
+#define LOG_MAPPER    (1U<<16)
 
 // Minimum log should be warnings
-#define VERBOSE (LOG_GENERAL | LOG_WARN)
+#define VERBOSE ( LOG_GENERAL | LOG_WARN )
 
 #include "genboard.h"
 #include "logmacro.h"
@@ -563,7 +563,7 @@ void geneve_gate_array_device::cru_ctrl_write(offs_t offset, uint8_t data)
     Pull down or release the clock line.
     Called by setting CRU bit 1EF0 to 0 or 1.
 */
-void geneve_gate_array_device::set_keyboard_clock(int state)
+WRITE_LINE_MEMBER( geneve_gate_array_device::set_keyboard_clock)
 {
 	m_keyb_clk(state);
 }
@@ -576,7 +576,7 @@ void geneve_gate_array_device::set_keyboard_clock(int state)
 
     Called by setting CRU bit 1EF2 to 0 or 1
 */
-void geneve_gate_array_device::enable_shift_register(int state)
+WRITE_LINE_MEMBER( geneve_gate_array_device::enable_shift_register)
 {
 	m_shift_reg_enabled = (state==ASSERT_LINE);
 
@@ -607,7 +607,7 @@ void geneve_gate_array_device::shift_reg_changed()
     Incoming keyboard strobe. When 0, push the current data line level into
     the shift register at the leftmost position.
 */
-void geneve_gate_array_device::kbdclk(int state)
+WRITE_LINE_MEMBER( geneve_gate_array_device::kbdclk )
 {
 	LOGMASKED(LOG_KEYBOARD, "Keyboard clock: %d\n", state);
 	bool clock_falling_edge = (m_keyboard_last_clock == ASSERT_LINE && state == CLEAR_LINE);
@@ -624,7 +624,7 @@ void geneve_gate_array_device::kbdclk(int state)
 /*
     Latch the value of the incoming data line.
 */
-void geneve_gate_array_device::kbddata(int state)
+WRITE_LINE_MEMBER( geneve_gate_array_device::kbddata )
 {
 	LOGMASKED(LOG_KEYBOARD, "Keyboard data: %d\n", state);
 	m_keyboard_data_in = (line_state)state;
@@ -890,7 +890,7 @@ void geneve_gate_array_device::setaddress(offs_t address, uint8_t busctrl)
    The Gate Array uses the clock to operate the wait state flags. The actual
    wait state generation is up to the PAL chip.
 */
-void geneve_gate_array_device::clock_in(int state)
+WRITE_LINE_MEMBER( geneve_gate_array_device::clock_in )
 {
 	// Falling CLK
 	if (state == CLEAR_LINE)
@@ -906,64 +906,64 @@ void geneve_gate_array_device::clock_in(int state)
     READY line from the peribox. Together with the sndready and the READY output
     of the Gate Array itself, this forms a wired AND.
 */
-void geneve_gate_array_device::extready_in(int state)
+WRITE_LINE_MEMBER( geneve_gate_array_device::extready_in )
 {
 	LOGMASKED(LOG_READY, "External READY = %d\n", state);
 	m_extready = (state==ASSERT_LINE);
 }
 
-void geneve_gate_array_device::sndready_in(int state)
+WRITE_LINE_MEMBER( geneve_gate_array_device::sndready_in )
 {
 	LOGMASKED(LOG_READY, "Sound READY = %d\n", state);
 	m_sndready = (state==ASSERT_LINE);
 }
 
-int geneve_gate_array_device::csw_out()
+READ_LINE_MEMBER(geneve_gate_array_device::csw_out)
 {
 	// Do not access a port-based device in debugger mode
 	if (m_debug) return CLEAR_LINE;
 	return ((m_decoded.function == MLVIDEO) && !m_decoded.read)? ASSERT_LINE : CLEAR_LINE;
 }
 
-int geneve_gate_array_device::csr_out()
+READ_LINE_MEMBER(geneve_gate_array_device::csr_out)
 {
 	// Do not access a port-based device in debugger mode
 	if (m_debug) return CLEAR_LINE;
 	return ((m_decoded.function == MLVIDEO) && m_decoded.read)? ASSERT_LINE : CLEAR_LINE;
 }
 
-int geneve_gate_array_device::romen_out()
+READ_LINE_MEMBER(geneve_gate_array_device::romen_out)
 {
 	// Do not restrict to read-only, as we could have a PFM here
 	decdata* dec = (m_debug)? &m_decdebug : &m_decoded;
 	return (dec->function == MPEPROM)? ASSERT_LINE : CLEAR_LINE;
 }
 
-int geneve_gate_array_device::ramen_out()
+READ_LINE_MEMBER(geneve_gate_array_device::ramen_out)
 {
 	decdata* dec = (m_debug)? &m_decdebug : &m_decoded;
 	return (dec->function == MPSRAM)? ASSERT_LINE : CLEAR_LINE;
 }
 
-int geneve_gate_array_device::ramenx_out()
+READ_LINE_MEMBER(geneve_gate_array_device::ramenx_out)
 {
 	decdata* dec = (m_debug)? &m_decdebug : &m_decoded;
 	return (dec->function == MPSRAMX)? ASSERT_LINE : CLEAR_LINE;
 }
 
-int geneve_gate_array_device::rtcen_out()
+READ_LINE_MEMBER(geneve_gate_array_device::rtcen_out)
 {
 	decdata* dec = (m_debug)? &m_decdebug : &m_decoded;
 	return (dec->function == MLCLOCK)? ASSERT_LINE : CLEAR_LINE;
 }
 
-int geneve_gate_array_device::snden_out()
+READ_LINE_MEMBER(geneve_gate_array_device::snden_out)
 {
 	decdata* dec = (m_debug)? &m_decdebug : &m_decoded;
 	return ((dec->function == MLSOUND) && !dec->read)? ASSERT_LINE : CLEAR_LINE;
 }
 
-int geneve_gate_array_device::dben_out()
+READ_LINE_MEMBER(geneve_gate_array_device::dben_out)
 {
 	decdata* dec = (m_debug)? &m_decdebug : &m_decoded;
 	return accessing_box_s(dec->function, false)? ASSERT_LINE : CLEAR_LINE;
@@ -980,7 +980,7 @@ int geneve_gate_array_device::dben_out()
 // - we access DRAM and have timode==1 OR
 // - extready = 0
 
-int geneve_gate_array_device::gaready_out()
+READ_LINE_MEMBER(geneve_gate_array_device::gaready_out)
 {
 	if (m_debug) return ASSERT_LINE;  // Always READY when debugging
 	// Return true (READY=1) when we are accessing SRAM/SRAMX and when we do not have extra waitstates
@@ -1082,6 +1082,10 @@ int geneve_gate_array_device::get_prefix(int lines)
 
 void geneve_gate_array_device::device_start()
 {
+	m_keyint.resolve_safe();
+	m_keyb_clk.resolve_safe();
+	m_keyb_data.resolve_safe();
+
 	m_geneve_mode = false;
 	m_direct_mode = true;
 
@@ -1189,7 +1193,7 @@ geneve_pal_device::geneve_pal_device(const machine_config &mconfig, const char *
 /*
     READY input from the Gate Array.
 */
-void geneve_pal_device::gaready_in(int state)
+WRITE_LINE_MEMBER(geneve_pal_device::gaready_in)
 {
 	bool prev = m_pin3;
 	m_pin3 = (state==ASSERT_LINE);
@@ -1204,7 +1208,7 @@ void geneve_pal_device::gaready_in(int state)
 /*
     Video read (ASSERT=low).
 */
-void geneve_pal_device::csr_in(int state)
+WRITE_LINE_MEMBER(geneve_pal_device::csr_in)
 {
 	bool prev = m_pin4;
 	m_pin4 = (state==CLEAR_LINE);
@@ -1218,7 +1222,7 @@ void geneve_pal_device::csr_in(int state)
 /*
     Video write (ASSERT=low).
 */
-void geneve_pal_device::csw_in(int state)
+WRITE_LINE_MEMBER(geneve_pal_device::csw_in)
 {
 	bool prev = m_pin9;
 	m_pin9 = (state==CLEAR_LINE);
@@ -1232,7 +1236,7 @@ void geneve_pal_device::csw_in(int state)
 /*
     Memory enable (ASSERT=low); pass through
 */
-void geneve_pal_device::memen(int state)
+WRITE_LINE_MEMBER(geneve_pal_device::memen)
 {
 	LOGMASKED(LOG_LINES, "MEMEN -> %d\n", state);
 	m_peribox->memen_in(state);
@@ -1245,7 +1249,7 @@ void geneve_pal_device::memen(int state)
     This function seems to have no effect. So either the equations are
     wrong, or something else is going on.
 */
-void geneve_pal_device::sysspeed(int state)
+WRITE_LINE_MEMBER(geneve_pal_device::sysspeed)
 {
 	bool prev = m_pin5;
 	m_pin5 = (state == ASSERT_LINE);
@@ -1260,7 +1264,7 @@ void geneve_pal_device::sysspeed(int state)
     Write vdp wait cycles (1=add 14 cycles, 0=add none)
     see above for waitstate handling
 */
-void geneve_pal_device::vwaiten(int state)
+WRITE_LINE_MEMBER(geneve_pal_device::vwaiten)
 {
 	bool prev = m_pin19;
 	m_pin19 = (state==ASSERT_LINE);
@@ -1274,7 +1278,7 @@ void geneve_pal_device::vwaiten(int state)
 /*
     Clock input. This controls the state of the waitstate counter.
 */
-void geneve_pal_device::clock_in(int state)
+WRITE_LINE_MEMBER(geneve_pal_device::clock_in)
 {
 	LOGMASKED(LOG_CLOCK, "CLK%s\n", state? "?" : "?");
 	// Set the FF
@@ -1378,6 +1382,8 @@ void geneve_pal_device::set_ready()
 
 void geneve_pal_device::device_start()
 {
+	m_ready.resolve_safe();
+
 	save_item(NAME(m_pin3));
 	save_item(NAME(m_pin4));
 	save_item(NAME(m_pin5));
@@ -1432,7 +1438,7 @@ void genmod_decoder_device::set_function(int func, int page)
 	}
 }
 
-void genmod_decoder_device::gaready_in(int state)
+WRITE_LINE_MEMBER(genmod_decoder_device::gaready_in)
 {
 	m_gaready = state;
 }
@@ -1441,7 +1447,7 @@ void genmod_decoder_device::gaready_in(int state)
     READY line from the box. Do not ignore this line, as it is important
     for device operation.
 */
-void genmod_decoder_device::extready_in(int state)
+WRITE_LINE_MEMBER(genmod_decoder_device::extready_in)
 {
 	m_extready = state;
 }
@@ -1449,7 +1455,7 @@ void genmod_decoder_device::extready_in(int state)
 /*
     READY line from the sound chip.
 */
-void genmod_decoder_device::sndready_in(int state)
+WRITE_LINE_MEMBER(genmod_decoder_device::sndready_in)
 {
 	m_sndready = state;
 }
@@ -1459,7 +1465,7 @@ void genmod_decoder_device::sndready_in(int state)
     The Genmod board does not look inside the Gate Array. The call we are using
     is just a shorthand for evaluating the states of the select lines.
 */
-int genmod_decoder_device::gaready_out()
+READ_LINE_MEMBER(genmod_decoder_device::gaready_out)
 {
 	int func = m_debug? m_function_debug : m_function;
 	int page = m_debug? m_page_debug : m_page;
@@ -1490,7 +1496,7 @@ int genmod_decoder_device::gaready_out()
     Note: It is not sufficient to check for the page area; we need to check
     the select lines (via the static functions).
 */
-int genmod_decoder_device::dben_out()
+READ_LINE_MEMBER(genmod_decoder_device::dben_out)
 {
 	int func = m_debug? m_function_debug : m_function;
 

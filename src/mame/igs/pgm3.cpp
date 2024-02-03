@@ -53,8 +53,6 @@
 #include "screen.h"
 
 
-namespace {
-
 class pgm3_state : public driver_device
 {
 public:
@@ -72,7 +70,7 @@ private:
 	virtual void machine_reset() override;
 	virtual void video_start() override;
 	uint32_t screen_update_pgm3(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void screen_vblank_pgm3(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank_pgm3);
 	required_device<cpu_device> m_maincpu;
 	void pgm3_map(address_map &map);
 };
@@ -90,7 +88,7 @@ uint32_t pgm3_state::screen_update_pgm3(screen_device &screen, bitmap_ind16 &bit
 	return 0;
 }
 
-void pgm3_state::screen_vblank_pgm3(int state)
+WRITE_LINE_MEMBER(pgm3_state::screen_vblank_pgm3)
 {
 }
 
@@ -171,8 +169,6 @@ ROM_END
 void pgm3_state::init_kov3hd()
 {
 }
-
-} // anonymous namespace
 
 
 // all dumped sets might be China region, unless region info comes from elsewhere

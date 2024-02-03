@@ -118,12 +118,12 @@ void slapfght_state::scrolly_w(uint8_t data)
 	m_scrolly = data;
 }
 
-void slapfght_state::flipscreen_w(int state)
+WRITE_LINE_MEMBER(slapfght_state::flipscreen_w)
 {
 	flip_screen_set(state ? 0 : 1);
 }
 
-void slapfght_state::palette_bank_w(int state)
+WRITE_LINE_MEMBER(slapfght_state::palette_bank_w)
 {
 	m_palette_bank = state;
 }

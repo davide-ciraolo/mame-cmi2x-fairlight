@@ -4,4 +4,4 @@
 
 #include "../../C/7zCrc.h"
 
-static struct CCRCTableInit { CCRCTableInit() { CrcGenerateTable(); } } g_CRCTableInit;
+struct CCRCTableInit { CCRCTableInit() { CrcGenerateTable(); } } g_CRCTableInit;

@@ -72,8 +72,6 @@ ToDo:
 #include "speaker.h"
 
 
-namespace {
-
 class dg680_state : public driver_device
 {
 public:
@@ -97,7 +95,7 @@ private:
 	void port08_w(u8 data);
 	u8 mem_r(offs_t offset);
 	void mem_w(offs_t offset, u8 data);
-	void kansas_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(kansas_w);
 	TIMER_DEVICE_CALLBACK_MEMBER(kansas_r);
 	void kbd_put(u8 data);
 
@@ -120,7 +118,7 @@ private:
 	required_device<s100_bus_device> m_s100;
 };
 
-void dg680_state::kansas_w(int state)
+WRITE_LINE_MEMBER( dg680_state::kansas_w )
 {
 	if ((m_cass->get_state() & CASSETTE_MASK_UISTATE) != CASSETTE_RECORD)
 		return;
@@ -332,9 +330,6 @@ ROM_START( dg680 )
 	ROM_REGION( 0x0020, "proms", 0 )
 	ROM_LOAD( "82s123.bin", 0x0000, 0x0020, NO_DUMP )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

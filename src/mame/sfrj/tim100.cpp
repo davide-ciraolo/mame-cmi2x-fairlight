@@ -47,7 +47,7 @@ protected:
 
 private:
 	u8 dma_r(offs_t offset);
-	void sod_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(sod_w);
 	I8275_DRAW_CHARACTER_MEMBER( crtc_display_pixels );
 
 	void mem_map(address_map &map);
@@ -142,18 +142,16 @@ I8275_DRAW_CHARACTER_MEMBER( tim100_state::crtc_display_pixels )
 	rgb_t const *const palette = m_palette->palette()->entry_list_raw();
 	for (uint8_t i = 0; i < 2; i++)
 	{
-		using namespace i8275_attributes;
 		uint8_t pixels = m_charmap[(i * 0x1000) | (linecount & 15) | (charcode << 4)];
-		if (BIT(attrcode, VSP))
+		if (vsp)
 			pixels = 0;
 
-		if (BIT(attrcode, LTEN))
+		if (lten)
 			pixels = 0xff;
 
-		if (BIT(attrcode, RVV))
+		if (rvv)
 			pixels ^= 0xff;
 
-		bool hlgt = BIT(attrcode, HLGT);
 		bitmap.pix(y, x++) = palette[BIT(pixels, 7) ? (hlgt ? 2 : 1) : 0];
 		bitmap.pix(y, x++) = palette[BIT(pixels, 6) ? (hlgt ? 2 : 1) : 0];
 		bitmap.pix(y, x++) = palette[BIT(pixels, 5) ? (hlgt ? 2 : 1) : 0];
@@ -163,7 +161,7 @@ I8275_DRAW_CHARACTER_MEMBER( tim100_state::crtc_display_pixels )
 	}
 }
 
-void tim100_state::sod_w(int state)
+WRITE_LINE_MEMBER( tim100_state::sod_w )
 {
 	if (state)
 		m_dma_view.select(0);

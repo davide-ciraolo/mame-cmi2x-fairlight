@@ -7,7 +7,7 @@
 ****************************************************************************/
 
 #include "emu.h"
-#include "lk201.h"
+#include "dec_lk201.h"
 
 #include "ms7004.h"
 
@@ -23,8 +23,6 @@
 #include "emupal.h"
 #include "screen.h"
 
-
-namespace {
 
 class vt240_state : public driver_device
 {
@@ -65,12 +63,12 @@ private:
 	required_ioport m_monitor;
 	optional_device<lk201_device> m_lk201;
 
-	void write_keyboard_clock(int state);
-	void i8085_rdy_w(int state);
-	void lben_w(int state);
-	void tx_w(int state);
-	void t11_reset_w(int state);
-	int i8085_sid_r();
+	DECLARE_WRITE_LINE_MEMBER(write_keyboard_clock);
+	DECLARE_WRITE_LINE_MEMBER(i8085_rdy_w);
+	DECLARE_WRITE_LINE_MEMBER(lben_w);
+	DECLARE_WRITE_LINE_MEMBER(tx_w);
+	DECLARE_WRITE_LINE_MEMBER(t11_reset_w);
+	DECLARE_READ_LINE_MEMBER(i8085_sid_r);
 	uint8_t i8085_comm_r(offs_t offset);
 	void i8085_comm_w(offs_t offset, uint8_t data);
 	uint8_t t11_comm_r();
@@ -105,9 +103,9 @@ private:
 	virtual void machine_reset() override;
 	UPD7220_DISPLAY_PIXELS_MEMBER(hgdc_draw);
 	void irq_encoder(int irq, int state);
-	void irq7_w(int state);
-	void irq9_w(int state);
-	void irq13_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq7_w);
+	DECLARE_WRITE_LINE_MEMBER(irq9_w);
+	DECLARE_WRITE_LINE_MEMBER(irq13_w);
 
 	uint8_t m_i8085_out, m_t11_out, m_i8085_rdy, m_t11;
 	uint8_t m_mem_map[16];
@@ -146,33 +144,33 @@ void vt240_state::irq_encoder(int irq, int state)
 	m_maincpu->set_input_line(t11_device::CP0_LINE, (i & 1) ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void vt240_state::irq7_w(int state)
+WRITE_LINE_MEMBER(vt240_state::irq7_w)
 {
 	irq_encoder(7, state);
 }
 
-void vt240_state::irq9_w(int state)
+WRITE_LINE_MEMBER(vt240_state::irq9_w)
 {
 	irq_encoder(9, state);
 }
 
-void vt240_state::irq13_w(int state)
+WRITE_LINE_MEMBER(vt240_state::irq13_w)
 {
 	irq_encoder(13, state);
 }
 
-void vt240_state::write_keyboard_clock(int state)
+WRITE_LINE_MEMBER(vt240_state::write_keyboard_clock)
 {
 	m_i8251->write_txc(state);
 	m_i8251->write_rxc(state);
 }
 
-void vt240_state::lben_w(int state)
+WRITE_LINE_MEMBER(vt240_state::lben_w)
 {
 	m_lb = state ? false : true;
 }
 
-void vt240_state::t11_reset_w(int state)
+WRITE_LINE_MEMBER(vt240_state::t11_reset_w)
 {
 	if(state == ASSERT_LINE)
 	{
@@ -183,7 +181,7 @@ void vt240_state::t11_reset_w(int state)
 	}
 }
 
-void vt240_state::tx_w(int state)
+WRITE_LINE_MEMBER(vt240_state::tx_w)
 {
 	if(m_lb)
 		m_i8251->write_rxd(state);
@@ -191,13 +189,13 @@ void vt240_state::tx_w(int state)
 		m_lk201->rx_w(state);
 }
 
-void vt240_state::i8085_rdy_w(int state)
+WRITE_LINE_MEMBER(vt240_state::i8085_rdy_w)
 {
 	irq_encoder(3, state ? CLEAR_LINE : ASSERT_LINE);
 	m_i8085_rdy = state;
 }
 
-int vt240_state::i8085_sid_r()
+READ_LINE_MEMBER(vt240_state::i8085_sid_r)
 {
 	return m_t11 ? CLEAR_LINE : ASSERT_LINE;
 }
@@ -771,9 +769,6 @@ ROM_START( vt240 )
 	ROM_REGION( 0x100, "x2212", 0 ) // default nvram to avoid error 10
 	ROM_LOAD( "x2212", 0x000, 0x100, CRC(31c90c64) SHA1(21a0f1d4eec1ced04b85923151783bf23d18bfbd) )
 ROM_END
-
-} // anonymous namespace
-
 
 /*    YEAR  NAME    PARENT  COMPAT  MACHINE  INPUT  CLASS        INIT        COMPANY                          FULLNAME  FLAGS */
 COMP( 1983, vt240,  0,      0,      vt240,   vt240, vt240_state, empty_init, "Digital Equipment Corporation", "VT240",  MACHINE_IMPERFECT_GRAPHICS )

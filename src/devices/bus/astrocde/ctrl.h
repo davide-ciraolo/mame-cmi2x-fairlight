@@ -34,7 +34,7 @@ protected:
 	virtual void interface_validity_check(validity_checker &valid) const override ATTR_COLD;
 	virtual void interface_pre_start() override;
 
-	void write_ltpen(int state);
+	DECLARE_WRITE_LINE_MEMBER( write_ltpen );
 
 private:
 	astrocade_ctrl_port_device *const m_port;

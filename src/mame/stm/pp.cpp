@@ -19,9 +19,6 @@
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
-
 class pp_state : public driver_device
 {
 public:
@@ -60,21 +57,21 @@ protected:
 private:
 	SCN2672_DRAW_CHARACTER_MEMBER(display_char);
 
-	template<int Line> void int_w(int state);
+	template<int Line> DECLARE_WRITE_LINE_MEMBER(int_w);
 	TIMER_CALLBACK_MEMBER(int_update);
 	IRQ_CALLBACK_MEMBER(intak_cb);
 
 	void kbd_scan_w(u8 data);
 	u8 kbd_cols_r();
-	int cntl_r();
-	int shift_r();
-	void printer_busy_w(int state);
+	DECLARE_READ_LINE_MEMBER(cntl_r);
+	DECLARE_READ_LINE_MEMBER(shift_r);
+	DECLARE_WRITE_LINE_MEMBER(printer_busy_w);
 
 	u8 memory_r(offs_t offset);
 	void memory_w(offs_t offset, u8 data);
 	u8 stat_r();
 	void co_w(u8 data);
-	void hld_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(hld_w);
 	void mode_w(u8 data);
 
 	void mem_map(address_map &map);
@@ -136,7 +133,7 @@ void pp_state::machine_reset()
 
 
 template <int Line>
-void pp_state::int_w(int state)
+WRITE_LINE_MEMBER(pp_state::int_w)
 {
 	if (BIT(m_int_pending, Line) == state)
 		return;
@@ -210,19 +207,19 @@ u8 pp_state::kbd_cols_r()
 		return m_kbd_rows[m_kbd_scan & 7]->read();
 }
 
-int pp_state::cntl_r()
+READ_LINE_MEMBER(pp_state::cntl_r)
 {
 	// pin 1 of J13 connector
 	return (m_modifiers->read() & 0x5) == 0x5;
 }
 
-int pp_state::shift_r()
+READ_LINE_MEMBER(pp_state::shift_r)
 {
 	// pin 3 of J13 connector
 	return (m_modifiers->read() & 0x6) == 0x6;
 }
 
-void pp_state::printer_busy_w(int state)
+WRITE_LINE_MEMBER(pp_state::printer_busy_w)
 {
 	m_printer_busy = state;
 }
@@ -302,7 +299,7 @@ void pp_state::co_w(u8 data)
 	m_kbd_release = BIT(data, 7);
 }
 
-void pp_state::hld_w(int state)
+WRITE_LINE_MEMBER(pp_state::hld_w)
 {
 	for (int i = 0; i < 2; i++)
 		if (m_floppy[i]->get_device() != nullptr)
@@ -497,8 +494,6 @@ ROM_START(pp)
 	ROM_LOAD("chargen.bin", 0x0000, 0x0800, CRC(111e443a) SHA1(455a573addf274ae3fd41307316d87587d8f5550))
 	ROM_CONTINUE(0x0000, 0x0800) // first half blank
 ROM_END
-
-} // anonymous namespace
 
 
 COMP(1983, pp, 0, 0, pp, pp, pp_state, empty_init, "STM Electronics", "Pied Piper Communicator 1", MACHINE_NOT_WORKING)

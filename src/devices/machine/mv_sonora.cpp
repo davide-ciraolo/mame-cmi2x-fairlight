@@ -32,6 +32,7 @@ mac_video_sonora_device::mac_video_sonora_device(const machine_config &mconfig, 
 
 void mac_video_sonora_device::device_start()
 {
+	m_screen_vblank.resolve_safe();
 	m_vram = nullptr;
 
 	save_item(NAME(m_vram_offset));

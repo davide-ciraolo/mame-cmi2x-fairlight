@@ -9,8 +9,6 @@
 #include "emu.h"
 #include "hbf.h"
 
-#include "formats/tvc_dsk.h"
-
 
 /***************************************************************************
     IMPLEMENTATION

@@ -14,15 +14,13 @@
 #include "cpu/adsp2100/adsp2100.h"
 #include "cpu/tms34010/tms34010.h"
 
-#define LOG_DMA             (1U << 1)
-
-#define VERBOSE (0)
-#include "logmacro.h"
-
 
 #define WATCH_RENDER        (0)
+#define LOG_DMA             (0)
+
 
 #define DMA_CLOCK           40000000
+
 
 /* for when we implement DMA timing */
 #define DMA_QUEUE_SIZE      273
@@ -373,8 +371,8 @@ void midvunit_renderer::process_dma_queue()
 
 void midvunit_state::midvunit_dma_queue_w(uint32_t data)
 {
-	if (machine().input().code_pressed(KEYCODE_L))
-		LOGMASKED(LOG_DMA, "%06X:queue(%X) = %08X\n", m_maincpu->pc(), m_dma_data_index, data);
+	if (LOG_DMA && machine().input().code_pressed(KEYCODE_L))
+		logerror("%06X:queue(%X) = %08X\n", m_maincpu->pc(), m_dma_data_index, data);
 	if (m_dma_data_index < 16)
 		m_dma_data[m_dma_data_index++] = data;
 }
@@ -391,8 +389,8 @@ uint32_t midvunit_state::midvunit_dma_trigger_r(offs_t offset)
 {
 	if (offset)
 	{
-		if (machine().input().code_pressed(KEYCODE_L))
-			LOGMASKED(LOG_DMA, "%06X:trigger\n", m_maincpu->pc());
+		if (LOG_DMA && machine().input().code_pressed(KEYCODE_L))
+			logerror("%06X:trigger\n", m_maincpu->pc());
 		m_poly->process_dma_queue();
 		m_dma_data_index = 0;
 	}
@@ -413,8 +411,8 @@ void midvunit_state::midvunit_page_control_w(uint32_t data)
 	if ((m_page_control ^ data) & 1)
 	{
 		m_video_changed = true;
-		if (machine().input().code_pressed(KEYCODE_L))
-			LOGMASKED(LOG_DMA, "##########################################################\n");
+		if (LOG_DMA && machine().input().code_pressed(KEYCODE_L))
+			logerror("##########################################################\n");
 		m_screen->update_partial(m_screen->vpos() - 1);
 	}
 	m_page_control = data;

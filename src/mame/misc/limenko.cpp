@@ -36,8 +36,6 @@
 #include "tilemap.h"
 
 
-namespace {
-
 class limenko_state : public driver_device
 {
 public:
@@ -69,7 +67,7 @@ public:
 	void init_legendoh();
 	void init_spotty();
 
-	int spriteram_bit_r();
+	DECLARE_READ_LINE_MEMBER(spriteram_bit_r);
 
 protected:
 	virtual void video_start() override;
@@ -169,7 +167,7 @@ void limenko_state::fg_videoram_w(offs_t offset, u32 data, u32 mem_mask)
 	m_fg_tilemap->mark_tile_dirty(offset);
 }
 
-int limenko_state::spriteram_bit_r()
+READ_LINE_MEMBER(limenko_state::spriteram_bit_r)
 {
 	return m_spriteram_bit;
 }
@@ -1125,9 +1123,6 @@ void limenko_state::init_spotty()
 	save_item(NAME(m_audiocpu_p1));
 	save_item(NAME(m_audiocpu_p3));
 }
-
-} // anonymous namespace
-
 
 GAME(2000, dynabomb, 0,      limenko, sb2003,   limenko_state, init_dynabomb, ROT0, "Limenko",    "Dynamite Bomber (Korea, Rev 1.5)",   MACHINE_SUPPORTS_SAVE)
 GAME(2000, legendoh, 0,      limenko, legendoh, limenko_state, init_legendoh, ROT0, "Limenko",    "Legend of Heroes",                   MACHINE_SUPPORTS_SAVE)

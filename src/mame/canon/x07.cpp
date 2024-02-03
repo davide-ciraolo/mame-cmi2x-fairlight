@@ -1062,7 +1062,10 @@ DEVICE_IMAGE_LOAD_MEMBER( x07_state::card_load )
 		const char *card_type = image.get_feature("card_type");
 
 		if (strcmp(card_type, "xp140"))
-			return std::make_pair(image_error::BADSOFTWARE, "Unsupported card type");
+		{
+			image.seterror(image_error::INVALIDIMAGE, "Unsupported card type");
+			return image_init_result::FAIL;
+		}
 	}
 
 	m_card->rom_alloc(size, GENERIC_ROM8_WIDTH, ENDIANNESS_BIG);
@@ -1070,7 +1073,7 @@ DEVICE_IMAGE_LOAD_MEMBER( x07_state::card_load )
 
 	m_card->ram_alloc(0x1000);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 void x07_state::x07_palette(palette_device &palette) const

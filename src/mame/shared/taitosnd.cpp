@@ -53,8 +53,8 @@ tc0140syt_device::tc0140syt_device(const machine_config &mconfig, device_type ty
 	, m_submode(0)
 	, m_status(0)
 	, m_nmi_enabled(0)
-	, m_nmi_cb(*this)
-	, m_reset_cb(*this)
+	, m_mastercpu(*this, finder_base::DUMMY_TAG)
+	, m_slavecpu(*this, finder_base::DUMMY_TAG)
 {
 	std::fill(std::begin(m_slavedata), std::end(m_slavedata), 0);
 	std::fill(std::begin(m_masterdata), std::end(m_masterdata), 0);
@@ -106,8 +106,10 @@ void tc0140syt_device::device_reset()
 
 void tc0140syt_device::update_nmi()
 {
-	u32 const nmi_pending = m_status & (TC0140SYT_PORT23_FULL | TC0140SYT_PORT01_FULL);
-	m_nmi_cb((nmi_pending && m_nmi_enabled) ? ASSERT_LINE : CLEAR_LINE);
+	u32 nmi_pending = m_status & (TC0140SYT_PORT23_FULL | TC0140SYT_PORT01_FULL);
+	u32 state = (nmi_pending && m_nmi_enabled) ? ASSERT_LINE : CLEAR_LINE;
+
+	m_slavecpu->set_input_line(INPUT_LINE_NMI, state);
 }
 
 
@@ -128,10 +130,8 @@ void tc0140syt_device::master_port_w(u8 data)
 
 void tc0140syt_device::master_comm_w(u8 data)
 {
-	// let slavecpu catch up (after we return and the main cpu finishes what it's doing)
-	machine().scheduler().synchronize();
-
-	data &= 0x0f; // this is important, otherwise ballbros won't work
+	machine().scheduler().synchronize(); // let slavecpu catch up (after we return and the main cpu finishes what it's doing)
+	data &= 0x0f; /* this is important, otherwise ballbros won't work */
 
 	switch (m_mainmode)
 	{
@@ -157,7 +157,7 @@ void tc0140syt_device::master_comm_w(u8 data)
 
 		case 0x04: // port status
 			/* this does a hi-lo transition to reset the sound cpu */
-			m_reset_cb(data ? ASSERT_LINE : CLEAR_LINE);
+			m_slavecpu->set_input_line(INPUT_LINE_RESET, data ? ASSERT_LINE : CLEAR_LINE);
 			break;
 
 		default:
@@ -167,42 +167,27 @@ void tc0140syt_device::master_comm_w(u8 data)
 
 u8 tc0140syt_device::master_comm_r()
 {
-	// let slavecpu catch up (after we return and the main cpu finishes what it's doing)
-	if (!machine().side_effects_disabled())
-		machine().scheduler().synchronize();
-
+	machine().scheduler().synchronize(); // let slavecpu catch up (after we return and the main cpu finishes what it's doing)
 	u8 res = 0;
 
 	switch (m_mainmode)
 	{
 		case 0x00: // mode #0
-			res = m_masterdata[m_mainmode];
-			if (!machine().side_effects_disabled())
-				m_mainmode++;
+			res = m_masterdata[m_mainmode++];
 			break;
 
 		case 0x01: // mode #1
-			res = m_masterdata[m_mainmode];
-			if (!machine().side_effects_disabled())
-			{
-				m_status &= ~TC0140SYT_PORT01_FULL_MASTER;
-				m_mainmode++;
-			}
+			m_status &= ~TC0140SYT_PORT01_FULL_MASTER;
+			res = m_masterdata[m_mainmode++];
 			break;
 
 		case 0x02: // mode #2
-			res = m_masterdata[m_mainmode];
-			if (!machine().side_effects_disabled())
-				m_mainmode++;
+			res = m_masterdata[m_mainmode++];
 			break;
 
 		case 0x03: // mode #3
-			res = m_masterdata[m_mainmode];
-			if (!machine().side_effects_disabled())
-			{
-				m_status &= ~TC0140SYT_PORT23_FULL_MASTER;
-				m_mainmode++;
-			}
+			m_status &= ~TC0140SYT_PORT23_FULL_MASTER;
+			res = m_masterdata[m_mainmode++];
 			break;
 
 		case 0x04: // port status
@@ -282,35 +267,23 @@ u8 tc0140syt_device::slave_comm_r()
 	switch (m_submode)
 	{
 		case 0x00: // mode #0
-			res = m_slavedata[m_submode];
-			if (!machine().side_effects_disabled())
-				m_submode++;
+			res = m_slavedata[m_submode++];
 			break;
 
 		case 0x01: // mode #1
-			res = m_slavedata[m_submode];
-			if (!machine().side_effects_disabled())
-			{
-				m_status &= ~TC0140SYT_PORT01_FULL;
-				m_submode++;
-				update_nmi();
-			}
+			m_status &= ~TC0140SYT_PORT01_FULL;
+			res = m_slavedata[m_submode++];
+			update_nmi();
 			break;
 
 		case 0x02: // mode #2
-			res = m_slavedata[m_submode];
-			if (!machine().side_effects_disabled())
-				m_submode++;
+			res = m_slavedata[m_submode++];
 			break;
 
 		case 0x03: // mode #3
-			res = m_slavedata[m_submode];
-			if (!machine().side_effects_disabled())
-			{
-				m_status &= ~TC0140SYT_PORT23_FULL;
-				m_submode++;
-				update_nmi();
-			}
+			m_status &= ~TC0140SYT_PORT23_FULL;
+			res = m_slavedata[m_submode++];
+			update_nmi();
 			break;
 
 		case 0x04: // port status

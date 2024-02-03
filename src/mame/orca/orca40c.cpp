@@ -1,5 +1,5 @@
 // license:BSD-3-Clause
-// copyright-holders:Zsolt Vasvari
+// copyright-holders:Luca Elia
 /***************************************************************************
 
     orca40c.cpp

@@ -2,7 +2,7 @@
 // copyright-holders:Fabio Priuli
 /*********************************************************************
 
-    formats/fdd_dsk.cpp
+    formats/fdd_dsk.h
 
     PC98 FDD disk images
 
@@ -44,17 +44,17 @@ fdd_format::fdd_format()
 {
 }
 
-const char *fdd_format::name() const noexcept
+const char *fdd_format::name() const
 {
 	return "fdd";
 }
 
-const char *fdd_format::description() const noexcept
+const char *fdd_format::description() const
 {
 	return "FDD disk image";
 }
 
-const char *fdd_format::extensions() const noexcept
+const char *fdd_format::extensions() const
 {
 	return "fdd";
 }
@@ -71,7 +71,7 @@ int fdd_format::identify(util::random_read &io, uint32_t form_factor, const std:
 	return 0;
 }
 
-bool fdd_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool fdd_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	uint8_t hsec[0x0c];
 
@@ -148,7 +148,7 @@ bool fdd_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 	return true;
 }
 
-bool fdd_format::supports_save() const noexcept
+bool fdd_format::supports_save() const
 {
 	return false;
 }

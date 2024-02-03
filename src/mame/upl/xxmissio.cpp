@@ -2,7 +2,7 @@
 // copyright-holders:Uki
 /*****************************************************************************
 
-    XX Mission (c) 1986 UPL
+XX Mission (c) 1986 UPL
 
     Driver by Uki
 
@@ -40,7 +40,7 @@ public:
 
 	void xxmissio(machine_config &config);
 
-	template <int Mask> int status_r();
+	template <int Mask> DECLARE_READ_LINE_MEMBER(status_r);
 
 protected:
 	virtual void machine_start() override;
@@ -59,10 +59,10 @@ private:
 
 	tilemap_t *m_bg_tilemap;
 	tilemap_t *m_fg_tilemap;
-	uint8_t m_status = 0;
-	uint8_t m_xscroll = 0;
-	uint8_t m_yscroll = 0;
-	uint8_t m_flipscreen = 0;
+	uint8_t m_status;
+	uint8_t m_xscroll;
+	uint8_t m_yscroll;
+	uint8_t m_flipscreen;
 
 	void bank_sel_w(uint8_t data);
 	void status_m_w(uint8_t data);
@@ -73,7 +73,7 @@ private:
 	void scroll_x_w(uint8_t data);
 	void scroll_y_w(uint8_t data);
 
-	void interrupt_m(int state);
+	DECLARE_WRITE_LINE_MEMBER(interrupt_m);
 	INTERRUPT_GEN_MEMBER(interrupt_s);
 
 	TILE_GET_INFO_MEMBER(get_bg_tile_info);
@@ -235,7 +235,7 @@ void xxmissio_state::bank_sel_w(uint8_t data)
 }
 
 template <int Mask>
-int xxmissio_state::status_r()
+READ_LINE_MEMBER(xxmissio_state::status_r)
 {
 	return (m_status & Mask) ? 1 : 0;
 }
@@ -278,7 +278,7 @@ void xxmissio_state::status_s_w(uint8_t data)
 	}
 }
 
-void xxmissio_state::interrupt_m(int state)
+WRITE_LINE_MEMBER(xxmissio_state::interrupt_m)
 {
 	if (state)
 	{

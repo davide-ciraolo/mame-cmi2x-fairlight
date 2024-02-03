@@ -48,13 +48,13 @@
     - To enter Basic, type BASIC. To quit, type EXIT.
 
     Cassette:
-    - BIOS 0: you can SAVE and LOAD from the monitor, but not from Basic. (see ToDo)
-    - BIOS 1: Doesn't seem to be supported.
+    - Bios 0: you can SAVE and LOAD from the monitor, but not from Basic. (see ToDo)
+    - Bios 1: Doesn't seem to be supported.
 
     Sound:
-    - BIOS 0: Sound is initialised with the volume turned off. In Basic, you
+    - Bios 0: Sound is initialised with the volume turned off. In Basic, you
               can POKE 4382,144 to enable sound.
-    - BIOS 1: Doesn't appear to support sound. The included Basic has a SOUND
+    - Bios 1: Doesn't appear to support sound. The included Basic has a SOUND
               command (e.g SOUND 127,80), but no sound is heard.
 
 *******************************************************************************/
@@ -73,8 +73,6 @@
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
 
 class mycom_state : public driver_device
 {
@@ -98,7 +96,6 @@ public:
 		, m_rtc(*this, "rtc")
 		, m_palette(*this, "palette")
 		, m_p_chargen(*this, "chargen")
-		, m_keyboard(*this, "X%d", 0U)
 	{ }
 
 	void mycom(machine_config &config);
@@ -125,7 +122,7 @@ private:
 	u8 m_keyb_press = 0U;
 	u8 m_sn_we = 0U;
 	u16 m_i_videoram = 0U;
-	bool m_keyb_press_flag = false;
+	bool m_keyb_press_flag = 0;
 	virtual void machine_reset() override;
 	virtual void machine_start() override;
 	required_device<cpu_device> m_maincpu;
@@ -145,7 +142,6 @@ private:
 	required_device<msm5832_device> m_rtc;
 	required_device<palette_device> m_palette;
 	required_region_ptr<u8> m_p_chargen;
-	required_ioport_array<9> m_keyboard;
 };
 
 
@@ -446,23 +442,32 @@ static const u8 mycom_keyval[] = { 0,
 
 TIMER_DEVICE_CALLBACK_MEMBER(mycom_state::mycom_kbd)
 {
+	u8 x, y, scancode = 0;
+	u16 pressed[9];
+	char kbdrow[3];
 	u8 modifiers = ioport("XX")->read();
 	u8 shift_pressed = (modifiers & 2) >> 1;
-	m_keyb_press_flag = false;
+	m_keyb_press_flag = 0;
 
-	// Read keyboard
-	for (u8 x = 0; x < 9; x++)
+	/* see what is pressed */
+	for (x = 0; x < 9; x++)
 	{
-		u16 pressed = m_keyboard[x]->read();
-		if (pressed)
+		sprintf(kbdrow,"X%d",x);
+		pressed[x] = (ioport(kbdrow)->read());
+	}
+
+	/* find what has changed */
+	for (x = 0; x < 9; x++)
+	{
+		if (pressed[x])
 		{
-			// get scankey value
-			for (u8 y = 0; y < 10; y++)
+			/* get scankey value */
+			for (y = 0; y < 10; y++)
 			{
-				if (BIT(pressed, y))
+				if (BIT(pressed[x], y))
 				{
-					u8 scancode = ((x + y * 9) << 1) + shift_pressed + 1;
-					m_keyb_press_flag = true;
+					scancode = ((x + y * 9) << 1) + shift_pressed + 1;
+					m_keyb_press_flag = 1;
 					m_keyb_press = mycom_keyval[scancode];
 				}
 			}
@@ -578,9 +583,6 @@ ROM_START( mycom )
 	ROM_REGION( 0x0800, "chargen", 0 )
 	ROM_LOAD( "font.rom", 0x0000, 0x0800, CRC(4039bb6f) SHA1(086ad303bf4bcf983fd6472577acbf744875fea8) )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

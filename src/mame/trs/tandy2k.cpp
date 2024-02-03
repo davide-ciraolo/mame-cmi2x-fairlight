@@ -551,7 +551,7 @@ uint32_t tandy2k_state::screen_update(screen_device &screen, bitmap_rgb32 &bitma
 	return 0;
 }
 
-void tandy2k_state::vpac_vlt_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::vpac_vlt_w )
 {
 	m_drb0->ren_w(state);
 	m_drb0->clrcnt_w(state);
@@ -560,31 +560,31 @@ void tandy2k_state::vpac_vlt_w(int state)
 	m_drb1->clrcnt_w(state);
 }
 
-void tandy2k_state::vpac_drb_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::vpac_drb_w )
 {
 	m_drb0->tog_w(state);
 	m_drb1->tog_w(state);
 }
 
-void tandy2k_state::vpac_wben_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::vpac_wben_w )
 {
 	m_drb0->wen1_w(state);
 	m_drb1->wen1_w(state);
 }
 
-void tandy2k_state::vpac_cblank_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::vpac_cblank_w )
 {
 	m_cblank = state;
 }
 
-void tandy2k_state::vpac_slg_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::vpac_slg_w )
 {
 	m_slg = state;
 
 	m_vac->slg_w(state);
 }
 
-void tandy2k_state::vpac_sld_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::vpac_sld_w )
 {
 	m_sld = state;
 
@@ -691,13 +691,13 @@ TIMER_DEVICE_CALLBACK_MEMBER( tandy2k_state::vidldsh_tick )
 
 // Intel 8251A Interface
 
-void tandy2k_state::rxrdy_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::rxrdy_w )
 {
 	m_rxrdy = state;
 	m_pic0->ir2_w(m_rxrdy || m_txrdy);
 }
 
-void tandy2k_state::txrdy_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::txrdy_w )
 {
 	m_txrdy = state;
 	m_pic0->ir2_w(m_rxrdy || m_txrdy);
@@ -705,13 +705,13 @@ void tandy2k_state::txrdy_w(int state)
 
 // Intel 8253 Interface
 
-void tandy2k_state::outspkr_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::outspkr_w )
 {
 	m_outspkr = state;
 	speaker_update();
 }
 
-void tandy2k_state::intbrclk_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::intbrclk_w )
 {
 	if (!m_extclk)
 	{
@@ -720,35 +720,35 @@ void tandy2k_state::intbrclk_w(int state)
 	}
 }
 
-void tandy2k_state::rfrqpulse_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::rfrqpulse_w )
 {
 	// memory refresh counter up
 }
 
 // Intel 8255A Interface
 
-void tandy2k_state::write_centronics_ack(int state)
+WRITE_LINE_MEMBER( tandy2k_state::write_centronics_ack )
 {
 	m_centronics_ack = state;
 	m_i8255a->pc6_w(state);
 }
 
-void tandy2k_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER( tandy2k_state::write_centronics_busy )
 {
 	m_centronics_busy = state;
 }
 
-void tandy2k_state::write_centronics_perror(int state)
+WRITE_LINE_MEMBER( tandy2k_state::write_centronics_perror )
 {
 	m_centronics_perror = state;
 }
 
-void tandy2k_state::write_centronics_select(int state)
+WRITE_LINE_MEMBER( tandy2k_state::write_centronics_select )
 {
 	m_centronics_select = state;
 }
 
-void tandy2k_state::write_centronics_fault(int state)
+WRITE_LINE_MEMBER( tandy2k_state::write_centronics_fault )
 {
 	m_centronics_fault = state;
 }
@@ -863,12 +863,12 @@ void tandy2k_state::ppi_pc_w(uint8_t data)
 
 // Intel 8272 Interface
 
-void tandy2k_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::fdc_drq_w )
 {
 	dma_request(0, state);
 }
 
-void tandy2k_state::fdc_hdl_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::fdc_hdl_w )
 {
 	m_floppy0->mon_w(!state);
 	m_floppy1->mon_w(!state);
@@ -887,7 +887,7 @@ static void tandy2k_floppies(device_slot_interface &device)
 
 // Keyboard
 
-void tandy2k_state::kbdclk_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::kbdclk_w )
 {
 	if (!m_kbdclk && state)
 	{
@@ -898,7 +898,7 @@ void tandy2k_state::kbdclk_w(int state)
 	m_kbdclk = state;
 }
 
-void tandy2k_state::kbddat_w(int state)
+WRITE_LINE_MEMBER( tandy2k_state::kbddat_w )
 {
 	if (!m_kbddat && state)
 	{

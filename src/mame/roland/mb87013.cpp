@@ -34,7 +34,7 @@ DEFINE_DEVICE_TYPE(MB87013, mb87013_device, "mb87013", "Roland MB87013 QDC")
 
 mb87013_device::mb87013_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
 	: device_t(mconfig, MB87013, tag, owner, clock)
-	, m_sio_rd_callback(*this, 0)
+	, m_sio_rd_callback(*this)
 	, m_sio_wr_callback(*this)
 	, m_txc_callback(*this)
 	, m_rxc_callback(*this)
@@ -42,6 +42,24 @@ mb87013_device::mb87013_device(const machine_config &mconfig, const char *tag, d
 	, m_dsr_callback(*this)
 	, m_op4_callback(*this)
 {
+}
+
+
+//-------------------------------------------------
+//  device_resolve_objects - resolve objects that
+//  may be needed for other devices to set
+//  initial conditions at start time
+//-------------------------------------------------
+
+void mb87013_device::device_resolve_objects()
+{
+	m_sio_rd_callback.resolve_safe(0);
+	m_sio_wr_callback.resolve_safe();
+	m_txc_callback.resolve_safe();
+	m_rxc_callback.resolve_safe();
+	m_rxd_callback.resolve_safe();
+	m_dsr_callback.resolve_safe();
+	m_op4_callback.resolve_safe();
 }
 
 
@@ -107,7 +125,7 @@ void mb87013_device::write(offs_t offset, u8 data)
 //  MFM modulator
 //-------------------------------------------------
 
-void mb87013_device::dtr_w(int state)
+WRITE_LINE_MEMBER(mb87013_device::dtr_w)
 {
 }
 
@@ -117,7 +135,7 @@ void mb87013_device::dtr_w(int state)
 //  modulated by QDC
 //-------------------------------------------------
 
-void mb87013_device::txd_w(int state)
+WRITE_LINE_MEMBER(mb87013_device::txd_w)
 {
 }
 
@@ -127,6 +145,6 @@ void mb87013_device::txd_w(int state)
 //  data through RxC and RxD
 //-------------------------------------------------
 
-void mb87013_device::rts_w(int state)
+WRITE_LINE_MEMBER(mb87013_device::rts_w)
 {
 }

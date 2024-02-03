@@ -223,7 +223,7 @@ MC6845_UPDATE_ROW(electron_mode7_device::crtc_update_row)
 	}
 }
 
-void electron_mode7_device::vsync_changed(int state)
+WRITE_LINE_MEMBER(electron_mode7_device::vsync_changed)
 {
 	m_trom->dew_w(state);
 }

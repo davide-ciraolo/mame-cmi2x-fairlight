@@ -17,7 +17,7 @@
 
 using namespace NWindows;
 
-#ifdef Z7_LANG
+#ifdef LANG
 static const UInt32 kLangIDs[] =
 {
   IDT_OVERWRITE_HEADER,
@@ -40,15 +40,9 @@ void COverwriteDialog::ReduceString(UString &s)
     s.Delete(size / 2, s.Len() - size);
     s.Insert(size / 2, L" ... ");
   }
-  if (!s.IsEmpty() && s.Back() == ' ')
-  {
-    // s += (wchar_t)(0x2423);
-    s.InsertAtFront(L'\"');
-    s += L'\"';
-  }
 }
 
-void COverwriteDialog::SetFileInfoControl(unsigned textID, unsigned iconID,
+void COverwriteDialog::SetFileInfoControl(int textID, int iconID,
     const NOverwriteDialog::CFileInfo &fileInfo)
 {
   UString sizeString;
@@ -57,8 +51,8 @@ void COverwriteDialog::SetFileInfoControl(unsigned textID, unsigned iconID,
 
   const UString &fileName = fileInfo.Name;
   int slashPos = fileName.ReverseFind_PathSepar();
-  UString s1 = fileName.Left((unsigned)(slashPos + 1));
-  UString s2 = fileName.Ptr((unsigned)(slashPos + 1));
+  UString s1 = fileName.Left(slashPos + 1);
+  UString s2 = fileName.Ptr(slashPos + 1);
 
   ReduceString(s1);
   ReduceString(s2);
@@ -72,10 +66,13 @@ void COverwriteDialog::SetFileInfoControl(unsigned textID, unsigned iconID,
 
   if (fileInfo.TimeIsDefined)
   {
+    FILETIME localFileTime;
+    if (!FileTimeToLocalFileTime(&fileInfo.Time, &localFileTime))
+      throw 4190402;
     AddLangString(s, IDS_PROP_MTIME);
-    s += ": ";
-    char t[32];
-    ConvertUtcFileTimeToString(fileInfo.Time, t);
+    s += L": ";
+    wchar_t t[32];
+    ConvertFileTimeToString(localFileTime, t);
     s += t;
   }
 
@@ -96,33 +93,17 @@ void COverwriteDialog::SetFileInfoControl(unsigned textID, unsigned iconID,
 
 bool COverwriteDialog::OnInit()
 {
-  #ifdef Z7_LANG
+  #ifdef LANG
   LangSetWindowText(*this, IDD_OVERWRITE);
-  LangSetDlgItems(*this, kLangIDs, Z7_ARRAY_SIZE(kLangIDs));
+  LangSetDlgItems(*this, kLangIDs, ARRAY_SIZE(kLangIDs));
   #endif
   SetFileInfoControl(IDT_OVERWRITE_OLD_FILE_SIZE_TIME, IDI_OVERWRITE_OLD_FILE, OldFileInfo);
   SetFileInfoControl(IDT_OVERWRITE_NEW_FILE_SIZE_TIME, IDI_OVERWRITE_NEW_FILE, NewFileInfo);
   NormalizePosition();
-
-  if (!ShowExtraButtons)
-  {
-    HideItem(IDB_YES_TO_ALL);
-    HideItem(IDB_NO_TO_ALL);
-    HideItem(IDB_AUTO_RENAME);
-  }
-
-  if (DefaultButton_is_NO)
-  {
-    PostMsg(DM_SETDEFID, IDNO);
-    HWND h = GetItem(IDNO);
-    PostMsg(WM_NEXTDLGCTL, (WPARAM)h, TRUE);
-    // ::SetFocus(h);
-  }
-
   return CModalDialog::OnInit();
 }
 
-bool COverwriteDialog::OnButtonClicked(unsigned buttonID, HWND buttonHWND)
+bool COverwriteDialog::OnButtonClicked(int buttonID, HWND buttonHWND)
 {
   switch (buttonID)
   {
@@ -131,7 +112,7 @@ bool COverwriteDialog::OnButtonClicked(unsigned buttonID, HWND buttonHWND)
     case IDB_YES_TO_ALL:
     case IDB_NO_TO_ALL:
     case IDB_AUTO_RENAME:
-      End((INT_PTR)buttonID);
+      End(buttonID);
       return true;
   }
   return CModalDialog::OnButtonClicked(buttonID, buttonHWND);

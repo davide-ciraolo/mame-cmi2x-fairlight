@@ -97,8 +97,6 @@ TODO :  This is a partially working driver.  Most of the memory maps for
 #include "logmacro.h"
 
 
-namespace {
-
 class vcombat_state : public driver_device
 {
 public:
@@ -160,7 +158,7 @@ private:
 	void v1_fb_w(offs_t offset, uint64_t data, uint64_t mem_mask = ~0);
 	void crtc_w(uint16_t data);
 	void vcombat_dac_w(uint16_t data);
-	void sound_update(int state);
+	DECLARE_WRITE_LINE_MEMBER(sound_update);
 
 	uint32_t update_screen(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect, int index);
 	uint32_t screen_update_vcombat_main(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
@@ -680,7 +678,7 @@ static INPUT_PORTS_START( shadfgtr )
 INPUT_PORTS_END
 
 
-void vcombat_state::sound_update(int state)
+WRITE_LINE_MEMBER(vcombat_state::sound_update)
 {
 	/* Seems reasonable */
 	m_soundcpu->set_input_line(M68K_IRQ_1, state ? ASSERT_LINE : CLEAR_LINE);
@@ -822,9 +820,6 @@ ROM_START( shadfgtr )
 	ROM_LOAD( "shadfgtr.u51", 0x000, 0x1f1, CRC(bab58337) SHA1(c4a79c8e53aeadb7f64d49d214b607b5b36f144e) )
 	/* The second upper-board PAL couldn't be read */
 ROM_END
-
-} // anonymous namespace
-
 
 //    YEAR  NAME      PARENT  MACHINE   INPUT     STATE          INIT      MONITOR              COMPANY         FULLNAME           FLAGS
 GAME( 1993, vcombat,  0,      vcombat,  vcombat,  vcombat_state, init_vcombat,  ORIENTATION_FLIP_X,  "VR8 Inc.",     "Virtual Combat",  MACHINE_NOT_WORKING )

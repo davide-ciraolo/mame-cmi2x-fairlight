@@ -32,7 +32,7 @@ public:
 	void indir_reg_w(uint8_t data);
 
 	// Master Reset (MR) Interface
-	void reset_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(reset_w);
 
 	// DMA Interface (for use with DRQ)
 	uint8_t dma_r();

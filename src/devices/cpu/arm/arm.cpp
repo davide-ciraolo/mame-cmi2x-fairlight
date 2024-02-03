@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Bryan McPhail, Phil Stroffolino
 /*
-    ARM 2/3 Emulation (26 bit address bus, no separate PSRs)
+    ARM 2/3/6 Emulation (26 bit address bus)
 
     Todo:
       - Timing - Currently very approximated, nothing relies on proper timing so far.
@@ -212,10 +212,16 @@ enum
 	COND_NV         /* never */
 };
 
+#define LSL(v,s) ((v) << (s))
+#define LSR(v,s) ((v) >> (s))
+#define ROL(v,s) (LSL((v),(s)) | (LSR((v),32u - (s))))
+#define ROR(v,s) (LSR((v),(s)) | (LSL((v),32u - (s))))
+
 
 /***************************************************************************/
 
-DEFINE_DEVICE_TYPE(ARM, arm_cpu_device, "arm_cpu", "ARM")
+DEFINE_DEVICE_TYPE(ARM,    arm_cpu_device,    "arm_le", "ARM (little)")
+DEFINE_DEVICE_TYPE(ARM_BE, arm_be_cpu_device, "arm_be", "ARM (big)")
 
 
 device_memory_interface::space_config_vector arm_cpu_device::memory_space_config() const
@@ -226,17 +232,24 @@ device_memory_interface::space_config_vector arm_cpu_device::memory_space_config
 }
 
 arm_cpu_device::arm_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
-	: arm_cpu_device(mconfig, ARM, tag, owner, clock)
+	: arm_cpu_device(mconfig, ARM, tag, owner, clock, ENDIANNESS_LITTLE)
 {
 }
 
 
-arm_cpu_device::arm_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock)
+arm_cpu_device::arm_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, endianness_t endianness)
 	: cpu_device(mconfig, type, tag, owner, clock)
-	, m_program_config("program", ENDIANNESS_LITTLE, 32, 26, 0)
+	, m_program_config("program", endianness, 32, 26, 0)
+	, m_endian(endianness)
 	, m_copro_type(copro_type::UNKNOWN_CP15)
 {
 	std::fill(std::begin(m_sArmRegister), std::end(m_sArmRegister), 0);
+}
+
+
+arm_be_cpu_device::arm_be_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: arm_cpu_device(mconfig, ARM_BE, tag, owner, clock, ENDIANNESS_BIG)
+{
 }
 
 
@@ -264,11 +277,11 @@ uint32_t arm_cpu_device::cpu_read32( int addr )
 			logerror("%08x: Unaligned byte read %08x\n",R15,addr);
 
 		if ((addr&3)==1)
-			return rotr_32(result, 8);
+			return ((result&0x000000ff)<<24)|((result&0xffffff00)>> 8);
 		if ((addr&3)==2)
-			return rotr_32(result, 16);
+			return ((result&0x0000ffff)<<16)|((result&0xffff0000)>>16);
 		if ((addr&3)==3)
-			return rotr_32(result, 24);
+			return ((result&0x00ffffff)<< 8)|((result&0xff000000)>>24);
 	}
 
 	return result;
@@ -329,7 +342,7 @@ void arm_cpu_device::execute_run()
 
 		/* load instruction */
 		uint32_t pc = R15;
-		uint32_t insn = m_cache.read_dword( pc & ADDRESS_MASK );
+		uint32_t insn = m_pr32( pc & ADDRESS_MASK );
 
 		switch (insn >> INSN_COND_SHIFT)
 		{
@@ -434,10 +447,10 @@ void arm_cpu_device::arm_check_irq_state()
 {
 	uint32_t pc = R15+4; /* save old pc (already incremented in pipeline) */;
 
-	/* Exception priorities for ARM2/3:
+	/* Exception priorities (from ARM6, not specifically ARM2/3):
 
 	    Reset
-	    Data abort or address exception
+	    Data abort
 	    FIRQ
 	    IRQ
 	    Prefetch abort
@@ -446,19 +459,19 @@ void arm_cpu_device::arm_check_irq_state()
 
 	if (m_pendingFiq && (pc&F_MASK)==0)
 	{
-		standard_irq_callback(ARM_FIRQ_LINE, R15 & ADDRESS_MASK);
 		R15 = eARM_MODE_FIQ;    /* Set FIQ mode so PC is saved to correct R14 bank */
 		SetRegister( 14, pc );    /* save PC */
 		R15 = (pc&PSR_MASK)|(pc&IRQ_MASK)|0x1c|eARM_MODE_FIQ|I_MASK|F_MASK; /* Mask both IRQ & FIRQ, set PC=0x1c */
+		standard_irq_callback(ARM_FIRQ_LINE);
 		return;
 	}
 
 	if (m_pendingIrq && (pc&I_MASK)==0)
 	{
-		standard_irq_callback(ARM_IRQ_LINE, R15 & ADDRESS_MASK);
 		R15 = eARM_MODE_IRQ;    /* Set IRQ mode so PC is saved to correct R14 bank */
 		SetRegister( 14, pc );    /* save PC */
 		R15 = (pc&PSR_MASK)|(pc&IRQ_MASK)|0x18|eARM_MODE_IRQ|I_MASK|(pc&F_MASK); /* Mask only IRQ, set PC=0x18 */
+		standard_irq_callback(ARM_IRQ_LINE);
 		return;
 	}
 }
@@ -483,7 +496,16 @@ void arm_cpu_device::device_start()
 {
 	m_program = &space(AS_PROGRAM);
 
-	m_program->cache(m_cache);
+	if(m_program->endianness() == ENDIANNESS_LITTLE)
+	{
+		m_program->cache(m_cachele);
+		m_pr32 = [this](offs_t address) -> u32 { return m_cachele.read_dword(address); };
+	}
+	else
+	{
+		m_program->cache(m_cachebe);
+		m_pr32 = [this](offs_t address) -> u32 { return m_cachebe.read_dword(address); };
+	}
 
 	save_item(NAME(m_sArmRegister));
 	save_item(NAME(m_coproRegister));
@@ -560,7 +582,14 @@ void arm_cpu_device::HandleBranch( uint32_t insn )
 	}
 
 	/* Sign-extend the 24-bit offset in our calculations */
-	R15 = ((R15 + (util::sext(off, 26) + 8)) & ADDRESS_MASK) | (R15 & ~ADDRESS_MASK);
+	if (off & 0x2000000u)
+	{
+		R15 = ((R15 - (((~(off | 0xfc000000u)) + 1) - 8)) & ADDRESS_MASK) | (R15 & ~ADDRESS_MASK);
+	}
+	else
+	{
+		R15 = ((R15 + (off + 8)) & ADDRESS_MASK) | (R15 & ~ADDRESS_MASK);
+	}
 	m_icount -= 2 * S_CYCLE + N_CYCLE;
 }
 
@@ -784,7 +813,7 @@ void arm_cpu_device::HandleALU( uint32_t insn )
 		by = (insn & INSN_OP2_ROTATE) >> INSN_OP2_ROTATE_SHIFT;
 		if (by)
 		{
-			op2 = rotr_32(insn & INSN_OP2_IMM, by << 1);
+			op2 = ROR(insn & INSN_OP2_IMM, by << 1);
 			sc = op2 & SIGN_BIT;
 		}
 		else
@@ -1300,7 +1329,7 @@ uint32_t arm_cpu_device::decodeShift(uint32_t insn, uint32_t *pCarry)
 		{
 			*pCarry = k ? (rm & (1 << (32 - k))) : (R15 & C_MASK);
 		}
-		return rm << k;
+		return k ? LSL(rm, k) : rm;
 
 	case 1:                         /* LSR */
 		if (k == 0 || k == 32)
@@ -1316,7 +1345,7 @@ uint32_t arm_cpu_device::decodeShift(uint32_t insn, uint32_t *pCarry)
 		else
 		{
 			if (pCarry) *pCarry = (rm & (1 << (k - 1)));
-			return rm >> k;
+			return LSR(rm, k);
 		}
 
 	case 2:                     /* ASR */
@@ -1328,9 +1357,9 @@ uint32_t arm_cpu_device::decodeShift(uint32_t insn, uint32_t *pCarry)
 		else
 		{
 			if (rm & SIGN_BIT)
-				return (rm >> k) | (0xffffffffu << (32 - k));
+				return LSR(rm, k) | (0xffffffffu << (32 - k));
 			else
-				return (rm >> k);
+				return LSR(rm, k);
 		}
 
 	case 3:                     /* ROR and RRX */
@@ -1338,12 +1367,12 @@ uint32_t arm_cpu_device::decodeShift(uint32_t insn, uint32_t *pCarry)
 		{
 			while (k > 32) k -= 32;
 			if (pCarry) *pCarry = rm & (1 << (k - 1));
-			return rotr_32(rm, k);
+			return ROR(rm, k);
 		}
 		else
 		{
 			if (pCarry) *pCarry = (rm & 1);
-			return (rm >> 1) | ((R15 & C_MASK) << 2);
+			return LSR(rm, 1) | ((R15 & C_MASK) << 2);
 		}
 	}
 

@@ -19,8 +19,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 #define MCLK 12000000
 
 
@@ -73,14 +71,14 @@ private:
 	std::unique_ptr<uint8_t[]> m_vram;
 	void dac_adr_s_w(uint8_t data);
 	void dac_adr_e_w(uint8_t data);
-	void rombank_w(int state);
-	void flip_screen_w(int state);
-	void colorbank_w(int state);
-	void video_enable_w(int state);
-	void irq_enable_w(int state);
-	void vrambank_w(int state);
-	void dac_bank_w(int state);
-	void coin_counter_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(rombank_w);
+	DECLARE_WRITE_LINE_MEMBER(flip_screen_w);
+	DECLARE_WRITE_LINE_MEMBER(colorbank_w);
+	DECLARE_WRITE_LINE_MEMBER(video_enable_w);
+	DECLARE_WRITE_LINE_MEMBER(irq_enable_w);
+	DECLARE_WRITE_LINE_MEMBER(vrambank_w);
+	DECLARE_WRITE_LINE_MEMBER(dac_bank_w);
+	DECLARE_WRITE_LINE_MEMBER(coin_counter_w);
 	void input_sel1_w(uint8_t data);
 	void input_sel2_w(uint8_t data);
 	uint8_t keys_r();
@@ -184,44 +182,44 @@ void mjsister_state::dac_adr_e_w(uint8_t data)
 	m_dac_busy = 1;
 }
 
-void mjsister_state::rombank_w(int state)
+WRITE_LINE_MEMBER(mjsister_state::rombank_w)
 {
 	m_rombank->set_entry((m_mainlatch[0]->q0_r() << 1) | m_mainlatch[1]->q6_r());
 }
 
-void mjsister_state::flip_screen_w(int state)
+WRITE_LINE_MEMBER(mjsister_state::flip_screen_w)
 {
 	flip_screen_set(state);
 }
 
-void mjsister_state::colorbank_w(int state)
+WRITE_LINE_MEMBER(mjsister_state::colorbank_w)
 {
 	m_colorbank = (m_mainlatch[0]->output_state() >> 2) & 7;
 }
 
-void mjsister_state::video_enable_w(int state)
+WRITE_LINE_MEMBER(mjsister_state::video_enable_w)
 {
 	m_video_enable = state;
 }
 
-void mjsister_state::irq_enable_w(int state)
+WRITE_LINE_MEMBER(mjsister_state::irq_enable_w)
 {
 	m_irq_enable = state;
 	if (!m_irq_enable)
 		m_maincpu->set_input_line(0, CLEAR_LINE);
 }
 
-void mjsister_state::vrambank_w(int state)
+WRITE_LINE_MEMBER(mjsister_state::vrambank_w)
 {
 	m_vrambank->set_entry(state);
 }
 
-void mjsister_state::dac_bank_w(int state)
+WRITE_LINE_MEMBER(mjsister_state::dac_bank_w)
 {
 	m_dac_bank = state;
 }
 
-void mjsister_state::coin_counter_w(int state)
+WRITE_LINE_MEMBER(mjsister_state::coin_counter_w)
 {
 	machine().bookkeeping().coin_counter_w(0, state);
 }
@@ -495,8 +493,6 @@ ROM_START( mjsister )
 	ROM_LOAD( "ms07.bpr", 0x0200,  0x0100, CRC(6cb3a735) SHA1(468ae3d40552dc2ec24f5f2988850093d73948a6) ) // B
 	ROM_LOAD( "ms08.bpr", 0x0300,  0x0100, CRC(da2b3b38) SHA1(4de99c17b227653bc1b904f1309f447f5a0ab516) ) // ?
 ROM_END
-
-} // anonymous namespace
 
 
 /*************************************

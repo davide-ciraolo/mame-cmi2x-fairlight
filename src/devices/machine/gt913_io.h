@@ -22,11 +22,10 @@ class gt913_io_hle_device : public device_t
 public:
 	// construction/destruction
 	gt913_io_hle_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock = 0);
-	template<typename T, typename U> gt913_io_hle_device(const machine_config &mconfig, const char *tag, device_t *owner, T &&cpu, U &&intc, int t0irq, int t1irq)
-		: gt913_io_hle_device(mconfig, tag, owner)
+	gt913_io_hle_device(const machine_config &mconfig, const char *tag, device_t *owner, const char *intc, int t0irq, int t1irq)
+		: gt913_io_hle_device(mconfig, tag, owner, 0)
 	{
-		m_cpu.set_tag(std::forward<T>(cpu));
-		m_intc.set_tag(std::forward<U>(intc));
+		m_intc_tag = intc;
 		m_timer_irq[0] = t0irq;
 		m_timer_irq[1] = t1irq;
 	}
@@ -51,8 +50,10 @@ protected:
 	TIMER_CALLBACK_MEMBER(irq_timer_tick);
 
 private:
-	required_device<h8_device> m_cpu;
-	required_device<h8_intc_device> m_intc;
+	required_device<cpu_device> m_cpu;
+	address_space *m_cpu_io;
+	h8_intc_device *m_intc;
+	const char *m_intc_tag;
 
 	/* timers */
 	uint8_t m_timer_control[2];

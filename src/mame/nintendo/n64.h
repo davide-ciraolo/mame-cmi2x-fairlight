@@ -10,11 +10,6 @@
 #include "cpu/rsp/rsp.h"
 #include "cpu/mips/mips3.h"
 #include "sound/dmadac.h"
-#include "bus/generic/slot.h"
-#include "bus/generic/carts.h"
-#include "imagedev/harddriv.h"
-
-#include "screen.h"
 
 /*----------- driver state -----------*/
 
@@ -33,7 +28,6 @@ public:
 		, m_rsp_imem(*this, "rsp_imem")
 		, m_rsp_dmem(*this, "rsp_dmem")
 		, m_rcp_periphs(*this, "rcp")
-		, m_screen(*this, "screen")
 	{
 	}
 
@@ -42,8 +36,8 @@ public:
 	virtual void video_start() override;
 	void n64_machine_stop();
 
-	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	void screen_vblank(int state);
+	uint32_t screen_update_n64(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank_n64);
 
 	// Getters
 	n64_rdp* rdp() { return m_rdp.get(); }
@@ -61,12 +55,8 @@ protected:
 
 	required_device<n64_periphs> m_rcp_periphs;
 
-	required_device<screen_device> m_screen;
-
 	/* video-related */
 	std::unique_ptr<n64_rdp> m_rdp;
-
-	bitmap_rgb32 m_interlace_bitmap[2];
 };
 
 /*----------- devices -----------*/
@@ -136,9 +126,6 @@ public:
 	void si_dma_tick();
 	void reset_tick();
 	void video_update(bitmap_rgb32 &bitmap);
-	void field_update();
-	u8 get_current_field() { return field; }
-	bool is_interlace_mode() { return bool(BIT(vi_control, 6)); }
 
 	// Video Interface (VI) registers
 	uint32_t vi_width = 0;

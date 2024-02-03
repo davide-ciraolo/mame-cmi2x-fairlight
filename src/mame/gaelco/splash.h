@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Manuel Abadia, David Haywood
-#ifndef MAME_GAELCO_SPLASH_H
-#define MAME_GAELCO_SPLASH_H
+#ifndef MAME_INCLUDES_SPLASH_H
+#define MAME_INCLUDES_SPLASH_H
 
 #pragma once
 
@@ -70,13 +70,13 @@ protected:
 
 	// common
 	void vram_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
-	void coin1_lockout_w(int state);
-	void coin2_lockout_w(int state);
-	void coin1_counter_w(int state);
-	void coin2_counter_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(coin1_lockout_w);
+	DECLARE_WRITE_LINE_MEMBER(coin2_lockout_w);
+	DECLARE_WRITE_LINE_MEMBER(coin1_counter_w);
+	DECLARE_WRITE_LINE_MEMBER(coin2_counter_w);
 
 	// splash specific
-	void splash_msm5205_int(int state);
+	DECLARE_WRITE_LINE_MEMBER(splash_msm5205_int);
 	void splash_adpcm_data_w(uint8_t data);
 	void splash_adpcm_control_w(uint8_t data);
 
@@ -84,7 +84,7 @@ protected:
 	uint16_t roldfrog_bombs_r();
 	void roldfrog_vblank_ack_w(uint8_t data);
 	uint8_t roldfrog_unk_r();
-	void ym_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(ym_irq);
 
 	//roldfrog and funystrp specific
 	void sound_bank_w(uint8_t data);
@@ -142,8 +142,8 @@ private:
 	void msm1_interrupt_w(uint8_t data);
 	void msm2_interrupt_w(uint8_t data);
 	void msm2_data_w(uint8_t data);
-	void adpcm_int1(int state);
-	void adpcm_int2(int state);
+	DECLARE_WRITE_LINE_MEMBER(adpcm_int1);
+	DECLARE_WRITE_LINE_MEMBER(adpcm_int2);
 	void protection_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	uint16_t protection_r(offs_t offset);
 	void eeprom_w(uint8_t data);
@@ -171,4 +171,4 @@ private:
 	int m_snd_interrupt_enable2 = 0;
 };
 
-#endif // MAME_GAELCO_SPLASH_H
+#endif // MAME_INCLUDES_SPLASH_H

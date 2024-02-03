@@ -10,10 +10,7 @@
 
 #include "harddisk.h"
 
-#include "chd.h"
 #include "ioprocs.h"
-
-#include "osdcore.h"
 
 #include <cstdlib>
 

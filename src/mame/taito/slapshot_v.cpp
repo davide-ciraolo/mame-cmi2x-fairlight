@@ -402,7 +402,7 @@ void slapshot_state::update_sprites_active_area()
 	}
 }
 
-void slapshot_state::screen_vblank_no_buffer(int state)
+WRITE_LINE_MEMBER(slapshot_state::screen_vblank_no_buffer)
 {
 	// rising edge
 	if (state)

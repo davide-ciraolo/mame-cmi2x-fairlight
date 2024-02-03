@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/xdf_dsk.cpp
+    formats/xdf_dsk.c
 
     x68k bare-bones formats
 
@@ -14,17 +14,17 @@ xdf_format::xdf_format() : upd765_format(formats)
 {
 }
 
-const char *xdf_format::name() const noexcept
+const char *xdf_format::name() const
 {
 	return "xdf";
 }
 
-const char *xdf_format::description() const noexcept
+const char *xdf_format::description() const
 {
 	return "XDF disk image";
 }
 
-const char *xdf_format::extensions() const noexcept
+const char *xdf_format::extensions() const
 {
 	return "xdf,hdm,2hd";
 }

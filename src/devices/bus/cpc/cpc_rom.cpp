@@ -101,22 +101,23 @@ void cpc_rom_image_device::device_start()
 /*-------------------------------------------------
     DEVICE_IMAGE_LOAD( rom )
 -------------------------------------------------*/
-std::pair<std::error_condition, std::string> cpc_rom_image_device::call_load()
+image_init_result cpc_rom_image_device::call_load()
 {
-	uint64_t const size = length();
+	device_image_interface* image = this;
+	uint64_t size = image->length();
 
 	m_base = std::make_unique<uint8_t[]>(16384);
 	if(size <= 16384)
 	{
-		fread(m_base, size);
+		image->fread(m_base,size);
 	}
 	else
 	{
-		fseek(size - 16384, SEEK_SET);
-		fread(m_base, 16384);
+		image->fseek(size-16384,SEEK_SET);
+		image->fread(m_base,16384);
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 

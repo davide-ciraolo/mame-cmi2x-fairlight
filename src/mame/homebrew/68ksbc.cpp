@@ -33,8 +33,6 @@
 #include "machine/clock.h"
 
 
-namespace {
-
 class c68ksbc_state : public driver_device
 {
 public:
@@ -88,9 +86,6 @@ ROM_START( 68ksbc )
 	ROM_REGION(0x3000, "maincpu", 0)
 	ROM_LOAD( "t68k.bin", 0x0000, 0x2f78, CRC(20a8d0d0) SHA1(544fd8bd8ed017115388c8b0f7a7a59a32253e43) )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

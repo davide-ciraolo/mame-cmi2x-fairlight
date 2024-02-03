@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Vas Crabb
-#ifndef MAME_ZACCARIA_ZACCARIA_A_H
-#define MAME_ZACCARIA_ZACCARIA_A_H
+#ifndef MAME_AUDIO_ZACCARIA_H
+#define MAME_AUDIO_ZACCARIA_H
 
 #pragma once
 
@@ -59,7 +59,7 @@ public:
 
 	// host interface
 	void sound_w(u8 data);
-	void reset_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(reset_w);
 
 	void zac1b11107_melody_map(address_map &map);
 protected:
@@ -80,8 +80,8 @@ public:
 
 	// host interface
 	void hs_w(u8 data);
-	int acs_r();
-	void ressound_w(int state);
+	DECLARE_READ_LINE_MEMBER(acs_r);
+	DECLARE_WRITE_LINE_MEMBER(ressound_w);
 
 	// master audio section handlers
 	u8 host_command_r();
@@ -123,4 +123,4 @@ protected:
 	u8  m_host_command;
 };
 
-#endif // MAME_ZACCARIA_ZACCARIA_A_H
+#endif // MAME_AUDIO_ZACCARIA_H

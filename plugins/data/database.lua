@@ -10,7 +10,7 @@ local function check_db_result(msg)
 end
 
 local function settings_path()
-	return manager.machine.options.entries.homepath:value():match('([^;]+)') .. '/data'
+	return emu.subst_env(manager.machine.options.entries.homepath:value():match('([^;]+)')) .. '/data'
 end
 
 local function check_version_table()
@@ -112,9 +112,9 @@ function dbtable.set_version(filename, version)
 	local result
 	while result == nil do
 		local status = query:step()
-		if status == sql.DONE then
+		if status == sqlite3.DONE then
 			result = true
-		elseif result ~= sql.ROW then
+		elseif result ~= sqlite3.ROW then
 			result = false
 		end
 	end
@@ -147,7 +147,7 @@ end
 function dbtable.open_data_file(file)
 	local fh, filepath
 	for path in mame_manager.ui.options.entries.historypath:value():gmatch('([^;]+)') do
-		filepath = path .. '/' .. file
+		filepath = emu.subst_env(path) .. '/' .. file
 		fh = io.open(filepath, 'r')
 		if fh then
 			break

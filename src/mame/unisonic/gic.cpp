@@ -95,7 +95,7 @@ gic_device::gic_device(const machine_config &mconfig, device_type type, const ch
 	, m_audiocnt(0)
 	, m_audioval(0)
 	, m_audioreset(0)
-	, m_ram(*this, 0xff)
+	, m_ram(*this)
 {
 }
 
@@ -119,6 +119,8 @@ void gic_device::device_start()
 
 	// allocate the audio stream
 	m_stream = stream_alloc( 0, 1, clock()/(2*228) );
+
+	m_ram.resolve_safe(0xff);
 }
 
 

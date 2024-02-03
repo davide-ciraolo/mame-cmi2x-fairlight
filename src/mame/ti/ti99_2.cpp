@@ -174,9 +174,9 @@
 #define TI992_ROM          "rom_region"
 #define TI992_SCREEN_TAG   "screen"
 
-#define LOG_WARN           (1U << 1)   // Warnings
-#define LOG_CRU            (1U << 2)   // CRU activities
-#define LOG_SIGNALS        (1U << 3)   // Signals like HOLD/HOLDA
+#define LOG_WARN           (1U<<1)   // Warnings
+#define LOG_CRU            (1U<<2)   // CRU activities
+#define LOG_SIGNALS        (1U<<3)   // Signals like HOLD/HOLDA
 
 // Minimum log should be config and warnings
 #define VERBOSE ( LOG_GENERAL | LOG_WARN )
@@ -217,12 +217,12 @@ private:
 	uint8_t mem_read(offs_t offset);
 	void mem_write(offs_t offset, uint8_t data);
 
-	void hold(int state);
-	void holda(int state);
-	void interrupt(int state);
-	void cassette_output(int state);
+	DECLARE_WRITE_LINE_MEMBER(hold);
+	DECLARE_WRITE_LINE_MEMBER(holda);
+	DECLARE_WRITE_LINE_MEMBER(interrupt);
+	DECLARE_WRITE_LINE_MEMBER(cassette_output);
 
-	void rombank_set(int state);
+	DECLARE_WRITE_LINE_MEMBER( rombank_set );
 
 	void crumap(address_map &map);
 	void memmap(address_map &map);
@@ -260,7 +260,7 @@ void ti99_2_state::driver_reset()
 	m_maincpu->reset_line(ASSERT_LINE);
 }
 
-void ti99_2_state::rombank_set(int state)
+WRITE_LINE_MEMBER( ti99_2_state::rombank_set )
 {
 	m_otherbank = (state==ASSERT_LINE);
 }
@@ -383,7 +383,7 @@ void ti99_2_state::mem_write(offs_t offset, uint8_t data)
 /*
     Called by the VDC as a vblank interrupt
 */
-void ti99_2_state::interrupt(int state)
+WRITE_LINE_MEMBER(ti99_2_state::interrupt)
 {
 	LOGMASKED(LOG_SIGNALS, "Interrupt: %d\n", state);
 	m_maincpu->set_input_line(INT_9995_INT4, state);
@@ -392,7 +392,7 @@ void ti99_2_state::interrupt(int state)
 /*
     Called by the VDC to HOLD the CPU
 */
-void ti99_2_state::hold(int state)
+WRITE_LINE_MEMBER(ti99_2_state::hold)
 {
 	LOGMASKED(LOG_SIGNALS, "HOLD: %d\n", state);
 	m_maincpu->hold_line(state);
@@ -401,7 +401,7 @@ void ti99_2_state::hold(int state)
 /*
     Called by the CPU to ack the HOLD
 */
-void ti99_2_state::holda(int state)
+WRITE_LINE_MEMBER(ti99_2_state::holda)
 {
 	LOGMASKED(LOG_SIGNALS, "HOLDA: %d\n", state);
 }

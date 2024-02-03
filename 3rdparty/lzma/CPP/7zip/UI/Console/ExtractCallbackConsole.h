@@ -1,7 +1,7 @@
 // ExtractCallbackConsole.h
 
-#ifndef ZIP7_INC_EXTRACT_CALLBACK_CONSOLE_H
-#define ZIP7_INC_EXTRACT_CALLBACK_CONSOLE_H
+#ifndef __EXTRACT_CALLBACK_CONSOLE_H
+#define __EXTRACT_CALLBACK_CONSOLE_H
 
 #include "../../../Common/StdOutStream.h"
 
@@ -15,34 +15,11 @@
 
 #include "OpenCallbackConsole.h"
 
-/*
-struct CErrorPathCodes2
+class CExtractScanConsole: public IDirItemsCallback
 {
-  FStringVector Paths;
-  CRecordVector<DWORD> Codes;
-
-  void AddError(const FString &path, DWORD systemError)
-  {
-    Paths.Add(path);
-    Codes.Add(systemError);
-  }
-  void Clear()
-  {
-    Paths.Clear();
-    Codes.Clear();
-  }
-};
-*/
-
-class CExtractScanConsole Z7_final: public IDirItemsCallback
-{
-  Z7_IFACE_IMP(IDirItemsCallback)
-
   CStdOutStream *_so;
   CStdOutStream *_se;
   CPercentPrinter _percent;
-
-  // CErrorPathCodes2 ScanErrors;
 
   bool NeedPercents() const { return _percent._so != NULL; }
   
@@ -55,7 +32,6 @@ class CExtractScanConsole Z7_final: public IDirItemsCallback
   }
 
 public:
-
   void Init(CStdOutStream *outStream, CStdOutStream *errorStream, CStdOutStream *percentStream)
   {
     _so = outStream;
@@ -67,6 +43,8 @@ public:
 
   void StartScanning();
   
+  INTERFACE_IDirItemsCallback(;)
+
   void CloseScanning()
   {
     if (NeedPercents())
@@ -79,36 +57,16 @@ public:
 
 
 
-class CExtractCallbackConsole Z7_final:
-  public IFolderArchiveExtractCallback,
+class CExtractCallbackConsole:
   public IExtractCallbackUI,
   // public IArchiveExtractCallbackMessage,
   public IFolderArchiveExtractCallback2,
- #ifndef Z7_NO_CRYPTO
+  #ifndef _NO_CRYPTO
   public ICryptoGetTextPassword,
- #endif
+  #endif
   public COpenCallbackConsole,
   public CMyUnknownImp
 {
-  Z7_COM_QI_BEGIN2(IFolderArchiveExtractCallback)
-  // Z7_COM_QI_ENTRY(IArchiveExtractCallbackMessage)
-  Z7_COM_QI_ENTRY(IFolderArchiveExtractCallback2)
- #ifndef Z7_NO_CRYPTO
-  Z7_COM_QI_ENTRY(ICryptoGetTextPassword)
- #endif
-  Z7_COM_QI_END
-  Z7_COM_ADDREF_RELEASE
-
-  Z7_IFACE_COM7_IMP(IProgress)
-  Z7_IFACE_COM7_IMP(IFolderArchiveExtractCallback)
-  Z7_IFACE_IMP(IExtractCallbackUI)
-  // Z7_IFACE_COM7_IMP(IArchiveExtractCallbackMessage)
-  Z7_IFACE_COM7_IMP(IFolderArchiveExtractCallback2)
- #ifndef Z7_NO_CRYPTO
-  Z7_IFACE_COM7_IMP(ICryptoGetTextPassword)
- #endif
-  
-
   AString _tempA;
   UString _tempU;
 
@@ -127,7 +85,32 @@ class CExtractCallbackConsole Z7_final:
     if (_so)
       _so->Flush();
   }
+
 public:
+  MY_QUERYINTERFACE_BEGIN2(IFolderArchiveExtractCallback)
+  // MY_QUERYINTERFACE_ENTRY(IArchiveExtractCallbackMessage)
+  MY_QUERYINTERFACE_ENTRY(IFolderArchiveExtractCallback2)
+  #ifndef _NO_CRYPTO
+  MY_QUERYINTERFACE_ENTRY(ICryptoGetTextPassword)
+  #endif
+  MY_QUERYINTERFACE_END
+  MY_ADDREF_RELEASE
+
+  STDMETHOD(SetTotal)(UInt64 total);
+  STDMETHOD(SetCompleted)(const UInt64 *completeValue);
+
+  INTERFACE_IFolderArchiveExtractCallback(;)
+
+  INTERFACE_IExtractCallbackUI(;)
+  // INTERFACE_IArchiveExtractCallbackMessage(;)
+  INTERFACE_IFolderArchiveExtractCallback2(;)
+
+  #ifndef _NO_CRYPTO
+
+  STDMETHOD(CryptoGetTextPassword)(BSTR *password);
+
+  #endif
+  
   UInt64 NumTryArcs;
   
   bool ThereIsError_in_Current;

@@ -35,8 +35,6 @@
 #include "kdt6.lh"
 
 
-namespace {
-
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
@@ -77,7 +75,7 @@ protected:
 	virtual void machine_reset() override;
 
 private:
-	void busreq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(busreq_w);
 	uint8_t memory_r(offs_t offset);
 	void memory_w(offs_t offset, uint8_t data);
 	uint8_t io_r(offs_t offset);
@@ -104,7 +102,7 @@ private:
 	TIMER_DEVICE_CALLBACK_MEMBER(beeper_off);
 
 	void fdc_tc_w(uint8_t data);
-	void fdc_drq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(fdc_drq_w);
 	void drive0_led_cb(floppy_image_device *floppy, int state);
 	void drive1_led_cb(floppy_image_device *floppy, int state);
 
@@ -112,9 +110,9 @@ private:
 	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
 	void pio_porta_w(uint8_t data);
-	void keyboard_rx_w(int state);
-	void rs232b_rx_w(int state);
-	void siob_tx_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(keyboard_rx_w);
+	DECLARE_WRITE_LINE_MEMBER(rs232b_rx_w);
+	DECLARE_WRITE_LINE_MEMBER(siob_tx_w);
 
 	void psi98_io(address_map &map);
 	void psi98_mem(address_map &map);
@@ -239,7 +237,7 @@ void kdt6_state::fdc_tc_w(uint8_t data)
 	m_fdc->tc_w(0);
 }
 
-void kdt6_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( kdt6_state::fdc_drq_w )
 {
 	if (!m_sasi_dma && BIT(m_status0, 4) == 0)
 		m_dma->rdy_w(state);
@@ -353,7 +351,7 @@ void kdt6_state::pio_porta_w(uint8_t data)
 	m_centronics->write_init(BIT(data, 1));
 }
 
-void kdt6_state::keyboard_rx_w(int state)
+WRITE_LINE_MEMBER( kdt6_state::keyboard_rx_w )
 {
 	if (machine().phase() >= machine_phase::RESET)
 	{
@@ -362,7 +360,7 @@ void kdt6_state::keyboard_rx_w(int state)
 	}
 }
 
-void kdt6_state::rs232b_rx_w(int state)
+WRITE_LINE_MEMBER( kdt6_state::rs232b_rx_w )
 {
 	if (machine().phase() >= machine_phase::RESET)
 	{
@@ -371,7 +369,7 @@ void kdt6_state::rs232b_rx_w(int state)
 	}
 }
 
-void kdt6_state::siob_tx_w(int state)
+WRITE_LINE_MEMBER( kdt6_state::siob_tx_w )
 {
 	if (machine().phase() >= machine_phase::RESET)
 	{
@@ -387,7 +385,7 @@ void kdt6_state::siob_tx_w(int state)
 //  MACHINE
 //**************************************************************************
 
-void kdt6_state::busreq_w(int state)
+WRITE_LINE_MEMBER( kdt6_state::busreq_w )
 {
 	m_cpu->set_input_line(Z80_INPUT_LINE_BUSRQ, state);
 	m_dma->bai_w(state);
@@ -754,8 +752,6 @@ ROM_START( psi98 )
 	// 7-C1ED  16L8  video memory timing controller
 	// 8-CD9F  12H6  fdc timing generator
 ROM_END
-
-} // anonymous namespace
 
 
 //**************************************************************************

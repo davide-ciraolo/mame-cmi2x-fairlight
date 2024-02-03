@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
+license:CC0
 -->
 <softwarelist name="c64_flop_orig" description="Commodore 64 original disks">
 
@@ -682,7 +682,7 @@ license:CC0-1.0
 	<!-- Applications -->
 
 	<software name="basickaa">
-		<description>BASIC-kääntäjä (Finland)</description>
+		<description>BASIC-kääntäjä (Fin)</description>
 		<year>1984</year>
 		<publisher>Amersoft</publisher>
 
@@ -694,7 +694,7 @@ license:CC0-1.0
 	</software>
 
 	<software name="sprbas64">
-		<description>SuperBase 64 (Finland)</description>
+		<description>SuperBase 64 (Fin)</description>
 		<year>1983</year>
 		<publisher>Precision</publisher>
 

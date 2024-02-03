@@ -17,16 +17,18 @@
 //  MACROS / CONSTANTS
 //**************************************************************************
 
-#define LOG_SETUP   (1U << 1)
-#define LOG_CMD     (1U << 2)
-#define LOG_DATA    (1U << 3)
-#define LOG_CNTR    (1U << 4)
+//#define LOG_GENERAL (1U <<  0) // Already defined in logmacro.h
+#define LOG_SETUP   (1U <<  1)
+#define LOG_CMD     (1U <<  2)
+#define LOG_DATA    (1U <<  3)
+#define LOG_CNTR    (1U <<  4)
 
 //#define VERBOSE  (LOG_DATA|LOG_SETUP|LOG_CMD|LOG_CNTR|LOG_GENERAL)
 //#define LOG_OUTPUT_STREAM std::cout
 
 #include "logmacro.h"
 
+//#define LOG(...)      LOGMASKED(LOG_GENERAL, __VA_ARGS__) // Already defined in logmacro.h
 #define LOGSETUP(...) LOGMASKED(LOG_SETUP,   __VA_ARGS__)
 #define LOGCMD(...)   LOGMASKED(LOG_CMD,     __VA_ARGS__)
 #define LOGDATA(...)  LOGMASKED(LOG_DATA,    __VA_ARGS__)
@@ -143,7 +145,7 @@ void sda5708_device::update_display()
 	}
 }
 
-void sda5708_device::load_w(int state)
+WRITE_LINE_MEMBER( sda5708_device::load_w )
 {
 	LOG("%s - line %s\n", FUNCNAME, state == ASSERT_LINE ? "asserted" : "cleared");
 	if (m_load != state && m_reset == CLEAR_LINE && state == CLEAR_LINE)
@@ -205,7 +207,7 @@ void sda5708_device::load_w(int state)
 // line goes high. The least significant bit D0 is loaded first.
 //-------------------------------------------------
 
-void sda5708_device::data_w(int state)
+WRITE_LINE_MEMBER( sda5708_device::data_w )
 {
 	LOG("%s - line %s\n", FUNCNAME, state == ASSERT_LINE ? "asserted" : "cleared");
 	m_data = state;
@@ -220,7 +222,7 @@ void sda5708_device::data_w(int state)
 // 200ns. Setup time, the time between a stable Data line and a rising SDCLK signal, should be a minimum of 50ns.
 //-------------------------------------------------
 
-void sda5708_device::sdclk_w(int state)
+WRITE_LINE_MEMBER( sda5708_device::sdclk_w )
 {
 	LOG("%s - line %s\n", FUNCNAME, state == ASSERT_LINE ? "asserted" : "cleared");
 
@@ -242,7 +244,7 @@ void sda5708_device::sdclk_w(int state)
 // the circuit and is left at high level from then on.
 //-------------------------------------------------
 
-void sda5708_device::reset_w(int state)
+WRITE_LINE_MEMBER( sda5708_device::reset_w )
 {
 	LOG("%s - line %s\n", FUNCNAME, state == ASSERT_LINE ? "asserted" : "cleared");
 	m_reset = state;

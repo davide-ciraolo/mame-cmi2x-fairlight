@@ -322,6 +322,7 @@ void pgm_state::draw_sprite_new_zoomed(int wide, int high, int xpos, int ypos, i
 
 void pgm_state::draw_sprite_line_basic(int wide, u16* dest, u8* destpri, const rectangle &cliprect, int flip, int xpos, int pri, int realxsize, int palt, bool draw)
 {
+	int xoffset = 0;
 	int xdrawpos = 0;
 	int xcntdraw = 0;
 
@@ -339,6 +340,8 @@ void pgm_state::draw_sprite_line_basic(int wide, u16* dest, u8* destpri, const r
 
 					if (draw)
 					{
+						xoffset++;
+
 						if (!get_flipx(flip))
 							xdrawpos = xpos + xcntdraw;
 						else
@@ -352,6 +355,7 @@ void pgm_state::draw_sprite_line_basic(int wide, u16* dest, u8* destpri, const r
 				}
 				else
 				{
+					xoffset++;
 					xcntdraw++;
 				}
 
@@ -375,6 +379,8 @@ void pgm_state::draw_sprite_line_basic(int wide, u16* dest, u8* destpri, const r
 
 					if (draw)
 					{
+						xoffset++;
+
 						if (!get_flipx(flip))
 							xdrawpos = xpos + xcntdraw;
 						else
@@ -388,6 +394,7 @@ void pgm_state::draw_sprite_line_basic(int wide, u16* dest, u8* destpri, const r
 				}
 				else
 				{
+					xoffset++;
 					xcntdraw++;
 				}
 
@@ -548,10 +555,8 @@ void pgm_state::get_sprites()
 			yzom = 0x10 - yzom;
 		}
 
-		// some games (e.g. ddp3) have zero in last zoom table entry but expect 1
-		// is the last entry hard-coded to 1, or does zero have the same effect as 1?
-		m_sprite_ptr_pre->xzoom = (xzom == 0xf) ? 1 : ((u32(sprite_zoomtable[xzom * 2]) << 16) | sprite_zoomtable[xzom * 2 + 1]);
-		m_sprite_ptr_pre->yzoom = (yzom == 0xf) ? 1 : ((u32(sprite_zoomtable[yzom * 2]) << 16) | sprite_zoomtable[yzom * 2 + 1]);
+		m_sprite_ptr_pre->xzoom = (sprite_zoomtable[xzom * 2] << 16) | sprite_zoomtable[xzom * 2 + 1];
+		m_sprite_ptr_pre->yzoom = (sprite_zoomtable[yzom * 2] << 16) | sprite_zoomtable[yzom * 2 + 1];
 		m_sprite_ptr_pre->xgrow = xgrow;
 		m_sprite_ptr_pre->ygrow = ygrow;
 		m_sprite_ptr_pre++;
@@ -656,7 +661,7 @@ u32 pgm_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap, const 
 	return 0;
 }
 
-void pgm_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(pgm_state::screen_vblank)
 {
 	// rising edge
 	if (state)

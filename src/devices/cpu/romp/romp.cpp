@@ -5,7 +5,7 @@
  * IBM Research and Office Products Division Microprocessor (ROMP).
  *
  * Sources:
- *   - IBM RT PC Hardware Technical Reference Volume I, 75X0232, March 1987
+ *   - http://bitsavers.org/pdf/ibm/pc/rt/75X0232_RT_PC_Technical_Reference_Volume_1_Jun87.pdf
  *
  * TODO:
  *   - configurable storage channel
@@ -18,6 +18,7 @@
 #include "romp.h"
 #include "rompdasm.h"
 
+#define LOG_GENERAL   (1U << 0)
 #define LOG_INTERRUPT (1U << 1)
 
 //#define VERBOSE     (LOG_INTERRUPT)
@@ -74,7 +75,6 @@ void romp_device::device_start()
 	save_item(NAME(m_branch_state));
 	save_item(NAME(m_branch_source));
 	save_item(NAME(m_branch_target));
-	save_item(NAME(m_defer_int));
 }
 
 void romp_device::state_string_export(device_state_entry const &entry, std::string &str) const
@@ -104,7 +104,6 @@ void romp_device::device_reset()
 	// initialize the state
 	m_trap = false;
 	m_branch_state = DEFAULT;
-	m_defer_int = false;
 
 	// fetch initial iar
 	load<u32>(0, [this](u32 data) { m_scr[IAR] = data; });
@@ -115,9 +114,7 @@ void romp_device::execute_run()
 	// core execution loop
 	while (m_icount-- > 0)
 	{
-		if (m_defer_int)
-			m_defer_int = false;
-		else
+		if (m_branch_state != BRANCH)
 			interrupt_check();
 
 		if (m_branch_state == WAIT)
@@ -147,7 +144,7 @@ void romp_device::execute_run()
 				}
 			}
 			else
-				program_check(PCS_PCK | PCS_IOC);
+				program_check(PCS_PCK | PCS_IOC, m_branch_source);
 			break;
 		case 0x1: // stcs: store character short
 			store<u8>(r3_0(R3) + ((op >> 8) & 15), m_gpr[R2]);
@@ -183,7 +180,7 @@ void romp_device::execute_run()
 
 				if (m_branch_state == BRANCH)
 				{
-					program_check(PCS_PCK | PCS_IOC);
+					program_check(PCS_PCK | PCS_IOC, m_branch_source);
 					return;
 				}
 
@@ -276,7 +273,7 @@ void romp_device::execute_run()
 						m_icount -= 15;
 					}
 					else
-						program_check(PCS_PCK | PCS_IOC);
+						program_check(PCS_PCK | PCS_IOC, m_branch_source);
 					break;
 				case 0xc1: // ai: add immediate
 					flags_add(m_gpr[R3], s32(s16(i)));
@@ -309,8 +306,9 @@ void romp_device::execute_run()
 					m_gpr[R2] = r3 + s16(i);
 					break;
 				case 0xc9: // lm: load multiple
-					for (unsigned reg = R2, offset = r3 + s16(i); (reg < 16) && m_branch_state != EXCEPTION; reg++, offset += 4)
+					for (unsigned reg = R2, offset = r3 + s16(i); reg < 16; reg++, offset += 4)
 					{
+						// FIXME: multiple exceptions
 						load<u32>(offset, [this, reg](u32 data) { m_gpr[reg] = data; });
 						m_icount -= 2;
 					}
@@ -321,7 +319,7 @@ void romp_device::execute_run()
 					m_icount -= 4;
 					break;
 				case 0xcb: // ior: input/output read
-					if (((r3 + i) & 0xff00'0000U) || !m_mmu->pio_load(r3 + i, m_gpr[R2]))
+					if (((r3 + i) & 0xff00'0000U) || !m_mmu->ior(r3 + i, m_gpr[R2]))
 						program_check(PCS_PCK | PCS_DAE);
 					break;
 				case 0xcc: // ti: trap on condition immediate
@@ -333,7 +331,7 @@ void romp_device::execute_run()
 							program_check(PCS_PCK | PCS_PT);
 					}
 					else
-						program_check(PCS_PCK | PCS_IOC);
+						program_check(PCS_PCK | PCS_IOC, m_branch_source);
 					break;
 				case 0xcd: // l: load
 					load<u32>(r3 + s16(i), [this, op](u32 data) { m_gpr[R2] = data; });
@@ -366,14 +364,12 @@ void romp_device::execute_run()
 								m_scr[MPCS] &= ~MCS_ALL;
 							else
 								m_scr[MPCS] &= ~PCS_ALL;
-
-							// optionally defer interrupts
-							m_defer_int = BIT(op, 4);
+							// TODO: defer interrupt enable
 
 							m_icount -= 15;
 						}
 						else
-							program_check(PCS_PCK | PCS_IOC);
+							program_check(PCS_PCK | PCS_IOC, m_branch_source);
 					}
 					else
 						program_check(PCS_PCK | PCS_PIE);
@@ -420,8 +416,9 @@ void romp_device::execute_run()
 					m_gpr[R2] = r3 + (u32(i) << 16);
 					break;
 				case 0xd9: // stm: store multiple
-					for (unsigned reg = R2, offset = r3 + s16(i); (reg < 16) && m_branch_state != EXCEPTION; reg++, offset += 4)
+					for (unsigned reg = R2, offset = r3 + s16(i); reg < 16; reg++, offset += 4)
 					{
+						// FIXME: multiple exceptions
 						store<u32>(offset, m_gpr[reg]);
 						m_icount -= (m_scr[ICS] & ICS_TM) ? 3 : 2;
 					}
@@ -432,7 +429,7 @@ void romp_device::execute_run()
 					m_icount -= 4;
 					break;
 				case 0xdb: // iow: input/output write
-					if (((r3 + i) & 0xff00'0000U) || !m_mmu->pio_store(r3 + i, m_gpr[R2]))
+					if (((r3 + i) & 0xff00'0000U) || !m_mmu->iow(r3 + i, m_gpr[R2]))
 						program_check(PCS_PCK | PCS_DAE);
 					m_icount--;
 					break;
@@ -689,7 +686,7 @@ void romp_device::execute_run()
 					m_icount--;
 				}
 				else
-					program_check(PCS_PCK | PCS_IOC);
+					program_check(PCS_PCK | PCS_IOC, m_branch_source);
 				break;
 			case 0xbe: // tlt: trap if register less than
 				if (m_branch_state != BRANCH)
@@ -703,7 +700,7 @@ void romp_device::execute_run()
 					m_icount--;
 				}
 				else
-					program_check(PCS_PCK | PCS_IOC);
+					program_check(PCS_PCK | PCS_IOC, m_branch_source);
 				break;
 			case 0xbf: // mttb: move to test bit
 				if (m_gpr[R2] & (0x8000'0000U >> (m_gpr[R3] & 31)))
@@ -713,18 +710,13 @@ void romp_device::execute_run()
 				break;
 
 			case 0xe0: // abs: absolute
-				m_scr[CS] &= ~(CS_C | CS_O);
-				if (m_gpr[R3] == 0x8000'0000U)
-				{
-					m_gpr[R2] = m_gpr[R3];
-					m_scr[CS] |= CS_O;
-				}
-				else if (s32(m_gpr[R3]) < 0)
+				if (s32(m_gpr[R3]) < 0)
 					m_gpr[R2] = -s32(m_gpr[R3]);
 				else
 					m_gpr[R2] = m_gpr[R3];
-				flags_log(m_gpr[R2]);
 				m_icount--;
+				// TODO: test for maximum negative
+				// TODO: LT, EQ, GT, C0, OV
 				break;
 			case 0xe1: // a: add
 				flags_add(m_gpr[R2], m_gpr[R3]);
@@ -796,7 +788,7 @@ void romp_device::execute_run()
 					}
 				}
 				else
-					program_check(PCS_PCK | PCS_IOC);
+					program_check(PCS_PCK | PCS_IOC, m_branch_source);
 				break;
 			case 0xe9: // bnbrx: branch on not condition bit with execute
 				if (m_branch_state != BRANCH)
@@ -809,7 +801,7 @@ void romp_device::execute_run()
 					}
 				}
 				else
-					program_check(PCS_PCK | PCS_IOC);
+					program_check(PCS_PCK | PCS_IOC, m_branch_source);
 				break;
 
 			case 0xeb: // lhs: load half short
@@ -825,7 +817,7 @@ void romp_device::execute_run()
 					m_icount -= 4;
 				}
 				else
-					program_check(PCS_PCK | PCS_IOC);
+					program_check(PCS_PCK | PCS_IOC, m_branch_source);
 				break;
 			case 0xed: // balrx: branch and link with execute
 				if (m_branch_state != BRANCH)
@@ -837,7 +829,7 @@ void romp_device::execute_run()
 					m_icount -= 4;
 				}
 				else
-					program_check(PCS_PCK | PCS_IOC);
+					program_check(PCS_PCK | PCS_IOC, m_branch_source);
 				break;
 			case 0xee: // bbr: branch on condition bit
 				if (m_branch_state != BRANCH)
@@ -850,7 +842,7 @@ void romp_device::execute_run()
 					}
 				}
 				else
-					program_check(PCS_PCK | PCS_IOC);
+					program_check(PCS_PCK | PCS_IOC, m_branch_source);
 				break;
 			case 0xef: // bbrx: branch on condition bit with execute
 				if (m_branch_state != BRANCH)
@@ -864,7 +856,7 @@ void romp_device::execute_run()
 					}
 				}
 				else
-					program_check(PCS_PCK | PCS_IOC);
+					program_check(PCS_PCK | PCS_IOC, m_branch_source);
 				break;
 
 			case 0xf0: // wait: wait
@@ -873,7 +865,7 @@ void romp_device::execute_run()
 					if (m_branch_state != BRANCH)
 						m_branch_state = WAIT;
 					else
-						program_check(PCS_PCK | PCS_IOC);
+						program_check(PCS_PCK | PCS_IOC, m_branch_source);
 				}
 				else
 					program_check(PCS_PCK | PCS_PIE);
@@ -942,7 +934,6 @@ void romp_device::execute_run()
 		case DELAY:
 			m_scr[IAR] = updated_iar;
 			m_branch_state = BRANCH;
-			m_defer_int = true;
 			break;
 
 		case EXCEPTION:
@@ -960,33 +951,22 @@ void romp_device::execute_run()
 
 void romp_device::set_scr(unsigned scr, u32 data)
 {
-	if (VERBOSE & LOG_GENERAL)
+	static char const *const scr_names[16] =
 	{
-		static char const *const scr_names[16] =
-		{
-			"scr0", "scr1", "scr2", "scr3", "scr4", "scr5", "cous", "cou",
-			"ts",   "ecr",  "mq",   "mpcs", "irb",  "iar",  "ics",  "cs",
-		};
-
-		LOG("set_scr %s data 0x%08x (%s)\n", scr_names[scr], data, machine().describe_context());
-	}
-
-	static u32 const scr_mask[16] =
-	{
-		0, 0, 0, 0, 0, 0,                                               // reserved
-		0xffff'ffffU, 0xffff'ffffU,                                     // counter source and counter
-		TS_E | TS_I | TS_O | TS_P,
-		0,                                                              // reserved
-		0xffff'ffffU,                                                   // multiplier quotient
-		MCS_ALL | PCS_ALL,
-		IRB_ALL,
-		0xffff'fffeU,                                                   // instruction address
-		ICS_PE | ICS_MP | ICS_US | ICS_TM | ICS_IM | ICS_CS | ICS_PP,
-		CS_L | CS_E | CS_G | CS_C | CS_O | CS_T,
+		"scr0", "scr1", "scr2", "scr3", "scr4", "scr5", "cous", "cou",
+		"ts",   "ecr",  "mq",   "mpcs", "irb",  "iar",  "ics",  "cs",
 	};
 
+	LOG("set_scr %s data 0x%08x (%s)\n", scr_names[scr], data, machine().describe_context());
+
 	if (!(m_scr[ICS] & ICS_US) || scr == MQ || scr == CS)
-		m_scr[scr] = data & scr_mask[scr];
+	{
+		if (scr == ICS)
+			// TODO: only SGP is emulated
+			m_scr[scr] = data & 0x1ff7U;
+		else
+			m_scr[scr] = data;
+	}
 	else
 		program_check(PCS_PCK | PCS_PIE);
 }
@@ -1003,7 +983,12 @@ void romp_device::execute_set_input(int irqline, int state)
 	default:
 		// interrupt lines are active low
 		if (!state)
+		{
 			m_reqi |= 1U << irqline;
+
+			// enable debugger interrupt breakpoints
+			standard_irq_callback(irqline);
+		}
 		else
 			m_reqi &= ~(1U << irqline);
 		break;
@@ -1015,9 +1000,8 @@ device_memory_interface::space_config_vector romp_device::memory_space_config() 
 	return space_config_vector { std::make_pair(AS_PROGRAM, &m_mem_config) };
 }
 
-bool romp_device::memory_translate(int spacenum, int intention, offs_t &address, address_space *&target_space)
+bool romp_device::memory_translate(int spacenum, int intention, offs_t &address)
 {
-	target_space = &space(spacenum);
 	return true;
 }
 
@@ -1097,8 +1081,8 @@ void romp_device::interrupt_check()
 		return;
 	}
 
-	// interrupts masked, machine/program check, or no interrupts
-	if ((m_scr[ICS] & ICS_IM) || m_scr[MPCS] || !(m_reqi || (m_scr[IRB] & IRB_ALL)))
+	// interrupts masked or no interrupts
+	if ((m_scr[ICS] & ICS_IM) || !(m_reqi || (m_scr[IRB] & IRB_ALL)))
 		return;
 
 	unsigned const priority = m_scr[ICS] & ICS_PP;
@@ -1106,9 +1090,6 @@ void romp_device::interrupt_check()
 	{
 		if (BIT(m_reqi, irl) || BIT(m_scr[IRB], 15 - irl))
 		{
-			// enable debugger interrupt breakpoints
-			standard_irq_callback(irl, m_scr[IAR]);
-
 			LOGMASKED(LOG_INTERRUPT, "interrupt_check taking interrupt request level %d\n", irl);
 			interrupt_enter(irl, m_scr[IAR]);
 
@@ -1129,7 +1110,7 @@ void romp_device::machine_check(u32 mcs)
 	interrupt_enter(7, m_scr[IAR]);
 }
 
-void romp_device::program_check(u32 pcs)
+void romp_device::program_check(u32 pcs, u32 iar)
 {
 	debugger_exception_hook(8);
 
@@ -1138,21 +1119,14 @@ void romp_device::program_check(u32 pcs)
 	m_scr[MPCS] &= ~PCS_ALL;
 	m_scr[MPCS] |= (pcs & PCS_ALL);
 
-	/*
-	 * Old program status reflects the address of a branch with execute
-	 * instruction when a program-check error occurs due to either a invalid
-	 * subject instruction or a data address exception caused by a subject
-	 * instruction.
-	 */
-	// TODO: what about program check caused by subject instruction fetch?
-	interrupt_enter(8, m_branch_state == BRANCH ? m_branch_source : m_scr[IAR]);
+	interrupt_enter(8, iar);
 
 	m_branch_state = EXCEPTION;
 }
 
 void romp_device::interrupt_enter(unsigned vector, u32 iar, u16 svc)
 {
-	// compute program status pair address
+	// take interrupt
 	u32 const address = 0x100 + vector * 16;
 
 	// save old program status

@@ -30,7 +30,7 @@ protected:
 	virtual uint8_t read(offs_t offset) override;
 	virtual void write(offs_t offset, uint8_t data) override;
 
-	void vdp_interrupt(int state);
+	DECLARE_WRITE_LINE_MEMBER(vdp_interrupt);
 
 private:
 	// internal state

@@ -30,8 +30,6 @@
 #include "chance32.lh"
 
 
-namespace {
-
 class chance32_state : public driver_device
 {
 public:
@@ -526,8 +524,6 @@ ROM_START( chance32 )
 
 	ROM_LOAD( "gal16v8a.u24.jed.bin", 0x0000, 0x117, NO_DUMP )
 ROM_END
-
-} // anonymous namespace
 
 
 /*************************

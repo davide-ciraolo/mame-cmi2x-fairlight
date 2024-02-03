@@ -44,23 +44,25 @@ FEATURES
 //**************************************************************************
 //  MACROS / CONSTANTS
 //**************************************************************************
-#define LOG_SETUP   (1U << 1)
-#define LOG_INT     (1U << 2)
-#define LOG_READ    (1U << 3)
-#define LOG_CMD     (1U << 4)
-#define LOG_TX      (1U << 5)
-#define LOG_RCV     (1U << 6)
-#define LOG_CTS     (1U << 7)
-#define LOG_DCD     (1U << 8)
-#define LOG_SYNC    (1U << 9)
-#define LOG_CHAR    (1U << 10)
-#define LOG_RX      (1U << 11)
+//#define LOG_GENERAL (1U <<  0)
+#define LOG_SETUP   (1U <<  1)
+#define LOG_INT     (1U <<  2)
+#define LOG_READ    (1U <<  4)
+#define LOG_CMD     (1U <<  5)
+#define LOG_TX      (1U <<  6)
+#define LOG_RCV     (1U <<  7)
+#define LOG_CTS     (1U <<  8)
+#define LOG_DCD     (1U <<  9)
+#define LOG_SYNC    (1U <<  10)
+#define LOG_CHAR    (1U <<  11)
+#define LOG_RX      (1U <<  12)
 
 //#define VERBOSE ( LOG_SETUP | LOG_GENERAL | LOG_INT)
 //#define LOG_OUTPUT_FUNC printf
 
 #include "logmacro.h"
 
+//#define LOG(...)      LOGMASKED(LOG_GENERAL, __VA_ARGS__)
 #define LOGSETUP(...) LOGMASKED(LOG_SETUP,   __VA_ARGS__)
 #define LOGR(...)     LOGMASKED(LOG_READ,    __VA_ARGS__)
 #define LOGINT(...)   LOGMASKED(LOG_INT,     __VA_ARGS__)
@@ -169,6 +171,14 @@ void mpcc_device::device_start()
 {
 	LOGSETUP("%s\n", FUNCNAME);
 
+	// resolve callbacks
+	m_out_txd_cb.resolve_safe();
+	m_out_dtr_cb.resolve_safe();
+	m_out_rts_cb.resolve_safe();
+	m_out_rtxc_cb.resolve_safe();
+	m_out_trxc_cb.resolve_safe();
+	m_out_int_cb.resolve_safe();
+
 	// state saving
 	save_item(NAME(m_int_state));
 	save_item(NAME(m_rsr));
@@ -246,7 +256,7 @@ void mpcc_device::device_reset()
 /*
  * Serial device implementation
  */
-void mpcc_device::cts_w(int state)
+WRITE_LINE_MEMBER(mpcc_device::cts_w)
 {
 	if (state == CLEAR_LINE)
 	{
@@ -270,7 +280,7 @@ void mpcc_device::cts_w(int state)
 		m_sisr |= REG_SISR_CTSLVL;
 }
 
-void mpcc_device::dsr_w(int state)
+WRITE_LINE_MEMBER(mpcc_device::dsr_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -293,7 +303,7 @@ void mpcc_device::dsr_w(int state)
 		m_sisr &= ~REG_SISR_DSRLVL;
 }
 
-void mpcc_device::dcd_w(int state)
+WRITE_LINE_MEMBER(mpcc_device::dcd_w)
 {
 	if (state == CLEAR_LINE)
 	{
@@ -638,7 +648,7 @@ void mpcc_device::rcv_complete()
 //  write_rx - called by terminal through rs232/diserial
 //         when character is sent to board
 //-------------------------------------------------
-void mpcc_device::write_rx(int state)
+WRITE_LINE_MEMBER(mpcc_device::write_rx)
 {
 	LOGRCV("%s(%d)\n", FUNCNAME, state);
 	m_rxd = state;

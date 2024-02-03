@@ -19,22 +19,22 @@ poly_cpm_format::poly_cpm_format()
 {
 }
 
-const char *poly_cpm_format::name() const noexcept
+const char *poly_cpm_format::name() const
 {
 	return "cpm";
 }
 
-const char *poly_cpm_format::description() const noexcept
+const char *poly_cpm_format::description() const
 {
 	return "Poly CP/M disk image";
 }
 
-const char *poly_cpm_format::extensions() const noexcept
+const char *poly_cpm_format::extensions() const
 {
 	return "cpm";
 }
 
-bool poly_cpm_format::supports_save() const noexcept
+bool poly_cpm_format::supports_save() const
 {
 	return true;
 }
@@ -61,7 +61,7 @@ int poly_cpm_format::identify(util::random_read &io, uint32_t form_factor, const
 	return 0;
 }
 
-bool poly_cpm_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool poly_cpm_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	uint64_t size;
 	if (io.length(size) || io.seek(0, SEEK_SET))

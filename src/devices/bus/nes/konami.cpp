@@ -24,15 +24,14 @@
 
 #include "speaker.h"
 
-#define LOG_UNHANDLED (1U << 1)
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_UNHANDLED | LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (LOG_UNHANDLED)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
 
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 //-------------------------------------------------
 //  constructor
@@ -210,7 +209,7 @@ void nes_konami_vrc7_device::pcb_reset()
 
 void nes_konami_vrc1_device::write_h(offs_t offset, u8 data)
 {
-	LOG("VRC-1 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("VRC-1 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x7000)
 	{
@@ -247,7 +246,7 @@ void nes_konami_vrc1_device::write_h(offs_t offset, u8 data)
 
 u8 nes_konami_vrc2_device::read_m(offs_t offset)
 {
-	LOG("VRC-2 read_m, offset: %04x\n", offset);
+	LOG_MMC(("VRC-2 read_m, offset: %04x\n", offset));
 
 	if (!m_battery.empty() || !m_prgram.empty())
 		return device_nes_cart_interface::read_m(offset);
@@ -257,7 +256,7 @@ u8 nes_konami_vrc2_device::read_m(offs_t offset)
 
 void nes_konami_vrc2_device::write_m(offs_t offset, u8 data)
 {
-	LOG("VRC-2 write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("VRC-2 write_m, offset: %04x, data: %02x\n", offset, data));
 
 	if (!m_battery.empty() || !m_prgram.empty())
 		device_nes_cart_interface::write_m(offset, data);
@@ -267,7 +266,7 @@ void nes_konami_vrc2_device::write_m(offs_t offset, u8 data)
 
 void nes_konami_vrc2_device::write_h(offs_t offset, u8 data)
 {
-	LOG("VRC-2 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("VRC-2 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	u8 addr_lines = bitswap<2>(offset, m_vrc_ls_prg_a, m_vrc_ls_prg_b);
 
@@ -293,7 +292,7 @@ void nes_konami_vrc2_device::write_h(offs_t offset, u8 data)
 			break;
 		}
 		default:
-			LOGMASKED(LOG_UNHANDLED, "VRC-2 write_h uncaught write, addr: %04x value: %02x\n", offset + 0x8000, data);
+			logerror("VRC-2 write_h uncaught write, addr: %04x value: %02x\n", offset + 0x8000, data);
 			break;
 	}
 }
@@ -328,7 +327,7 @@ TIMER_CALLBACK_MEMBER(nes_konami_vrc3_device::irq_timer_tick)
 
 void nes_konami_vrc3_device::write_h(offs_t offset, u8 data)
 {
-	LOG("VRC-3 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("VRC-3 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x7000)
 	{
@@ -358,7 +357,7 @@ void nes_konami_vrc3_device::write_h(offs_t offset, u8 data)
 			prg16_89ab(data & 0x07);
 			break;
 		default:
-			LOGMASKED(LOG_UNHANDLED, "VRC-3 write_h uncaught write, offset %04x, data: %02x\n", offset, data);
+			logerror("VRC-3 write_h uncaught write, offset %04x, data: %02x\n", offset, data);
 			break;
 	}
 }
@@ -450,7 +449,7 @@ void nes_konami_vrc4_device::set_chr(int chr_base, int chr_mask)
 
 u8 nes_konami_vrc4_device::read_m(offs_t offset)
 {
-	LOG("VRC-4 read_m, offset: %04x\n", offset);
+	LOG_MMC(("VRC-4 read_m, offset: %04x\n", offset));
 
 	if (m_wram_enable)
 		return device_nes_cart_interface::read_m(offset);
@@ -460,7 +459,7 @@ u8 nes_konami_vrc4_device::read_m(offs_t offset)
 
 void nes_konami_vrc4_device::write_m(offs_t offset, u8 data)
 {
-	LOG("VRC-4 write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("VRC-4 write_m, offset: %04x, data: %02x\n", offset, data));
 
 	if (m_wram_enable)
 		device_nes_cart_interface::write_m(offset, data);
@@ -468,7 +467,7 @@ void nes_konami_vrc4_device::write_m(offs_t offset, u8 data)
 
 void nes_konami_vrc4_device::write_h(offs_t offset, u8 data)
 {
-	LOG("VRC-4 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("VRC-4 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	u8 addr_lines = bitswap<2>(offset, m_vrc_ls_prg_a, m_vrc_ls_prg_b);
 
@@ -535,7 +534,7 @@ void nes_konami_vrc4_device::write_h(offs_t offset, u8 data)
 
 void nes_konami_vrc6_device::write_h(offs_t offset, u8 data)
 {
-	LOG("VRC-6 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("VRC-6 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	u8 addr_lines = bitswap<2>(offset, m_vrc_ls_prg_a, m_vrc_ls_prg_b);
 
@@ -579,7 +578,7 @@ void nes_konami_vrc6_device::write_h(offs_t offset, u8 data)
 					irq_ack_w();
 					break;
 				default:
-					LOGMASKED(LOG_UNHANDLED, "VRC-6 write_h uncaught write, addr: %04x value: %02x\n", ((offset & 0x7000) | addr_lines) + 0x8000, data);
+					logerror("VRC-6 write_h uncaught write, addr: %04x value: %02x\n", ((offset & 0x7000) | addr_lines) + 0x8000, data);
 					break;
 			}
 			break;
@@ -615,7 +614,7 @@ void nes_konami_vrc6_device::device_add_mconfig(machine_config &config)
 
 void nes_konami_vrc7_device::write_h(offs_t offset, u8 data)
 {
-	LOG("VRC-7 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("VRC-7 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	u8 reg = bitswap<4>(offset, 14, 13, 12, m_vrc_ls_prg_a);
 

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
+license:CC0
 -->
 <softwarelist name="arcadia" description="Emerson Arcadia 2001 cartridges">
 
@@ -638,7 +638,6 @@ Rumoured or Unreleased files: - 3D Raceway, Centipede, Fun with Math, Galaga, Ho
 		<description>Doraemon</description>
 		<year>1983</year>
 		<publisher>Bandai</publisher>
-		<info name="alt_title" value="ドラえもん" />
 		<part name="cart" interface="arcadia_cart">
 			<feature name="slot" value="std" />
 			<dataarea name="rom" size="8192">
@@ -648,10 +647,9 @@ Rumoured or Unreleased files: - 3D Raceway, Centipede, Fun with Math, Galaga, Ho
 	</software>
 
 	<software name="drslump">
-		<description>Dr. Slump: Arale-chan</description>
+		<description>Dr. Slump: Arale</description>
 		<year>1983</year>
 		<publisher>Bandai</publisher>
-		<info name="alt_title" value="ドクタースランプ アラレちゃん" />
 		<part name="cart" interface="arcadia_cart">
 			<feature name="slot" value="std" />
 			<dataarea name="rom" size="8192">
@@ -799,7 +797,6 @@ Rumoured or Unreleased files: - 3D Raceway, Centipede, Fun with Math, Galaga, Ho
 		<description>Choujikuu Yousai Macross</description>
 		<year>1983</year>
 		<publisher>Bandai</publisher>
-		<info name="alt_title" value="超時空要塞マクロス" />
 		<info name="alt_title" value="Super Dimension Fortress Macross" />
 		<part name="cart" interface="arcadia_cart">
 			<feature name="slot" value="std" />
@@ -813,8 +810,7 @@ Rumoured or Unreleased files: - 3D Raceway, Centipede, Fun with Math, Galaga, Ho
 		<description>Kidou Senshi Gundam</description>
 		<year>1983</year>
 		<publisher>Bandai</publisher>
-		<info name="alt_title" value="機動戦士ガンダム" />
-		<info name="alt_title" value="Mobile Suit Gundam" />
+		<info name="alt_title" value="Mobile Soldier Gundam" />
 		<part name="cart" interface="arcadia_cart">
 			<feature name="slot" value="std" />
 			<dataarea name="rom" size="8192">

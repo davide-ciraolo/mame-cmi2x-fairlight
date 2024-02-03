@@ -1,8 +1,8 @@
 // license:BSD-3-Clause
 // copyright-holders:AJR
 
-#ifndef MAME_VISUAL_V102_KBD_H
-#define MAME_VISUAL_V102_KBD_H
+#ifndef MAME_MACHINE_V102_KBD_H
+#define MAME_MACHINE_V102_KBD_H
 
 #pragma once
 
@@ -13,16 +13,17 @@ class visual_mcs48_keyboard_device : public device_t
 public:
 	auto txd_callback() { return m_txd_callback.bind(); }
 
-	void write_rxd(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_rxd);
 
 protected:
 	visual_mcs48_keyboard_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner);
 
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 
 	u8 p1_r();
 	void p2_w(u8 data);
-	void prog_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(prog_w);
 	void prog_map(address_map &map);
 	void ext_map(address_map &map);
 
@@ -59,4 +60,4 @@ protected:
 DECLARE_DEVICE_TYPE(V102_KEYBOARD, v102_keyboard_device)
 DECLARE_DEVICE_TYPE(V550_KEYBOARD, v550_keyboard_device)
 
-#endif // MAME_VISUAL_V102_KBD_H
+#endif // MAME_MACHINE_V102_KBD_H

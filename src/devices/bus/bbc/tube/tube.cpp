@@ -59,6 +59,9 @@ bbc_tube_slot_device::bbc_tube_slot_device(const machine_config &mconfig, const 
 void bbc_tube_slot_device::device_start()
 {
 	m_card = get_card_device();
+
+	// resolve callbacks
+	m_irq_handler.resolve_safe();
 }
 
 

@@ -20,11 +20,12 @@
 
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -91,7 +92,7 @@ void nes_74x161x161x32_device::pcb_reset()
 // there are two 'variants' depending on hardwired or mapper ctrl mirroring
 void nes_74x161x161x32_device::write_h(offs_t offset, u8 data)
 {
-	LOG("74x161x161x32 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("74x161x161x32 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	// this pcb is subject to bus conflict
 	data = account_bus_conflict(offset, data);
@@ -112,7 +113,7 @@ void nes_74x161x161x32_device::write_h(offs_t offset, u8 data)
 
 void nes_74x139x74_device::write_m(offs_t offset, u8 data)
 {
-	LOG("74x139x74 write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("74x139x74 write_m, offset: %04x, data: %02x\n", offset, data));
 
 	chr8(bitswap<2>(data, 0, 1), CHRROM);
 }
@@ -136,7 +137,7 @@ void nes_74x139x74_device::write_m(offs_t offset, u8 data)
 
 void nes_74x377_device::write_h(offs_t offset, u8 data)
 {
-	LOG("74x377 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("74x377 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	// this pcb is subject to bus conflict, but not the prototype of Secret Scout, which actually breaks in case of conflict...
 	data = account_bus_conflict(offset, data);
@@ -157,7 +158,7 @@ void nes_74x377_device::write_h(offs_t offset, u8 data)
 
 void nes_74x161x138_device::write_m(offs_t offset, u8 data)
 {
-	LOG("74x161x138 write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("74x161x138 write_m, offset: %04x, data: %02x\n", offset, data));
 
 	chr8(data >> 2, CHRROM);
 	prg32(data);

@@ -79,6 +79,10 @@ void hp_hil_mlc_device::add_hp_hil_device(device_hp_hil_interface *device)
 //-------------------------------------------------
 void hp_hil_mlc_device::device_start()
 {
+	// resolve callbacks
+	int_cb.resolve_safe();
+	nmi_cb.resolve_safe();
+
 	save_item(NAME(m_r2));
 	save_item(NAME(m_r3));
 	save_item(NAME(m_w1));
@@ -221,7 +225,7 @@ void hp_hil_mlc_device::hil_write(uint16_t data)
 	}
 }
 
-void hp_hil_mlc_device::ap_w(int state)
+WRITE_LINE_MEMBER(hp_hil_mlc_device::ap_w)
 {
 	uint16_t data = HPMLC_W1_C | HPHIL_POL;
 	if (state && (m_w3 & HPMLC_W3_APE))

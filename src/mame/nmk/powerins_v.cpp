@@ -211,7 +211,7 @@ if (machine().input().code_pressed(KEYCODE_Z))
 	return 0;
 }
 
-void powerins_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(powerins_state::screen_vblank)
 {
 	if (state)
 	{
@@ -220,7 +220,7 @@ void powerins_state::screen_vblank(int state)
 	}
 }
 
-void powerins_state::screen_vblank_powerinsa(int state)
+WRITE_LINE_MEMBER(powerins_state::screen_vblank_powerinsa)
 {
 	if (state)
 	{

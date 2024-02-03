@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/d82_dsk.cpp
+    formats/d82_dsk.c
 
     Commodore 8250/SFD-1001 sector disk image format
 
@@ -14,17 +14,17 @@ d82_format::d82_format() : d80_format(file_formats)
 {
 }
 
-const char *d82_format::name() const noexcept
+const char *d82_format::name() const
 {
 	return "d82";
 }
 
-const char *d82_format::description() const noexcept
+const char *d82_format::description() const
 {
 	return "Commodore 8250/SFD-1001 disk image";
 }
 
-const char *d82_format::extensions() const noexcept
+const char *d82_format::extensions() const
 {
 	return "d82";
 }

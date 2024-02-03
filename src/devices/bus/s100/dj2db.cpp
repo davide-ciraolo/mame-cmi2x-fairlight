@@ -71,7 +71,7 @@ static void s100_dj2db_floppies(device_slot_interface &device)
 	device.option_add("8dsdd", FLOPPY_8_DSDD);
 }
 
-void s100_dj2db_device::fdc_intrq_w(int state)
+WRITE_LINE_MEMBER( s100_dj2db_device::fdc_intrq_w )
 {
 	if (state) m_bus->rdy_w(CLEAR_LINE);
 
@@ -89,7 +89,7 @@ void s100_dj2db_device::fdc_intrq_w(int state)
 	}
 }
 
-void s100_dj2db_device::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( s100_dj2db_device::fdc_drq_w )
 {
 	if (state) m_bus->rdy_w(CLEAR_LINE);
 }

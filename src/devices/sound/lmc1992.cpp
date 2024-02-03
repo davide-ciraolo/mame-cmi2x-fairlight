@@ -185,7 +185,7 @@ void lmc1992_device::sound_stream_update(sound_stream &stream, std::vector<read_
 //  clock_w -
 //-------------------------------------------------
 
-void lmc1992_device::clock_w(int state)
+WRITE_LINE_MEMBER( lmc1992_device::clock_w )
 {
 	if ((m_enable == 0) && ((m_clk == 0) && (state == 1)))
 	{
@@ -206,7 +206,7 @@ void lmc1992_device::clock_w(int state)
 //  data_w -
 //-------------------------------------------------
 
-void lmc1992_device::data_w(int state)
+WRITE_LINE_MEMBER( lmc1992_device::data_w )
 {
 	m_data = state;
 }
@@ -216,7 +216,7 @@ void lmc1992_device::data_w(int state)
 //  enable_w -
 //-------------------------------------------------
 
-void lmc1992_device::enable_w(int state)
+WRITE_LINE_MEMBER( lmc1992_device::enable_w )
 {
 	if ((m_enable == 0) && (state == 1))
 	{

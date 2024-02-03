@@ -1,7 +1,7 @@
 // 7zEncode.h
 
-#ifndef ZIP7_INC_7Z_ENCODE_H
-#define ZIP7_INC_7Z_ENCODE_H
+#ifndef __7Z_ENCODE_H
+#define __7Z_ENCODE_H
 
 #include "7zCompressionMode.h"
 
@@ -12,12 +12,12 @@
 namespace NArchive {
 namespace N7z {
 
-Z7_CLASS_IMP_COM_1(
-  CMtEncMultiProgress,
-  ICompressProgressInfo
-)
+class CMtEncMultiProgress:
+  public ICompressProgressInfo,
+  public CMyUnknownImp
+{
   CMyComPtr<ICompressProgressInfo> _progress;
-  #ifndef Z7_ST
+  #ifndef _7ZIP_ST
   NWindows::NSynchronization::CCriticalSection CriticalSection;
   #endif
 
@@ -30,15 +30,18 @@ public:
 
   void AddOutSize(UInt64 addOutSize)
   {
-    #ifndef Z7_ST
+    #ifndef _7ZIP_ST
     NWindows::NSynchronization::CCriticalSectionLock lock(CriticalSection);
     #endif
     OutSize += addOutSize;
   }
+
+  MY_UNKNOWN_IMP1(ICompressProgressInfo)
+
+  STDMETHOD(SetRatioInfo)(const UInt64 *inSize, const UInt64 *outSize);
 };
 
-
-class CEncoder Z7_final MY_UNCOPYABLE
+class CEncoder
 {
   #ifdef USE_MIXER_ST
     NCoderMixer2::CMixerST *_mixerST;
@@ -54,10 +57,10 @@ class CEncoder Z7_final MY_UNCOPYABLE
   NCoderMixer2::CBindInfo _bindInfo;
   CRecordVector<CMethodId> _decompressionMethods;
 
-  CRecordVector<UInt32> SrcIn_to_DestOut;
-  CRecordVector<UInt32> SrcOut_to_DestIn;
-  // CRecordVector<UInt32> DestIn_to_SrcOut;
-  CRecordVector<UInt32> DestOut_to_SrcIn;
+  CRecordVector<UInt32> _SrcIn_to_DestOut;
+  CRecordVector<UInt32> _SrcOut_to_DestIn;
+  // CRecordVector<UInt32> _DestIn_to_SrcOut;
+  CRecordVector<UInt32> _DestOut_to_SrcIn;
 
   void InitBindConv();
   void SetFolder(CFolder &folder);
@@ -71,23 +74,17 @@ public:
   CEncoder(const CCompressionMethodMode &options);
   ~CEncoder();
   HRESULT EncoderConstr();
-  HRESULT Encode1(
+  HRESULT Encode(
       DECL_EXTERNAL_CODECS_LOC_VARS
       ISequentialInStream *inStream,
       // const UInt64 *inStreamSize,
       const UInt64 *inSizeForReduce,
-      UInt64 expectedDataSize,
       CFolder &folderItem,
-      // CRecordVector<UInt64> &coderUnpackSizes,
-      // UInt64 &unpackSize,
+      CRecordVector<UInt64> &coderUnpackSizes,
+      UInt64 &unpackSize,
       ISequentialOutStream *outStream,
       CRecordVector<UInt64> &packSizes,
       ICompressProgressInfo *compressProgress);
-
-  void Encode_Post(
-      UInt64 unpackSize,
-      CRecordVector<UInt64> &coderUnpackSizes);
-
 };
 
 }}

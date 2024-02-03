@@ -10,9 +10,7 @@ DEFINE_DEVICE_TYPE(DECO_KARNOVSPRITES, deco_karnovsprites_device, "deco_karnovsp
 
 deco_karnovsprites_device::deco_karnovsprites_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
 	: device_t(mconfig, DECO_KARNOVSPRITES, tag, owner, clock)
-	, device_gfx_interface(mconfig, *this)
 	, m_colpri_cb(*this)
-	, m_flip_screen(false)
 {
 }
 
@@ -28,15 +26,18 @@ void deco_karnovsprites_device::device_reset()
 {
 }
 
-void deco_karnovsprites_device::draw_sprites(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, const u16 *spriteram, int size)
+void deco_karnovsprites_device::draw_sprites(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, gfx_element *gfx, u16* spriteram, int size)
 {
 	const bool priority = !m_colpri_cb.isnull();
-	const int start = priority ? (size - 4) : 0;
-	const int end = priority ? -4 : size;
-	const int inc = priority ? -4 : 4;
+	int start, end, inc;
+	if (priority)             { start = size - 4; end =   -4; inc = -4; }
+	else                      { start =        0; end = size; inc = +4; }
 
 	for (int offs = start; offs != end; offs += inc)
 	{
+		int sprite2;
+		u32 pri_mask = 0;
+
 		const u16 data0 = spriteram[offs];
 		if (!(data0 & 0x8000))
 			continue;
@@ -44,7 +45,6 @@ void deco_karnovsprites_device::draw_sprites(screen_device &screen, bitmap_ind16
 		int y = data0 & 0x1ff;
 		const u16 data3 = spriteram[offs + 3];
 		u32 colour = data3 >> 12;
-		u32 pri_mask = 0;
 		if (priority)
 			m_colpri_cb(colour, pri_mask);
 
@@ -53,9 +53,9 @@ void deco_karnovsprites_device::draw_sprites(screen_device &screen, bitmap_ind16
 
 		const u16 data1 = spriteram[offs + 1];
 
-		/* the 8-bit implementation had this.  illustrated by enemy projectile explosions in Shackled being left on screen. */
-		if ((data1 & 0x1) == 0)
-			continue;
+		/* the 8-bit implementation had this.
+		           illustrated by enemy projectile explosions in Shackled being left on screen. */
+		if ((data1 & 0x1) == 0) continue;
 
 		const bool extra = (data1 & 0x10) ? 1 : 0;
 		int fy = data1 & 0x2;
@@ -82,7 +82,6 @@ void deco_karnovsprites_device::draw_sprites(screen_device &screen, bitmap_ind16
 		}
 
 		/* Y Flip determines order of multi-sprite */
-		int sprite2;
 		if (extra && fy)
 		{
 			sprite2 = sprite;
@@ -93,25 +92,25 @@ void deco_karnovsprites_device::draw_sprites(screen_device &screen, bitmap_ind16
 
 		if (priority)
 		{
-			gfx(0)->prio_transpen(bitmap,cliprect,
+			gfx->prio_transpen(bitmap,cliprect,
 					sprite,
 					colour,fx,fy,x,y,screen.priority(),pri_mask,0);
 
 			/* 1 more sprite drawn underneath */
 			if (extra)
-				gfx(0)->prio_transpen(bitmap,cliprect,
+				gfx->prio_transpen(bitmap,cliprect,
 					sprite2,
 					colour,fx,fy,x,y+16,screen.priority(),pri_mask,0);
 		}
 		else
 		{
-			gfx(0)->transpen(bitmap,cliprect,
+			gfx->transpen(bitmap,cliprect,
 					sprite,
 					colour,fx,fy,x,y,0);
 
 			/* 1 more sprite drawn underneath */
 			if (extra)
-				gfx(0)->transpen(bitmap,cliprect,
+				gfx->transpen(bitmap,cliprect,
 					sprite2,
 					colour,fx,fy,x,y+16,0);
 		}

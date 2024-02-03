@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Curt Coder
-#ifndef MAME_GRUNDY_NEWBRAIN_H
-#define MAME_GRUNDY_NEWBRAIN_H
+#ifndef MAME_INCLUDES_NEWBRAIN_H
+#define MAME_INCLUDES_NEWBRAIN_H
 
 #pragma once
 
@@ -83,9 +83,9 @@ private:
 	uint8_t cop_g_r();
 	void cop_d_w(uint8_t data);
 	uint8_t cop_in_r();
-	void k2_w(int state);
-	int tdi_r();
-	void k1_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( k2_w );
+	DECLARE_READ_LINE_MEMBER( tdi_r );
+	DECLARE_WRITE_LINE_MEMBER( k1_w );
 
 	void check_interrupt();
 	void clclk();
@@ -142,4 +142,4 @@ private:
 	emu_timer *m_clkint_timer = nullptr;
 };
 
-#endif // MAME_GRUNDY_NEWBRAIN_H
+#endif

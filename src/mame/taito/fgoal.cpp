@@ -46,7 +46,7 @@ public:
 
 	void fgoal(machine_config &config);
 
-	int _80_r();
+	DECLARE_READ_LINE_MEMBER(_80_r);
 
 protected:
 	virtual void machine_start() override;
@@ -296,7 +296,7 @@ uint8_t fgoal_state::analog_r()
 }
 
 
-int fgoal_state::_80_r()
+READ_LINE_MEMBER(fgoal_state::_80_r)
 {
 	return BIT(m_screen->vpos(), 7);
 }

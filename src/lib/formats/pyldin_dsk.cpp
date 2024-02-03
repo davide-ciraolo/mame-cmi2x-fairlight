@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /*********************************************************************
 
-    formats/pyldin_dsk.cpp
+    formats/pyldin_dsk.c
 
     pyldin format
 
@@ -14,17 +14,17 @@ pyldin_format::pyldin_format() : upd765_format(formats)
 {
 }
 
-const char *pyldin_format::name() const noexcept
+const char *pyldin_format::name() const
 {
 	return "pyldin";
 }
 
-const char *pyldin_format::description() const noexcept
+const char *pyldin_format::description() const
 {
 	return "PYLDIN disk image";
 }
 
-const char *pyldin_format::extensions() const noexcept
+const char *pyldin_format::extensions() const
 {
 	return "img";
 }

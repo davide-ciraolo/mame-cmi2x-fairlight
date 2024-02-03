@@ -12,7 +12,8 @@
 #include "speaker.h"
 
 
-#define LOG_DEBUG     (1U << 1)
+//#define LOG_GENERAL (1U <<  0) //defined in logmacro.h already
+#define LOG_DEBUG     (1U <<  1)
 
 //#define VERBOSE (LOG_GENERAL | LOG_DEBUG)
 //#define LOG_OUTPUT_FUNC printf
@@ -274,6 +275,8 @@ km035_device::km035_device(const machine_config &mconfig, const char *tag, devic
 
 void km035_device::device_start()
 {
+	m_tx_handler.resolve_safe();
+	m_rts_handler.resolve_safe();
 }
 
 
@@ -287,7 +290,7 @@ void km035_device::device_reset()
 }
 
 
-void km035_device::write_rxd(int state)
+WRITE_LINE_MEMBER(km035_device::write_rxd)
 {
 	LOG("write_rxd %d\n", state);
 	m_maincpu->set_input_line(MCS48_INPUT_IRQ, state ? CLEAR_LINE : ASSERT_LINE);

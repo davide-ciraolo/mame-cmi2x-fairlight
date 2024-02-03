@@ -152,7 +152,7 @@ void x2201_device::write(offs_t offset, u8 data)
 //  cs_w - write to the CS line (active low)
 //-------------------------------------------------
 
-void x2201_device::cs_w(int state)
+WRITE_LINE_MEMBER(x2201_device::cs_w)
 {
 	m_cs = !state;
 }
@@ -163,7 +163,7 @@ void x2201_device::cs_w(int state)
 //  (active low)
 //-------------------------------------------------
 
-void x2201_device::store_w(int state)
+WRITE_LINE_MEMBER(x2201_device::store_w)
 {
 	if (m_cs && !state && !m_store)
 		std::copy_n(&m_ram[0], 1024 / 8, &m_eeprom[0]);
@@ -177,7 +177,7 @@ void x2201_device::store_w(int state)
 //  into RAM (active low)
 //-------------------------------------------------
 
-void x2201_device::array_recall_w(int state)
+WRITE_LINE_MEMBER(x2201_device::array_recall_w)
 {
 	if (m_cs && !state && !m_array_recall)
 		std::copy_n(&m_eeprom[0], 1024 / 8, &m_ram[0]);

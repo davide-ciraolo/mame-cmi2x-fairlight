@@ -14,17 +14,17 @@ juku_format::juku_format() : wd177x_format(formats)
 {
 }
 
-const char *juku_format::name() const noexcept
+const char *juku_format::name() const
 {
 	return "juku";
 }
 
-const char *juku_format::description() const noexcept
+const char *juku_format::description() const
 {
 	return "Juku disk image";
 }
 
-const char *juku_format::extensions() const noexcept
+const char *juku_format::extensions() const
 {
 	return "juk";
 }

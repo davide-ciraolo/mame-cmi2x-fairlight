@@ -178,7 +178,6 @@
 #include "emupal.h"
 #include "speaker.h"
 
-#include <cstdarg>
 #include <cstdio>
 
 
@@ -235,7 +234,7 @@ public:
 	void init_denib();
 	DECLARE_INPUT_CHANGED_MEMBER(key_stroke);
 
-	void esq5505_otis_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(esq5505_otis_irq);
 
 protected:
 	virtual void machine_start() override;
@@ -260,9 +259,9 @@ private:
 	uint16_t analog_r();
 	void analog_w(offs_t offset, uint16_t data);
 
-	void duart_irq_handler(int state);
-	void duart_tx_a(int state);
-	void duart_tx_b(int state);
+	DECLARE_WRITE_LINE_MEMBER(duart_irq_handler);
+	DECLARE_WRITE_LINE_MEMBER(duart_tx_a);
+	DECLARE_WRITE_LINE_MEMBER(duart_tx_b);
 	void duart_output(uint8_t data);
 
 	void es5505_clock_changed(u32 data);
@@ -288,7 +287,7 @@ private:
 	uint16_t m_analog_values[8];
 
 	//dmac
-	void dma_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(dma_irq);
 };
 
 void esq5505_state::floppy_formats(format_registration &fr)
@@ -461,7 +460,7 @@ void esq5505_state::sq1_map(address_map &map)
 	map(0xff0000, 0xffffff).ram().share("osram");
 }
 
-void esq5505_state::esq5505_otis_irq(int state)
+WRITE_LINE_MEMBER(esq5505_state::esq5505_otis_irq)
 {
 	m_otis_irq_state = (state != 0);
 	update_irq_to_maincpu();
@@ -483,7 +482,7 @@ uint16_t esq5505_state::analog_r()
 	return m_analog_values[m_duart_io & 7];
 }
 
-void esq5505_state::duart_irq_handler(int state)
+WRITE_LINE_MEMBER(esq5505_state::duart_irq_handler)
 {
 //    printf("\nDUART IRQ: state %d vector %d\n", state, vector);
 	if (state == ASSERT_LINE)
@@ -553,17 +552,17 @@ void esq5505_state::duart_output(uint8_t data)
 }
 
 // MIDI send
-void esq5505_state::duart_tx_a(int state)
+WRITE_LINE_MEMBER(esq5505_state::duart_tx_a)
 {
 	m_mdout->write_txd(state);
 }
 
-void esq5505_state::duart_tx_b(int state)
+WRITE_LINE_MEMBER(esq5505_state::duart_tx_b)
 {
 	m_panel->rx_w(state);
 }
 
-void esq5505_state::dma_irq(int state)
+WRITE_LINE_MEMBER(esq5505_state::dma_irq)
 {
 	if (state != CLEAR_LINE)
 	{

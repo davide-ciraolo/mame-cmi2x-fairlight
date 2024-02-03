@@ -36,9 +36,6 @@
 #include "machine/bankdev.h"
 #include "sound/msm5205.h"
 
-
-namespace {
-
 class galspanic_ms_state : public driver_device
 {
 public:
@@ -110,9 +107,9 @@ private:
 
 	tilemap_t *m_bg_tilemap2 = nullptr;
 
-	void splash_msm5205_int(int state);
-	[[maybe_unused]] void splash_adpcm_data_w(uint8_t data);
-	[[maybe_unused]] void splash_adpcm_control_w(uint8_t data);
+	DECLARE_WRITE_LINE_MEMBER(splash_msm5205_int);
+	void splash_adpcm_data_w(uint8_t data);
+	void splash_adpcm_control_w(uint8_t data);
 	int m_adpcm_data = 0;
 
 	void descramble_16x16tiles(uint8_t* src, int len);
@@ -224,7 +221,7 @@ void galspanic_ms_state::splash_adpcm_control_w(uint8_t data)
 	m_soundrom->set_bank(bank & 0xf);
 }
 
-void galspanic_ms_state::splash_msm5205_int(int state)
+WRITE_LINE_MEMBER(galspanic_ms_state::splash_msm5205_int)
 {
 	m_msm->data_w(m_adpcm_data >> 4);
 	m_adpcm_data = (m_adpcm_data << 4) & 0xf0;
@@ -584,7 +581,6 @@ void galspanic_ms_state::init_galpanicms()
 	descramble_16x16tiles(memregion("bgtile")->base(), memregion("bgtile")->bytes());
 }
 
-} // anonymous namespace
 
 
 GAME( 1991, galpanicms,  galsnew,  newquiz,  newquiz,  galspanic_ms_state, init_galpanicms, ROT90, "bootleg (Kaenko)", "New Quiz (Modular System bootleg of Gals Panic)", MACHINE_NOT_WORKING | MACHINE_NO_SOUND )

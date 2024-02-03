@@ -26,8 +26,8 @@ public:
 	// construction/destruction
 	bbc_sasi_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
-	void req_w(int state);
-	void sel_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(req_w);
+	DECLARE_WRITE_LINE_MEMBER(sel_w);
 
 protected:
 	bbc_sasi_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);

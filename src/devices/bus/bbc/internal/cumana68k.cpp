@@ -16,13 +16,12 @@
 
 **********************************************************************/
 
+
 #include "emu.h"
 #include "cumana68k.h"
 #include "machine/nscsi_bus.h"
 #include "bus/nscsi/devices.h"
 #include "softlist_dev.h"
-
-#include "formats/os9_dsk.h"
 
 
 //**************************************************************************
@@ -97,7 +96,7 @@ void bbc_cumana68k_device::device_add_mconfig(machine_config &config)
 			downcast<nscsi_callback_device&>(*device).req_callback().append(m_pia_sasi, FUNC(pia6821_device::ca1_w));
 		});
 
-	PIA6821(config, m_pia_sasi);
+	PIA6821(config, m_pia_sasi, 0);
 	m_pia_sasi->readpa_handler().set(m_sasi, FUNC(nscsi_callback_device::read));
 	m_pia_sasi->writepa_handler().set(m_sasi, FUNC(nscsi_callback_device::write));
 	m_pia_sasi->writepb_handler().set(FUNC(bbc_cumana68k_device::pia_sasi_pb_w));
@@ -107,7 +106,7 @@ void bbc_cumana68k_device::device_add_mconfig(machine_config &config)
 	m_pia_sasi->irqa_handler().set(m_irqs, FUNC(input_merger_device::in_w<0>));
 	m_pia_sasi->irqb_handler().set(m_irqs, FUNC(input_merger_device::in_w<1>));
 
-	PIA6821(config, m_pia_rtc);
+	PIA6821(config, m_pia_rtc, 0);
 	m_pia_rtc->readpa_handler().set([this]() { return m_mc146818_data; });
 	m_pia_rtc->writepa_handler().set([this](uint8_t data) { m_mc146818_data = data; });
 	m_pia_rtc->writepb_handler().set(FUNC(bbc_cumana68k_device::pia_rtc_pb_w));
@@ -198,13 +197,13 @@ void bbc_cumana68k_device::device_reset_after_children()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void bbc_cumana68k_device::reset68008_w(int state)
+WRITE_LINE_MEMBER(bbc_cumana68k_device::reset68008_w)
 {
 	m_m68008->set_input_line(INPUT_LINE_HALT, state);
 	m_m68008->set_input_line(INPUT_LINE_RESET, state);
 }
 
-void bbc_cumana68k_device::irq6502_w(int state)
+WRITE_LINE_MEMBER(bbc_cumana68k_device::irq6502_w)
 {
 	m_m68008->set_input_line(M68K_IRQ_2, state);
 }
@@ -256,7 +255,7 @@ void bbc_cumana68k_device::mem6502_w(offs_t offset, uint8_t data)
 }
 
 
-void bbc_cumana68k_device::rtc_ce_w(int state)
+WRITE_LINE_MEMBER(bbc_cumana68k_device::rtc_ce_w)
 {
 	m_mc146818_ce = !state;
 }
@@ -269,7 +268,7 @@ void bbc_cumana68k_device::mc146818_set(int as, int ds, int rw)
 		/* if address select is set then set the address in the 146818 */
 		if (m_mc146818_as & !as)
 		{
-			m_rtc->address_w(m_mc146818_data);
+			m_rtc->write(0, m_mc146818_data);
 			//logerror("addr_w: %02x\n", m_mc146818_data);
 		}
 
@@ -278,12 +277,12 @@ void bbc_cumana68k_device::mc146818_set(int as, int ds, int rw)
 		{
 			if (m_mc146818_rw)
 			{
-				m_mc146818_data = m_rtc->data_r();
+				m_mc146818_data = m_rtc->read(1);
 				//logerror("data_r: %02x\n", m_mc146818_data);
 			}
 			else
 			{
-				m_rtc->data_w(m_mc146818_data);
+				m_rtc->write(1, m_mc146818_data);
 				//logerror("data_w: %02x\n", m_mc146818_data);
 			}
 		}

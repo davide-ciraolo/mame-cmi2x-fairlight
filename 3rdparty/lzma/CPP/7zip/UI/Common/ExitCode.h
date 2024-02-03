@@ -1,7 +1,7 @@
 // ExitCode.h
 
-#ifndef ZIP7_INC_EXIT_CODE_H
-#define ZIP7_INC_EXIT_CODE_H
+#ifndef __EXIT_CODE_H
+#define __EXIT_CODE_H
 
 namespace NExitCode {
 

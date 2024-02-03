@@ -26,8 +26,6 @@ written, so it may be normal behaviour.
 #include "speaker.h"
 
 
-namespace {
-
 class missb2_state : public bublbobl_state
 {
 public:
@@ -51,7 +49,7 @@ private:
 	void missb2_bg_bank_w(uint8_t data);
 	void missb2_oki_w(uint8_t data);
 	uint8_t missb2_oki_r();
-	void irqhandler(int state);
+	DECLARE_WRITE_LINE_MEMBER(irqhandler);
 	uint32_t screen_update_missb2(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
 	void maincpu_map(address_map &map);
@@ -441,7 +439,7 @@ GFXDECODE_END
 /* Sound Interfaces */
 
 // Handler called by the 3526 emulator when the internal timers cause an IRQ
-void missb2_state::irqhandler(int state)
+WRITE_LINE_MEMBER(missb2_state::irqhandler)
 {
 	logerror("YM3526 firing an IRQ\n");
 //  m_audiocpu->set_input_line(0, irq ? ASSERT_LINE : CLEAR_LINE);
@@ -608,9 +606,6 @@ void missb2_state::init_missb2()
 	configure_banks();
 	m_video_enable = 0;
 }
-
-} // anonymous namespace
-
 
 /* Game Drivers */
 

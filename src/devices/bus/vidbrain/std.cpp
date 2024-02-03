@@ -35,6 +35,15 @@ videobrain_standard_cartridge_device::videobrain_standard_cartridge_device(const
 
 
 //-------------------------------------------------
+//  device_start - device-specific startup
+//-------------------------------------------------
+
+void videobrain_standard_cartridge_device::device_start()
+{
+}
+
+
+//-------------------------------------------------
 //  videobrain_bo_r - cartridge data read
 //-------------------------------------------------
 
@@ -42,7 +51,11 @@ uint8_t videobrain_standard_cartridge_device::videobrain_bo_r(offs_t offset, int
 {
 	uint8_t data = 0;
 
-	if (!cs1 || !cs2)
+	if (!cs1)
+	{
+		data = m_rom[offset & m_rom_mask];
+	}
+	else if (!cs2)
 	{
 		data = m_rom[offset & m_rom_mask];
 	}

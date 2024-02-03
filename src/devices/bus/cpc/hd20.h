@@ -39,7 +39,7 @@ protected:
 	virtual const tiny_rom_entry *device_rom_region() const override;
 
 private:
-	void irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_w);
 
 	cpc_expansion_slot_device *m_slot;
 

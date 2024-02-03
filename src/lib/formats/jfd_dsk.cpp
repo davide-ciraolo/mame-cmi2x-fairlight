@@ -2,7 +2,7 @@
 // copyright-holders:Nigel Barnes
 /*********************************************************************
 
-    formats/jfd_dsk.cpp
+    formats/jfd_dsk.c
 
     JASPP Floppy Disk image format
 
@@ -161,7 +161,6 @@
 #include "formats/jfd_dsk.h"
 
 #include "ioprocs.h"
-#include "multibyte.h"
 
 #include "osdcore.h" // osd_printf_*
 
@@ -175,17 +174,17 @@ jfd_format::jfd_format()
 {
 }
 
-const char *jfd_format::name() const noexcept
+const char *jfd_format::name() const
 {
 	return "jfd";
 }
 
-const char *jfd_format::description() const noexcept
+const char *jfd_format::description() const
 {
 	return "JASPP Floppy Disk image";
 }
 
-const char *jfd_format::extensions() const noexcept
+const char *jfd_format::extensions() const
 {
 	return "jfd";
 }
@@ -232,7 +231,7 @@ int jfd_format::identify(util::random_read &io, uint32_t form_factor, const std:
 	return 0;
 }
 
-bool jfd_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool jfd_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	uint64_t size;
 	if (io.length(size))
@@ -245,7 +244,7 @@ bool jfd_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 	int err;
 	std::vector<uint8_t> gz_ptr;
 	z_stream d_stream;
-	int inflate_size = get_u32le(&img[size - 4]);
+	int inflate_size = (img[size - 1] << 24) | (img[size - 2] << 16) | (img[size - 3] << 8) | img[size - 4];
 
 	if (!memcmp(&img[0], GZ_HEADER, sizeof(GZ_HEADER))) {
 		gz_ptr.resize(inflate_size);
@@ -367,12 +366,12 @@ bool jfd_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 				build_wd_track_mfm(track / 2, track % 2, image, den[0] * 50000, spt, sects, 90, 32, 22);
 		}
 	}
-	image.set_variant(floppy_image::DSDD);
+	image->set_variant(floppy_image::DSDD);
 
 	return true;
 }
 
-bool jfd_format::supports_save() const noexcept
+bool jfd_format::supports_save() const
 {
 	return false;
 }

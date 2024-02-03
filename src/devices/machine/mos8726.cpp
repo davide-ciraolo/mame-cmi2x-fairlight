@@ -111,7 +111,7 @@ void mos8726_device::write(offs_t offset, uint8_t data)
 //  bs_w - bank select write
 //-------------------------------------------------
 
-void mos8726_device::bs_w(int state)
+WRITE_LINE_MEMBER( mos8726_device::bs_w )
 {
 	m_bs = state;
 }

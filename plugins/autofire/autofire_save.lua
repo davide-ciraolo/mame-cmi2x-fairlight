@@ -1,7 +1,7 @@
 local lib = {}
 
 local function get_settings_path()
-	return manager.machine.options.entries.homepath:value():match('([^;]+)') .. '/autofire'
+	return emu.subst_env(manager.machine.options.entries.homepath:value():match('([^;]+)')) .. '/autofire'
 end
 
 local function get_settings_filename()
@@ -75,7 +75,9 @@ end
 function lib:save_settings(buttons)
 	local path = get_settings_path()
 	local attr = lfs.attributes(path)
-	if attr and (attr.mode ~= 'directory') then
+	if not attr then
+		lfs.mkdir(path)
+	elseif attr.mode ~= 'directory' then
 		emu.print_error(string.format('Error saving autofire settings: "%s" is not a directory', path))
 		return
 	end
@@ -83,8 +85,6 @@ function lib:save_settings(buttons)
 	if #buttons == 0 then
 		os.remove(filename)
 		return
-	elseif not attr then
-		lfs.mkdir(path)
 	end
 	local json = require('json')
 	local settings = serialize_settings(buttons)

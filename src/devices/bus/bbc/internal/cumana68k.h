@@ -8,17 +8,19 @@
 
 **********************************************************************/
 
+
 #ifndef MAME_BUS_BBC_INTERNAL_CUMANA68K_H
 #define MAME_BUS_BBC_INTERNAL_CUMANA68K_H
 
 #include "internal.h"
-#include "cpu/m68000/m68008.h"
+#include "cpu/m68000/m68000.h"
 #include "machine/6821pia.h"
 #include "machine/input_merger.h"
 #include "machine/mc146818.h"
 #include "machine/nscsi_cb.h"
 #include "imagedev/floppy.h"
 #include "machine/wd_fdc.h"
+#include "formats/os9_dsk.h"
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -49,11 +51,11 @@ protected:
 	virtual void device_add_mconfig(machine_config &config) override;
 	virtual const tiny_rom_entry *device_rom_region() const override;
 
-	void irq6502_w(int state) override;
+	DECLARE_WRITE_LINE_MEMBER(irq6502_w) override;
 
 private:
-	void reset68008_w(int state);
-	void rtc_ce_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(reset68008_w);
+	DECLARE_WRITE_LINE_MEMBER(rtc_ce_w);
 
 	required_device<m68000_base_device> m_m68008;
 	required_device<pia6821_device> m_pia_sasi;

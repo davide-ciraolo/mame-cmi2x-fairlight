@@ -13,14 +13,11 @@
 
 #pragma once
 
+#include "chd.h"
 #include "utilfwd.h"
 
-#include <cstdint>
-#include <system_error>
-#include <vector>
+#include "osdcore.h"
 
-
-class chd_file;
 
 class hard_disk_file {
 public:

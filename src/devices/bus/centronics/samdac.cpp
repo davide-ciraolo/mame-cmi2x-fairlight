@@ -64,7 +64,7 @@ void centronics_samdac_device::device_start()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void centronics_samdac_device::input_strobe(int state)
+WRITE_LINE_MEMBER( centronics_samdac_device::input_strobe )
 {
 	// raising edge, write to left channel
 	if (m_strobe == 0 && state == 1)

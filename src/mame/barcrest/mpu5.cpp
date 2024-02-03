@@ -177,18 +177,20 @@ uint8_t mpu5_state::asic_r8(offs_t offset)
 }
 
 
-uint16_t mpu5_state::asic_r16(offs_t offset, uint16_t mem_mask)
+uint32_t mpu5_state::asic_r32(offs_t offset, uint32_t mem_mask)
 {
-	uint16_t retdata = 0;
-	if (ACCESSING_BITS_8_15) retdata |= asic_r8((offset*2)+0) <<8;
-	if (ACCESSING_BITS_0_7) retdata |= asic_r8((offset*2)+1) <<0;
+	uint32_t retdata = 0;
+	if (ACCESSING_BITS_24_31) retdata |= asic_r8((offset*4)+0) <<24;
+	if (ACCESSING_BITS_16_23) retdata |= asic_r8((offset*4)+1) <<16;
+	if (ACCESSING_BITS_8_15) retdata |= asic_r8((offset*4)+2) <<8;
+	if (ACCESSING_BITS_0_7) retdata |= asic_r8((offset*4)+3) <<0;
 	return retdata;
 }
 
-uint16_t mpu5_state::mpu5_mem_r(offs_t offset, uint16_t mem_mask)
+uint32_t mpu5_state::mpu5_mem_r(offs_t offset, uint32_t mem_mask)
 {
 	int pc = m_maincpu->pc();
-	int addr = offset * 2;
+	int addr = offset *4;
 	int cs = m_maincpu->get_cs(addr);
 
 	switch ( cs )
@@ -205,7 +207,7 @@ uint16_t mpu5_state::mpu5_mem_r(offs_t offset, uint16_t mem_mask)
 					break;
 
 				case 0xf0:
-					return asic_r16(offset&1,mem_mask);
+					return asic_r32(offset&3,mem_mask);
 
 				default:
 					logerror("%08x maincpu read access offset %08x mem_mask %08x cs %d\n", pc, offset*4, mem_mask, cs);
@@ -214,11 +216,11 @@ uint16_t mpu5_state::mpu5_mem_r(offs_t offset, uint16_t mem_mask)
 
 		case 3:
 		case 4:
-			offset &=0x7fff;
+			offset &=0x3fff;
 			return m_mainram[offset];
 
 		case 1:
-			if (offset < 0x200000) // make sure to log an error instead of crashing when reading beyond end of region
+			if (offset < 0x100000) // make sure to log an error instead of crashing when reading beyond end of region
 				return m_cpuregion[offset];
 			[[fallthrough]];
 		default:
@@ -274,13 +276,13 @@ void mpu5_state::asic_w8(offs_t offset, uint8_t data)
 
 		case 0x09:
 			//Assume SEC fitted for now
-			m_sec->data_w(!BIT(data, 0));
-			m_sec->clk_w(!BIT(data, 1));
-			m_sec->cs_w(!BIT(data, 2));
+			m_sec->data_w(~data&0x01);
+			m_sec->clk_w(~data&0x02);
+			m_sec->cs_w(~data&0x04);
 			[[fallthrough]];
 		case 0x0b:
-			m_statuslamp[0] = BIT(data, 4);
-			m_statuslamp[1] = BIT(data, 5);
+			output().set_value("statuslamp1", BIT(data, 4));
+			output().set_value("statuslamp2", BIT(data, 5));
 
 			if (data & 0x40)
 			{
@@ -294,21 +296,23 @@ void mpu5_state::asic_w8(offs_t offset, uint8_t data)
 }
 
 
-void mpu5_state::asic_w16(offs_t offset, uint16_t data, uint16_t mem_mask)
+void mpu5_state::asic_w32(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
-	if (ACCESSING_BITS_8_15) asic_w8((offset*2)+0, (data>>8) &0xff);
-	if (ACCESSING_BITS_0_7) asic_w8((offset*2)+1, (data>>0) &0xff);
+	if (ACCESSING_BITS_24_31) asic_w8((offset*4)+0, (data>>24)&0xff);
+	if (ACCESSING_BITS_16_23) asic_w8((offset*4)+1, (data>>16)&0xff);
+	if (ACCESSING_BITS_8_15) asic_w8((offset*4)+2, (data>>8) &0xff);
+	if (ACCESSING_BITS_0_7) asic_w8((offset*4)+3, (data>>0) &0xff);
 }
 
 
-uint16_t mpu5_state::pic_r(offs_t offset)
+uint32_t mpu5_state::pic_r(offs_t offset)
 {
 	int pc = m_maincpu->pc();
 	logerror("%08x maincpu read from PIC - offset %01x\n", pc, offset);
 	return m_pic_output_bit;
 }
 
-void mpu5_state::pic_w(offs_t offset, uint16_t data)
+void mpu5_state::pic_w(offs_t offset, uint32_t data)
 {
 	switch (offset)
 	{
@@ -363,10 +367,10 @@ void mpu5_state::pic_w(offs_t offset, uint16_t data)
 
 }
 
-void mpu5_state::mpu5_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask)
+void mpu5_state::mpu5_mem_w(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
 	int pc = m_maincpu->pc();
-	int addr = offset * 2;
+	int addr = offset *4;
 	int cs = m_maincpu->get_cs(addr);
 
 	switch ( cs )
@@ -388,7 +392,7 @@ void mpu5_state::mpu5_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 
 				case 0xf0:
 				{
-					asic_w16(offset&1,data,mem_mask);
+					asic_w32(offset&3,data,mem_mask);
 					break;
 				}
 
@@ -401,7 +405,7 @@ void mpu5_state::mpu5_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 
 		case 3:
 		case 4:
-			offset &=0x7fff;
+			offset &=0x3fff;
 			COMBINE_DATA(&m_mainram[offset]);
 			break;
 
@@ -425,9 +429,8 @@ INPUT_PORTS_END
 
 void mpu5_state::machine_start()
 {
-	m_statuslamp.resolve();
-	m_cpuregion = (uint16_t*)memregion( "maincpu" )->base();
-	m_mainram = make_unique_clear<uint16_t[]>(0x20000);
+	m_cpuregion = (uint32_t*)memregion( "maincpu" )->base();
+	m_mainram = make_unique_clear<uint32_t[]>(0x10000);
 	m_pic_output_bit =0;
 }
 

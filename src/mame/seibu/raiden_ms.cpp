@@ -209,8 +209,6 @@ _|_  74LS86PC  74LS299N |RD4B3  | 74LS153PC|V||  _|_  74LS86PC  74LS299N |RD4A3 
 #include "tilemap.h"
 
 
-namespace {
-
 class raiden_ms_state : public driver_device
 {
 public:
@@ -261,10 +259,10 @@ private:
 	required_device_array<generic_latch_8_device, 2> m_soundlatch;
 	required_memory_bank m_soundbank;
 
-	uint16_t pal_read16(offs_t offset, u16 mem_mask = ~0) { uint16_t data = m_palette->read16(offset); return swapendian_int16(data); };
-	uint16_t pal_read16_ext(offs_t offset, u16 mem_mask = ~0) { uint16_t data = m_palette->read16_ext(offset); return swapendian_int16(data);  };
-	void pal_write16(offs_t offset, u16 data, u16 mem_mask = ~0) { m_palette->write16(offset, swapendian_int16(data), swapendian_int16(mem_mask)); };
-	void pal_write16_ext(offs_t offset, u16 data, u16 mem_mask = ~0) { m_palette->write16_ext(offset, swapendian_int16(data), swapendian_int16(mem_mask)); };
+	uint16_t pal_read16(offs_t offset, u16 mem_mask = ~0) { uint16_t data = m_palette->read16(offset); return ((data & 0xff00) >> 8) | ((data & 0x00ff) << 8); };
+	uint16_t pal_read16_ext(offs_t offset, u16 mem_mask = ~0) { uint16_t data = m_palette->read16_ext(offset); return ((data & 0xff00) >> 8) | ((data & 0x00ff) << 8);  };
+	void pal_write16(offs_t offset, u16 data, u16 mem_mask = ~0) { m_palette->write16(offset, ((data & 0xff00) >> 8) | ((data & 0x00ff) << 8), ((mem_mask & 0xff00) >> 8) | ((mem_mask & 0x00ff) << 8)); };
+	void pal_write16_ext(offs_t offset, u16 data, u16 mem_mask = ~0) { m_palette->write16_ext(offset, ((data & 0xff00) >> 8) | ((data & 0x00ff) << 8), ((mem_mask & 0xff00) >> 8) | ((mem_mask & 0x00ff) << 8)); };
 
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
@@ -275,14 +273,14 @@ private:
 	void adpcm_w(u8 data);
 	void ym_w(offs_t offset, u8 data);
 	void audio_map(address_map& map);
-	void adpcm_int(int state);
+	DECLARE_WRITE_LINE_MEMBER(adpcm_int);
 	bool m_audio_select;
 	u8 m_adpcm_data;
 
 	void unk_snd_dffx_w(offs_t offset, u8 data);
 	void soundlatch_w(u8 data);
 
-	void vblank_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank_irq);
 
 	void descramble_16x16tiles(uint8_t* src, int len);
 
@@ -401,7 +399,7 @@ void raiden_ms_state::audio_map(address_map &map)
 	map(0xe00a, 0xe00b).r(m_ym2, FUNC(ym2203_device::read));
 }
 
-void raiden_ms_state::adpcm_int(int state)
+WRITE_LINE_MEMBER(raiden_ms_state::adpcm_int)
 {
 	m_msm->data_w(m_adpcm_data);
 	m_audiocpu->set_input_line(0, HOLD_LINE);
@@ -642,7 +640,7 @@ static GFXDECODE_START( gfx_raiden_ms )
 	GFXDECODE_ENTRY( "gfx3", 0, tiles8x8x4_layout, 0x000, 16 )
 GFXDECODE_END
 
-void raiden_ms_state::vblank_irq(int state)
+WRITE_LINE_MEMBER(raiden_ms_state::vblank_irq)
 {
 	if (state)
 	{
@@ -783,8 +781,5 @@ ROM_START( raidenm )
 	ROM_LOAD( "msraid_6-1-8086-1_645c_gal16v8.u33", 0x000, 0x117, NO_DUMP )
 	ROM_LOAD( "msraid_6-1-8086-1_645d_gal16v8.u27", 0x000, 0x117, NO_DUMP )
 ROM_END
-
-} // anonymous namespace
-
 
 GAME( 1990, raidenm,  raiden,  raidenm,  raidenm,  raiden_ms_state, init_raidenm, ROT270, "bootleg (Gaelco / Ervisa)", "Raiden (Modular System)", MACHINE_NOT_WORKING )

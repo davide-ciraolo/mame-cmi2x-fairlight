@@ -1,8 +1,8 @@
 PROG = 7zxr.dll
 DEF_FILE = ../../Archive/Archive2.def
 CFLAGS = $(CFLAGS) \
-  -DZ7_EXTRACT_ONLY \
-  -DZ7_NO_CRYPTO
+  -DEXTRACT_ONLY \
+  -D_NO_CRYPTO
 
 COMMON_OBJS = \
   $O\CRC.obj \
@@ -77,7 +77,6 @@ COMPRESS_OBJS = \
   $O\LzmaRegister.obj \
 
 C_OBJS = \
-  $O\7zStream.obj \
   $O\Alloc.obj \
   $O\Bcj2.obj \
   $O\Bra.obj \
@@ -86,13 +85,9 @@ C_OBJS = \
   $O\CpuArch.obj \
   $O\Delta.obj \
   $O\Lzma2Dec.obj \
-  $O\Lzma2DecMt.obj \
   $O\LzmaDec.obj \
-  $O\MtDec.obj \
-  $O\SwapBytes.obj \
   $O\Threads.obj \
 
 !include "../../Crc.mak"
-!include "../../LzmaDec.mak"
 
 !include "../../7zip.mak"

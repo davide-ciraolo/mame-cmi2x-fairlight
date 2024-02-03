@@ -228,6 +228,9 @@ tandy2k_keyboard_device::tandy2k_keyboard_device(const machine_config &mconfig, 
 void tandy2k_keyboard_device::device_start()
 {
 	m_leds.resolve();
+	// resolve callbacks
+	m_write_clock.resolve_safe();
+	m_write_data.resolve_safe();
 
 	// state saving
 	save_item(NAME(m_keylatch));
@@ -247,7 +250,7 @@ void tandy2k_keyboard_device::device_reset()
 //  power_w -
 //-------------------------------------------------
 
-void tandy2k_keyboard_device::power_w(int state)
+WRITE_LINE_MEMBER( tandy2k_keyboard_device::power_w )
 {
 	// TODO
 }
@@ -257,7 +260,7 @@ void tandy2k_keyboard_device::power_w(int state)
 //  reset_w -
 //-------------------------------------------------
 
-void tandy2k_keyboard_device::reset_w(int state)
+WRITE_LINE_MEMBER( tandy2k_keyboard_device::reset_w )
 {
 	if (!state)
 	{
@@ -270,7 +273,7 @@ void tandy2k_keyboard_device::reset_w(int state)
 //  busy_w -
 //-------------------------------------------------
 
-void tandy2k_keyboard_device::busy_w(int state)
+WRITE_LINE_MEMBER( tandy2k_keyboard_device::busy_w )
 {
 	m_maincpu->set_input_line(MCS48_INPUT_IRQ, state ? CLEAR_LINE : ASSERT_LINE);
 }
@@ -280,7 +283,7 @@ void tandy2k_keyboard_device::busy_w(int state)
 //  data_r -
 //-------------------------------------------------
 
-int tandy2k_keyboard_device::data_r()
+READ_LINE_MEMBER( tandy2k_keyboard_device::data_r )
 {
 	return m_data;
 }

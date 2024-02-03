@@ -77,7 +77,9 @@ public:
 
 protected:
 	virtual void device_add_mconfig(machine_config &config) override;
-	virtual uint8_t get_start_bank() override { return 0; }
+	virtual void device_reset() override;
+	uint8_t read(offs_t offset);
+	void write(offs_t offset, uint8_t data);
 };
 
 

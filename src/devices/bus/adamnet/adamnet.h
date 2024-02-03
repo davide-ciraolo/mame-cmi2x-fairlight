@@ -30,13 +30,13 @@ public:
 
 	void add_device(device_t *target);
 
-	int rxd_r();
+	DECLARE_READ_LINE_MEMBER( rxd_r );
 	int rxd_r(device_t *device);
-	void txd_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( txd_w );
 	void txd_w(device_t *device, int state);
 
-	int reset_r();
-	void reset_w(int state);
+	DECLARE_READ_LINE_MEMBER( reset_r );
+	DECLARE_WRITE_LINE_MEMBER( reset_w );
 
 protected:
 	// device-level overrides

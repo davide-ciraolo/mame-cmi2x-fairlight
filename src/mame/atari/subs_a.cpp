@@ -1,14 +1,24 @@
 // license:BSD-3-Clause
 // copyright-holders:Derrick Renaud
-
 /*************************************************************************
 
-    atari\subs_a.cpp
+    audio\subs.cpp
 
 *************************************************************************/
 #include "emu.h"
+#include "subs.h"
+#include "sound/discrete.h"
 
-#include "subs_a.h"
+
+/***************************************************************************
+sub sound functions
+***************************************************************************/
+
+void subs_state::noise_reset_w(uint8_t data)
+{
+	/* Pulse noise reset */
+	m_discrete->write(SUBS_NOISE_RESET, 0);
+}
 
 
 /************************************************************************/
@@ -40,7 +50,7 @@ static const discrete_lfsr_desc subs_lfsr =
 
 DISCRETE_SOUND_START(subs_discrete)
 	/************************************************/
-	/* subs  Effects Relative Gain Table            */
+	/* subs  Effects Relataive Gain Table           */
 	/*                                              */
 	/* NOTE: The schematic does not show the amp    */
 	/*  stage so I will assume a 5K volume control. */
@@ -49,7 +59,7 @@ DISCRETE_SOUND_START(subs_discrete)
 	/* Sonar         2.33     5/(5+2.7)     320.8   */
 	/* Launch        3.8      5/(5+47)       77.5   */
 	/* Crash         3.8      5/(5+22)      149.2   */
-	/* Explosion     10.0     5/(5+5.6)    1000.0   */
+/* Explosion     10.0     5/(5+5.6)    1000.0   */
 	/************************************************/
 
 	/************************************************/
@@ -71,7 +81,7 @@ DISCRETE_SOUND_START(subs_discrete)
 	DISCRETE_LFSR_NOISE(SUBS_NOISE, SUBS_NOISE_RESET, SUBS_NOISE_RESET, 15750.0, 1.0, 0, 0, &subs_lfsr)
 
 	/************************************************/
-	/* Launch is just amplitude controlled noise    */
+	/* Launch is just amplitude contolled noise     */
 	/************************************************/
 	DISCRETE_MULTIPLY(SUBS_LAUNCH_SND, SUBS_NOISE, SUBS_LAUNCH_DATA)
 

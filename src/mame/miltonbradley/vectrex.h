@@ -5,8 +5,8 @@
  * includes/vectrex.h
  *
  ****************************************************************************/
-#ifndef MAME_MILTONBRADLEY_VECTREX_H
-#define MAME_MILTONBRADLEY_VECTREX_H
+#ifndef MAME_INCLUDES_VECTREX_H
+#define MAME_INCLUDES_VECTREX_H
 
 #pragma once
 
@@ -68,9 +68,10 @@ protected:
 	uint8_t via_pa_r();
 	void via_pb_w(uint8_t data);
 	void via_pa_w(uint8_t data);
-	void via_ca2_w(int state);
-	void via_cb2_w(int state);
-	void via_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(via_ca2_w);
+	DECLARE_WRITE_LINE_MEMBER(via_cb2_w);
+	DECLARE_DEVICE_IMAGE_LOAD_MEMBER(cart_load);
+	DECLARE_WRITE_LINE_MEMBER(via_irq);
 
 	void vectrex_base(machine_config &config);
 
@@ -189,4 +190,4 @@ private:
 	required_ioport m_io_coin;
 };
 
-#endif // MAME_MILTONBRADLEY_VECTREX_H
+#endif // MAME_INCLUDES_VECTREX_H

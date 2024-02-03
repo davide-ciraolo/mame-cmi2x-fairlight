@@ -15,15 +15,10 @@ CCopyCoder::~CCopyCoder()
   ::MidFree(_buf);
 }
 
-Z7_COM7F_IMF(CCopyCoder::SetFinishMode(UInt32 /* finishMode */))
-{
-  return S_OK;
-}
-
-Z7_COM7F_IMF(CCopyCoder::Code(ISequentialInStream *inStream,
+STDMETHODIMP CCopyCoder::Code(ISequentialInStream *inStream,
     ISequentialOutStream *outStream,
     const UInt64 * /* inSize */, const UInt64 *outSize,
-    ICompressProgressInfo *progress))
+    ICompressProgressInfo *progress)
 {
   if (!_buf)
   {
@@ -37,39 +32,12 @@ Z7_COM7F_IMF(CCopyCoder::Code(ISequentialInStream *inStream,
   for (;;)
   {
     UInt32 size = kBufSize;
-    if (outSize)
-    {
-      const UInt64 rem = *outSize - TotalSize;
-      if (size > rem)
-      {
-        size = (UInt32)rem;
-        if (size == 0)
-        {
-          /* if we enable the following check,
-             we will make one call of Read(_buf, 0) for empty stream */
-          // if (TotalSize != 0)
-          return S_OK;
-        }
-      }
-    }
+    if (outSize && size > *outSize - TotalSize)
+      size = (UInt32)(*outSize - TotalSize);
+    if (size == 0)
+      return S_OK;
     
-    HRESULT readRes;
-    {
-      UInt32 pos = 0;
-      do
-      {
-        const UInt32 curSize = size - pos;
-        UInt32 processed = 0;
-        readRes = inStream->Read(_buf + pos, curSize, &processed);
-        if (processed > curSize)
-          return E_FAIL; // internal code failure
-        pos += processed;
-        if (readRes != S_OK || processed == 0)
-          break;
-      }
-      while (pos < kBufSize);
-      size = pos;
-    }
+    HRESULT readRes = inStream->Read(_buf, size, &size);
 
     if (size == 0)
       return readRes;
@@ -79,15 +47,12 @@ Z7_COM7F_IMF(CCopyCoder::Code(ISequentialInStream *inStream,
       UInt32 pos = 0;
       do
       {
-        const UInt32 curSize = size - pos;
-        UInt32 processed = 0;
-        const HRESULT res = outStream->Write(_buf + pos, curSize, &processed);
-        if (processed > curSize)
-          return E_FAIL; // internal code failure
-        pos += processed;
-        TotalSize += processed;
-        RINOK(res)
-        if (processed == 0)
+        UInt32 curSize = size - pos;
+        HRESULT res = outStream->Write(_buf + pos, curSize, &curSize);
+        pos += curSize;
+        TotalSize += curSize;
+        RINOK(res);
+        if (curSize == 0)
           return E_FAIL;
       }
       while (pos < size);
@@ -95,32 +60,29 @@ Z7_COM7F_IMF(CCopyCoder::Code(ISequentialInStream *inStream,
     else
       TotalSize += size;
 
-    RINOK(readRes)
+    RINOK(readRes);
 
-    if (size != kBufSize)
-      return S_OK;
-
-    if (progress && (TotalSize & (((UInt32)1 << 22) - 1)) == 0)
+    if (progress)
     {
-      RINOK(progress->SetRatioInfo(&TotalSize, &TotalSize))
+      RINOK(progress->SetRatioInfo(&TotalSize, &TotalSize));
     }
   }
 }
 
-Z7_COM7F_IMF(CCopyCoder::SetInStream(ISequentialInStream *inStream))
+STDMETHODIMP CCopyCoder::SetInStream(ISequentialInStream *inStream)
 {
   _inStream = inStream;
   TotalSize = 0;
   return S_OK;
 }
 
-Z7_COM7F_IMF(CCopyCoder::ReleaseInStream())
+STDMETHODIMP CCopyCoder::ReleaseInStream()
 {
   _inStream.Release();
   return S_OK;
 }
 
-Z7_COM7F_IMF(CCopyCoder::Read(void *data, UInt32 size, UInt32 *processedSize))
+STDMETHODIMP CCopyCoder::Read(void *data, UInt32 size, UInt32 *processedSize)
 {
   UInt32 realProcessedSize = 0;
   HRESULT res = _inStream->Read(data, size, &realProcessedSize);
@@ -130,7 +92,7 @@ Z7_COM7F_IMF(CCopyCoder::Read(void *data, UInt32 size, UInt32 *processedSize))
   return res;
 }
 
-Z7_COM7F_IMF(CCopyCoder::GetInStreamProcessedSize(UInt64 *value))
+STDMETHODIMP CCopyCoder::GetInStreamProcessedSize(UInt64 *value)
 {
   *value = TotalSize;
   return S_OK;
@@ -146,7 +108,7 @@ HRESULT CopyStream_ExactSize(ISequentialInStream *inStream, ISequentialOutStream
 {
   NCompress::CCopyCoder *copyCoderSpec = new NCompress::CCopyCoder;
   CMyComPtr<ICompressCoder> copyCoder = copyCoderSpec;
-  RINOK(copyCoder->Code(inStream, outStream, NULL, &size, progress))
+  RINOK(copyCoder->Code(inStream, outStream, NULL, &size, progress));
   return copyCoderSpec->TotalSize == size ? S_OK : E_FAIL;
 }
 

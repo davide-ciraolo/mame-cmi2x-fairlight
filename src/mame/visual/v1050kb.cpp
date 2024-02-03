@@ -303,7 +303,6 @@ v1050_keyboard_device::v1050_keyboard_device(const machine_config &mconfig, cons
 void v1050_keyboard_device::device_start()
 {
 	m_led.resolve();
-
 	// state saving
 	save_item(NAME(m_keylatch));
 }
@@ -315,6 +314,7 @@ void v1050_keyboard_device::device_start()
 
 void v1050_keyboard_device::device_reset()
 {
+	m_out_tx_handler.resolve_safe();
 	m_out_tx_handler(1);
 }
 
@@ -323,7 +323,7 @@ void v1050_keyboard_device::device_reset()
 //  si_w -
 //-------------------------------------------------
 
-void v1050_keyboard_device::si_w(int state)
+WRITE_LINE_MEMBER( v1050_keyboard_device::si_w )
 {
 	m_maincpu->set_input_line(MCS48_INPUT_IRQ, state ? CLEAR_LINE : ASSERT_LINE);
 }

@@ -47,7 +47,7 @@ namespace
 		// optional information overrides
 		virtual void device_add_mconfig(machine_config &config) override;
 
-		void uart_irq_w(int state)
+		WRITE_LINE_MEMBER(uart_irq_w)
 		{
 			set_line_value(line::CART, state != 0);
 		}

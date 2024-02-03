@@ -62,25 +62,25 @@ void am2847_base_device::init()
 	m_out = 0;
 }
 
-void am2847_base_device::in_a_w(int state)
+WRITE_LINE_MEMBER( am2847_base_device::in_a_w )
 {
 	m_in &= ~0x01;
 	m_in |= state;
 }
 
-void am2847_base_device::in_b_w(int state)
+WRITE_LINE_MEMBER( am2847_base_device::in_b_w )
 {
 	m_in &= ~0x02;
 	m_in |= state << 1;
 }
 
-void am2847_base_device::in_c_w(int state)
+WRITE_LINE_MEMBER( am2847_base_device::in_c_w )
 {
 	m_in &= ~0x04;
 	m_in |= state << 2;
 }
 
-void am2847_base_device::in_d_w(int state)
+WRITE_LINE_MEMBER( am2847_base_device::in_d_w )
 {
 	m_in &= ~0x08;
 	m_in |= state << 3;
@@ -91,25 +91,25 @@ void am2847_base_device::in_w(uint8_t data)
 	m_in = data & 0x0f;
 }
 
-void am2847_base_device::rc_a_w(int state)
+WRITE_LINE_MEMBER( am2847_base_device::rc_a_w )
 {
 	m_rc &= ~0x01;
 	m_rc |= state;
 }
 
-void am2847_base_device::rc_b_w(int state)
+WRITE_LINE_MEMBER( am2847_base_device::rc_b_w )
 {
 	m_rc &= ~0x02;
 	m_rc |= state << 1;
 }
 
-void am2847_base_device::rc_c_w(int state)
+WRITE_LINE_MEMBER( am2847_base_device::rc_c_w )
 {
 	m_rc &= ~0x04;
 	m_rc |= state << 2;
 }
 
-void am2847_base_device::rc_d_w(int state)
+WRITE_LINE_MEMBER( am2847_base_device::rc_d_w )
 {
 	m_rc &= ~0x08;
 	m_rc |= state << 3;
@@ -120,7 +120,7 @@ void am2847_base_device::rc_w(uint8_t data)
 	m_rc = data & 0x0f;
 }
 
-void am2847_base_device::cp_w(int state)
+WRITE_LINE_MEMBER( am2847_base_device::cp_w )
 {
 	if (m_cp != state && state != 0)
 	{

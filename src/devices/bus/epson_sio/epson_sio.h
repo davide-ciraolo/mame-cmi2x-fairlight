@@ -42,12 +42,12 @@ public:
 	auto pin_callback() { return m_write_pin.bind(); }
 
 	// called from owner
-	void tx_w(int state);
-	void pout_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( tx_w );
+	DECLARE_WRITE_LINE_MEMBER( pout_w );
 
 	// called from subdevice
-	void rx_w(int state) { m_write_rx(state); }
-	void pin_w(int state) { m_write_pin(state); }
+	DECLARE_WRITE_LINE_MEMBER( rx_w ) { m_write_rx(state); }
+	DECLARE_WRITE_LINE_MEMBER( pin_w ) { m_write_pin(state); }
 
 protected:
 	// device-level overrides

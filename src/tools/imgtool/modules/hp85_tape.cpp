@@ -10,11 +10,10 @@
 #include "imgtool.h"
 
 #include "formats/hti_tape.h"
+#include "formats/imageutl.h"
 
 #include "ioprocs.h"
-#include "multibyte.h"
 #include "opresolv.h"
-#include "strformat.h"
 
 #include <cstdio>
 #include <iostream>
@@ -634,7 +633,7 @@ bool tape_image_85::decode_dir(const sif_file_t& file_0)
 
 	// Get FL1TK1
 	file_track_1 = file_0[ 0xfd ];
-	record_track_1 = get_u16le(&file_0[ 0xfe ]);
+	record_track_1 = pick_integer_le(file_0.data() , 0xfe , 2);
 
 	file_no_t file_no = 1;
 
@@ -665,10 +664,10 @@ bool tape_image_85::decode_dir(const sif_file_t& file_0)
 		new_entry.file_no = file_no++;
 
 		// Physical records
-		new_entry.n_recs = get_u16le(&p[ 8 ]);
+		new_entry.n_recs = pick_integer_le(p , 8 , 2);
 
 		// Bytes per logical record
-		new_entry.record_len = get_u16le(&p[ 10 ]);
+		new_entry.record_len = pick_integer_le(p , 10 , 2);
 		if (new_entry.record_len < 4 || new_entry.record_len >= 32768) {
 			return false;
 		}
@@ -689,8 +688,8 @@ void tape_image_85::encode_dir(sif_file_t& file_0) const
 	file_0[ 0x1fc ] = 1;
 	// Set FL1TK1
 	file_0[ 0xfd ] = file_0[ 0x1fd ] = file_track_1;
-	put_u16le(&file_0[ 0xfe ] , record_track_1);
-	put_u16le(&file_0[ 0x1fe ] , record_track_1);
+	place_integer_le(file_0.data() , 0xfe , 2 , record_track_1);
+	place_integer_le(file_0.data() , 0x1fe , 2 , record_track_1);
 
 	unsigned i = 0;
 	file_no_t file_no = 1;
@@ -703,8 +702,8 @@ void tape_image_85::encode_dir(sif_file_t& file_0) const
 		memcpy(&p_entry[ 0 ] , &entry->filename[ 0 ] , CHARS_PER_FNAME);
 		p_entry[ 6 ] = file_no;
 		p_entry[ 7 ] = entry->filetype;
-		put_u16le(&p_entry[ 8 ] , entry->n_recs);
-		put_u16le(&p_entry[ 10 ] , entry->record_len);
+		place_integer_le(p_entry , 8 , 2 , entry->n_recs);
+		place_integer_le(p_entry , 10 , 2 , entry->record_len);
 	}
 
 	if (file_no <= MAX_FILE_NO) {

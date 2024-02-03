@@ -317,7 +317,7 @@ void ecb_grip21_device::ppi_pc_w(uint8_t data)
 //  Z80STI_INTERFACE( sti_intf )
 //-------------------------------------------------
 
-void ecb_grip21_device::write_centronics_busy(int state)
+WRITE_LINE_MEMBER(ecb_grip21_device::write_centronics_busy)
 {
 	m_centronics_busy = state;
 }
@@ -359,7 +359,7 @@ uint8_t ecb_grip21_device::sti_gpio_r()
 	return data;
 }
 
-void ecb_grip21_device::speaker_w(int state)
+WRITE_LINE_MEMBER( ecb_grip21_device::speaker_w )
 {
 	int level = state && ((m_vol1 << 1) | m_vol0);
 
@@ -680,7 +680,7 @@ void ecb_grip21_device::page_w(uint8_t data)
 //  stat_r -
 //-------------------------------------------------
 
-void ecb_grip21_device::write_centronics_fault(int state)
+WRITE_LINE_MEMBER(ecb_grip21_device::write_centronics_fault)
 {
 	m_centronics_fault = state;
 }

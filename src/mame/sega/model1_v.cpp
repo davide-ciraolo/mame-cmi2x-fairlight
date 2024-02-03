@@ -7,10 +7,10 @@
 #include "cpu/mb86233/mb86233.h"
 #include "model1.h"
 
-#define LOG_TGP (1U << 1)
+#define LOG_TGP_VIDEO 0
 
-#define VERBOSE (0)
-#include "logmacro.h"
+#define LOG_TGP(x)  do { if (LOG_TGP_VIDEO) logerror x; } while (0)
+#define LOG_TGP_DEV(d,x)  do { if (LOG_TGP_VIDEO) d->logerror x; } while (0)
 
 
 // Model 1 geometrizer TGP and rasterizer simulation
@@ -220,11 +220,11 @@ void model1_state::fill_quad(bitmap_rgb32 &bitmap, view_t *view, const quad_t& q
 	if (color < 0)
 	{
 		color = -1 - color;
-		LOGMASKED(LOG_TGP, "VIDEOD: Q (%d, %d)-(%d, %d)-(%d, %d)-(%d, %d)\n",
+		LOG_TGP_DEV(this,("VIDEOD: Q (%d, %d)-(%d, %d)-(%d, %d)-(%d, %d)\n",
 					q.p[0]->s.x, q.p[0]->s.y,
 					q.p[1]->s.x, q.p[1]->s.y,
 					q.p[2]->s.x, q.p[2]->s.y,
-					q.p[3]->s.x, q.p[3]->s.y);
+					q.p[3]->s.x, q.p[3]->s.y));
 	}
 
 	for (int i = 0; i < 4; i++)
@@ -602,10 +602,10 @@ void model1_state::fclip_push_quad(int level, quad_t& q)
 
 	if (level == 4)
 	{
-		LOGMASKED(LOG_TGP, "VIDEOCQ %d", level);
+		LOG_TGP(("VIDEOCQ %d", level));
 		for (int i = 0; i < 4; i++)
-			LOGMASKED(LOG_TGP, " (%f, %f, %f)", q.p[i]->x, q.p[i]->y, q.p[i]->z);
-		LOGMASKED(LOG_TGP, "\n");
+			LOG_TGP((" (%f, %f, %f)", q.p[i]->x, q.p[i]->y, q.p[i]->z));
+		LOG_TGP(("\n"));
 		*m_quadpt = q;
 		m_quadpt++;
 		return;
@@ -617,10 +617,10 @@ void model1_state::fclip_push_quad(int level, quad_t& q)
 		is_out[i] = m_clipfn[level].m_isclipped(view, q.p[i]);
 	}
 
-	LOGMASKED(LOG_TGP, "VIDEOCQ %d", level);
+	LOG_TGP(("VIDEOCQ %d", level));
 	for (int i = 0; i < 4; i++)
-		LOGMASKED(LOG_TGP, " (%f, %f, %f, %d)", q.p[i]->x, q.p[i]->y, q.p[i]->z, is_out[i]);
-	LOGMASKED(LOG_TGP, "\n");
+		LOG_TGP((" (%f, %f, %f, %d)", q.p[i]->x, q.p[i]->y, q.p[i]->z, is_out[i]));
+	LOG_TGP(("\n"));
 
 	// No clipping
 	if(!is_out[0] && !is_out[1] && !is_out[2] && !is_out[3])
@@ -792,7 +792,7 @@ void model1_state::push_object(uint32_t tex_adr, uint32_t poly_adr, uint32_t siz
 #endif
 
 	if (true) {
-		LOGMASKED(LOG_TGP, "XVIDEO:   draw object (%x, %x, %x)\n", tex_adr, poly_adr, size);
+		LOG_TGP(("XVIDEO:   draw object (%x, %x, %x)\n", tex_adr, poly_adr, size));
 	}
 
 	if (!size)
@@ -835,11 +835,11 @@ void model1_state::push_object(uint32_t tex_adr, uint32_t poly_adr, uint32_t siz
 	for (int i = 0; i < size; i++)
 	{
 #if 0
-		LOGMASKED(LOG_TGP, "VIDEO:     %08x (%f, %f, %f) (%f, %f, %f) (%f, %f, %f)\n",
+		LOG_TGP(("VIDEO:     %08x (%f, %f, %f) (%f, %f, %f) (%f, %f, %f)\n",
 			*(uint32_t *)(poly_data + poly_adr) & ~(0x01800303),
 			poly_data[poly_adr + 1], poly_data[poly_adr + 2], poly_data[poly_adr + 3],
 			poly_data[poly_adr + 4], poly_data[poly_adr + 5], poly_data[poly_adr + 6],
-			poly_data[poly_adr + 7], poly_data[poly_adr + 8], poly_data[poly_adr + 9]);
+			poly_data[poly_adr + 7], poly_data[poly_adr + 8], poly_data[poly_adr + 9]));
 #endif
 		uint32_t flags = *reinterpret_cast<uint32_t*>(poly_data + poly_adr);
 
@@ -887,18 +887,22 @@ void model1_state::push_object(uint32_t tex_adr, uint32_t poly_adr, uint32_t siz
 		}
 
 #if 0
-		if (dump) {
-			LOGMASKED(LOG_TGP, "VIDEO:     %08x (%f, %f, %f) (%f, %f, %f)\n",
+		if (dump)
+			LOG_TGP(("VIDEO:     %08x (%f, %f, %f) (%f, %f, %f)\n",
 				*(uint32_t *)(poly_data + poly_adr),
 				p0->x, p0->y, p0->z,
-				p1->x, p1->y, p1->z);
+				p1->x, p1->y, p1->z));
+#endif
 
-			LOGMASKED(LOG_TGP, "VIDEO:     %08x (%d, %d) (%d, %d) (%d, %d) (%d, %d)\n",
+
+#if 0
+		if (true || dump) {
+			LOG_TGP(("VIDEO:     %08x (%d, %d) (%d, %d) (%d, %d) (%d, %d)\n",
 				*(uint32_t *)(poly_data + poly_adr),
 				old_p0->s.x, old_p0->s.y,
 				old_p1->s.x, old_p1->s.y,
 				p0->s.x, p0->s.y,
-				p1->s.x, p1->s.y);
+				p1->s.x, p1->s.y));
 		}
 #endif
 
@@ -1002,10 +1006,10 @@ int model1_state::push_direct(int list_offset) {
 	old_p1->y = readf(list_offset + 2 + 14);
 	old_p1->z = readf(list_offset + 2 + 16);
 
-	LOGMASKED(LOG_TGP, "VIDEOD start direct\n");
-	LOGMASKED(LOG_TGP, "VIDEOD (%f, %f, %f) (%f, %f, %f)\n",
+	LOG_TGP(("VIDEOD start direct\n"));
+	LOG_TGP(("VIDEOD (%f, %f, %f) (%f, %f, %f)\n",
 		old_p0->x, old_p0->y, old_p0->z,
-		old_p1->x, old_p1->y, old_p1->z);
+		old_p1->x, old_p1->y, old_p1->z));
 
 	//m_view-transform_point(old_p0);
 	//m_view->transform_point(old_p1);
@@ -1056,9 +1060,9 @@ int model1_state::push_direct(int list_offset) {
 			p0->y = readf(list_offset + 2 + 8);
 			p0->z = readf(list_offset + 2 + 10);
 			z = p0->z;
-			LOGMASKED(LOG_TGP, "VIDEOD %08x %08x (%f, %f, %f)\n",
+			LOG_TGP(("VIDEOD %08x %08x (%f, %f, %f)\n",
 				flags, lum,
-				p0->x, p0->y, p0->z);
+				p0->x, p0->y, p0->z));
 			*p1 = *p0;
 			list_offset += 12;
 		}
@@ -1071,10 +1075,10 @@ int model1_state::push_direct(int list_offset) {
 			p1->y = readf(list_offset + 2 + 16);
 			p1->z = readf(list_offset + 2 + 18);
 			z = readf(list_offset + 2 + 12);
-			LOGMASKED(LOG_TGP, "VIDEOD %08x %08x (%f, %f, %f) (%f, %f, %f)\n",
+			LOG_TGP(("VIDEOD %08x %08x (%f, %f, %f) (%f, %f, %f)\n",
 				flags, lum,
 				p0->x, p0->y, p0->z,
-				p1->x, p1->y, p1->z);
+				p1->x, p1->y, p1->z));
 			list_offset += 20;
 		}
 
@@ -1091,18 +1095,21 @@ int model1_state::push_direct(int list_offset) {
 			m_view->project_point_direct(p1);
 		}
 
+#if 1
 		if (old_p0 && old_p1)
-			LOGMASKED(LOG_TGP, "VIDEOD:     %08x (%d, %d) (%d, %d) (%d, %d) (%d, %d)\n",
+			LOG_TGP(("VIDEOD:     %08x (%d, %d) (%d, %d) (%d, %d) (%d, %d)\n",
 				flags,
 				old_p0->s.x, old_p0->s.y,
 				old_p1->s.x, old_p1->s.y,
 				p0->s.x, p0->s.y,
-				p1->s.x, p1->s.y);
+				p1->s.x, p1->s.y));
 		else
-			LOGMASKED(LOG_TGP, "VIDEOD:     %08x (%d, %d) (%d, %d)\n",
+			LOG_TGP(("VIDEOD:     %08x (%d, %d) (%d, %d)\n",
 				flags,
 				p0->s.x, p0->s.y,
-				p1->s.x, p1->s.y);
+				p1->s.x, p1->s.y));
+
+#endif
 
 		quad_t cquad;
 		if (!link)
@@ -1176,7 +1183,7 @@ void model1_state::draw_objects(bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
 	if (m_quadpt != &m_quaddb[0])
 	{
-		LOGMASKED(LOG_TGP, "VIDEO: sort&draw\n");
+		LOG_TGP(("VIDEO: sort&draw\n"));
 		sort_quads();
 		draw_quads(bitmap, cliprect);
 	}
@@ -1188,7 +1195,7 @@ void model1_state::draw_objects(bitmap_rgb32 &bitmap, const rectangle &cliprect)
 
 int model1_state::draw_direct(bitmap_rgb32 &bitmap, const rectangle &cliprect, int list_offset)
 {
-	LOGMASKED(LOG_TGP, "VIDEO:   draw direct %x\n", readi(list_offset + 2));
+	LOG_TGP(("VIDEO:   draw direct %x\n", readi(list_offset + 2)));
 
 	draw_objects(bitmap, cliprect);
 
@@ -1235,7 +1242,7 @@ u16 model1_state::model1_listctl_r(offs_t offset)
 void model1_state::model1_listctl_w(offs_t offset, u16 data, u16 mem_mask)
 {
 	COMBINE_DATA(m_listctl + offset);
-	LOGMASKED(LOG_TGP, "VIDEO: control=%08x\n", (m_listctl[1] << 16) | m_listctl[0]);
+	LOG_TGP(("VIDEO: control=%08x\n", (m_listctl[1] << 16) | m_listctl[0]));
 }
 
 void model1_state::view_t::init_translation_matrix()
@@ -1304,7 +1311,7 @@ void model1_state::tgp_render(bitmap_rgb32 &bitmap, const rectangle &cliprect)
 	{
 		set_current_render_list();
 		int zz = 0;
-		LOGMASKED(LOG_TGP, "VIDEO: render list %d\n", get_list_number());
+		LOG_TGP(("VIDEO: render list %d\n", get_list_number()));
 
 		m_view->init_translation_matrix();
 
@@ -1337,10 +1344,10 @@ void model1_state::tgp_render(bitmap_rgb32 &bitmap, const rectangle &cliprect)
 			}
 			case 3:
 			{
-				LOGMASKED(LOG_TGP, "VIDEO:   viewport (%d, %d, %d, %d, %d, %d, %d)\n",
+				LOG_TGP(("VIDEO:   viewport (%d, %d, %d, %d, %d, %d, %d)\n",
 					readi(list_offset + 2),
 					readi16(list_offset + 4), readi16(list_offset + 6), readi16(list_offset + 8),
-					readi16(list_offset + 10), readi16(list_offset + 12), readi16(list_offset + 14));
+					readi16(list_offset + 10), readi16(list_offset + 12), readi16(list_offset + 14)));
 
 				draw_objects(bitmap, cliprect);
 
@@ -1360,7 +1367,7 @@ void model1_state::tgp_render(bitmap_rgb32 &bitmap, const rectangle &cliprect)
 			{
 				int adr = readi(list_offset + 2);
 				int len = readi(list_offset + 4) + 1;
-				LOGMASKED(LOG_TGP, "ZVIDEO:   color write, adr=%x, len=%x\n", adr, len);
+				LOG_TGP(("ZVIDEO:   color write, adr=%x, len=%x\n", adr, len));
 				for (int i = 0; i < len; i++)
 				{
 					m_tgp_ram[adr - 0x40000 + i] = readi16(list_offset + 6 + 2 * i);
@@ -1383,7 +1390,7 @@ void model1_state::tgp_render(bitmap_rgb32 &bitmap, const rectangle &cliprect)
 			{
 				int adr = readi(list_offset + 2);
 				int len = readi(list_offset + 4);
-				LOGMASKED(LOG_TGP, "VIDEO:   upload data, adr=%x, len=%x\n", adr, len);
+				LOG_TGP(("VIDEO:   upload data, adr=%x, len=%x\n", adr, len));
 				for (int i = 0; i < len; i++)
 				{
 					int v = readi(list_offset + 6 + i * 2);
@@ -1397,31 +1404,31 @@ void model1_state::tgp_render(bitmap_rgb32 &bitmap, const rectangle &cliprect)
 				break;
 			}
 			case 7:
-				LOGMASKED(LOG_TGP, "VIDEO:   code 7 (%d)\n", readi(list_offset + 2));
+				LOG_TGP(("VIDEO:   code 7 (%d)\n", readi(list_offset + 2)));
 				zz++;
 				list_offset += 4;
 				break;
 			case 8:
-				LOGMASKED(LOG_TGP, "VIDEO:   select mode %08x\n", readi(list_offset + 2));
+				LOG_TGP(("VIDEO:   select mode %08x\n", readi(list_offset + 2)));
 				list_offset += 4;
 				break;
 			case 9:
-				LOGMASKED(LOG_TGP, "VIDEO:   zoom (%f, %f)\n", readf(list_offset + 2), readf(list_offset + 4));
+				LOG_TGP(("VIDEO:   zoom (%f, %f)\n", readf(list_offset + 2), readf(list_offset + 4)));
 				m_view->set_zoom(readf(list_offset + 2) * 4, readf(list_offset + 4) * 4);
 				list_offset += 6;
 				break;
 			case 0xa:
-				LOGMASKED(LOG_TGP, "VIDEO:   light vector (%f, %f, %f)\n", readf(list_offset + 2), readf(list_offset + 4), readf(list_offset + 6));
+				LOG_TGP(("VIDEO:   light vector (%f, %f, %f)\n", readf(list_offset + 2), readf(list_offset + 4), readf(list_offset + 6)));
 				m_view->set_light_direction(readf(list_offset + 2), readf(list_offset + 4), readf(list_offset + 6));
 				list_offset += 8;
 				break;
 			case 0xb:
 			{
-				LOGMASKED(LOG_TGP, "VIDEO:   matrix (%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f)\n",
+				LOG_TGP(("VIDEO:   matrix (%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f)\n",
 					readf(list_offset + 2), readf(list_offset + 4), readf(list_offset + 6),
 					readf(list_offset + 8), readf(list_offset + 10), readf(list_offset + 12),
 					readf(list_offset + 14), readf(list_offset + 16), readf(list_offset + 18),
-					readf(list_offset + 20), readf(list_offset + 22), readf(list_offset + 24));
+					readf(list_offset + 20), readf(list_offset + 22), readf(list_offset + 24)));
 				float mat[12];
 				for (int i = 0; i < 12; i++)
 				{
@@ -1432,7 +1439,7 @@ void model1_state::tgp_render(bitmap_rgb32 &bitmap, const rectangle &cliprect)
 				break;
 			}
 			case 0xc:
-				LOGMASKED(LOG_TGP, "VIDEO:   trans (%f, %f)\n", readf(list_offset + 2), readf(list_offset + 4));
+				LOG_TGP(("VIDEO:   trans (%f, %f)\n", readf(list_offset + 2), readf(list_offset + 4)));
 				m_view->set_view_translation(readf(list_offset + 2), readf(list_offset + 4));
 				list_offset += 6;
 				break;
@@ -1440,7 +1447,7 @@ void model1_state::tgp_render(bitmap_rgb32 &bitmap, const rectangle &cliprect)
 				//case -1:
 				goto end;
 			default:
-				LOGMASKED(LOG_TGP, "VIDEO:   unknown type %d\n", type);
+				LOG_TGP(("VIDEO:   unknown type %d\n", type));
 				goto end;
 			}
 		}
@@ -1467,7 +1474,7 @@ void model1_state::tgp_scan()
 	{
 		set_current_render_list();
 		// Skip everything but the data uploads
-		LOGMASKED(LOG_TGP, "VIDEO: scan list %d\n", get_list_number());
+		LOG_TGP(("VIDEO: scan list %d\n", get_list_number()));
 
 		int list_offset = 0;
 		for (;;)
@@ -1492,7 +1499,7 @@ void model1_state::tgp_scan()
 				{
 					int adr = readi(list_offset + 2);
 					int len = readi(list_offset + 4) + 1;
-					LOGMASKED(LOG_TGP, "ZVIDEO:   scan color write, adr=%x, len=%x\n", adr, len);
+					LOG_TGP(("ZVIDEO:   scan color write, adr=%x, len=%x\n", adr, len));
 					for (int i = 0; i<len; i++)
 					{
 						m_tgp_ram[adr - 0x40000 + i] = readi16(list_offset + 6 + 2 * i);
@@ -1515,7 +1522,7 @@ void model1_state::tgp_scan()
 				{
 					int adr = readi(list_offset + 2);
 					int len = readi(list_offset + 4);
-					//LOGMASKED(LOG_TGP, "VIDEO:   upload data, adr=%x, len=%x\n", adr, len);
+					//LOG_TGP(("VIDEO:   upload data, adr=%x, len=%x\n", adr, len));
 					for (int i = 0; i<len; i++)
 					{
 						int v = readi(list_offset + 6 + i * 2);
@@ -1523,7 +1530,7 @@ void model1_state::tgp_scan()
 						m_view->lightparams[i + adr].a = (float((v >> 8) & 0xff)) / 255.0f;
 						m_view->lightparams[i + adr].s = (float((v >> 16) & 0xff)) / 255.0f;
 						m_view->lightparams[i + adr].p = (v >> 24) & 0xff;
-						//LOGMASKED(LOG_TGP, "         %02X\n",v);
+						//LOG_TGP(("         %02X\n",v));
 					}
 					list_offset += 6 + len * 2;
 					break;
@@ -1550,7 +1557,7 @@ void model1_state::tgp_scan()
 				case -1:
 					goto end;
 				default:
-					LOGMASKED(LOG_TGP, "VIDEO:   unknown type %d\n", type);
+					LOG_TGP(("VIDEO:   unknown type %d\n", type));
 					goto end;
 			}
 		}
@@ -1664,13 +1671,13 @@ uint32_t model1_state::screen_update_model1(screen_device &screen, bitmap_rgb32 
 	return 0;
 }
 
-void model1_state::screen_vblank_model1(int state)
+WRITE_LINE_MEMBER(model1_state::screen_vblank_model1)
 {
 	// on rising edge
 	if (state)
 	{
 		tgp_scan();
 		end_frame();
-		LOGMASKED(LOG_TGP, "TGP: vsync\n");
+		LOG_TGP(("TGP: vsync\n"));
 	}
 }

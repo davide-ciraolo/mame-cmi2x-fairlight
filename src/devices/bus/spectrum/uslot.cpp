@@ -71,7 +71,7 @@ void spectrum_uslot_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-int spectrum_uslot_device::romcs()
+READ_LINE_MEMBER(spectrum_uslot_device::romcs)
 {
 	return m_exp1->romcs() | m_exp2->romcs();
 }

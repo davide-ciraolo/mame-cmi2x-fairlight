@@ -137,7 +137,7 @@ static imgtoolerr_t lookup_dgndos_file(uint8_t *entire_track, const char *fname,
 
 		fnamebuf = get_dirent_fname(ent);
 	}
-	while(core_stricmp(fnamebuf, fname));
+	while(core_stricmp(fnamebuf.c_str(), fname));
 
 	if (position)
 		*position = i - 1;

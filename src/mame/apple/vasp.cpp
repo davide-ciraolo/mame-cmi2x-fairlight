@@ -90,28 +90,27 @@ void vasp_device::device_add_mconfig(machine_config &config)
 	ASC(config, m_asc, C15M, asc_device::asc_type::VASP);
 	m_asc->add_route(0, "lspeaker", 1.0);
 	m_asc->add_route(1, "rspeaker", 1.0);
-	m_asc->irqf_callback().set(FUNC(vasp_device::asc_irq));
 }
 
 //-------------------------------------------------
 //  vasp_device - constructor
 //-------------------------------------------------
 
-vasp_device::vasp_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
-	device_t(mconfig, VASP, tag, owner, clock),
-	write_pb4(*this),
-	write_pb5(*this),
-	write_cb2(*this),
-	write_hdsel(*this),
-	read_pb3(*this, 0),
-	m_maincpu(*this, finder_base::DUMMY_TAG),
-	m_montype(*this, "MONTYPE"),
-	m_screen(*this, "screen"),
-	m_palette(*this, "palette"),
-	m_via1(*this, "via1"),
-	m_asc(*this, "asc"),
-	m_rom(*this, finder_base::DUMMY_TAG),
-	m_overlay(false)
+vasp_device::vasp_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: device_t(mconfig, VASP, tag, owner, clock),
+	  write_pb4(*this),
+	  write_pb5(*this),
+	  write_cb2(*this),
+	  write_hdsel(*this),
+	  read_pb3(*this),
+	  m_maincpu(*this, finder_base::DUMMY_TAG),
+	  m_montype(*this, "MONTYPE"),
+	  m_screen(*this, "screen"),
+	  m_palette(*this, "palette"),
+	  m_via1(*this, "via1"),
+	  m_asc(*this, "asc"),
+	  m_rom(*this, finder_base::DUMMY_TAG),
+	  m_overlay(false)
 {
 }
 
@@ -122,6 +121,12 @@ vasp_device::vasp_device(const machine_config &mconfig, const char *tag, device_
 void vasp_device::device_start()
 {
 	m_vram = std::make_unique<u32[]>(0x100000 / sizeof(u32));
+
+	write_pb4.resolve_safe();
+	write_pb5.resolve_safe();
+	write_cb2.resolve_safe();
+	write_hdsel.resolve_safe();
+	read_pb3.resolve_safe(0);
 
 	m_6015_timer = timer_alloc(FUNC(vasp_device::mac_6015_tick), this);
 	m_6015_timer->adjust(attotime::never);
@@ -184,7 +189,7 @@ void vasp_device::device_reset()
 u32 vasp_device::rom_switch_r(offs_t offset)
 {
 	// disable the overlay
-	if (m_overlay && !machine().side_effects_disabled())
+	if (m_overlay)
 	{
 		address_space &space = m_maincpu->space(AS_PROGRAM);
 		const u32 memory_end = m_ram_size - 1;
@@ -220,7 +225,7 @@ uint8_t vasp_device::via_in_b()
 	return read_pb3() << 3;
 }
 
-void vasp_device::via_out_cb2(int state)
+WRITE_LINE_MEMBER(vasp_device::via_out_cb2)
 {
 	write_cb2(state & 1);
 }
@@ -236,13 +241,13 @@ void vasp_device::via_out_b(uint8_t data)
 	write_pb5(BIT(data, 5));
 }
 
-void vasp_device::via1_irq(int state)
+WRITE_LINE_MEMBER(vasp_device::via1_irq)
 {
 	m_via_interrupt = state;
 	field_interrupts();
 }
 
-void vasp_device::via2_irq(int state)
+WRITE_LINE_MEMBER(vasp_device::via2_irq)
 {
 	m_via2_interrupt = state;
 	field_interrupts();
@@ -278,13 +283,13 @@ void vasp_device::field_interrupts()
 	}
 }
 
-void vasp_device::scc_irq_w(int state)
+WRITE_LINE_MEMBER(vasp_device::scc_irq_w)
 {
 	m_scc_interrupt = (state == ASSERT_LINE);
 	field_interrupts();
 }
 
-void vasp_device::vbl_w(int state)
+WRITE_LINE_MEMBER(vasp_device::vbl_w)
 {
 	if (!state)
 	{
@@ -299,7 +304,7 @@ void vasp_device::vbl_w(int state)
 	}
 }
 
-void vasp_device::slot0_irq_w(int state)
+WRITE_LINE_MEMBER(vasp_device::slot0_irq_w)
 {
 	if (state)
 	{
@@ -313,7 +318,7 @@ void vasp_device::slot0_irq_w(int state)
 	pseudovia_recalc_irqs();
 }
 
-void vasp_device::slot1_irq_w(int state)
+WRITE_LINE_MEMBER(vasp_device::slot1_irq_w)
 {
 	if (state)
 	{
@@ -327,7 +332,7 @@ void vasp_device::slot1_irq_w(int state)
 	pseudovia_recalc_irqs();
 }
 
-void vasp_device::slot2_irq_w(int state)
+WRITE_LINE_MEMBER(vasp_device::slot2_irq_w)
 {
 	if (state)
 	{
@@ -339,20 +344,6 @@ void vasp_device::slot2_irq_w(int state)
 	}
 
 	pseudovia_recalc_irqs();
-}
-
-void vasp_device::asc_irq(int state)
-{
-	if (state == ASSERT_LINE)
-	{
-		m_pseudovia_regs[3] |= 0x10; // any VIA 2 interrupt | sound interrupt
-		pseudovia_recalc_irqs();
-	}
-	else
-	{
-		m_pseudovia_regs[3] &= ~0x10;
-		pseudovia_recalc_irqs();
-	}
 }
 
 void vasp_device::pseudovia_recalc_irqs()
@@ -520,12 +511,12 @@ void vasp_device::pseudovia_w(offs_t offset, uint8_t data)
 	}
 }
 
-void vasp_device::cb1_w(int state)
+WRITE_LINE_MEMBER(vasp_device::cb1_w)
 {
 	m_via1->write_cb1(state);
 }
 
-void vasp_device::cb2_w(int state)
+WRITE_LINE_MEMBER(vasp_device::cb2_w)
 {
 	m_via1->write_cb2(state);
 }

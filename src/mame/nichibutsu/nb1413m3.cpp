@@ -4,7 +4,7 @@
 
     Machine Hardware for Nichibutsu Mahjong series.
 
-    Driver by Takahiro Nogi 1999/11/05 -
+    Driver by Takahiro Nogi <nogi@kt.rim.or.jp> 1999/11/05 -
 
 ******************************************************************************/
 /******************************************************************************
@@ -33,8 +33,6 @@ nb1413m3_device::nb1413m3_device(const machine_config &mconfig, const char *tag,
 	m_busyctr(0),
 	m_outcoin_flag(1),
 	m_inputport(0xff),
-	m_blitter_rom(*this, finder_base::DUMMY_TAG),
-	m_led(*this, "led0"),
 	m_busyflag(1),
 	m_74ls193_counter(0),
 	m_nmi_count(0),
@@ -44,7 +42,8 @@ nb1413m3_device::nb1413m3_device(const machine_config &mconfig, const char *tag,
 	m_gfxradr_l(0),
 	m_gfxradr_h(0),
 	m_gfxrombank(0),
-	m_outcoin_enable(0)
+	m_outcoin_enable(0),
+	m_led(*this, "led0")
 {
 }
 
@@ -326,7 +325,9 @@ void nb1413m3_device::sndrombank2_w(uint8_t data)
 
 uint8_t nb1413m3_device::gfxrom_r(offs_t offset)
 {
-	return m_blitter_rom[(0x20000 * (m_gfxrombank | ((m_sndrombank1 & 0x02) << 3))) + ((0x0200 * m_gfxradr_h) + (0x0002 * m_gfxradr_l)) + (offset & 0x01)];
+	uint8_t *GFXROM = machine().root_device().memregion("gfx1")->base();
+
+	return GFXROM[(0x20000 * (m_gfxrombank | ((m_sndrombank1 & 0x02) << 3))) + ((0x0200 * m_gfxradr_h) + (0x0002 * m_gfxradr_l)) + (offset & 0x01)];
 }
 
 void nb1413m3_device::gfxrombank_w(uint8_t data)
@@ -349,12 +350,12 @@ void nb1413m3_device::inputportsel_w(uint8_t data)
 	m_inputport = data;
 }
 
-int nb1413m3_device::busyflag_r()
+READ_LINE_MEMBER( nb1413m3_device::busyflag_r )
 {
 	return m_busyflag & 0x01;
 }
 
-void nb1413m3_device::busyflag_w(int state)
+WRITE_LINE_MEMBER( nb1413m3_device::busyflag_w )
 {
 	m_busyflag = state;
 }

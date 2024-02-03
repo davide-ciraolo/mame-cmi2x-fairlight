@@ -273,6 +273,8 @@ hds200_kbd_hle_device::hds200_kbd_hle_device(const machine_config &mconfig, cons
 
 void hds200_kbd_hle_device::device_start()
 {
+	// resolve callbacks
+	m_tx_handler.resolve_safe();
 }
 
 //-------------------------------------------------

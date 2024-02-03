@@ -4,10 +4,7 @@
 // Management of VTech images
 
 #include "fs_vtech.h"
-#include "fsblk.h"
 #include "vt_dsk.h"
-
-#include "multibyte.h"
 
 #include <stdexcept>
 
@@ -55,7 +52,7 @@ public:
 
 private:
 	meta_data file_metadata(const u8 *entry);
-	std::tuple<fsblk_t::block_t, u32> file_find(std::string_view name);
+	std::tuple<fsblk_t::block_t, u32> file_find(std::string name);
 	std::vector<std::pair<u8, u8>> allocate_blocks(u32 count);
 	void free_blocks(const std::vector<std::pair<u8, u8>> &blocks);
 	u32 free_block_count();
@@ -72,9 +69,10 @@ const char *vtech_image::description() const
 	return "VTech (Laser 200/300)";
 }
 
-void vtech_image::enumerate_f(floppy_enumerator &fe) const
+void vtech_image::enumerate_f(floppy_enumerator &fe, u32 form_factor, const std::vector<u32> &variants) const
 {
-	fe.add(FLOPPY_VTECH_BIN_FORMAT, floppy_image::FF_525, floppy_image::SSSD, 163840, "vtech", "VTech");
+	if(has(form_factor, variants, floppy_image::FF_525, floppy_image::SSSD))
+		fe.add(FLOPPY_VTECH_BIN_FORMAT, 163840, "vtech", "VTech");
 }
 
 std::unique_ptr<filesystem_t> vtech_image::mount(fsblk_t &blockdev) const
@@ -144,13 +142,13 @@ meta_data vtech_impl::file_metadata(const u8 *entry)
 
 	res.set(meta_name::name, trim_end_spaces(rstr(entry+2, 8)));
 	res.set(meta_name::basic, entry[0] == 'T');
-	res.set(meta_name::loading_address, get_u16le(entry + 0xc));
-	res.set(meta_name::length, ((get_u16le(entry + 0xe) - get_u16le(entry + 0xc) + 1) & 0xffff));
+	res.set(meta_name::loading_address, r16l(entry + 0xc));
+	res.set(meta_name::length, ((r16l(entry + 0xe) - r16l(entry + 0xc) + 1) & 0xffff));
 
 	return res;
 }
 
-std::tuple<fsblk_t::block_t, u32> vtech_impl::file_find(std::string_view name)
+std::tuple<fsblk_t::block_t, u32> vtech_impl::file_find(std::string name)
 {
 	for(int sect = 0; sect != 14; sect++) {
 		auto bdir = m_blockdev.get(sect);
@@ -192,7 +190,7 @@ err_t vtech_impl::metadata_change(const std::vector<std::string> &path, const me
 
 	u8 *entry = bdir.data() + off;
 	if(meta.has(meta_name::basic))
-		entry[0x0] = meta.get_flag(meta_name::basic) ? 'T' : 'B';
+		w8  (entry+0x0, meta.get_flag(meta_name::basic) ? 'T' : 'B');
 	if(meta.has(meta_name::name)) {
 		std::string name = meta.get_string(meta_name::name);
 		name.resize(8, ' ');
@@ -200,9 +198,9 @@ err_t vtech_impl::metadata_change(const std::vector<std::string> &path, const me
 	}
 	if(meta.has(meta_name::loading_address)) {
 		u16 new_loading = meta.get_number(meta_name::loading_address);
-		u16 new_end = get_u16le(entry + 0xe) - get_u16le(entry + 0xc) + new_loading;
-		put_u16le(entry + 0xc, new_loading);
-		put_u16le(entry + 0xe, new_end);
+		u16 new_end = r16l(entry + 0xe) - r16l(entry + 0xc) + new_loading;
+		w16l(entry + 0xc, new_loading);
+		w16l(entry + 0xe, new_end);
 	}
 
 	return ERR_OK;
@@ -301,7 +299,7 @@ std::pair<err_t, std::vector<u8>> vtech_impl::file_read(const std::vector<std::s
 
 	u8 track = entry[0xa];
 	u8 sector = entry[0xb];
-	int len = ((get_u16le(entry + 0xe) - get_u16le(entry + 0xc)) & 0xffff) + 1;
+	int len = ((r16l(entry + 0xe) - r16l(entry + 0xc)) & 0xffff) + 1;
 
 	data.resize(len, 0);
 	int pos = 0;
@@ -331,7 +329,7 @@ err_t vtech_impl::file_write(const std::vector<std::string> &path, const std::ve
 
 	u8 *entry = bdir.data() + off;
 
-	u32 cur_len = ((get_u16le(entry + 0xe) - get_u16le(entry + 0xc) + 1) & 0xffff);
+	u32 cur_len = ((r16l(entry + 0xe) - r16l(entry + 0xc) + 1) & 0xffff);
 	u32 new_len = data.size();
 	if(new_len > 65535)
 		new_len = 65535;
@@ -370,13 +368,13 @@ err_t vtech_impl::file_write(const std::vector<std::string> &path, const std::ve
 			dblk.w16l(126, 0);
 	}
 
-	u16 end_address = (get_u16le(entry + 0xc) + data.size() - 1) & 0xffff;
-	put_u16le(entry + 0xe, end_address);
+	u16 end_address = (r16l(entry + 0xc) + data.size() - 1) & 0xffff;
+	w16l(entry + 0xe, end_address);
 	if(need_ns) {
-		entry[0xa] = blocks[0].first;
-		entry[0xb] = blocks[0].second;
+		w8(entry + 0xa, blocks[0].first);
+		w8(entry + 0xb, blocks[0].second);
 	} else
-		put_u16le(entry + 0xa, 0);
+		w16l(entry + 0xa, 0);
 
 	return ERR_OK;
 }

@@ -6,6 +6,7 @@
 
 **********************************************************************/
 
+
 #ifndef MAME_BUS_ACORN_CMS_FDC_H
 #define MAME_BUS_ACORN_CMS_FDC_H
 
@@ -14,6 +15,7 @@
 #include "bus/acorn/bus.h"
 #include "imagedev/floppy.h"
 #include "machine/wd_fdc.h"
+#include "formats/acorn_dsk.h"
 
 //**************************************************************************
 //  TYPE DEFINITIONS

@@ -214,6 +214,8 @@ dl1416_device::dl1416_device(
 
 void dl1414_device::device_start()
 {
+	m_update_cb.resolve_safe();
+
 	// register for state saving
 	save_item(NAME(m_digit_ram));
 	save_item(NAME(m_cursor_state));
@@ -225,6 +227,15 @@ void dl1414_device::device_start()
 	m_wr_in = true;
 	m_addr_in = 0x00;
 	m_data_in = 0x00;
+
+	// randomise internal RAM
+	for (unsigned i = 0; 4 > i; ++i)
+	{
+		m_digit_ram[i] = machine().rand() & 0x3f;
+		// TODO: only enable the following line if the device actually has a cursor (DL1416T and DL1416B), if DL1414 then cursor is always 0!
+		//m_cursor_state[i] = bool(BIT(device->machine().rand(), 7));
+		m_cursor_state[i] = false;
+	}
 }
 
 void dl1416_device::device_start()
@@ -252,7 +263,7 @@ void dl1414_device::device_reset()
 {
 	// push initial display state
 	for (unsigned i = 0; 4 > i; ++i)
-		do_update(i);
+		m_update_cb(i, translate(m_digit_ram[i], m_cursor_state[i]), 0xffff);
 }
 
 
@@ -260,7 +271,7 @@ void dl1414_device::device_reset()
     IMPLEMENTATION
 *****************************************************************************/
 
-void dl1414_device::wr_w(int state)
+WRITE_LINE_MEMBER( dl1414_device::wr_w )
 {
 	if (bool(state) != m_wr_in)
 	{
@@ -270,7 +281,7 @@ void dl1414_device::wr_w(int state)
 	}
 }
 
-void dl1416_device::wr_w(int state)
+WRITE_LINE_MEMBER( dl1416_device::wr_w )
 {
 	if (bool(state) != m_wr_in)
 	{
@@ -288,12 +299,12 @@ void dl1416_device::wr_w(int state)
 	}
 }
 
-void dl1416_device::ce_w(int state)
+WRITE_LINE_MEMBER( dl1416_device::ce_w )
 {
 	m_ce_in = bool(state);
 }
 
-void dl1416_device::cu_w(int state)
+WRITE_LINE_MEMBER( dl1416_device::cu_w )
 {
 	m_cu_in = bool(state);
 }
@@ -316,7 +327,7 @@ void dl1414_device::bus_w(offs_t offset, u8 data)
 	if (m_digit_ram[offset] != data)
 	{
 		m_digit_ram[offset] = data;
-		do_update(offset);
+		m_update_cb(offset, translate(m_digit_ram[offset], m_cursor_state[offset]), 0xffff);
 	}
 }
 
@@ -327,11 +338,6 @@ void dl1414_device::set_cursor_state(offs_t offset, bool state)
 	if (state != m_cursor_state[offset])
 	{
 		m_cursor_state[offset] = state;
-		do_update(offset);
+		m_update_cb(offset, translate(m_digit_ram[offset], m_cursor_state[offset]), 0xffff);
 	}
-}
-
-void dl1414_device::do_update(offs_t offset)
-{
-	m_update_cb(offset, translate(m_digit_ram[offset], m_cursor_state[offset]), 0xffff);
 }

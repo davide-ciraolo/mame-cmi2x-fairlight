@@ -226,7 +226,7 @@ void srmp2_state::adpcm_code_w(uint8_t data)
 }
 
 
-void srmp2_state::adpcm_int(int state)
+WRITE_LINE_MEMBER(srmp2_state::adpcm_int)
 {
 	if (m_adpcm_sptr)
 	{
@@ -266,12 +266,19 @@ uint8_t srmp2_state::vox_status_r()
 
 uint8_t srmp2_state::iox_key_matrix_calc(uint8_t p_side)
 {
-	for (int i = 0; i < 4; i++)
+	static const char *const keynames[] = { "KEY0", "KEY1", "KEY2", "KEY3", "KEY4", "KEY5", "KEY6", "KEY7" };
+	int i, j, t;
+
+	for (i = 0x00 ; i < 0x20 ; i += 8)
 	{
-		for (int t = 0; t < 8; t ++)
+		j = (i / 0x08);
+
+		for (t = 0 ; t < 8 ; t ++)
 		{
-			if (!BIT(m_keys[i | (p_side << 2)]->read(), t))
-				return (i << 3) | t | (p_side << 5);
+			if (!(ioport(keynames[j+p_side])->read() & ( 1 << t )))
+			{
+				return (i + t) | (p_side ? 0x20 : 0x00);
+			}
 		}
 	}
 
@@ -281,41 +288,44 @@ uint8_t srmp2_state::iox_key_matrix_calc(uint8_t p_side)
 uint8_t srmp2_state::iox_mux_r()
 {
 	/* first off check any pending protection value */
-	for (int i = 0; i < 4; i++)
 	{
-		if (m_iox.protcheck[i] == -1)
-			continue; //skip
+		int i;
 
-		if (m_iox.data == m_iox.protcheck[i])
+		for(i=0;i<4;i++)
 		{
-			if (!machine().side_effects_disabled())
+			if(m_iox.protcheck[i] == -1)
+				continue; //skip
+
+			if(m_iox.data == m_iox.protcheck[i])
+			{
 				m_iox.data = 0; //clear write latch
-			return m_iox.protlatch[i];
+				return m_iox.protlatch[i];
+			}
 		}
 	}
 
-	if (m_iox.ff == 0)
+	if(m_iox.ff == 0)
 	{
-		if (m_iox.mux != 1 && m_iox.mux != 2 && m_iox.mux != 4)
+		if(m_iox.mux != 1 && m_iox.mux != 2 && m_iox.mux != 4)
 			return 0xff; //unknown command
 
 		/* both side checks */
-		if (m_iox.mux == 1)
+		if(m_iox.mux == 1)
 		{
-			uint8_t const p1_side = iox_key_matrix_calc(0);
-			uint8_t const p2_side = iox_key_matrix_calc(1);
+			uint8_t p1_side = iox_key_matrix_calc(0);
+			uint8_t p2_side = iox_key_matrix_calc(4);
 
-			if (p1_side != 0)
+			if(p1_side != 0)
 				return p1_side;
-			else
-				return p2_side;
+
+			return p2_side;
 		}
 
 		/* check individual input side */
-		return iox_key_matrix_calc((m_iox.mux == 2) ? 0 : 1);
+		return iox_key_matrix_calc((m_iox.mux == 2) ? 0 : 4);
 	}
 
-	return m_service->read() & 0xff;
+	return ioport("SERVICE")->read() & 0xff;
 }
 
 uint8_t srmp2_state::iox_status_r()
@@ -326,10 +336,10 @@ uint8_t srmp2_state::iox_status_r()
 void srmp2_state::iox_command_w(uint8_t data)
 {
 	/*
-	bitwise command port apparently
+	bit wise command port apparently
 	0x01: selects both sides
-	0x02: selects 1P side
-	0x04: selects 2P side
+	0x02: selects p1 side
+	0x04: selects p2 side
 	*/
 
 	m_iox.mux = data;
@@ -401,18 +411,16 @@ void srmp2_state::srmp2_map(address_map &map)
 	map(0xf00000, 0xf00003).w("aysnd", FUNC(ay8910_device::address_data_w)).umask16(0x00ff);
 }
 
-uint8_t srmp2_state::mjyuugi_irq2_ack_r(address_space &space)
+uint8_t srmp2_state::mjyuugi_irq2_ack_r()
 {
-	if (!machine().side_effects_disabled())
-		m_maincpu->set_input_line(2, CLEAR_LINE);
-	return space.unmap(); // value returned doesn't matter
+	m_maincpu->set_input_line(2, CLEAR_LINE);
+	return 0xff; // value returned doesn't matter
 }
 
-uint8_t srmp2_state::mjyuugi_irq4_ack_r(address_space &space)
+uint8_t srmp2_state::mjyuugi_irq4_ack_r()
 {
-	if (!machine().side_effects_disabled())
-		m_maincpu->set_input_line(4, CLEAR_LINE);
-	return space.unmap(); // value returned doesn't matter
+	m_maincpu->set_input_line(4, CLEAR_LINE);
+	return 0xff; // value returned doesn't matter
 }
 
 void srmp2_state::mjyuugi_map(address_map &map)
@@ -757,9 +765,9 @@ static INPUT_PORTS_START( srmp3 )
 
 	PORT_START("SERVICE")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNKNOWN )
-	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_MEMORY_RESET )
+	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_SERVICE3 )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN )
-	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_SERVICE2 ) PORT_NAME("Analyzer")
+	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_SERVICE2 )
 	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -778,10 +786,10 @@ static INPUT_PORTS_START( rmgoldyh )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )
 
 	PORT_START("SERVICE")
-	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_SERVICE3 ) PORT_NAME("Payout")
-	PORT_BIT( 0x0002, IP_ACTIVE_LOW, IPT_MEMORY_RESET )
+	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_SERVICE4 ) PORT_NAME("Payout")
+	PORT_BIT( 0x0002, IP_ACTIVE_LOW, IPT_SERVICE2 ) PORT_NAME("Memory Clear")
 	PORT_BIT( 0x0004, IP_ACTIVE_LOW, IPT_SERVICE ) PORT_NAME("Test Mode")
-	PORT_BIT( 0x0008, IP_ACTIVE_LOW, IPT_SERVICE2 ) PORT_NAME("Analyzer")
+	PORT_BIT( 0x0008, IP_ACTIVE_LOW, IPT_SERVICE3 ) PORT_NAME("Analyzer")
 	PORT_BIT( 0x0010, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x0020, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x0040, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -790,7 +798,7 @@ static INPUT_PORTS_START( rmgoldyh )
 
 	PORT_INCLUDE( seta_mjctrl )
 
-	// DIP switch sheets available at MameTesters (MT05599)
+	// dip sheets available at MameTesters (MT05599)
 	PORT_START("DSW1")
 	PORT_DIPNAME( 0x03, 0x00, "Distribution list" ) PORT_DIPLOCATION("SW1:1,2")
 	PORT_DIPSETTING(    0x03, "32:24:16:12:8:4:2:1" )
@@ -1588,11 +1596,11 @@ ROM_END
 
 
 
-GAME( 1987, srmp1,     0,        srmp2,    srmp2,    srmp2_state, empty_init, ROT0, "Seta",                "Super Real Mahjong Part 1 (Japan)", MACHINE_SUPPORTS_SAVE )
-GAME( 1987, srmp2,     0,        srmp2,    srmp2,    srmp2_state, empty_init, ROT0, "Seta",                "Super Real Mahjong Part 2 (Japan)", MACHINE_SUPPORTS_SAVE )
-GAME( 1988, srmp3,     0,        srmp3,    srmp3,    srmp2_state, empty_init, ROT0, "Seta",                "Super Real Mahjong Part 3 (Japan)", MACHINE_SUPPORTS_SAVE )
-GAME( 1988, rmgoldyh,  srmp3,    rmgoldyh, rmgoldyh, srmp2_state, empty_init, ROT0, "Seta (Alba license)", "Real Mahjong Gold Yumehai / Super Real Mahjong GOLD part.2 [BET] (Japan)", MACHINE_SUPPORTS_SAVE )
-GAME( 1990, mjyuugi,   0,        mjyuugi,  mjyuugi,  srmp2_state, empty_init, ROT0, "Visco",               "Mahjong Yuugi (Japan set 1)", MACHINE_SUPPORTS_SAVE )
-GAME( 1990, mjyuugia,  mjyuugi,  mjyuugi,  mjyuugi,  srmp2_state, empty_init, ROT0, "Visco",               "Mahjong Yuugi (Japan set 2)", MACHINE_SUPPORTS_SAVE )
-GAME( 1991, ponchin,   0,        mjyuugi,  ponchin,  srmp2_state, empty_init, ROT0, "Visco",               "Mahjong Pon Chin Kan (Japan set 1)", MACHINE_SUPPORTS_SAVE )
-GAME( 1991, ponchina,  ponchin,  mjyuugi,  ponchin,  srmp2_state, empty_init, ROT0, "Visco",               "Mahjong Pon Chin Kan (Japan set 2)", MACHINE_SUPPORTS_SAVE )
+GAME( 1987, srmp1,     0,        srmp2,    srmp2,    srmp2_state, empty_init, ROT0, "Seta",              "Super Real Mahjong Part 1 (Japan)", MACHINE_SUPPORTS_SAVE )
+GAME( 1987, srmp2,     0,        srmp2,    srmp2,    srmp2_state, empty_init, ROT0, "Seta",              "Super Real Mahjong Part 2 (Japan)", MACHINE_SUPPORTS_SAVE )
+GAME( 1988, srmp3,     0,        srmp3,    srmp3,    srmp2_state, empty_init, ROT0, "Seta",              "Super Real Mahjong Part 3 (Japan)", MACHINE_SUPPORTS_SAVE )
+GAME( 1988, rmgoldyh,  srmp3,    rmgoldyh, rmgoldyh, srmp2_state, empty_init, ROT0, "Seta (Alba license)",   "Real Mahjong Gold Yumehai / Super Real Mahjong GOLD part.2 [BET] (Japan)", MACHINE_SUPPORTS_SAVE )
+GAME( 1990, mjyuugi,   0,        mjyuugi,  mjyuugi,  srmp2_state, empty_init, ROT0, "Visco",             "Mahjong Yuugi (Japan set 1)", MACHINE_SUPPORTS_SAVE )
+GAME( 1990, mjyuugia,  mjyuugi,  mjyuugi,  mjyuugi,  srmp2_state, empty_init, ROT0, "Visco",             "Mahjong Yuugi (Japan set 2)", MACHINE_SUPPORTS_SAVE )
+GAME( 1991, ponchin,   0,        mjyuugi,  ponchin,  srmp2_state, empty_init, ROT0, "Visco",             "Mahjong Pon Chin Kan (Japan set 1)", MACHINE_SUPPORTS_SAVE )
+GAME( 1991, ponchina,  ponchin,  mjyuugi,  ponchin,  srmp2_state, empty_init, ROT0, "Visco",             "Mahjong Pon Chin Kan (Japan set 2)", MACHINE_SUPPORTS_SAVE )

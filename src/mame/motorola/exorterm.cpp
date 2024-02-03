@@ -10,9 +10,6 @@
 #include "machine/exorterm.h"
 #include "bus/rs232/rs232.h"
 
-
-namespace {
-
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
@@ -52,9 +49,6 @@ void exorterm155_state::exorterm155(machine_config &config)
 
 ROM_START(exorterm155)
 ROM_END
-
-} // anonymous namespace
-
 
 //**************************************************************************
 //  SYSTEM DRIVERS

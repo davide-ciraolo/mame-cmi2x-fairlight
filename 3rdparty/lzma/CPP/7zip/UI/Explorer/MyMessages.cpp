@@ -18,18 +18,15 @@ void ShowErrorMessage(HWND window, LPCWSTR message)
 
 void ShowErrorMessageHwndRes(HWND window, UINT resID)
 {
-  UString s = LangString(resID);
-  if (s.IsEmpty())
-    s.Add_UInt32(resID);
-  ShowErrorMessage(window, s);
+  ShowErrorMessage(window, LangString(resID));
 }
 
 void ShowErrorMessageRes(UINT resID)
 {
-  ShowErrorMessageHwndRes(NULL, resID);
+  ShowErrorMessageHwndRes(0, resID);
 }
 
-static void ShowErrorMessageDWORD(HWND window, DWORD errorCode)
+void ShowErrorMessageDWORD(HWND window, DWORD errorCode)
 {
   ShowErrorMessage(window, NError::MyFormatMessage(errorCode));
 }

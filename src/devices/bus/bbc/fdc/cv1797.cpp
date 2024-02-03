@@ -12,11 +12,9 @@
 
 **********************************************************************/
 
+
 #include "emu.h"
 #include "cv1797.h"
-
-#include "formats/acorn_dsk.h"
-#include "formats/fsd_dsk.h"
 
 
 //**************************************************************************
@@ -146,12 +144,12 @@ void bbc_cv1797_device::write(offs_t offset, uint8_t data)
 	}
 }
 
-void bbc_cv1797_device::fdc_sso_w(int state)
+WRITE_LINE_MEMBER(bbc_cv1797_device::fdc_sso_w)
 {
 	// TODO: schematic required to confirm usage.
 }
 
-void bbc_cv1797_device::fdc_hld_w(int state)
+WRITE_LINE_MEMBER(bbc_cv1797_device::fdc_hld_w)
 {
 	if (m_floppy)
 		m_floppy->mon_w(!state);

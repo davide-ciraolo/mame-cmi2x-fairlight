@@ -2,8 +2,10 @@
 
 #include "StdAfx.h"
 
+#include "../../../Common/StringConvert.h"
+#include "../../../Common/Wildcard.h"
+
 #include "../../../Windows/FileName.h"
-#include "../../../Windows/FileSystem.h"
 
 #include "WorkDir.h"
 
@@ -19,10 +21,10 @@ FString GetWorkDir(const NWorkDir::CInfo &workDirInfo, const FString &path, FStr
   if (workDirInfo.ForRemovableOnly)
   {
     mode = NWorkDir::NMode::kCurrent;
-    const FString prefix = path.Left(3);
-    if (NName::IsDrivePath(prefix))
+    FString prefix = path.Left(3);
+    if (prefix[1] == FTEXT(':') && prefix[2] == FTEXT('\\'))
     {
-      const UINT driveType = NSystem::MyGetDriveType(prefix);
+      UINT driveType = GetDriveType(GetSystemString(prefix, ::AreFileApisANSI() ? CP_ACP : CP_OEMCP));
       if (driveType == DRIVE_CDROM || driveType == DRIVE_REMOVABLE)
         mode = workDirInfo.Mode;
     }
@@ -36,26 +38,29 @@ FString GetWorkDir(const NWorkDir::CInfo &workDirInfo, const FString &path, FStr
   }
   #endif
   
-  const int pos = path.ReverseFind_PathSepar() + 1;
-  fileName = path.Ptr((unsigned)pos);
+  int pos = path.ReverseFind_PathSepar() + 1;
+  fileName = path.Ptr(pos);
   
-  FString tempDir;
-  switch ((int)mode)
+  switch (mode)
   {
     case NWorkDir::NMode::kCurrent:
-      tempDir = path.Left((unsigned)pos);
-      break;
+    {
+      return path.Left(pos);
+    }
     case NWorkDir::NMode::kSpecified:
-      tempDir = workDirInfo.Path;
-      break;
-    // case NWorkDir::NMode::kSystem:
+    {
+      FString tempDir = workDirInfo.Path;
+      NName::NormalizeDirPathPrefix(tempDir);
+      return tempDir;
+    }
     default:
+    {
+      FString tempDir;
       if (!MyGetTempPath(tempDir))
         throw 141717;
-      break;
+      return tempDir;
+    }
   }
-  NName::NormalizeDirPathPrefix(tempDir);
-  return tempDir;
 }
 
 HRESULT CWorkDirTempFile::CreateTempFile(const FString &originalPath)
@@ -63,13 +68,15 @@ HRESULT CWorkDirTempFile::CreateTempFile(const FString &originalPath)
   NWorkDir::CInfo workDirInfo;
   workDirInfo.Load();
   FString namePart;
-  const FString workDir = GetWorkDir(workDirInfo, originalPath, namePart);
+  FString workDir = GetWorkDir(workDirInfo, originalPath, namePart);
   CreateComplexDir(workDir);
+  CTempFile tempFile;
   _outStreamSpec = new COutFileStream;
   OutStream = _outStreamSpec;
   if (!_tempFile.Create(workDir + namePart, &_outStreamSpec->File))
   {
-    return GetLastError_noZero_HRESULT();
+    DWORD error = GetLastError();
+    return error ? error : E_FAIL;
   }
   _originalPath = originalPath;
   return S_OK;
@@ -80,7 +87,8 @@ HRESULT CWorkDirTempFile::MoveToOriginal(bool deleteOriginal)
   OutStream.Release();
   if (!_tempFile.MoveTo(_originalPath, deleteOriginal))
   {
-    return GetLastError_noZero_HRESULT();
+    DWORD error = GetLastError();
+    return error ? error : E_FAIL;
   }
   return S_OK;
 }

@@ -4,7 +4,7 @@
 
     nbmj8991 - Nichibutsu Mahjong games for years 1989-1991
 
-    Driver by Takahiro Nogi 1999/12/02 -
+    Driver by Takahiro Nogi <nogi@kt.rim.or.jp> 1999/12/02 -
 
 ******************************************************************************/
 /******************************************************************************
@@ -1326,7 +1326,6 @@ void nbmj8991_state::nbmjdrv1(machine_config &config) // galkoku
 	m_maincpu->set_vblank_int("screen", FUNC(nbmj8991_state::irq0_line_hold));
 
 	NB1413M3(config, m_nb1413m3, 0);
-	m_nb1413m3->set_blitter_rom_tag("gfx1");
 
 	/* video hardware */
 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
@@ -1356,7 +1355,6 @@ void nbmj8991_state::nbmjdrv2(machine_config &config) // pstadium
 	m_maincpu->set_vblank_int("screen", FUNC(nbmj8991_state::irq0_line_hold));
 
 	NB1413M3(config, m_nb1413m3, 0);
-	m_nb1413m3->set_blitter_rom_tag("gfx1");
 
 	Z80(config, m_audiocpu, 4000000);                  /* 4.00 MHz */
 	m_audiocpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::nbmj8991_sound_map);
@@ -1404,7 +1402,7 @@ void nbmj8991_state::galkoku(machine_config &config)
 {
 	nbmjdrv1(config);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_GALKOKU);
+	m_nb1413m3->set_type(NB1413M3_GALKOKU);
 }
 
 
@@ -1415,7 +1413,7 @@ void nbmj8991_state::galkaika(machine_config &config)
 	/* basic machine hardware */
 	m_maincpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::galkaika_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_GALKAIKA);
+	m_nb1413m3->set_type(NB1413M3_GALKAIKA);
 }
 
 
@@ -1426,7 +1424,7 @@ void nbmj8991_state::tokyogal(machine_config &config)
 	/* basic machine hardware */
 	m_maincpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::tokyogal_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_TOKYOGAL);
+	m_nb1413m3->set_type(NB1413M3_TOKYOGAL);
 }
 
 
@@ -1437,7 +1435,7 @@ void nbmj8991_state::tokimbsj(machine_config &config)
 	/* basic machine hardware */
 	m_maincpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::galkaika_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_TOKIMBSJ);
+	m_nb1413m3->set_type(NB1413M3_TOKIMBSJ);
 
 	NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 }
@@ -1447,7 +1445,7 @@ void nbmj8991_state::mcontest(machine_config &config)
 {
 	nbmjdrv1(config);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_MCONTEST);
+	m_nb1413m3->set_type(NB1413M3_MCONTEST);
 }
 
 
@@ -1455,7 +1453,7 @@ void nbmj8991_state::uchuuai(machine_config &config)
 {
 	nbmjdrv1(config);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_UCHUUAI);
+	m_nb1413m3->set_type(NB1413M3_UCHUUAI);
 }
 
 
@@ -1466,7 +1464,7 @@ void nbmj8991_state::hyouban(machine_config &config)
 	/* basic machine hardware */
 	m_maincpu->set_addrmap(AS_IO, &nbmj8991_state::hyouban_io_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_HYOUBAN);
+	m_nb1413m3->set_type(NB1413M3_HYOUBAN);
 
 	NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 }
@@ -1476,7 +1474,7 @@ void nbmj8991_state::pstadium(machine_config &config)
 {
 	nbmjdrv2(config);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_PSTADIUM);
+	m_nb1413m3->set_type(NB1413M3_PSTADIUM);
 }
 
 
@@ -1487,7 +1485,7 @@ void nbmj8991_state::triplew1(machine_config &config)
 	/* basic machine hardware */
 	m_maincpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::triplew1_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_TRIPLEW1);
+	m_nb1413m3->set_type(NB1413M3_TRIPLEW1);
 }
 
 
@@ -1498,7 +1496,7 @@ void nbmj8991_state::triplew2(machine_config &config)
 	/* basic machine hardware */
 	m_maincpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::triplew2_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_TRIPLEW2);
+	m_nb1413m3->set_type(NB1413M3_TRIPLEW2);
 }
 
 
@@ -1506,7 +1504,7 @@ void nbmj8991_state::ntopstar(machine_config &config)
 {
 	nbmjdrv2(config);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_NTOPSTAR);
+	m_nb1413m3->set_type(NB1413M3_NTOPSTAR);
 }
 
 
@@ -1517,7 +1515,7 @@ void nbmj8991_state::mjlstory(machine_config &config)
 	/* basic machine hardware */
 	m_maincpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::mjlstory_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_MJLSTORY);
+	m_nb1413m3->set_type(NB1413M3_MJLSTORY);
 }
 
 
@@ -1525,7 +1523,7 @@ void nbmj8991_state::vanilla(machine_config &config)
 {
 	nbmjdrv2(config);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_VANILLA);
+	m_nb1413m3->set_type(NB1413M3_VANILLA);
 }
 
 
@@ -1534,7 +1532,7 @@ void nbmj8991_state::finalbny(machine_config &config)
 	nbmjdrv2(config);
 
 	/* basic machine hardware */
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_FINALBNY);
+	m_nb1413m3->set_type(NB1413M3_FINALBNY);
 
 	NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 }
@@ -1544,7 +1542,7 @@ void nbmj8991_state::qmhayaku(machine_config &config)
 {
 	nbmjdrv2(config);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_QMHAYAKU);
+	m_nb1413m3->set_type(NB1413M3_QMHAYAKU);
 }
 
 
@@ -1555,7 +1553,7 @@ void nbmj8991_state::mjgottub(machine_config &config)
 	/* basic machine hardware */
 	m_maincpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::triplew1_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_MJGOTTUB);
+	m_nb1413m3->set_type(NB1413M3_MJGOTTUB);
 
 	NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 }
@@ -1569,7 +1567,7 @@ void nbmj8991_state::av2mj1bb(machine_config &config)
 	m_maincpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::av2mj1bb_map);
 	m_maincpu->set_addrmap(AS_IO, &nbmj8991_state::av2mj1bb_io_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_AV2MJ1BB);
+	m_nb1413m3->set_type(NB1413M3_AV2MJ1BB);
 }
 
 
@@ -1581,7 +1579,7 @@ void nbmj8991_state::av2mj2rg(machine_config &config)
 	m_maincpu->set_addrmap(AS_PROGRAM, &nbmj8991_state::av2mj2rg_map);
 	m_maincpu->set_addrmap(AS_IO, &nbmj8991_state::av2mj1bb_io_map);
 
-	m_nb1413m3->set_type(nb1413m3_device::NB1413M3_AV2MJ2RG);
+	m_nb1413m3->set_type(NB1413M3_AV2MJ2RG);
 }
 
 

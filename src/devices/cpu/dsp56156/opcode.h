@@ -11,8 +11,8 @@
 //
 // An Opcode contains an instruction and a parallel move operation.
 //
-namespace DSP_56156 {
-
+namespace DSP_56156
+{
 class Instruction;
 class ParallelMove;
 
@@ -23,7 +23,9 @@ public:
 	virtual ~Opcode();
 
 	std::string disassemble() const;
+	void evaluate(dsp56156_core* cpustate) const;
 	size_t size() const;
+	size_t evalSize() const;
 
 	// Peek through to the instruction
 	const reg_id& instSource() const;
@@ -40,6 +42,5 @@ private:
 	std::string dcString() const;
 };
 
-} // namespace DSP_56156
-
+}
 #endif

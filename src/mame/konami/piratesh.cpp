@@ -48,8 +48,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 class piratesh_state : public driver_device
 {
 public:
@@ -112,7 +110,7 @@ private:
 	void control3_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 
 	uint32_t screen_update_piratesh(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	void k054539_nmi_gen(int state);
+	DECLARE_WRITE_LINE_MEMBER(k054539_nmi_gen);
 	TIMER_DEVICE_CALLBACK_MEMBER(piratesh_interrupt);
 	K056832_CB_MEMBER(piratesh_tile_callback);
 	K055673_CB_MEMBER(piratesh_sprite_callback);
@@ -426,7 +424,7 @@ void piratesh_state::piratesh_map(address_map &map)
 }
 
 
-void piratesh_state::k054539_nmi_gen(int state)
+WRITE_LINE_MEMBER(piratesh_state::k054539_nmi_gen)
 {
 	static int m_sound_intck = 0; // TODO: KILL ME
 
@@ -684,9 +682,6 @@ ROM_START( piratesh )
 //  ROM_REGION( 0x80, "eeprom", 0 ) // default eeprom to prevent game booting upside down with error
 //  ROM_LOAD( "piratesh.nv", 0x0000, 0x080, CRC(28df2269) SHA1(3f071c97662745a199f96964e2e79f795bd5a391) )
 ROM_END
-
-} // anonymous namespace
-
 
 //    year  name        parent    machine   input     state           init
 GAME( 1995, piratesh,   0,        piratesh, piratesh, piratesh_state, empty_init, ROT90,  "Konami", "Pirate Ship (ver UAA)", MACHINE_IMPERFECT_GRAPHICS )

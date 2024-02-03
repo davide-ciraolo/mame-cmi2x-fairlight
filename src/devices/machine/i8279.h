@@ -59,9 +59,11 @@ public:
 	void timer_mainloop();
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 	virtual void device_reset() override;
+	virtual void device_post_load() override { }
+	virtual void device_clock_changed() override { }
 
 	TIMER_CALLBACK_MEMBER( timerproc_callback );
 
@@ -69,6 +71,7 @@ private:
 	void timer_adjust();
 	void clear_display();
 	void new_fifo(u8 data);
+	void set_irq(bool state);
 
 	devcb_write_line    m_out_irq_cb;       // IRQ
 	devcb_write8        m_out_sl_cb;        // Scanlines SL0-3

@@ -21,8 +21,8 @@ TODO:
 
 *******************************************************************************/
 
-#ifndef MAME_PHILIPS_MCD212_H
-#define MAME_PHILIPS_MCD212_H
+#ifndef MAME_VIDEO_MCD212_H
+#define MAME_VIDEO_MCD212_H
 
 #pragma once
 
@@ -55,7 +55,8 @@ public:
 	int rom_dtack_cycle_count();
 
 protected:
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
@@ -274,4 +275,4 @@ protected:
 // device type definition
 DECLARE_DEVICE_TYPE(MCD212, mcd212_device)
 
-#endif // MAME_PHILIPS_MCD212_H
+#endif // MAME_VIDEO_MCD212_H

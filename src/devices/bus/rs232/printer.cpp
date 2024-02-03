@@ -55,7 +55,7 @@ void serial_printer_device::device_start()
 {
 }
 
-void serial_printer_device::update_serial(int state)
+WRITE_LINE_MEMBER(serial_printer_device::update_serial)
 {
 	int startbits = 1;
 	int databits = convert_databits(m_rs232_databits->read());
@@ -79,7 +79,7 @@ void serial_printer_device::device_reset()
 	update_serial(0);
 }
 
-void serial_printer_device::printer_online(int state)
+WRITE_LINE_MEMBER(serial_printer_device::printer_online)
 {
 	/// TODO: ?
 }

@@ -74,15 +74,7 @@
 #include "itech8.h"
 
 
-// configurable logging
-#define LOG_SENSOR     (1U << 1)
-
-//#define VERBOSE (LOG_GENERAL | LOG_SENSOR)
-
-#include "logmacro.h"
-
-#define LOGSENSOR(...)     LOGMASKED(LOG_SENSOR,     __VA_ARGS__)
-
+#define MINDY           100
 
 
 /*************************************
@@ -96,8 +88,8 @@
  *************************************/
 
 #ifdef STANDALONE
-static void sensors_to_words(u16 sens0, u16 sens1, u16 sens2, u16 sens3,
-							u16 *word1, u16 *word2, u16 *word3, u8 *beams)
+static void sensors_to_words(uint16_t sens0, uint16_t sens1, uint16_t sens2, uint16_t sens3,
+							uint16_t *word1, uint16_t *word2, uint16_t *word3, uint8_t *beams)
 {
 	/* word 1 contains the difference between the larger of sensors 2 & 3 and the smaller */
 	*word1 = (sens3 > sens2) ? (sens3 - sens2) : (sens2 - sens3);
@@ -134,11 +126,11 @@ static void sensors_to_words(u16 sens0, u16 sens1, u16 sens2, u16 sens3,
  *************************************/
 
 #ifdef STANDALONE
-static void words_to_inters(u16 word1, u16 word2, u16 word3, u8 beams,
-							u16 *inter1, u16 *inter2, u16 *inter3)
+static void words_to_inters(uint16_t word1, uint16_t word2, uint16_t word3, uint8_t beams,
+							uint16_t *inter1, uint16_t *inter2, uint16_t *inter3)
 {
 	/* word 2 is scaled up by 0x1.6553 */
-	u16 word2mod = ((uint64_t)word2 * 0x16553) >> 16;
+	uint16_t word2mod = ((uint64_t)word2 * 0x16553) >> 16;
 
 	/* intermediate values 1 and 2 are determined based on the beams bits */
 	switch (beams)
@@ -180,15 +172,15 @@ static void words_to_inters(u16 word1, u16 word2, u16 word3, u8 beams,
  *
  *************************************/
 
-void slikshot_state::inters_to_vels(u16 inter1, u16 inter2, u16 inter3, u8 beams,
-							u8 *xres, u8 *vxres, u8 *vyres)
+void itech8_state::inters_to_vels(uint16_t inter1, uint16_t inter2, uint16_t inter3, uint8_t beams,
+							uint8_t *xres, uint8_t *vxres, uint8_t *vyres)
 {
-	u32 _27d8, _27c2;
-	u32 vx, vy, _283a, _283e;
-	u8 vxsgn;
-	u16 xoffs = 0x0016;
-	u8 xscale = 0xe6;
-	u16 x;
+	uint32_t _27d8, _27c2;
+	uint32_t vx, vy, _283a, _283e;
+	uint8_t vxsgn;
+	uint16_t xoffs = 0x0016;
+	uint8_t xscale = 0xe6;
+	uint16_t x;
 
 	/* compute Vy */
 	vy = inter1 ? (0x31c28 / inter1) : 0;
@@ -253,24 +245,24 @@ void slikshot_state::inters_to_vels(u16 inter1, u16 inter2, u16 inter3, u8 beams
  *
  *************************************/
 
-void slikshot_state::vels_to_inters(u8 x, u8 vx, u8 vy,
-							u16 *inter1, u16 *inter2, u16 *inter3, u8 *beams)
+void itech8_state::vels_to_inters(uint8_t x, uint8_t vx, uint8_t vy,
+							uint16_t *inter1, uint16_t *inter2, uint16_t *inter3, uint8_t *beams)
 {
-	u32 _27d8;
-	u16 xoffs = 0x0016;
-	u8 xscale = 0xe6;
-	u8 x1, vx1, vy1;
-	u8 x2, vx2, vy2;
-	u8 diff1, diff2;
-	u16 inter2a;
+	uint32_t _27d8;
+	uint16_t xoffs = 0x0016;
+	uint8_t xscale = 0xe6;
+	uint8_t x1, vx1, vy1;
+	uint8_t x2, vx2, vy2;
+	uint8_t diff1, diff2;
+	uint16_t inter2a;
 
 	/* inter1 comes from Vy */
 	*inter1 = vy ? 0x31c28 / vy : 0;
 
 	/* inter2 can be derived from Vx and Vy */
 	_27d8 = ((uint64_t)vy * 0xfbd3) >> 16;
-	*inter2 = 0x30f2e / (_27d8 + (((u32)abs((s8)vx) << 16) / 0x58f8c));
-	inter2a = 0x30f2e / (_27d8 - (((u32)abs((s8)vx) << 16) / 0x58f8c));
+	*inter2 = 0x30f2e / (_27d8 + (((uint32_t)abs((int8_t)vx) << 16) / 0x58f8c));
+	inter2a = 0x30f2e / (_27d8 - (((uint32_t)abs((int8_t)vx) << 16) / 0x58f8c));
 
 	/* compute it back both ways and pick the closer */
 	inters_to_vels(*inter1, *inter2, 0, 0, &x1, &vx1, &vy1);
@@ -306,10 +298,10 @@ void slikshot_state::vels_to_inters(u8 x, u8 vx, u8 vy,
  *
  *************************************/
 
-void slikshot_state::inters_to_words(u16 inter1, u16 inter2, u16 inter3, u8 *beams,
-							u16 *word1, u16 *word2, u16 *word3)
+void itech8_state::inters_to_words(uint16_t inter1, uint16_t inter2, uint16_t inter3, uint8_t *beams,
+							uint16_t *word1, uint16_t *word2, uint16_t *word3)
 {
-	u16 word2mod;
+	uint16_t word2mod;
 
 	/* intermediate value 3 is always equal to the third word */
 	*word3 = inter3;
@@ -331,8 +323,8 @@ void slikshot_state::inters_to_words(u16 inter1, u16 inter2, u16 inter3, u8 *bea
 			*word2 = ((uint64_t)word2mod << 16) / 0x16553;
 		}
 		else
-			LOGSENSOR("inters_to_words: unable to convert %04x %04x %04x %02x\n",
-					(u32)inter1, (u32)inter2, (u32)inter3, (u32)*beams);
+			logerror("inters_to_words: unable to convert %04x %04x %04x %02x\n",
+					(uint32_t)inter1, (uint32_t)inter2, (uint32_t)inter3, (uint32_t)*beams);
 	}
 
 	/* handle the case where low bit of beams is 0 */
@@ -351,8 +343,8 @@ void slikshot_state::inters_to_words(u16 inter1, u16 inter2, u16 inter3, u8 *bea
 			*word2 = ((uint64_t)word2mod << 16) / 0x16553;
 		}
 		else
-			LOGSENSOR("inters_to_words: unable to convert %04x %04x %04x %02x\n",
-					(u32)inter1, (u32)inter2, (u32)inter3, (u32)*beams);
+			logerror("inters_to_words: unable to convert %04x %04x %04x %02x\n",
+					(uint32_t)inter1, (uint32_t)inter2, (uint32_t)inter3, (uint32_t)*beams);
 	}
 }
 
@@ -368,8 +360,8 @@ void slikshot_state::inters_to_words(u16 inter1, u16 inter2, u16 inter3, u8 *bea
  *
  *************************************/
 
-void slikshot_state::words_to_sensors(u16 word1, u16 word2, u16 word3, u8 beams,
-							u16 *sens0, u16 *sens1, u16 *sens2, u16 *sens3)
+void itech8_state::words_to_sensors(uint16_t word1, uint16_t word2, uint16_t word3, uint8_t beams,
+							uint16_t *sens0, uint16_t *sens1, uint16_t *sens2, uint16_t *sens3)
 {
 	/* if bit 0 of the beams is set, sensor 1 fired first; otherwise sensor 0 fired */
 	if (beams & 1)
@@ -392,11 +384,11 @@ void slikshot_state::words_to_sensors(u16 word1, u16 word2, u16 word3, u8 beams,
  *
  *************************************/
 
-void slikshot_state::compute_sensors()
+void itech8_state::compute_sensors()
 {
-	u16 inter1, inter2, inter3;
-	u16 word1 = 0, word2 = 0, word3 = 0;
-	u8 beams;
+	uint16_t inter1, inter2, inter3;
+	uint16_t word1 = 0, word2 = 0, word3 = 0;
+	uint8_t beams;
 
 	/* skip if we're not ready */
 	if (m_sensor0 != 0 || m_sensor1 != 0 || m_sensor2 != 0 || m_sensor3 != 0)
@@ -407,18 +399,18 @@ void slikshot_state::compute_sensors()
 	inters_to_words(inter1, inter2, inter3, &beams, &word1, &word2, &word3);
 	words_to_sensors(word1, word2, word3, beams, &m_sensor0, &m_sensor1, &m_sensor2, &m_sensor3);
 
-	LOGSENSOR("%15f: Sensor values: %04x %04x %04x %04x\n", machine().time().as_double(), m_sensor0, m_sensor1, m_sensor2, m_sensor3);
+	logerror("%15f: Sensor values: %04x %04x %04x %04x\n", machine().time().as_double(), m_sensor0, m_sensor1, m_sensor2, m_sensor3);
 }
 
 
 
 /*************************************
  *
- *  z80_port_r
+ *  slikz80_port_r
  *
  *************************************/
 
-u8 slikshot_state::z80_port_r()
+uint8_t itech8_state::slikz80_port_r()
 {
 	int result = 0;
 
@@ -444,11 +436,11 @@ u8 slikshot_state::z80_port_r()
 
 /*************************************
  *
- *  z80_port_w
+ *  slikz80_port_w
  *
  *************************************/
 
-void slikshot_state::z80_port_w(u8 data)
+void itech8_state::slikz80_port_w(uint8_t data)
 {
 	m_z80_port_val = data;
 	m_z80_clear_to_send = 0;
@@ -458,11 +450,11 @@ void slikshot_state::z80_port_w(u8 data)
 
 /*************************************
  *
- *  z80_r
+ *  slikshot_z80_r
  *
  *************************************/
 
-u8 slikshot_state::z80_r()
+uint8_t itech8_state::slikshot_z80_r()
 {
 	/* allow the Z80 to send us stuff now */
 	m_z80_clear_to_send = 1;
@@ -473,11 +465,11 @@ u8 slikshot_state::z80_r()
 
 /*************************************
  *
- *  z80_control_r
+ *  slikshot_z80_control_r
  *
  *************************************/
 
-u8 slikshot_state::z80_control_r()
+uint8_t itech8_state::slikshot_z80_control_r()
 {
 	return m_z80_ctrl;
 }
@@ -486,11 +478,11 @@ u8 slikshot_state::z80_control_r()
 
 /*************************************
  *
- *  z80_control_w
+ *  slikshot_z80_control_w
  *
  *************************************/
 
-TIMER_CALLBACK_MEMBER(slikshot_state::delayed_z80_control_w)
+TIMER_CALLBACK_MEMBER(itech8_state::delayed_z80_control_w)
 {
 	int data = param;
 
@@ -508,23 +500,23 @@ TIMER_CALLBACK_MEMBER(slikshot_state::delayed_z80_control_w)
 	}
 
 	/* boost the interleave whenever this is written to */
-	machine().scheduler().perfect_quantum(attotime::from_usec(100));
+	machine().scheduler().boost_interleave(attotime::zero, attotime::from_usec(100));
 
 	/* stash the new value */
 	m_z80_ctrl = data;
 }
 
 
-void slikshot_state::z80_control_w(u8 data)
+void itech8_state::slikshot_z80_control_w(uint8_t data)
 {
-	machine().scheduler().synchronize(timer_expired_delegate(FUNC(slikshot_state::delayed_z80_control_w), this), data);
+	machine().scheduler().synchronize(timer_expired_delegate(FUNC(itech8_state::delayed_z80_control_w), this), data);
 }
 
 
 
-void slikshot_state::machine_start()
+VIDEO_START_MEMBER(itech8_state,slikshot)
 {
-	itech8_state::machine_start();
+	itech8_state::video_start();
 
 	m_z80_ctrl = 0;
 	m_z80_port_val = 0;
@@ -536,23 +528,6 @@ void slikshot_state::machine_start()
 	m_curxpos = 0;
 	m_last_ytotal = 0;
 	m_crosshair_vis = 0;
-
-	save_item(NAME(m_z80_ctrl));
-	save_item(NAME(m_z80_port_val));
-	save_item(NAME(m_z80_clear_to_send));
-	save_item(NAME(m_sensor0));
-	save_item(NAME(m_sensor1));
-	save_item(NAME(m_sensor2));
-	save_item(NAME(m_sensor3));
-	save_item(NAME(m_curvx));
-	save_item(NAME(m_curvy));
-	save_item(NAME(m_curx));
-	save_item(NAME(m_xbuffer));
-	save_item(NAME(m_ybuffer));
-	save_item(NAME(m_ybuffer_next));
-	save_item(NAME(m_curxpos));
-	save_item(NAME(m_last_ytotal));
-	save_item(NAME(m_crosshair_vis));
 }
 
 
@@ -562,7 +537,7 @@ void slikshot_state::machine_start()
  *
  *************************************/
 
-u32 slikshot_state::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
+uint32_t itech8_state::screen_update_slikshot(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
 	int totaldy, totaldx;
 	int temp, i;
@@ -622,3 +597,76 @@ u32 slikshot_state::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, c
 
 	return 0;
 }
+
+
+
+/*************************************
+ *
+ *  main
+ *
+ *  uncomment this to make a stand
+ *  alone version for testing
+ *
+ *************************************/
+
+#ifdef STANDALONE
+
+int main(int argc, char *argv[])
+{
+	uint16_t word1, word2, word3;
+	uint16_t inter1, inter2, inter3;
+	uint8_t beams, x, vx, vy;
+
+	if (argc == 5)
+	{
+		uint32_t sens0, sens1, sens2, sens3;
+
+		sscanf(argv[1], "%x", &sens0);
+		sscanf(argv[2], "%x", &sens1);
+		sscanf(argv[3], "%x", &sens2);
+		sscanf(argv[4], "%x", &sens3);
+		osd_printf_debug("sensors: %04x %04x %04x %04x\n", sens0, sens1, sens2, sens3);
+		if (sens0 && sens1)
+		{
+			osd_printf_debug("error: sensor 0 or 1 must be 0\n");
+			return 1;
+		}
+
+		sensors_to_words(sens0, sens1, sens2, sens3, &word1, &word2, &word3, &beams);
+		osd_printf_debug("word1 = %04x  word2 = %04x  word3 = %04x  beams = %d\n",
+				(uint32_t)word1, (uint32_t)word2, (uint32_t)word3, (uint32_t)beams);
+
+		words_to_inters(word1, word2, word3, beams, &inter1, &inter2, &inter3);
+		osd_printf_debug("inter1 = %04x  inter2 = %04x  inter3 = %04x\n", (uint32_t)inter1, (uint32_t)inter2, (uint32_t)inter3);
+
+		inters_to_vels(inter1, inter2, inter3, beams, &x, &vx, &vy);
+		osd_printf_debug("x = %02x  vx = %02x  vy = %02x\n", (uint32_t)x, (uint32_t)vx, (uint32_t)vy);
+	}
+	else if (argc == 4)
+	{
+		uint32_t xin, vxin, vyin;
+		uint16_t sens0, sens1, sens2, sens3;
+
+		sscanf(argv[1], "%x", &xin);
+		sscanf(argv[2], "%x", &vxin);
+		sscanf(argv[3], "%x", &vyin);
+		x = xin;
+		vx = vxin;
+		vy = vyin;
+		osd_printf_debug("x = %02x  vx = %02x  vy = %02x\n", (uint32_t)x, (uint32_t)vx, (uint32_t)vy);
+
+		vels_to_inters(x, vx, vy, &inter1, &inter2, &inter3, &beams);
+		osd_printf_debug("inter1 = %04x  inter2 = %04x  inter3 = %04x  beams = %d\n", (uint32_t)inter1, (uint32_t)inter2, (uint32_t)inter3, (uint32_t)beams);
+
+		inters_to_words(inter1, inter2, inter3, &beams, &word1, &word2, &word3);
+		osd_printf_debug("word1 = %04x  word2 = %04x  word3 = %04x  beams = %d\n",
+				(uint32_t)word1, (uint32_t)word2, (uint32_t)word3, (uint32_t)beams);
+
+		words_to_sensors(word1, word2, word3, beams, &sens0, &sens1, &sens2, &sens3);
+		osd_printf_debug("sensors: %04x %04x %04x %04x\n", sens0, sens1, sens2, sens3);
+	}
+
+	return 0;
+}
+
+#endif

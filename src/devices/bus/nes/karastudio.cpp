@@ -32,7 +32,7 @@
 #include "karastudio.h"
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
 #define VERBOSE 0
 #endif
@@ -96,32 +96,33 @@ uint8_t nes_kstudio_slot_device::read(offs_t offset)
 		return 0xff;
 }
 
-std::pair<std::error_condition, std::string> nes_kstudio_slot_device::call_load()
+image_init_result nes_kstudio_slot_device::call_load()
 {
 	if (m_cart)
 	{
-		uint8_t *const ROM = m_cart->get_cart_base();
+		uint8_t *ROM = m_cart->get_cart_base();
+
 		if (!ROM)
-			return std::make_pair(image_error::INTERNAL, std::string());
+			return image_init_result::FAIL;
 
 		// Existing expansion carts are all 128K, so we only load files of this size
 		if (!loaded_through_softlist())
 		{
 			if (length() != 0x20000)
-				return std::make_pair(image_error::INVALIDLENGTH, "Unsupported cartridge size (must be 128K)");
+				return image_init_result::FAIL;
 
-			fread(ROM, 0x20000);
+			fread(&ROM, 0x20000);
 		}
 		else
 		{
 			if (get_software_region_length("rom") != 0x20000)
-				return std::make_pair(image_error::INVALIDLENGTH, "Unsupported cartridge size (must be 128K)");
+				return image_init_result::FAIL;
 
 			memcpy(ROM, get_software_region("rom"), 0x20000);
 		}
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 

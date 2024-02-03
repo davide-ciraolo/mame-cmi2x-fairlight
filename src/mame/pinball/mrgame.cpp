@@ -113,17 +113,17 @@ private:
 	void video_w(u8 data);
 	void videoram_w(offs_t offset, u8 data);
 	void videoattr_w(offs_t offset, u8 data);
-	template <unsigned Bit> void video_bank_w(int state);
-	void intst_w(int state);
-	void nmi_intst_w(int state);
-	void flip_w(int state);
+	template <unsigned Bit> DECLARE_WRITE_LINE_MEMBER(video_bank_w);
+	DECLARE_WRITE_LINE_MEMBER(intst_w);
+	DECLARE_WRITE_LINE_MEMBER(nmi_intst_w);
+	DECLARE_WRITE_LINE_MEMBER(flip_w);
 	u8 col_r();
 	u8 sound_r();
 	u8 porta_r();
 	u8 portc_r();
 	u8 rsw_r();
-	void vblank_int_w(int state);
-	void vblank_nmi_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank_int_w);
+	DECLARE_WRITE_LINE_MEMBER(vblank_nmi_w);
 	TIMER_DEVICE_CALLBACK_MEMBER(irq_timer);
 	TILE_GET_INFO_MEMBER(get_tile_info);
 	uint32_t screen_update_mrgame(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
@@ -432,28 +432,28 @@ void mrgame_state::videoattr_w(offs_t offset, u8 data)
 }
 
 template <unsigned Bit>
-void mrgame_state::video_bank_w(int state)
+WRITE_LINE_MEMBER(mrgame_state::video_bank_w)
 {
 	m_gfx_bank &= 0x0f & ~(u8(1) << Bit);
 	m_gfx_bank |= u8(state ? 1 : 0) << Bit;
 	m_tilemap->mark_all_dirty();
 }
 
-void mrgame_state::intst_w(int state)
+WRITE_LINE_MEMBER(mrgame_state::intst_w)
 {
 	m_intst = state;
 	if (!state)
 		m_videocpu->set_input_line(INPUT_LINE_IRQ0, CLEAR_LINE);
 }
 
-void mrgame_state::nmi_intst_w(int state)
+WRITE_LINE_MEMBER(mrgame_state::nmi_intst_w)
 {
 	m_intst = state;
 	if (!state)
 		m_videocpu->set_input_line(INPUT_LINE_NMI, CLEAR_LINE);
 }
 
-void mrgame_state::flip_w(int state)
+WRITE_LINE_MEMBER(mrgame_state::flip_w)
 {
 	m_flip = state;
 	m_tilemap->mark_all_dirty();
@@ -530,13 +530,13 @@ void mrgame_state::machine_reset()
 	m_row = 0;
 }
 
-void mrgame_state::vblank_int_w(int state)
+WRITE_LINE_MEMBER(mrgame_state::vblank_int_w)
 {
 	if (state && m_intst)
 		m_videocpu->set_input_line(INPUT_LINE_IRQ0, ASSERT_LINE);
 }
 
-void mrgame_state::vblank_nmi_w(int state)
+WRITE_LINE_MEMBER(mrgame_state::vblank_nmi_w)
 {
 	if (state && m_intst)
 		m_videocpu->set_input_line(INPUT_LINE_NMI, ASSERT_LINE);

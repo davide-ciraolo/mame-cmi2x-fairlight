@@ -1,8 +1,8 @@
 // license:BSD-3-Clause
 // copyright-holders:F. Ulivi
 
-#ifndef MAME_INTEL_IMDS2IOC_H
-#define MAME_INTEL_IMDS2IOC_H
+#ifndef MAME_MACHINE_IMDS2IOC_H
+#define MAME_MACHINE_IMDS2IOC_H
 
 #include "cpu/i8085/i8085.h"
 #include "cpu/mcs48/mcs48.h"
@@ -34,20 +34,21 @@ protected:
 	virtual void device_add_mconfig(machine_config &config) override;
 	virtual const tiny_rom_entry *device_rom_region() const override;
 
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
 private:
 	void miscout_w(uint8_t data);
 	uint8_t miscin_r();
-	void beep_timer_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(beep_timer_w);
 	void start_timer_w(uint8_t data);
 
 	uint8_t kb_read(offs_t offset);
 	uint8_t kb_port_p2_r();
 	void kb_port_p1_w(uint8_t data);
-	int kb_port_t0_r();
-	int kb_port_t1_r();
+	DECLARE_READ_LINE_MEMBER(kb_port_t0_r);
+	DECLARE_READ_LINE_MEMBER(kb_port_t1_r);
 
 	void ioc_dbbout_w(offs_t offset, uint8_t data);
 	void ioc_f0_w(offs_t offset, uint8_t data);
@@ -56,7 +57,7 @@ private:
 	uint8_t ioc_status_r();
 	uint8_t ioc_dbbin_r();
 
-	void hrq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(hrq_w);
 	uint8_t ioc_mem_r(offs_t offset);
 	void ioc_mem_w(offs_t offset, uint8_t data);
 
@@ -64,8 +65,9 @@ private:
 	void pio_port_p1_w(uint8_t data);
 	uint8_t pio_port_p2_r();
 	void pio_port_p2_w(uint8_t data);
-	void pio_lpt_ack_w(int state);
-	void pio_lpt_busy_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pio_lpt_ack_w);
+	DECLARE_WRITE_LINE_MEMBER(pio_lpt_busy_w);
+	DECLARE_WRITE_LINE_MEMBER(pio_lpt_select_w);
 
 	I8275_DRAW_CHARACTER_MEMBER(crtc_display_pixels);
 
@@ -126,4 +128,4 @@ private:
 
 DECLARE_DEVICE_TYPE(IMDS2IOC, imds2ioc_device)
 
-#endif // MAME_INTEL_IMDS2IOC_H
+#endif // MAME_MACHINE_IMDS2IOC_H

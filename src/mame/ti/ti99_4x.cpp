@@ -59,20 +59,17 @@
 #define TI99_SCREEN_TAG      "screen"
 
 // Debugging
-#define LOG_WARN        (1U << 1)   // Warnings
-#define LOG_CONFIG      (1U << 2)   // Configuration
-#define LOG_READY       (1U << 3)
-#define LOG_INTERRUPTS  (1U << 4)
-#define LOG_CRU         (1U << 5)
-#define LOG_CRUREAD     (1U << 6)
-#define LOG_RESETLOAD   (1U << 7)
+#define LOG_WARN        (1U<<1)   // Warnings
+#define LOG_CONFIG      (1U<<2)   // Configuration
+#define LOG_READY       (1U<<3)
+#define LOG_INTERRUPTS  (1U<<4)
+#define LOG_CRU         (1U<<5)
+#define LOG_CRUREAD     (1U<<6)
+#define LOG_RESETLOAD   (1U<<7)
 
 #define VERBOSE ( LOG_GENERAL | LOG_CONFIG | LOG_WARN | LOG_RESETLOAD )
 
 #include "logmacro.h"
-
-
-namespace {
 
 /*
     The console.
@@ -130,41 +127,41 @@ private:
 	uint8_t interrupt_level();
 	void cruwrite(offs_t offset, uint8_t data);
 	void external_operation(offs_t offset, uint8_t data);
-	void clock_out(int state);
+	DECLARE_WRITE_LINE_MEMBER( clock_out );
 
 	// Connections from outside towards the CPU (callbacks)
-	void console_ready_dmux(int state);
-	void console_ready_sound(int state);
-	[[maybe_unused]] void console_ready_pbox(int state);
-	void console_ready_cart(int state);
-	void console_ready_grom(int state);
-	void console_reset(int state);
-	[[maybe_unused]] void notconnected(int state);
+	DECLARE_WRITE_LINE_MEMBER( console_ready_dmux );
+	DECLARE_WRITE_LINE_MEMBER( console_ready_sound );
+	DECLARE_WRITE_LINE_MEMBER( console_ready_pbox );
+	DECLARE_WRITE_LINE_MEMBER( console_ready_cart );
+	DECLARE_WRITE_LINE_MEMBER( console_ready_grom );
+	DECLARE_WRITE_LINE_MEMBER( console_reset );
+	DECLARE_WRITE_LINE_MEMBER( notconnected );
 
 	// GROM clock
-	void gromclk_in(int state);
+	DECLARE_WRITE_LINE_MEMBER( gromclk_in );
 
 	// Connections with the system interface chip 9901
-	void extint(int state);
-	void video_interrupt_in(int state);
-	void handset_interrupt_in(int state);
+	DECLARE_WRITE_LINE_MEMBER( extint );
+	DECLARE_WRITE_LINE_MEMBER( video_interrupt_in );
+	DECLARE_WRITE_LINE_MEMBER( handset_interrupt_in );
 
 	// Connections with the system interface TMS9901
 	uint8_t psi_input_4(offs_t offset);
 	uint8_t psi_input_4a(offs_t offset);
-	void keyC0(int state);
-	void keyC1(int state);
-	void keyC2(int state);
-	void cs1_motor(int state);
-	void audio_gate(int state);
-	void cassette_output(int state);
-	void tms9901_interrupt(int state);
-	void handset_ack(int state);
-	void cs2_motor(int state);
-	void alphaW(int state);
+	DECLARE_WRITE_LINE_MEMBER(keyC0);
+	DECLARE_WRITE_LINE_MEMBER(keyC1);
+	DECLARE_WRITE_LINE_MEMBER(keyC2);
+	DECLARE_WRITE_LINE_MEMBER(cs1_motor);
+	DECLARE_WRITE_LINE_MEMBER(audio_gate);
+	DECLARE_WRITE_LINE_MEMBER(cassette_output);
+	DECLARE_WRITE_LINE_MEMBER(tms9901_interrupt);
+	DECLARE_WRITE_LINE_MEMBER(handset_ack);
+	DECLARE_WRITE_LINE_MEMBER(cs2_motor);
+	DECLARE_WRITE_LINE_MEMBER(alphaW);
 
 	// Used by EVPC
-	void video_interrupt_evpc_in(int state);
+	DECLARE_WRITE_LINE_MEMBER( video_interrupt_evpc_in );
 	TIMER_CALLBACK_MEMBER(gromclk_tick);
 
 	void crumap(address_map &map);
@@ -598,7 +595,7 @@ uint8_t ti99_4x_state::psi_input_4a(offs_t offset)
 /*
     Handler for TMS9901 P0 pin (handset data acknowledge); only for 99/4
 */
-void ti99_4x_state::handset_ack(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::handset_ack )
 {
 	// Write a value to the joyport. If there is a handset this will set its
 	// ACK line.
@@ -629,17 +626,17 @@ void ti99_4x_state::set_keyboard_column(int number, int data)
 	//           joystick 2 = column 7
 }
 
-void ti99_4x_state::keyC0(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::keyC0 )
 {
 	set_keyboard_column(0, state);
 }
 
-void ti99_4x_state::keyC1(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::keyC1 )
 {
 	set_keyboard_column(1, state);
 }
 
-void ti99_4x_state::keyC2(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::keyC2 )
 {
 	set_keyboard_column(2, state);
 }
@@ -647,7 +644,7 @@ void ti99_4x_state::keyC2(int state)
 /*
     Select alpha lock line - TI99/4a only (P5)
 */
-void ti99_4x_state::alphaW(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::alphaW )
 {
 	m_check_alphalock = (state==0);
 }
@@ -655,7 +652,7 @@ void ti99_4x_state::alphaW(int state)
 /*
     Control CS1 tape unit motor (P6)
 */
-void ti99_4x_state::cs1_motor(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::cs1_motor )
 {
 	m_cassette1->change_state(state==ASSERT_LINE? CASSETTE_MOTOR_ENABLED : CASSETTE_MOTOR_DISABLED,CASSETTE_MASK_MOTOR);
 }
@@ -663,7 +660,7 @@ void ti99_4x_state::cs1_motor(int state)
 /*
     Control CS2 tape unit motor (P7)
 */
-void ti99_4x_state::cs2_motor(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::cs2_motor )
 {
 	m_cassette2->change_state(state==ASSERT_LINE? CASSETTE_MOTOR_ENABLED : CASSETTE_MOTOR_DISABLED,CASSETTE_MASK_MOTOR);
 }
@@ -677,7 +674,7 @@ void ti99_4x_state::cs2_motor(int state)
     TODO: Emulate a pop sound when turning on/off the audio gate; there are
     some few programs that generate a sound with this feature
 */
-void ti99_4x_state::audio_gate(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::audio_gate )
 {
 }
 
@@ -685,13 +682,13 @@ void ti99_4x_state::audio_gate(int state)
     Tape output (P9)
     I think polarity is correct, but don't take my word for it.
 */
-void ti99_4x_state::cassette_output(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::cassette_output )
 {
 	m_cassette1->output(state==ASSERT_LINE? +1 : -1);
 	m_cassette2->output(state==ASSERT_LINE? +1 : -1);
 }
 
-void ti99_4x_state::tms9901_interrupt(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::tms9901_interrupt )
 {
 	m_cpu->set_input_line(INT_9900_INTREQ, state);
 }
@@ -704,11 +701,10 @@ uint8_t ti99_4x_state::interrupt_level()
 	return 1;
 }
 
-
 /*
     Clock line from the CPU. Used to control wait state generation.
 */
-void ti99_4x_state::clock_out(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::clock_out )
 {
 	m_tms9901->phi_line(state);
 	m_datamux->clock_in(state);
@@ -718,7 +714,7 @@ void ti99_4x_state::clock_out(int state)
 /*
     GROMCLK from VDP, propagating to datamux
 */
-void ti99_4x_state::gromclk_in(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::gromclk_in )
 {
 	m_datamux->gromclk_in(state);
 }
@@ -738,7 +734,7 @@ TIMER_CALLBACK_MEMBER(ti99_4x_state::gromclk_tick)
 
 /*****************************************************************************/
 
-void ti99_4x_state::video_interrupt_evpc_in(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::video_interrupt_evpc_in )
 {
 	LOGMASKED(LOG_INTERRUPTS, "VDP INT2 from EVPC on tms9901, level=%d\n", state);
 	m_int2 = (line_state)state;
@@ -748,7 +744,7 @@ void ti99_4x_state::video_interrupt_evpc_in(int state)
 /*
     set the state of TMS9901's INT2 (called by the tms9928 core)
 */
-void ti99_4x_state::video_interrupt_in(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::video_interrupt_in )
 {
 	LOGMASKED(LOG_INTERRUPTS, "VDP %s /INT2 on TMS9901\n", (state==ASSERT_LINE)? "asserts" : "clears");
 	m_int2 = (line_state)state;
@@ -760,7 +756,7 @@ void ti99_4x_state::video_interrupt_in(int state)
 /*
     set the state of TMS9901's INT12 (called by the handset prototype of TI-99/4)
 */
-void ti99_4x_state::handset_interrupt_in(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::handset_interrupt_in)
 {
 	LOGMASKED(LOG_INTERRUPTS, "joyport INT12 on tms9901, level=%d\n", state);
 	m_int12 = (line_state)state;
@@ -804,28 +800,28 @@ void ti99_4x_state::console_ready_join(int id, int state)
     Connections to the READY line. This might look a bit ugly; we need an
     implementation of a "Wired AND" device.
 */
-void ti99_4x_state::console_ready_grom(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::console_ready_grom )
 {
 	LOGMASKED(LOG_READY, "GROM ready = %d\n", state);
 	console_ready_join(READY_GROM, state);
 }
 
-void ti99_4x_state::console_ready_dmux(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::console_ready_dmux )
 {
 	console_ready_join(READY_DMUX, state);
 }
 
-void ti99_4x_state::console_ready_pbox(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::console_ready_pbox )
 {
 	console_ready_join(READY_PBOX, state);
 }
 
-void ti99_4x_state::console_ready_sound(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::console_ready_sound )
 {
 	console_ready_join(READY_SOUND, state);
 }
 
-void ti99_4x_state::console_ready_cart(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::console_ready_cart )
 {
 	console_ready_join(READY_CART, state);
 }
@@ -834,7 +830,7 @@ void ti99_4x_state::console_ready_cart(int state)
     The RESET line leading to a reset of the CPU. This is asserted when a
     cartridge is plugged in.
 */
-void ti99_4x_state::console_reset(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::console_reset )
 {
 	if (machine().phase() != machine_phase::INIT)
 	{
@@ -845,14 +841,14 @@ void ti99_4x_state::console_reset(int state)
 	}
 }
 
-void ti99_4x_state::extint(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::extint )
 {
 	LOGMASKED(LOG_INTERRUPTS, "EXTINT level = %02x\n", state);
 	m_int1 = (line_state)state;
 	m_tms9901->set_int_line(1, state);
 }
 
-void ti99_4x_state::notconnected(int state)
+WRITE_LINE_MEMBER( ti99_4x_state::notconnected )
 {
 	LOGMASKED(LOG_INTERRUPTS, "Setting a not connected line ... ignored\n");
 }
@@ -1195,9 +1191,6 @@ ROM_START(ti99_4ev)
 	ROM_LOAD("994ev_grom1.u501", 0x2000, 0x1800, CRC(6885326d) SHA1(1a98de5ee886dce705de5cce11034a7be31aceac)) /* system GROM 1 */
 	ROM_LOAD("994a_grom2.u502", 0x4000, 0x1800, CRC(e0bb5341) SHA1(e255f0d65d69b927cecb8fcfac7a4c17d585ea96)) /* system GROM 2 */
 ROM_END
-
-} // anonymous namespace
-
 
 //    YEAR  NAME      PARENT   COMPAT  MACHINE        INPUT    CLASS          INIT        COMPANY              FULLNAME                            FLAGS
 COMP( 1979, ti99_4,   0,       0,      ti99_4_60hz,   ti99_4,  ti99_4x_state, empty_init, "Texas Instruments", "TI-99/4 Home Computer (US)",       MACHINE_SUPPORTS_SAVE)

@@ -30,8 +30,8 @@ public:
 	// configuration
 	void set_vector(uint8_t vector) { m_vector = vector; }
 
-	void int_w(int state);
-	void mask_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(int_w);
+	DECLARE_WRITE_LINE_MEMBER(mask_w);
 
 protected:
 	// device-level overrides

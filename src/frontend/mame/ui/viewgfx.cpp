@@ -21,8 +21,6 @@
 
 #include "util/unicode.h"
 
-#include "osdepend.h"
-
 #include <cmath>
 #include <vector>
 
@@ -57,9 +55,6 @@ public:
 		// implicitly cancel if there's nothing to display
 		if (!is_relevant())
 			return cancel(uistate);
-
-		// let the OSD do its thing
-		mui.machine().osd().check_osd_inputs();
 
 		// always mark the bitmap dirty if not paused
 		if (!m_machine.paused())
@@ -532,7 +527,7 @@ private:
 		}
 
 		// cancel or graphics viewer dismisses the viewer
-		if (input.pressed(IPT_UI_BACK) || input.pressed(IPT_UI_SHOW_GFX))
+		if (input.pressed(IPT_UI_CANCEL) || input.pressed(IPT_UI_SHOW_GFX))
 			return cancel(uistate);
 
 		return uistate;
@@ -542,9 +537,8 @@ private:
 	{
 		if (!uistate)
 			m_machine.resume();
-		m_machine.ui_input().reset();
 		m_bitmap_dirty = true;
-		return mame_ui_manager::HANDLER_CANCEL;
+		return UI_HANDLER_CANCEL;
 	}
 
 	uint32_t handle_palette(mame_ui_manager &mui, render_container &container, bool uistate);
@@ -1008,7 +1002,8 @@ uint32_t gfx_viewer::handle_palette(mame_ui_manager &mui, render_container &cont
 				container.add_point(0.5f * (x0 + cellboxbounds.x0), y0 + 0.5f * cellheight, UI_LINE_WIDTH, rgb_t::white(), PRIMFLAG_BLENDMODE(BLENDMODE_ALPHA));
 
 			// draw the row header
-			auto buffer = util::string_format("%5X", index);
+			char buffer[10];
+			sprintf(buffer, "%5X", index);
 			for (int x = 4; x >= 0; x--)
 			{
 				x0 -= ui_font->char_width(chheight, aspect, buffer[x]);
@@ -1213,7 +1208,8 @@ uint32_t gfx_viewer::handle_gfxset(mame_ui_manager &mui, render_container &conta
 				container.add_point(0.5f * (x0 + boxbounds.x0 + 6.0f * chwidth), y0 + 0.5f * cellheight, UI_LINE_WIDTH, rgb_t::white(), PRIMFLAG_BLENDMODE(BLENDMODE_ALPHA));
 
 			// draw the row header
-			auto buffer = util::string_format("%5X", set.m_offset + (y * xcells));
+			char buffer[10];
+			sprintf(buffer, "%5X", set.m_offset + (y * xcells));
 			for (int x = 4; x >= 0; x--)
 			{
 				x0 -= ui_font->char_width(chheight, aspect, buffer[x]);

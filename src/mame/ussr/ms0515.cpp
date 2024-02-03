@@ -49,8 +49,9 @@
 #include "ms0515.lh"
 
 
-#define LOG_BANK    (1U << 1)
-#define LOG_SYSREG  (1U << 2)
+#define LOG_GENERAL (1U <<  0)
+#define LOG_BANK    (1U <<  1)
+#define LOG_SYSREG  (1U <<  2)
 
 //#define VERBOSE (LOG_GENERAL | LOG_BANK | LOG_SYSREG)
 //#define LOG_OUTPUT_FUNC osd_printf_info
@@ -92,7 +93,7 @@ protected:
 private:
 	void ms0515_palette(palette_device &palette) const;
 	uint32_t screen_update_ms0515(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void screen_vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
 
 	void ms0515_bank_w(uint16_t data);
 
@@ -103,17 +104,17 @@ private:
 	uint8_t ms0515_portb_r();
 	void ms0515_portc_w(uint8_t data);
 
-	void write_keyboard_clock(int state);
-	void write_line_clock(int state);
-	void pit8253_out2_changed(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_keyboard_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_line_clock);
+	DECLARE_WRITE_LINE_MEMBER(pit8253_out2_changed);
 
 	static void floppy_formats(format_registration &fr);
 
-	void irq2_w(int state);
-	void irq5_w(int state);
-	void irq8_w(int state);
-	void irq9_w(int state);
-	void irq11_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq2_w);
+	DECLARE_WRITE_LINE_MEMBER(irq5_w);
+	DECLARE_WRITE_LINE_MEMBER(irq8_w);
+	DECLARE_WRITE_LINE_MEMBER(irq9_w);
+	DECLARE_WRITE_LINE_MEMBER(irq11_w);
 
 	void ms0515_mem(address_map &map);
 
@@ -345,19 +346,19 @@ void ms0515_state::ms0515_portc_w(uint8_t data)
 	m_sysregc = data;
 }
 
-void ms0515_state::write_keyboard_clock(int state)
+WRITE_LINE_MEMBER(ms0515_state::write_keyboard_clock)
 {
 	m_i8251kbd->write_txc(state);
 	m_i8251kbd->write_rxc(state);
 }
 
-void ms0515_state::write_line_clock(int state)
+WRITE_LINE_MEMBER(ms0515_state::write_line_clock)
 {
 	m_i8251line->write_txc(state);
 	m_i8251line->write_rxc(state);
 }
 
-void ms0515_state::pit8253_out2_changed(int state)
+WRITE_LINE_MEMBER(ms0515_state::pit8253_out2_changed)
 {
 	m_speaker->level_w(state);
 }
@@ -455,7 +456,7 @@ uint32_t ms0515_state::screen_update_ms0515(screen_device &screen, bitmap_ind16 
 	return 0;
 }
 
-void ms0515_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(ms0515_state::screen_vblank)
 {
 //  irq2_w(state ? ASSERT_LINE : CLEAR_LINE);
 	if (BIT(m_bankreg, 9))
@@ -515,27 +516,27 @@ void ms0515_state::irq_encoder(int irq, int state)
  * 2    HHLH 4   064 vblank
  */
 
-void ms0515_state::irq2_w(int state)
+WRITE_LINE_MEMBER(ms0515_state::irq2_w)
 {
 	irq_encoder(2, state);
 }
 
-void ms0515_state::irq5_w(int state)
+WRITE_LINE_MEMBER(ms0515_state::irq5_w)
 {
 	irq_encoder(5, state);
 }
 
-void ms0515_state::irq8_w(int state)
+WRITE_LINE_MEMBER(ms0515_state::irq8_w)
 {
 	irq_encoder(8, state);
 }
 
-void ms0515_state::irq9_w(int state)
+WRITE_LINE_MEMBER(ms0515_state::irq9_w)
 {
 	irq_encoder(9, state);
 }
 
-void ms0515_state::irq11_w(int state)
+WRITE_LINE_MEMBER(ms0515_state::irq11_w)
 {
 	irq_encoder(11, state);
 }

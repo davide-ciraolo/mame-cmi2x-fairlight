@@ -1,5 +1,5 @@
 /* Lzma86Dec.c -- LZMA + x86 (BCJ) Filter Decoder
-2023-03-03 : Igor Pavlov : Public domain */
+2016-05-16 : Igor Pavlov : Public domain */
 
 #include "Precomp.h"
 
@@ -46,8 +46,9 @@ SRes Lzma86_Decode(Byte *dest, SizeT *destLen, const Byte *src, SizeT *srcLen)
     return res;
   if (useFilter == 1)
   {
-    UInt32 x86State = Z7_BRANCH_CONV_ST_X86_STATE_INIT_VAL;
-    z7_BranchConvSt_X86_Dec(dest, *destLen, 0, &x86State);
+    UInt32 x86State;
+    x86_Convert_Init(x86State);
+    x86_Convert(dest, *destLen, 0, &x86State, 0);
   }
   return SZ_OK;
 }

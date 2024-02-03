@@ -55,7 +55,7 @@ private:
 	void tube_80286_io(address_map &map);
 	void tube_80286_mem(address_map &map);
 
-	void prst_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(prst_w);
 };
 
 

@@ -41,8 +41,6 @@ ToDo:
 #include "selz80.lh"
 
 
-namespace {
-
 class selz80_state : public driver_device
 {
 public:
@@ -292,8 +290,6 @@ ROM_START( dagz80 )
 	ROM_REGION( 0x2000, "user1", ROMREGION_ERASEFF )
 	ROM_LOAD( "moni_1.5_15.08.1988.bin", 0x0000, 0x2000, CRC(318aee6e) SHA1(c698fdee401b88e673791aabcba6a9628938a075) )
 ROM_END
-
-} // anonymous namespace
 
 
 /* Driver */

@@ -2,7 +2,7 @@
 // copyright-holders:Wilbert Pol, tim lindner
 /*********************************************************************
 
-    formats/sdf_dsk.cpp
+    formats/sdf_dsk.h
 
     SDF disk images. Format created by Darren Atkinson for use with
     his CoCoSDC floppy disk emulator.
@@ -14,7 +14,6 @@
 #include "sdf_dsk.h"
 
 #include "ioprocs.h"
-#include "multibyte.h"
 
 
 sdf_format::sdf_format()
@@ -22,19 +21,19 @@ sdf_format::sdf_format()
 }
 
 
-const char *sdf_format::name() const noexcept
+const char *sdf_format::name() const
 {
 	return "sdf";
 }
 
 
-const char *sdf_format::description() const noexcept
+const char *sdf_format::description() const
 {
 	return "SDF disk image";
 }
 
 
-const char *sdf_format::extensions() const noexcept
+const char *sdf_format::extensions() const
 {
 	return "sdf";
 }
@@ -77,7 +76,7 @@ int sdf_format::identify(util::random_read &io, uint32_t form_factor, const std:
 }
 
 
-bool sdf_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool sdf_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	size_t actual;
 	uint8_t header[HEADER_SIZE];
@@ -91,11 +90,11 @@ bool sdf_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 
 	if (heads == 2)
 	{
-		image.set_variant(floppy_image::DSDD);
+		image->set_variant(floppy_image::DSDD);
 	}
 	else
 	{
-		image.set_variant(floppy_image::SSDD);
+		image->set_variant(floppy_image::SSDD);
 	}
 
 	for (int track = 0; track < tracks; track++)
@@ -119,8 +118,8 @@ bool sdf_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 			{
 				if (i < sector_count )
 				{
-					idam_location[i] = (get_u16le(&track_data[ 8 * (i+1)]) & 0x3FFF) - 4;
-					dam_location[i] = (get_u16le(&track_data[ 8 * (i+1) + 2]) & 0x3FFF) - 4;
+					idam_location[i] = ((track_data[ 8 * (i+1) + 1] << 8 | track_data[ 8 * (i+1)]) & 0x3FFF) - 4;
+					dam_location[i] = ((track_data[ 8 * (i+1) + 1 + 2] << 8 | track_data[ 8 * (i+1) + 2]) & 0x3FFF) - 4;
 
 					if (idam_location[i] > TOTAL_TRACK_SIZE) return false;
 					if (dam_location[i] > TOTAL_TRACK_SIZE) return false;
@@ -185,7 +184,7 @@ bool sdf_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 }
 
 
-bool sdf_format::supports_save() const noexcept
+bool sdf_format::supports_save() const
 {
 	return false;
 }

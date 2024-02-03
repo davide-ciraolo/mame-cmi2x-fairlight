@@ -34,14 +34,13 @@
 #include "emu.h"
 #include "bandai.h"
 
-#define LOG_UNHANDLED (1U << 1)
-
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_UNHANDLED | LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (LOG_UNHANDLED)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 
@@ -198,7 +197,7 @@ void nes_fjump2_device::pcb_reset()
 
  iNES: mapper 96
 
- In MAME: Preliminary Support.
+ In MESS: Preliminary Support.
 
  -------------------------------------------------*/
 
@@ -249,7 +248,7 @@ void nes_oekakids_device::ppu_latch(offs_t offset)
 
 void nes_oekakids_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("oeka kids write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("oeka kids write_h, offset: %04x, data: %02x\n", offset, data));
 
 	prg32(data & 0x03);
 	m_reg = data & 0x04;
@@ -275,7 +274,7 @@ void nes_oekakids_device::write_h(offs_t offset, uint8_t data)
 
  iNES: mappers 16, 153 (see below), 157 & 159
 
- In MAME: Supported
+ In MESS: Supported
 
  -------------------------------------------------*/
 
@@ -301,7 +300,7 @@ TIMER_CALLBACK_MEMBER(nes_fcg_device::irq_timer_tick)
 
 void nes_fcg_device::fcg_write(offs_t offset, uint8_t data)
 {
-	LOG("lz93d50_write, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("lz93d50_write, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x0f)
 	{
@@ -332,14 +331,14 @@ void nes_fcg_device::fcg_write(offs_t offset, uint8_t data)
 			m_irq_count = (m_irq_count & 0x00ff) | (data << 8);
 			break;
 		default:
-			LOGMASKED(LOG_UNHANDLED, "lz93d50_write uncaught write, offset: %04x, data: %02x\n", offset, data);
+			logerror("lz93d50_write uncaught write, offset: %04x, data: %02x\n", offset, data);
 			break;
 	}
 }
 
 void nes_fcg_device::write_m(offs_t offset, uint8_t data)
 {
-	LOG("lz93d50 write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("lz93d50 write_m, offset: %04x, data: %02x\n", offset, data));
 
 	if (m_battery.empty() && m_prgram.empty())
 		fcg_write(offset & 0x0f, data);
@@ -354,7 +353,7 @@ void nes_fcg_device::write_m(offs_t offset, uint8_t data)
 
 void nes_lz93d50_24c01_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("lz93d50_24c01 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("lz93d50_24c01 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x0f)
 	{
@@ -371,7 +370,7 @@ void nes_lz93d50_24c01_device::write_h(offs_t offset, uint8_t data)
 
 uint8_t nes_lz93d50_24c01_device::read_m(offs_t offset)
 {
-	LOG("lz93d50 EEPROM read, offset: %04x\n", offset);
+	LOG_MMC(("lz93d50 EEPROM read, offset: %04x\n", offset));
 	if (m_i2c_dir)
 		return (m_i2cmem->read_sda() & 1) << 4;
 	else
@@ -384,7 +383,7 @@ uint8_t nes_lz93d50_24c01_device::read_m(offs_t offset)
 
 void nes_lz93d50_24c01_device::device_add_mconfig(machine_config &config)
 {
-	I2C_X24C01(config, m_i2cmem);
+	I2C_24C01(config, m_i2cmem);
 }
 
 void nes_lz93d50_24c02_device::device_add_mconfig(machine_config &config)
@@ -406,7 +405,7 @@ void nes_lz93d50_24c02_device::device_add_mconfig(machine_config &config)
 
  iNES: mappers 153
 
- In MAME: Supported
+ In MESS: Supported
 
  -------------------------------------------------*/
 
@@ -423,19 +422,19 @@ void nes_fjump2_device::set_prg()
 
 uint8_t nes_fjump2_device::read_m(offs_t offset)
 {
-	LOG("fjump2 read_m, offset: %04x\n", offset);
+	LOG_MMC(("fjump2 read_m, offset: %04x\n", offset));
 	return m_battery[offset & (m_battery.size() - 1)];
 }
 
 void nes_fjump2_device::write_m(offs_t offset, uint8_t data)
 {
-	LOG("fjump2 write_m, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("fjump2 write_m, offset: %04x, data: %02x\n", offset, data));
 	m_battery[offset & (m_battery.size() - 1)] = data;
 }
 
 void nes_fjump2_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("fjump2 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("fjump2 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x0f)
 	{

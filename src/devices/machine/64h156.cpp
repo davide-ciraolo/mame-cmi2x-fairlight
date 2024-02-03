@@ -86,6 +86,11 @@ c64h156_device::c64h156_device(const machine_config &mconfig, const char *tag, d
 
 void c64h156_device::device_start()
 {
+	// resolve callbacks
+	m_write_atn.resolve_safe();
+	m_write_sync.resolve_safe();
+	m_write_byte.resolve_safe();
+
 	// allocate timer
 	t_gen = timer_alloc(FUNC(c64h156_device::update_tick), this);
 
@@ -450,7 +455,7 @@ void c64h156_device::yb_w(uint8_t data)
 //  test_w - test write
 //-------------------------------------------------
 
-void c64h156_device::test_w(int state)
+WRITE_LINE_MEMBER( c64h156_device::test_w )
 {
 }
 
@@ -459,7 +464,7 @@ void c64h156_device::test_w(int state)
 //  accl_w -
 //-------------------------------------------------
 
-void c64h156_device::accl_w(int state)
+WRITE_LINE_MEMBER( c64h156_device::accl_w )
 {
 	if (m_accl != state)
 	{
@@ -476,7 +481,7 @@ void c64h156_device::accl_w(int state)
 //  ted_w -
 //-------------------------------------------------
 
-void c64h156_device::ted_w(int state)
+WRITE_LINE_MEMBER( c64h156_device::ted_w )
 {
 	if (m_ted != state)
 	{
@@ -497,7 +502,7 @@ void c64h156_device::ted_w(int state)
 //  mtr_w - motor write
 //-------------------------------------------------
 
-void c64h156_device::mtr_w(int state)
+WRITE_LINE_MEMBER( c64h156_device::mtr_w )
 {
 	if (m_mtr != state)
 	{
@@ -524,7 +529,7 @@ void c64h156_device::mtr_w(int state)
 //  oe_w - output enable write
 //-------------------------------------------------
 
-void c64h156_device::oe_w(int state)
+WRITE_LINE_MEMBER( c64h156_device::oe_w )
 {
 	if (m_oe != state)
 	{
@@ -546,7 +551,7 @@ void c64h156_device::oe_w(int state)
 //  soe_w - SO enable write
 //-------------------------------------------------
 
-void c64h156_device::soe_w(int state)
+WRITE_LINE_MEMBER( c64h156_device::soe_w )
 {
 	if (m_soe != state)
 	{
@@ -563,7 +568,7 @@ void c64h156_device::soe_w(int state)
 //  atni_w - serial attention input write
 //-------------------------------------------------
 
-void c64h156_device::atni_w(int state)
+WRITE_LINE_MEMBER( c64h156_device::atni_w )
 {
 	LOG("ATNI %u\n", state);
 
@@ -577,7 +582,7 @@ void c64h156_device::atni_w(int state)
 //  atna_w - serial attention acknowledge write
 //-------------------------------------------------
 
-void c64h156_device::atna_w(int state)
+WRITE_LINE_MEMBER( c64h156_device::atna_w )
 {
 	LOG("ATNA %u\n", state);
 

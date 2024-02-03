@@ -292,9 +292,6 @@ doPlayerMore(player)
 #include "spg2xx.h"
 #include "machine/nvram.h"
 
-
-namespace {
-
 class skannerztv_state : public spg2xx_game_state
 {
 public:
@@ -431,8 +428,5 @@ ROM_START( rad_sktv )
 
 	   TODO: find details on MCU so that we know capacity etc. */
 ROM_END
-
-} // anonymous namespace
-
 
 CONS( 2007, rad_sktv,  0,        0, rad_sktv, rad_sktv,   skannerztv_state, init_crc, "Radica", "Skannerz TV",                 MACHINE_IMPERFECT_SOUND | MACHINE_NOT_WORKING )

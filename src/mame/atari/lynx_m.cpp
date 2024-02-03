@@ -2001,12 +2001,15 @@ void lynx_state::machine_start()
 
 ****************************************/
 
-std::pair<std::error_condition, std::string> lynx_state::verify_cart(const char *header, int kind)
+image_verify_result lynx_state::verify_cart(char *header, int kind)
 {
 	if (kind)
 	{
 		if (strncmp("BS93", &header[6], 4))
-			return std::make_pair(image_error::INVALIDIMAGE, "This is not a valid Lynx image");
+		{
+			logerror("This is not a valid Lynx image\n");
+			return image_verify_result::FAIL;
+		}
 	}
 	else
 	{
@@ -2014,18 +2017,16 @@ std::pair<std::error_condition, std::string> lynx_state::verify_cart(const char 
 		{
 			if (!strncmp("BS93", &header[6], 4))
 			{
-				// FIXME: multi-line message may not be displayed correctly
-				return std::make_pair(
-						image_error::INVALIDIMAGE,
-						"This image is probably a Quickload image with .lnx extension\n"
-						"Try to load it with -quickload");
+				logerror("This image is probably a Quickload image with .lnx extension\n");
+				logerror("Try to load it with -quickload\n");
 			}
 			else
-				return std::make_pair(image_error::INVALIDIMAGE, "This is not a valid Lynx image");
+				logerror("This is not a valid Lynx image\n");
+			return image_verify_result::FAIL;
 		}
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_verify_result::PASS;
 }
 
 DEVICE_IMAGE_LOAD_MEMBER(lynx_state::cart_load)
@@ -2051,9 +2052,8 @@ DEVICE_IMAGE_LOAD_MEMBER(lynx_state::cart_load)
 			image.fread(header, 0x40);
 
 			// Check the image
-			auto err = verify_cart((const char*)header, LYNX_CART);
-			if (err.first)
-				return err;
+			if (verify_cart((char*)header, LYNX_CART) != image_verify_result::PASS)
+				return image_init_result::FAIL;
 
 			/* 2008-10 FP: According to Handy source these should be page_size_bank0. Are we using
 			 it correctly in MAME? Moreover, the next two values should be page_size_bank1. We should
@@ -2118,5 +2118,5 @@ DEVICE_IMAGE_LOAD_MEMBER(lynx_state::cart_load)
 
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }

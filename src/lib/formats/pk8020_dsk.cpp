@@ -17,17 +17,17 @@ pk8020_format::pk8020_format() : wd177x_format(formats)
 {
 }
 
-const char *pk8020_format::name() const noexcept
+const char *pk8020_format::name() const
 {
 	return "pk8020";
 }
 
-const char *pk8020_format::description() const noexcept
+const char *pk8020_format::description() const
 {
 	return "PK-8020 disk image";
 }
 
-const char *pk8020_format::extensions() const noexcept
+const char *pk8020_format::extensions() const
 {
 	return "kdi";
 }

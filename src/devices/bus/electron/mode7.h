@@ -53,7 +53,7 @@ private:
 	std::unique_ptr<uint8_t[]> m_videoram;
 
 	MC6845_UPDATE_ROW(crtc_update_row);
-	void vsync_changed(int state);
+	DECLARE_WRITE_LINE_MEMBER(vsync_changed);
 
 	uint8_t m_romsel;
 };

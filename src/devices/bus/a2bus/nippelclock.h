@@ -42,7 +42,7 @@ protected:
 	required_device<mc146818_device> m_rtc;
 
 private:
-	void irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_w);
 };
 
 // device type definition

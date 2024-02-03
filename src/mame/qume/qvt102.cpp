@@ -43,8 +43,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
@@ -106,18 +104,18 @@ private:
 	MC6845_UPDATE_ROW(crtc_update_row);
 
 	uint8_t vsync_ack_r();
-	void vsync_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(vsync_w);
 	uint8_t kbd_r();
 	void latch_w(uint8_t data);
 
 	uint8_t ctc_r();
 	void ctc_w(uint8_t data);
 
-	void acia_txd_w(int state);
-	void acia_rts_w(int state);
-	void dsr_w(int state);
-	void host_rxd_w(int state);
-	void host_dcd_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(acia_txd_w);
+	DECLARE_WRITE_LINE_MEMBER(acia_rts_w);
+	DECLARE_WRITE_LINE_MEMBER(dsr_w);
+	DECLARE_WRITE_LINE_MEMBER(host_rxd_w);
+	DECLARE_WRITE_LINE_MEMBER(host_dcd_w);
 
 	uint8_t m_latch;
 	int m_kbd_data;
@@ -125,8 +123,8 @@ private:
 	// keyboard mcu
 	uint8_t mcu_bus_r();
 	void mcu_bus_w(uint8_t data);
-	int mcu_t0_r();
-	int mcu_t1_r();
+	DECLARE_READ_LINE_MEMBER(mcu_t0_r);
+	DECLARE_READ_LINE_MEMBER(mcu_t1_r);
 	void mcu_p1_w(uint8_t data);
 	void mcu_p2_w(uint8_t data);
 
@@ -367,7 +365,7 @@ void qvt102_state::mcu_bus_w(uint8_t data)
 	m_kbd_bus = data;
 }
 
-int qvt102_state::mcu_t0_r()
+READ_LINE_MEMBER(qvt102_state::mcu_t0_r)
 {
 	int state = 1;
 
@@ -383,7 +381,7 @@ int qvt102_state::mcu_t0_r()
 	return state;
 }
 
-int qvt102_state::mcu_t1_r()
+READ_LINE_MEMBER(qvt102_state::mcu_t1_r)
 {
 	int state = 1;
 
@@ -423,7 +421,7 @@ void qvt102_state::mcu_p2_w(uint8_t data)
 	// the boost lasts for the critical section of the IRQ handler.
 	//
 	if (m_kbd_data)
-		machine().scheduler().perfect_quantum(attotime::from_usec(350));
+		machine().scheduler().boost_interleave(attotime::zero, attotime::from_usec(350));
 
 	m_irqs->in_w<2>(m_kbd_data);
 }
@@ -439,7 +437,7 @@ uint8_t qvt102_state::vsync_ack_r()
 	return 0;
 }
 
-void qvt102_state::vsync_w(int state)
+WRITE_LINE_MEMBER(qvt102_state::vsync_w)
 {
 	if (state)
 		m_irqs->in_w<0>(ASSERT_LINE);
@@ -563,7 +561,7 @@ void qvt102_state::ctc_w(uint8_t data)
 	m_ctc->write(BIT(m_latch, 5), data);
 }
 
-void qvt102_state::acia_txd_w(int state)
+WRITE_LINE_MEMBER(qvt102_state::acia_txd_w)
 {
 	if (BIT(m_latch, 6) == 0)
 	{
@@ -580,7 +578,7 @@ void qvt102_state::acia_txd_w(int state)
 	}
 }
 
-void qvt102_state::acia_rts_w(int state)
+WRITE_LINE_MEMBER(qvt102_state::acia_rts_w)
 {
 	m_host->write_rts(state);
 
@@ -590,14 +588,14 @@ void qvt102_state::acia_rts_w(int state)
 			m_host->write_dtr(state);
 }
 
-void qvt102_state::dsr_w(int state)
+WRITE_LINE_MEMBER(qvt102_state::dsr_w)
 {
 	if (machine().phase() != machine_phase::INIT)
 		if (BIT(m_jumper->read(), 0))
 			m_acia->write_dcd(state);
 }
 
-void qvt102_state::host_rxd_w(int state)
+WRITE_LINE_MEMBER(qvt102_state::host_rxd_w)
 {
 	m_acia->write_rxd(state);
 
@@ -606,7 +604,7 @@ void qvt102_state::host_rxd_w(int state)
 		m_aux->write_txd(state);
 }
 
-void qvt102_state::host_dcd_w(int state)
+WRITE_LINE_MEMBER(qvt102_state::host_dcd_w)
 {
 	if (machine().phase() != machine_phase::INIT)
 		if (BIT(m_jumper->read(), 1))
@@ -721,8 +719,6 @@ ROM_START( qvt102a )
 	ROM_REGION(0x400, "kbdmcu", 0)
 	ROM_LOAD("k301.u302", 0x000, 0x400, CRC(67564b20) SHA1(5897ff920f8fae4aa498d3a4dfd45b58183c041d))
 ROM_END
-
-} // anonymous namespace
 
 
 //**************************************************************************

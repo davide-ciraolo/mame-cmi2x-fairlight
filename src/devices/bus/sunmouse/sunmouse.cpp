@@ -112,6 +112,8 @@ void sun_mouse_port_device::device_config_complete()
 void sun_mouse_port_device::device_resolve_objects()
 {
 	m_rxd = 1;
+
+	m_rxd_handler.resolve_safe();
 }
 
 
@@ -124,7 +126,7 @@ void sun_mouse_port_device::device_start()
 }
 
 
-void sun_mouse_port_device::write_txd(int state)
+WRITE_LINE_MEMBER( sun_mouse_port_device::write_txd )
 {
 	if (m_dev)
 		m_dev->input_txd(state ? 0 : 1);

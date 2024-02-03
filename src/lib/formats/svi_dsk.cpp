@@ -17,17 +17,17 @@ svi_format::svi_format()
 {
 }
 
-const char *svi_format::name() const noexcept
+const char *svi_format::name() const
 {
 	return "svi";
 }
 
-const char *svi_format::description() const noexcept
+const char *svi_format::description() const
 {
 	return "SVI-318/328 disk image";
 }
 
-const char *svi_format::extensions() const noexcept
+const char *svi_format::extensions() const
 {
 	return "dsk";
 }
@@ -44,7 +44,7 @@ int svi_format::identify(util::random_read &io, uint32_t form_factor, const std:
 	return 0;
 }
 
-bool svi_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool svi_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	uint64_t size;
 	if (io.length(size))
@@ -99,13 +99,13 @@ bool svi_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 	return true;
 }
 
-bool svi_format::save(util::random_read_write &io, const std::vector<uint32_t> &variants, const floppy_image &image) const
+bool svi_format::save(util::random_read_write &io, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	if (io.seek(0, SEEK_SET))
 		return false;
 
 	int track_count, head_count;
-	image.get_actual_geometry(track_count, head_count);
+	image->get_actual_geometry(track_count, head_count);
 
 	// initial fm track
 	auto bitstream = generate_bitstream_from_track(0, 0, 4000, image);
@@ -139,7 +139,7 @@ bool svi_format::save(util::random_read_write &io, const std::vector<uint32_t> &
 	return true;
 }
 
-bool svi_format::supports_save() const noexcept
+bool svi_format::supports_save() const
 {
 	return true;
 }

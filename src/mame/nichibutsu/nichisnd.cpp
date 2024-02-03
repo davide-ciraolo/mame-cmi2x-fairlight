@@ -4,25 +4,18 @@
 
     Nichibutsu sound HW
 
-    Shared component between niyanpai.cpp and hrdvd.cpp
+    Shared component between niyanpai.cpp and csplayh5.cpp
 
     Uses a TMPZ84C011 with YM3812 and two DACs
 
     TODO:
-    - DVD sound routing in here;
-    - Pinpoint actual subboard name;
+    - DVD sound routing in here
 
 ***************************************************************************/
 
 #include "emu.h"
-
 #include "nichisnd.h"
 
-#include "cpu/z80/tmpz84c011.h"
-#include "sound/dac.h"
-#include "sound/ymopl.h"
-
-#include "speaker.h"
 
 
 //**************************************************************************

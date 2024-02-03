@@ -130,7 +130,7 @@ static const char *o2_get_slot(int type)
  call load
 -------------------------------------------------*/
 
-std::pair<std::error_condition, std::string> o2_cart_slot_device::call_load()
+image_init_result o2_cart_slot_device::call_load()
 {
 	if (m_cart)
 	{
@@ -152,7 +152,7 @@ std::pair<std::error_condition, std::string> o2_cart_slot_device::call_load()
 		}
 		else
 		{
-			u32 const size = length();
+			u32 size = length();
 			fread(m_cart->m_rom, size);
 
 			m_cart->m_rom_size = size;
@@ -166,11 +166,11 @@ std::pair<std::error_condition, std::string> o2_cart_slot_device::call_load()
 		if (m_cart->get_rom_size() > 0)
 		{
 			m_cart->cart_init();
-			return std::make_pair(std::error_condition(), std::string());
+			return image_init_result::PASS;
 		}
 	}
 
-	return std::make_pair(image_error::UNSPECIFIED, std::string());
+	return image_init_result::FAIL;
 }
 
 
@@ -241,7 +241,7 @@ u8 o2_cart_slot_device::bus_read()
 	return (m_cart) ? m_cart->bus_read() : 0xff;
 }
 
-int o2_cart_slot_device::t0_read()
+READ_LINE_MEMBER(o2_cart_slot_device::t0_read)
 {
 	return (m_cart) ? m_cart->t0_read() : 0;
 }

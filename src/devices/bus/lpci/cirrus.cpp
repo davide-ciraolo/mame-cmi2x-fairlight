@@ -67,8 +67,7 @@
 #include "video/pc_vga.h"
 #include "cirrus.h"
 
-#define VERBOSE (0)
-#include "logmacro.h"
+#define LOG_PCIACCESS   0
 
 //**************************************************************************
 //  DEVICE DEFINITIONS
@@ -137,7 +136,8 @@ uint32_t pci_cirrus_svga_device::pci_read(pci_bus_device *pcibus, int function, 
 		}
 	}
 
-	LOG("cirrus5430_pci_read(): function=%d offset=0x%02X result=0x%04X\n", function, offset, result);
+	if (LOG_PCIACCESS)
+		logerror("cirrus5430_pci_read(): function=%d offset=0x%02X result=0x%04X\n", function, offset, result);
 	return result;
 }
 
@@ -148,7 +148,8 @@ uint32_t pci_cirrus_svga_device::pci_read(pci_bus_device *pcibus, int function, 
 
 void pci_cirrus_svga_device::pci_write(pci_bus_device *pcibus, int function, int offset, uint32_t data, uint32_t mem_mask)
 {
-	LOG("cirrus5430_pci_write(): function=%d offset=0x%02X data=0x%04X\n", function, offset, data);
+	if (LOG_PCIACCESS)
+		logerror("cirrus5430_pci_write(): function=%d offset=0x%02X data=0x%04X\n", function, offset, data);
 }
 
 /*************************************

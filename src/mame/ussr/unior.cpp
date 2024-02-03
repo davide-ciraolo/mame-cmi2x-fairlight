@@ -83,8 +83,8 @@ private:
 	u8 ppi1_c_r();
 	void ppi1_a_w(u8 data);
 	void ppi1_c_w(u8 data);
-	void hrq_w(int state);
-	void ctc_z1_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(hrq_w);
+	DECLARE_WRITE_LINE_MEMBER(ctc_z1_w);
 	void unior_palette(palette_device &palette) const;
 	u8 dma_r(offs_t offset);
 	I8275_DRAW_CHARACTER_MEMBER(display_pixels);
@@ -288,18 +288,15 @@ I8275_DRAW_CHARACTER_MEMBER(unior_state::display_pixels)
 	rgb_t const *const palette = m_palette->palette()->entry_list_raw();
 	u8 gfx = m_p_chargen[(linecount & 7) | (charcode << 3)];
 
-	using namespace i8275_attributes;
-
-	if (BIT(attrcode, VSP))
+	if (vsp)
 		gfx = 0;
 
-	if (BIT(attrcode, LTEN))
+	if (lten)
 		gfx = 0xff;
 
-	if (BIT(attrcode, RVV))
+	if (rvv)
 		gfx ^= 0xff;
 
-	bool hlgt = BIT(attrcode, HLGT);
 	for(u8 i=0;i<6;i++)
 		bitmap.pix(y, x + i) = palette[BIT(gfx, 5-i) ? (hlgt ? 2 : 1) : 0];
 }
@@ -352,7 +349,7 @@ TIMER_DEVICE_CALLBACK_MEMBER( unior_state::kansas_r )
 	}
 }
 
-void unior_state::ctc_z1_w(int state)
+WRITE_LINE_MEMBER(unior_state::ctc_z1_w)
 {
 	// write - incoming 2400Hz
 	m_uart->write_txc(state);
@@ -426,7 +423,7 @@ u8 unior_state::dma_r(offs_t offset)
 		return m_vram[offset & 0x7ff];
 }
 
-void unior_state::hrq_w(int state)
+WRITE_LINE_MEMBER( unior_state::hrq_w )
 {
 	m_maincpu->set_input_line(INPUT_LINE_HALT, state);
 	m_dma->hlda_w(state);

@@ -14,6 +14,8 @@
 #include "fdc.h"
 #include "imagedev/floppy.h"
 #include "machine/wd_fdc.h"
+#include "formats/acorn_dsk.h"
+#include "formats/fsd_dsk.h"
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -26,9 +28,9 @@ class bbc_cumanafdc_device :
 public:
 	static void floppy_formats(format_registration &fr);
 
-	void fdc_intrq_w(int state);
-	void fdc_drq_w(int state);
-	void motor_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(fdc_intrq_w);
+	DECLARE_WRITE_LINE_MEMBER(fdc_drq_w);
+	DECLARE_WRITE_LINE_MEMBER(motor_w);
 
 protected:
 	// construction/destruction

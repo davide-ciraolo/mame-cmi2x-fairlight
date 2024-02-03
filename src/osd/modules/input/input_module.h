@@ -15,13 +15,20 @@
 #include "modules/osdmodule.h"
 
 
-class input_module
+class input_module : public osd_module
 {
 public:
-	virtual ~input_module() = default;
+	input_module(const char *type, const char *name)
+		: osd_module(type, name)
+	{
+	}
+
+	virtual ~input_module() { }
 
 	virtual void input_init(running_machine &machine) = 0;
-	virtual void poll_if_necessary(bool relative_reset) = 0;
+	virtual void poll_if_necessary(running_machine &machine) = 0;
+	virtual void pause() = 0;
+	virtual void resume() = 0;
 };
 
 //============================================================

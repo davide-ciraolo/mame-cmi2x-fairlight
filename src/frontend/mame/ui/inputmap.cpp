@@ -33,7 +33,7 @@ menu_input_groups::~menu_input_groups()
 {
 }
 
-void menu_input_groups::populate()
+void menu_input_groups::populate(float &customtop, float &custombottom)
 {
 	// build up the menu
 	item_append(_("User Interface"), 0, (void *)uintptr_t(IPG_UI + 1));
@@ -46,8 +46,9 @@ void menu_input_groups::populate()
 	item_append(menu_item_type::SEPARATOR);
 }
 
-bool menu_input_groups::handle(event const *ev)
+void menu_input_groups::handle(event const *ev)
 {
+	// process the menu
 	if (ev && (ev->iptkey == IPT_UI_SELECT))
 	{
 		menu::stack_push<menu_input_general>(
@@ -56,8 +57,6 @@ bool menu_input_groups::handle(event const *ev)
 				int(uintptr_t(ev->itemref) - 1),
 				util::string_format(_("Input Assignments (%1$s)"), ev->item->text()));
 	}
-
-	return false;
 }
 
 
@@ -83,7 +82,7 @@ void menu_input_general::menu_activated()
 	reset(reset_options::REMEMBER_POSITION);
 }
 
-void menu_input_general::populate()
+void menu_input_general::populate(float &customtop, float &custombottom)
 {
 	if (data.empty())
 	{
@@ -131,7 +130,7 @@ void menu_input_general::populate()
 	}
 
 	// populate the menu in a standard fashion
-	populate_sorted();
+	populate_sorted(customtop, custombottom);
 	item_append(menu_item_type::SEPARATOR);
 }
 
@@ -165,7 +164,7 @@ void menu_input_specific::menu_activated()
 	reset(reset_options::REMEMBER_POSITION);
 }
 
-void menu_input_specific::populate()
+void menu_input_specific::populate(float &customtop, float &custombottom)
 {
 	if (data.empty())
 	{
@@ -250,7 +249,7 @@ void menu_input_specific::populate()
 
 	// populate the menu in a standard fashion
 	if (!data.empty())
-		populate_sorted();
+		populate_sorted(customtop, custombottom);
 	else
 		item_append(_("[no assignable inputs are enabled]"), FLAG_DISABLE, nullptr);
 
@@ -312,16 +311,6 @@ void menu_input::toggle_none_default(input_seq &selected_seq, input_seq &origina
 		selected_seq.reset();
 }
 
-
-void menu_input::recompute_metrics(uint32_t width, uint32_t height, float aspect)
-{
-	menu::recompute_metrics(width, height, aspect);
-
-	// leave space for showing the input sequence below the menu
-	set_custom_space(0.0F, 2.0F * line_height() + 3.0F * tb_border());
-}
-
-
 void menu_input::custom_render(void *selectedref, float top, float bottom, float x1, float y1, float x2, float y2)
 {
 	if (pollingitem)
@@ -330,9 +319,9 @@ void menu_input::custom_render(void *selectedref, float top, float bottom, float
 		char const *const text[] = { seqname.c_str() };
 		draw_text_box(
 				std::begin(text), std::end(text),
-				x1, x2, y2 + tb_border(), y2 + bottom,
+				x1, x2, y2 + ui().box_tb_border(), y2 + bottom,
 				text_layout::text_justify::CENTER, text_layout::word_wrapping::NEVER, false,
-				ui().colors().text_color(), ui().colors().background_color());
+				ui().colors().text_color(), ui().colors().background_color(), 1.0f);
 	}
 	else
 	{
@@ -347,9 +336,9 @@ void menu_input::custom_render(void *selectedref, float top, float bottom, float
 			char const *const text[] = { errormsg.c_str() };
 			draw_text_box(
 					std::begin(text), std::end(text),
-					x1, x2, y2 + tb_border(), y2 + bottom,
+					x1, x2, y2 + ui().box_tb_border(), y2 + bottom,
 					text_layout::text_justify::CENTER, text_layout::word_wrapping::NEVER, false,
-					ui().colors().text_color(), UI_RED_COLOR);
+					ui().colors().text_color(), UI_RED_COLOR, 1.0f);
 		}
 		else if (selectedref)
 		{
@@ -359,9 +348,9 @@ void menu_input::custom_render(void *selectedref, float top, float bottom, float
 				char const *const text[] = { _("Pressed") };
 				draw_text_box(
 						std::begin(text), std::end(text),
-						x1, x2, y2 + tb_border(), y2 + bottom,
+						x1, x2, y2 + ui().box_tb_border(), y2 + bottom,
 						text_layout::text_justify::CENTER, text_layout::word_wrapping::NEVER, false,
-						ui().colors().text_color(), ui().colors().background_color());
+						ui().colors().text_color(), ui().colors().background_color(), 1.0f);
 			}
 			else
 			{
@@ -370,19 +359,18 @@ void menu_input::custom_render(void *selectedref, float top, float bottom, float
 					(!item.seq.empty() || item.defseq->empty()) ? clearprompt.c_str() : defaultprompt.c_str() };
 				draw_text_box(
 						std::begin(text), std::end(text),
-						x1, x2, y2 + tb_border(), y2 + bottom,
+						x1, x2, y2 + ui().box_tb_border(), y2 + bottom,
 						text_layout::text_justify::CENTER, text_layout::word_wrapping::NEVER, false,
-						ui().colors().text_color(), ui().colors().background_color());
+						ui().colors().text_color(), ui().colors().background_color(), 1.0f);
 			}
 		}
 	}
 }
 
-bool menu_input::handle(event const *ev)
+void menu_input::handle(event const *ev)
 {
 	input_item_data *seqchangeditem = nullptr;
 	bool invalidate = false;
-	bool redraw = false;
 
 	// process the menu
 	if (pollingitem)
@@ -396,12 +384,22 @@ bool menu_input::handle(event const *ev)
 
 		if (machine().ui_input().pressed(IPT_UI_CANCEL))
 		{
-			// if UI_CANCEL is pressed, abort and abandon changes
+			// if UI_CANCEL is pressed, abort
 			pollingitem = nullptr;
 			set_process_flags(PROCESS_LR_ALWAYS);
-			invalidate = true;
+			if (!seq_poll->modified() || modified_ticks == osd_ticks())
+			{
+				// cancelled immediately - toggle between default and none
+				record_next = false;
+				toggle_none_default(item->seq, starting_seq, *item->defseq);
+				seqchangeditem = item;
+			}
+			else
+			{
+				// entered something before cancelling - abandon change
+				invalidate = true;
+			}
 			seq_poll.reset();
-			machine().ui_input().reset();
 		}
 		else if (seq_poll->poll()) // poll again; if finished, update the sequence
 		{
@@ -421,12 +419,6 @@ bool menu_input::handle(event const *ev)
 				erroritem = item;
 			}
 			seq_poll.reset();
-			machine().ui_input().reset();
-		}
-		else
-		{
-			// always redraw to ensure it updates as soon as possible in response to changes
-			redraw = true;
 		}
 	}
 	else if (ev && ev->itemref)
@@ -523,7 +515,6 @@ bool menu_input::handle(event const *ev)
 			}
 			record_next = false;
 			lastitem = &item;
-			redraw = true;
 		}
 
 		// flip between set and append
@@ -539,7 +530,6 @@ bool menu_input::handle(event const *ev)
 			{
 				record_next = !record_next;
 			}
-			redraw = true;
 		}
 	}
 
@@ -555,8 +545,6 @@ bool menu_input::handle(event const *ev)
 	// if the menu is invalidated, clear it now
 	if (invalidate)
 		reset(reset_options::REMEMBER_POSITION);
-
-	return redraw && !invalidate;
 }
 
 
@@ -566,7 +554,7 @@ bool menu_input::handle(event const *ev)
 //  menu from them
 //-------------------------------------------------
 
-void menu_input::populate_sorted()
+void menu_input::populate_sorted(float &customtop, float &custombottom)
 {
 	const char *nameformat[INPUT_TYPE_TOTAL] = { nullptr };
 
@@ -620,6 +608,9 @@ void menu_input::populate_sorted()
 	appendprompt = util::string_format(_("Press %1$s to append\n"), ui().get_general_input_setting(IPT_UI_SELECT));
 	clearprompt = util::string_format(_("Press %1$s to clear\n"), ui().get_general_input_setting(IPT_UI_CLEAR));
 	defaultprompt = util::string_format(_("Press %1$s to restore default\n"), ui().get_general_input_setting(IPT_UI_CLEAR));
+
+	// leave space for showing the input sequence below the menu
+	custombottom = 2.0f * ui().get_line_height() + 3.0f * ui().box_tb_border();
 }
 
 } // namespace ui

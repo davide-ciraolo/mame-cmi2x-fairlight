@@ -73,6 +73,9 @@ vsmile_ctrl_port_device::~vsmile_ctrl_port_device()
 void vsmile_ctrl_port_device::device_resolve_objects()
 {
 	m_device = get_card_device();
+
+	m_rts_cb.resolve_safe();
+	m_data_cb.resolve_safe();
 }
 
 void vsmile_ctrl_port_device::device_start()

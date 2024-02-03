@@ -48,7 +48,7 @@ protected:
 	virtual void pet_irq_w(int state) override;
 
 private:
-	void acia_irq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( acia_irq_w );
 
 	uint8_t read(offs_t offset);
 	void write(offs_t offset, uint8_t data);

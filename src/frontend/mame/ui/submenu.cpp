@@ -91,7 +91,6 @@ std::vector<submenu::option> submenu::advanced_options()
 			{ option_type::EMU,  N_("Off-screen reload"),                       OPTION_OFFSCREEN_RELOAD },
 			{ option_type::EMU,  N_("Joystick deadzone"),                       OPTION_JOYSTICK_DEADZONE },
 			{ option_type::EMU,  N_("Joystick saturation"),                     OPTION_JOYSTICK_SATURATION },
-			{ option_type::EMU,  N_("Joystick threshold"),                      OPTION_JOYSTICK_THRESHOLD },
 			{ option_type::EMU,  N_("Natural keyboard"),                        OPTION_NATURAL_KEYBOARD },
 			{ option_type::EMU,  N_("Allow contradictory joystick inputs"),     OPTION_JOYSTICK_CONTRADICTORY },
 			{ option_type::EMU,  N_("Coin impulse"),                            OPTION_COIN_IMPULSE } };
@@ -174,7 +173,7 @@ submenu::submenu(mame_ui_manager &mui, render_container &container, std::vector<
 		case option_type::EMU:
 			sm_option.entry = opts->get_entry(sm_option.name);
 			sm_option.options = opts;
-			if ((sm_option.entry->type() == core_options::option_type::STRING) || (sm_option.entry->type() == core_options::option_type::PATH) || (sm_option.entry->type() == core_options::option_type::MULTIPATH))
+			if (sm_option.entry->type() == core_options::option_type::STRING)
 			{
 				sm_option.value.clear();
 				std::string namestr(sm_option.entry->description());
@@ -198,7 +197,7 @@ submenu::submenu(mame_ui_manager &mui, render_container &container, std::vector<
 		case option_type::OSD:
 			sm_option.entry = opts->get_entry(sm_option.name);
 			sm_option.options = opts;
-			if ((sm_option.entry->type() == core_options::option_type::STRING) || (sm_option.entry->type() == core_options::option_type::PATH) || (sm_option.entry->type() == core_options::option_type::MULTIPATH))
+			if (sm_option.entry->type() == core_options::option_type::STRING)
 			{
 				sm_option.value.clear();
 				std::string descr(machine().options().get_entry(sm_option.name)->description()), delim(", ");
@@ -245,7 +244,7 @@ submenu::~submenu()
 //  handle the options menu
 //-------------------------------------------------
 
-bool submenu::handle(event const *ev)
+void submenu::handle(event const *ev)
 {
 	bool changed = false;
 	std::string error_string, tmptxt;
@@ -286,7 +285,7 @@ bool submenu::handle(event const *ev)
 						const char *minimum = sm_option.entry->minimum();
 						const char *maximum = sm_option.entry->maximum();
 						f_step = atof(minimum);
-						if (f_step <= 0.0F) {
+						if (f_step <= 0.0f) {
 							int pmin = getprecisionchr(minimum);
 							int pmax = getprecisionchr(maximum);
 							tmptxt = '1' + std::string((pmin > pmax) ? pmin : pmax, '0');
@@ -308,8 +307,6 @@ bool submenu::handle(event const *ev)
 				}
 				break;
 			case core_options::option_type::STRING:
-			case core_options::option_type::PATH:
-			case core_options::option_type::MULTIPATH:
 				if (ev->iptkey == IPT_UI_LEFT || ev->iptkey == IPT_UI_RIGHT)
 				{
 					changed = true;
@@ -332,16 +329,15 @@ bool submenu::handle(event const *ev)
 		}
 	}
 
-	if (changed) // FIXME: most changes should only require updating the item's subtext
+	if (changed)
 		reset(reset_options::REMEMBER_REF);
-	return false;
 }
 
 //-------------------------------------------------
 //  populate
 //-------------------------------------------------
 
-void submenu::populate()
+void submenu::populate(float &customtop, float &custombottom)
 {
 	// add options
 	for (auto sm_option = m_options.begin(); sm_option < m_options.end(); ++sm_option)
@@ -407,7 +403,7 @@ void submenu::populate()
 					}
 					else
 					{
-						f_min = 0.0F;
+						f_min = 0.0f;
 						f_max = std::numeric_limits<float>::max();
 					}
 					arrow_flags = get_arrow_flags(f_min, f_max, f_cur);
@@ -448,17 +444,7 @@ void submenu::populate()
 	}
 
 	item_append(menu_item_type::SEPARATOR);
-}
-
-//-------------------------------------------------
-//  recompute metrics
-//-------------------------------------------------
-
-void submenu::recompute_metrics(uint32_t width, uint32_t height, float aspect)
-{
-	menu::recompute_metrics(width, height, aspect);
-
-	set_custom_space(0.0F, line_height() + (3.0F * tb_border()));
+	custombottom = ui().get_line_height() + (3.0f * ui().box_tb_border());
 }
 
 //-------------------------------------------------
@@ -475,9 +461,9 @@ void submenu::custom_render(void *selectedref, float top, float bottom, float or
 			char const *const bottomtext[] = { selected_sm_option.entry->description() };
 			draw_text_box(
 					std::begin(bottomtext), std::end(bottomtext),
-					origx1, origx2, origy2 + tb_border(), origy2 + bottom,
+					origx1, origx2, origy2 + ui().box_tb_border(), origy2 + bottom,
 					text_layout::text_justify::CENTER, text_layout::word_wrapping::TRUNCATE, false,
-					ui().colors().text_color(), ui().colors().background_color());
+					ui().colors().text_color(), ui().colors().background_color(), 1.0f);
 		}
 	}
 }

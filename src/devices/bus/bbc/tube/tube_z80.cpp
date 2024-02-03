@@ -155,7 +155,7 @@ void bbc_tube_z80_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void bbc_tube_z80_device::prst_w(int state)
+WRITE_LINE_MEMBER(bbc_tube_z80_device::prst_w)
 {
 	device_reset();
 

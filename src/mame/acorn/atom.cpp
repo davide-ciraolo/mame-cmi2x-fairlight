@@ -118,12 +118,10 @@ Hardware:   PPIA 8255
 #include "emu.h"
 #include "atom.h"
 #include "machine/clock.h"
+#include "formats/imageutl.h"
 #include "screen.h"
 #include "softlist_dev.h"
 #include "speaker.h"
-
-#include "multibyte.h"
-#include "utf8.h"
 
 /***************************************************************************
     PARAMETERS
@@ -159,9 +157,9 @@ QUICKLOAD_LOAD_MEMBER(atom_state::quickload_cb)
 
 	image.fread(header, 0x16);
 
-	uint16_t start_address = get_u16le(&header[0x10]);
-	uint16_t run_address = get_u16le(&header[0x12]);
-	uint16_t size = get_u16le(&header[0x14]);
+	uint16_t start_address = pick_integer_le(header, 0x10, 2);
+	uint16_t run_address = pick_integer_le(header, 0x12, 2);
+	uint16_t size = pick_integer_le(header, 0x14, 2);
 
 	if (LOG)
 	{
@@ -188,7 +186,7 @@ QUICKLOAD_LOAD_MEMBER(atom_state::quickload_cb)
 	else
 		m_maincpu->set_state_int(M6502_PC, run_address);   // if not basic, autostart program (set_pc doesn't work)
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 /***************************************************************************
@@ -562,7 +560,7 @@ void atom_state::ppi_pc_w(uint8_t data)
     i8271 interface
 -------------------------------------------------*/
 
-void atom_state::atom_8271_interrupt_callback(int state)
+WRITE_LINE_MEMBER( atom_state::atom_8271_interrupt_callback )
 {
 	/* I'm assuming that the nmi is edge triggered */
 	/* a interrupt from the fdc will cause a change in line state, and
@@ -583,7 +581,7 @@ void atom_state::atom_8271_interrupt_callback(int state)
 	m_previous_i8271_int_state = state;
 }
 
-void atom_state::motor_w(int state)
+WRITE_LINE_MEMBER( atom_state::motor_w )
 {
 	for (u8 i = 0; i < 2; i++)
 	{
@@ -595,7 +593,7 @@ void atom_state::motor_w(int state)
 	}
 }
 
-void atom_state::cassette_output_tick(int state)
+WRITE_LINE_MEMBER(atom_state::cassette_output_tick)
 {
 	m_hz2400 = state;
 
@@ -680,17 +678,20 @@ void atomeb_state::machine_reset()
     MACHINE DRIVERS
 ***************************************************************************/
 
-std::pair<std::error_condition, std::string> atom_state::load_cart(device_image_interface &image, generic_slot_device &slot)
+image_init_result atom_state::load_cart(device_image_interface &image, generic_slot_device &slot)
 {
 	uint32_t size = slot.common_get_size("rom");
 
 	if (size > 0x1000)
-		return std::make_pair(image_error::INVALIDIMAGE, "Unsupported ROM size (must be no larger than 4K)");
+	{
+		image.seterror(image_error::INVALIDIMAGE, "Unsupported ROM size");
+		return image_init_result::FAIL;
+	}
 
 	slot.rom_alloc(size, GENERIC_ROM8_WIDTH, ENDIANNESS_LITTLE);
 	slot.common_load_rom(slot.get_rom_base(), size, "rom");
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 static void atom_floppies(device_slot_interface &device)

@@ -29,6 +29,8 @@ pc_lpt_device::pc_lpt_device(const machine_config &mconfig, const char *tag, dev
 
 void pc_lpt_device::device_start()
 {
+	m_irq_handler.resolve_safe();
+
 	save_item(NAME(m_irq));
 	save_item(NAME(m_data));
 	save_item(NAME(m_control));

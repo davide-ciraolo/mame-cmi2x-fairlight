@@ -74,8 +74,7 @@
 #include "emu.h"
 #include "pci.h"
 
-#define VERBOSE (0)
-#include "logmacro.h"
+#define LOG_PCI 0
 
 //**************************************************************************
 //  GLOBAL VARIABLES
@@ -131,7 +130,8 @@ uint32_t pci_bus_device::read(offs_t offset, uint32_t mem_mask)
 			break;
 	}
 
-	LOG("read('%s'): offset=%d result=0x%08X\n", tag(), offset, result);
+	if (LOG_PCI)
+		logerror("read('%s'): offset=%d result=0x%08X\n", tag(), offset, result);
 
 	return result;
 }
@@ -162,7 +162,8 @@ void pci_bus_device::write(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
 	offset %= 2;
 
-	LOG("write('%s'): offset=%d data=0x%08X\n", tag(), offset, data);
+	if (LOG_PCI)
+		logerror("write('%s'): offset=%d data=0x%08X\n", tag(), offset, data);
 
 	switch (offset)
 	{
@@ -182,7 +183,8 @@ void pci_bus_device::write(offs_t offset, uint32_t data, uint32_t mem_mask)
 				}
 				else
 					m_devicenum = -1;
-				LOG("  bus:%d device:%d\n", busnum, devicenum);
+				if (LOG_PCI)
+					logerror("  bus:%d device:%d\n", busnum, devicenum);
 			}
 			break;
 
@@ -195,7 +197,8 @@ void pci_bus_device::write(offs_t offset, uint32_t data, uint32_t mem_mask)
 					int reg = (m_address >> 0) & 0xfc;
 					m_busnumaddr->m_device[m_devicenum]->pci_write(m_busnumaddr, function, reg, data, mem_mask);
 				}
-				LOG("  function:%d register:%d\n", (m_address >> 8) & 0x07, (m_address >> 0) & 0xfc);
+				if (LOG_PCI)
+					logerror("  function:%d register:%d\n", (m_address >> 8) & 0x07, (m_address >> 0) & 0xfc);
 			}
 			break;
 	}

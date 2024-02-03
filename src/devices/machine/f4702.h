@@ -35,16 +35,17 @@ public:
 	auto z_callback() { return m_z_callback.bind(); }
 
 	// external rate input
-	void im_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(im_w);
 
 	// reset control (optional)
 	void reset_counters();
 
 protected:
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 
-	// device_execute_interface implementation
+	// device_execute_interface overrides
 	virtual void execute_run() override;
 
 private:

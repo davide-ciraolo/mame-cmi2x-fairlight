@@ -113,7 +113,7 @@ uint8_t k573mcr_device::comm_method_version()
 	return 0x10;
 }
 
-void k573mcr_device::write_rxd(int state)
+WRITE_LINE_MEMBER(k573mcr_device::write_rxd)
 {
 	if (m_psx_clock) {
 		if (m_psx_rx_bit == 0) {

@@ -36,8 +36,6 @@
 #include "screen.h"
 #include "speaker.h"
 
-#include "utf8.h"
-
 
 uint8_t pc4_state::kb_r(offs_t offset)
 {

@@ -123,7 +123,7 @@ void isa8_myb3k_com_device::device_reset()
 // pit_rxc - write receive clock if pit is selected source
 //-----------------------------------------------------------
 #define CLK_SEL 0x80
-void isa8_myb3k_com_device::pit_rxc(int state)
+WRITE_LINE_MEMBER(isa8_myb3k_com_device::pit_rxc)
 {
 	if ((m_control & CLK_SEL) != 0)
 	{
@@ -134,7 +134,7 @@ void isa8_myb3k_com_device::pit_rxc(int state)
 //------------------------------------------------------------
 // pit_txc - write transmit clock if pit is selected source
 //------------------------------------------------------------
-void isa8_myb3k_com_device::pit_txc(int state)
+WRITE_LINE_MEMBER(isa8_myb3k_com_device::pit_txc)
 {
 	if ((m_control & CLK_SEL) != 0)
 	{
@@ -146,7 +146,7 @@ void isa8_myb3k_com_device::pit_txc(int state)
 // rem_rxc - write receive clock if remote clock is selected
 //             source, eg for synchronous modes
 //-----------------------------------------------------------
-void isa8_myb3k_com_device::rem_rxc(int state)
+WRITE_LINE_MEMBER(isa8_myb3k_com_device::rem_rxc)
 {
 	if ((m_control & CLK_SEL) == 0)
 	{
@@ -158,7 +158,7 @@ void isa8_myb3k_com_device::rem_rxc(int state)
 // rem_txc - write transmit clock if remote cloc is selected
 //             source, eg for synchronous modes
 //------------------------------------------------------------
-void isa8_myb3k_com_device::rem_txc(int state)
+WRITE_LINE_MEMBER(isa8_myb3k_com_device::rem_txc)
 {
 	if ((m_control & CLK_SEL) == 0)
 	{
@@ -169,7 +169,7 @@ void isa8_myb3k_com_device::rem_txc(int state)
 //------------------------------------------------
 // com_int_rx -  signal selected interrup on ISA bus
 //------------------------------------------------
-void isa8_myb3k_com_device::com_int_rx(int state)
+WRITE_LINE_MEMBER(isa8_myb3k_com_device::com_int_rx)
 {
 	m_irq_rx = state;
 	com_int();
@@ -178,7 +178,7 @@ void isa8_myb3k_com_device::com_int_rx(int state)
 //------------------------------------------------
 // com_int_tx -  signal selected interrup on ISA bus
 //------------------------------------------------
-void isa8_myb3k_com_device::com_int_tx(int state)
+WRITE_LINE_MEMBER(isa8_myb3k_com_device::com_int_tx)
 {
 	m_irq_tx = state;
 	com_int();
@@ -202,7 +202,7 @@ void isa8_myb3k_com_device::com_int()
 // dcd_w - DCD line value gated by a LS368
 //------------------------------------------------
 #define DCD_BIT 0x02
-void isa8_myb3k_com_device::dcd_w(int state)
+WRITE_LINE_MEMBER(isa8_myb3k_com_device::dcd_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -218,7 +218,7 @@ void isa8_myb3k_com_device::dcd_w(int state)
 // ri_w - RI line value gated by a LS368
 //------------------------------------------------
 #define RI_BIT 0x01
-void isa8_myb3k_com_device::ri_w(int state)
+WRITE_LINE_MEMBER(isa8_myb3k_com_device::ri_w)
 {
 	if (state == ASSERT_LINE)
 	{

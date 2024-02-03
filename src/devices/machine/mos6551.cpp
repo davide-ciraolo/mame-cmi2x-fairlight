@@ -72,6 +72,13 @@ void mos6551_device::device_add_mconfig(machine_config &config)
 
 void mos6551_device::device_start()
 {
+	// resolve callbacks
+	m_irq_handler.resolve_safe();
+	m_txd_handler.resolve_safe();
+	m_rxc_handler.resolve_safe();
+	m_rts_handler.resolve_safe();
+	m_dtr_handler.resolve_safe();
+
 	// state saving
 	save_item(NAME(m_control));
 	save_item(NAME(m_command));
@@ -442,7 +449,7 @@ void mos6551_device::set_xtal(uint32_t xtal)
 	}
 }
 
-void mos6551_device::internal_clock(int state)
+WRITE_LINE_MEMBER( mos6551_device::internal_clock )
 {
 	if (m_tx_internal_clock)
 	{
@@ -450,7 +457,7 @@ void mos6551_device::internal_clock(int state)
 	}
 }
 
-void mos6551_device::write_xtal1(int state)
+WRITE_LINE_MEMBER(mos6551_device::write_xtal1)
 {
 	if (!m_tx_internal_clock)
 	{
@@ -458,12 +465,12 @@ void mos6551_device::write_xtal1(int state)
 	}
 }
 
-void mos6551_device::write_rxd(int state)
+WRITE_LINE_MEMBER( mos6551_device::write_rxd )
 {
 	m_rxd = state;
 }
 
-void mos6551_device::write_rxc(int state)
+WRITE_LINE_MEMBER( mos6551_device::write_rxc )
 {
 	if (!m_rx_internal_clock)
 	{
@@ -471,7 +478,7 @@ void mos6551_device::write_rxc(int state)
 	}
 }
 
-void mos6551_device::write_cts(int state)
+WRITE_LINE_MEMBER( mos6551_device::write_cts )
 {
 	if (m_cts != state)
 	{
@@ -488,7 +495,7 @@ void mos6551_device::write_cts(int state)
 	}
 }
 
-void mos6551_device::write_dsr(int state)
+WRITE_LINE_MEMBER( mos6551_device::write_dsr )
 {
 	if (m_dsr != state)
 	{
@@ -496,7 +503,7 @@ void mos6551_device::write_dsr(int state)
 	}
 }
 
-void mos6551_device::write_dcd(int state)
+WRITE_LINE_MEMBER( mos6551_device::write_dcd )
 {
 	if (m_dcd != state)
 	{
@@ -504,7 +511,7 @@ void mos6551_device::write_dcd(int state)
 	}
 }
 
-void mos6551_device::receiver_clock(int state)
+WRITE_LINE_MEMBER(mos6551_device::receiver_clock)
 {
 	if (m_rx_clock != state)
 	{
@@ -656,7 +663,7 @@ void mos6551_device::receiver_clock(int state)
 	}
 }
 
-void mos6551_device::transmitter_clock(int state)
+WRITE_LINE_MEMBER(mos6551_device::transmitter_clock)
 {
 	if (m_rx_internal_clock)
 	{

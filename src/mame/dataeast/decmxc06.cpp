@@ -48,13 +48,12 @@ DEFINE_DEVICE_TYPE(DECO_MXC06, deco_mxc06_device, "deco_mxc06", "DECO MXC06 Spri
 deco_mxc06_device::deco_mxc06_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: device_t(mconfig, DECO_MXC06, tag, owner, clock)
 	, device_video_interface(mconfig, *this)
-	, device_gfx_interface(mconfig, *this)
 	, m_colpri_cb(*this)
 {
 }
 
 /* this implementation was originally from Mad Motor */
-void deco_mxc06_device::draw_sprites(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, u16* spriteram, int size)
+void deco_mxc06_device::draw_sprites(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, gfx_element *gfx, u16* spriteram, int size)
 {
 	const bool priority = !m_colpri_cb.isnull();
 	struct sprite_t *sprite_ptr = m_spritelist.get();
@@ -144,7 +143,7 @@ void deco_mxc06_device::draw_sprites(screen_device &screen, bitmap_ind16 &bitmap
 							sprite_ptr->code[y] = code - y * incy;
 							sprite_ptr->x[y] = sx + (mult * x);
 							sprite_ptr->y[y] = sy + (mult * y);
-							gfx(0)->transpen(bitmap, cliprect,
+							gfx->transpen(bitmap, cliprect,
 								sprite_ptr->code[y],
 								sprite_ptr->colour,
 								sprite_ptr->flipx, sprite_ptr->flipy,
@@ -165,7 +164,7 @@ void deco_mxc06_device::draw_sprites(screen_device &screen, bitmap_ind16 &bitmap
 
 			for (int y = 0; y < sprite_ptr->height; y++)
 			{
-				gfx(0)->prio_transpen(bitmap, cliprect,
+				gfx->prio_transpen(bitmap, cliprect,
 						sprite_ptr->code[y],
 						sprite_ptr->colour,
 						sprite_ptr->flipx, sprite_ptr->flipy,
@@ -177,7 +176,7 @@ void deco_mxc06_device::draw_sprites(screen_device &screen, bitmap_ind16 &bitmap
 
 /* this is used by the automat bootleg, it seems to have greatly simplified sprites compared to the real chip */
 /* spriteram is twice the size tho! */
-void deco_mxc06_device::draw_sprites_bootleg(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, u16* spriteram, int size)
+void deco_mxc06_device::draw_sprites_bootleg(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, gfx_element *gfx, u16* spriteram, int size)
 {
 	const bool priority = !m_colpri_cb.isnull();
 	struct sprite_t *sprite_ptr = m_spritelist.get();
@@ -214,7 +213,7 @@ void deco_mxc06_device::draw_sprites_bootleg(screen_device &screen, bitmap_ind16
 		}
 		else
 		{
-			gfx(0)->transpen(bitmap,cliprect,
+			gfx->transpen(bitmap,cliprect,
 				sprite_ptr->code[0],
 				sprite_ptr->colour,
 				sprite_ptr->flipx,sprite_ptr->flipy,
@@ -228,7 +227,7 @@ void deco_mxc06_device::draw_sprites_bootleg(screen_device &screen, bitmap_ind16
 		{
 			sprite_ptr--;
 
-			gfx(0)->prio_transpen(bitmap, cliprect,
+			gfx->prio_transpen(bitmap, cliprect,
 					sprite_ptr->code[0],
 					sprite_ptr->colour,
 					sprite_ptr->flipx, sprite_ptr->flipy,

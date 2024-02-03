@@ -10,7 +10,6 @@
 
 #include "pconfig.h"
 
-#include <cstdint>
 #include <limits>
 #include <string>
 #include <type_traits>

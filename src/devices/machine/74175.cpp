@@ -61,6 +61,11 @@ void ttl741745_device::device_start()
 	save_item(NAME(m_q2));
 	save_item(NAME(m_q3));
 	save_item(NAME(m_q4));
+
+	m_q1_func.resolve_safe();
+	m_q2_func.resolve_safe();
+	m_q3_func.resolve_safe();
+	m_q4_func.resolve_safe();
 }
 
 void ttl741745_device::device_reset()
@@ -76,6 +81,9 @@ void ttl74174_device::device_start()
 	save_item(NAME(m_d6));
 	save_item(NAME(m_q5));
 	save_item(NAME(m_q6));
+
+	m_q5_func.resolve_safe();
+	m_q6_func.resolve_safe();
 }
 
 void ttl74175_device::device_start()
@@ -84,6 +92,11 @@ void ttl74175_device::device_start()
 	save_item(NAME(m_not_q2));
 	save_item(NAME(m_not_q3));
 	save_item(NAME(m_not_q4));
+
+	m_not_q1_func.resolve_safe();
+	m_not_q2_func.resolve_safe();
+	m_not_q3_func.resolve_safe();
+	m_not_q4_func.resolve_safe();
 }
 
 void ttl741745_device::init()
@@ -136,12 +149,12 @@ void ttl741745_device::tick()
 		m_q4_func(m_q4);
 }
 
-void ttl741745_device::clear_w(int state)
+WRITE_LINE_MEMBER( ttl741745_device::clear_w )
 {
 	m_clear = state;
 }
 
-void ttl741745_device::clock_w(int state)
+WRITE_LINE_MEMBER( ttl741745_device::clock_w )
 {
 	uint8_t last_clock = m_clock;
 	m_clock = state;
@@ -151,32 +164,32 @@ void ttl741745_device::clock_w(int state)
 	}
 }
 
-void ttl741745_device::d1_w(int state)
+WRITE_LINE_MEMBER( ttl741745_device::d1_w )
 {
 	m_d1 = state;
 }
 
-void ttl741745_device::d2_w(int state)
+WRITE_LINE_MEMBER( ttl741745_device::d2_w )
 {
 	m_d2 = state;
 }
 
-void ttl741745_device::d3_w(int state)
+WRITE_LINE_MEMBER( ttl741745_device::d3_w )
 {
 	m_d3 = state;
 }
 
-void ttl741745_device::d4_w(int state)
+WRITE_LINE_MEMBER( ttl741745_device::d4_w )
 {
 	m_d4 = state;
 }
 
-void ttl74174_device::d5_w(int state)
+WRITE_LINE_MEMBER( ttl74174_device::d5_w )
 {
 	m_d5 = state;
 }
 
-void ttl74174_device::d6_w(int state)
+WRITE_LINE_MEMBER( ttl74174_device::d6_w )
 {
 	m_d6 = state;
 }

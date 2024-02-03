@@ -477,12 +477,12 @@ uint8_t mario_state::mario_sh_p2_r()
 	return I8035_P2_R() & 0xEF; /* Bit 4 connected to GND! */
 }
 
-int mario_state::mario_sh_t0_r()
+READ_LINE_MEMBER(mario_state::mario_sh_t0_r)
 {
 	return I8035_T_R(0);
 }
 
-int mario_state::mario_sh_t1_r()
+READ_LINE_MEMBER(mario_state::mario_sh_t1_r)
 {
 	return I8035_T_R(1);
 }

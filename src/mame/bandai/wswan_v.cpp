@@ -111,6 +111,8 @@ void wswan_video_device::device_start()
 	std::fill(std::begin(m_vram), std::end(m_vram), 0);
 
 	common_save();
+
+	m_icons_cb.resolve();
 }
 
 
@@ -186,6 +188,11 @@ void wswan_video_device::setup_palettes()
 }
 
 
+inline u16 wswan_video_device::swap_bytes(u16 word) {
+	return (word << 8) | (word >> 8);
+}
+
+
 void wswan_video_device::draw_background()
 {
 	const u16 map_addr = m_layer_bg_address + (((m_current_line + m_layer_bg_scroll_y) & 0xf8) << 2);
@@ -208,7 +215,7 @@ void wswan_video_device::draw_background()
 			const u16 tile_address = ((tile_data & 0x2000) ? 0x4000 : 0x2000) + (tile_number * 16) + (tile_line << 1);
 			if (m_tile_packed)
 			{
-				plane0 = (swapendian_int16(m_vram[tile_address]) << 16) | swapendian_int16(m_vram[tile_address + 1]);
+				plane0 = (swap_bytes(m_vram[tile_address]) << 16) | swap_bytes(m_vram[tile_address + 1]);
 			}
 			else
 			{
@@ -310,7 +317,7 @@ void wswan_video_device::draw_foreground_0()
 			const u16 tile_address = ((tile_data & 0x2000) ? 0x4000 : 0x2000) + (tile_number * 16) + (tile_line << 1);
 			if (m_tile_packed)
 			{
-				plane0 = (swapendian_int16(m_vram[tile_address]) << 16) | swapendian_int16(m_vram[tile_address + 1]);
+				plane0 = (swap_bytes(m_vram[tile_address]) << 16) | swap_bytes(m_vram[tile_address + 1]);
 			}
 			else
 			{
@@ -413,7 +420,7 @@ void wswan_video_device::draw_foreground_2()
 			const u16 tile_address = ((tile_data & 0x2000) ? 0x4000 : 0x2000) + (tile_number * 16) + (tile_line << 1);
 			if (m_tile_packed)
 			{
-				plane0 = (swapendian_int16(m_vram[tile_address]) << 16) | swapendian_int16(m_vram[tile_address + 1]);
+				plane0 = (swap_bytes(m_vram[tile_address]) << 16) | swap_bytes(m_vram[tile_address + 1]);
 			}
 			else
 			{
@@ -515,7 +522,7 @@ void wswan_video_device::draw_foreground_3()
 			const u16 tile_address = ((tile_data & 0x2000) ? 0x4000 : 0x2000) + (tile_number * 16) + (tile_line << 1);
 			if (m_tile_packed)
 			{
-				plane0 = (swapendian_int16(m_vram[tile_address]) << 16) | swapendian_int16(m_vram[tile_address + 1]);
+				plane0 = (swap_bytes(m_vram[tile_address]) << 16) | swap_bytes(m_vram[tile_address + 1]);
 			}
 			else
 			{
@@ -623,7 +630,7 @@ void wswan_video_device::handle_sprites(int mask)
 				const u16 tile_address = 0x2000 + (tile_number * 16) + (tile_line << 1);
 				if (m_tile_packed)
 				{
-					plane0 = (swapendian_int16(m_vram[tile_address]) << 16) | swapendian_int16(m_vram[tile_address + 1]);
+					plane0 = (swap_bytes(m_vram[tile_address]) << 16) | swap_bytes(m_vram[tile_address + 1]);
 				}
 				else
 				{

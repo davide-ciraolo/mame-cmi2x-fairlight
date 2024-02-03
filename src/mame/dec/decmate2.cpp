@@ -56,14 +56,11 @@
 #include "machine/ay31015.h"
 #include "machine/clock.h"
 #include "machine/com8116.h"
-#include "lk201.h"
+#include "dec_lk201.h"
 #include "machine/wd_fdc.h"
 #include "machine/z80sio.h"
 #include "video/crt9007.h"
 #include "screen.h"
-
-
-namespace {
 
 class decmate2_state : public driver_device
 {
@@ -111,24 +108,24 @@ protected:
 
 private:
 	u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	void vint_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(vint_w);
 
 	void lxmar_w(offs_t offset, u16 data);
 	void lxpar_w(offs_t offset, u16 data);
 	void lxdar_w(offs_t offset, u16 data);
 	void wsr_w(u16 data);
 	u16 cprom_switch_r(offs_t offset);
-	void pc278_ioclr_w(int state);
-	void pc238_ioclr_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pc278_ioclr_w);
+	DECLARE_WRITE_LINE_MEMBER(pc238_ioclr_w);
 
-	void keyboard_dr_w(int state);
-	void keyboard_dr_ff_w(int state);
-	void keyboard_tbre_w(int state);
-	void keyboard_tbre_ff_w(int state);
-	void printer_dr_w(int state);
-	void printer_dr_ff_w(int state);
-	void printer_tbre_w(int state);
-	void printer_tbre_ff_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(keyboard_dr_w);
+	DECLARE_WRITE_LINE_MEMBER(keyboard_dr_ff_w);
+	DECLARE_WRITE_LINE_MEMBER(keyboard_tbre_w);
+	DECLARE_WRITE_LINE_MEMBER(keyboard_tbre_ff_w);
+	DECLARE_WRITE_LINE_MEMBER(printer_dr_w);
+	DECLARE_WRITE_LINE_MEMBER(printer_dr_ff_w);
+	DECLARE_WRITE_LINE_MEMBER(printer_tbre_w);
+	DECLARE_WRITE_LINE_MEMBER(printer_tbre_ff_w);
 	u8 kbdrflg_devctl_r();
 	void kbdrflg_set_w(u16 data);
 	void kbdrflg_clear_w(u16 data);
@@ -296,7 +293,7 @@ u32 decmate2_state::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, c
 	return 0;
 }
 
-void decmate2_state::vint_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::vint_w)
 {
 	// TODO: synchronize
 	m_vint = state;
@@ -353,7 +350,7 @@ u16 decmate2_state::cprom_switch_r(offs_t offset)
 	}
 }
 
-void decmate2_state::pc278_ioclr_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::pc278_ioclr_w)
 {
 	if (!state)
 	{
@@ -366,7 +363,7 @@ void decmate2_state::pc278_ioclr_w(int state)
 	}
 }
 
-void decmate2_state::pc238_ioclr_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::pc238_ioclr_w)
 {
 	if (!state)
 	{
@@ -375,48 +372,48 @@ void decmate2_state::pc238_ioclr_w(int state)
 	}
 }
 
-void decmate2_state::keyboard_dr_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::keyboard_dr_w)
 {
 	m_kbd_rflg = state;
 }
 
-void decmate2_state::keyboard_dr_ff_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::keyboard_dr_ff_w)
 {
 	// TODO: edge trigger
 	if (state)
 		m_kbd_rflg = true;
 }
 
-void decmate2_state::keyboard_tbre_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::keyboard_tbre_w)
 {
 	m_kbd_tflg = state;
 }
 
-void decmate2_state::keyboard_tbre_ff_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::keyboard_tbre_ff_w)
 {
 	// TODO: edge trigger
 	if (state)
 		m_kbd_tflg = true;
 }
 
-void decmate2_state::printer_dr_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::printer_dr_w)
 {
 	m_prt_rflg = state;
 }
 
-void decmate2_state::printer_dr_ff_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::printer_dr_ff_w)
 {
 	// TODO: edge trigger
 	if (state)
 		m_prt_rflg = true;
 }
 
-void decmate2_state::printer_tbre_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::printer_tbre_w)
 {
 	m_prt_tflg = state;
 }
 
-void decmate2_state::printer_tbre_ff_w(int state)
+WRITE_LINE_MEMBER(decmate2_state::printer_tbre_ff_w)
 {
 	// TODO: edge trigger
 	if (state)
@@ -1005,9 +1002,6 @@ ROM_START(decmate3)
 
 	// TODO: add NO_DUMP entry for PAL (23-097K5)
 ROM_END
-
-} // anonymous namespace
-
 
 COMP(1982, decmate2, 0, 0, pc278, decmate2, decmate2_state, init_pc278, "Digital Equipment Corporation", "DECmate II (PC278)", MACHINE_IS_SKELETON)
 COMP(1984, decmate3, 0, 0, pc238, decmate2, decmate2_state, init_pc238, "Digital Equipment Corporation", "DECmate III (PC238)", MACHINE_IS_SKELETON)

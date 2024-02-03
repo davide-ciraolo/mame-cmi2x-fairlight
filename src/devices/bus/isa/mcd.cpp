@@ -3,10 +3,8 @@
 
 #include "emu.h"
 #include "mcd.h"
-#include "speaker.h"
-
 #include "coreutil.h"
-#include "multibyte.h"
+#include "speaker.h"
 
 void mcd_isa_device::map(address_map &map)
 {
@@ -31,7 +29,6 @@ void mcd_isa_device::device_add_mconfig(machine_config &config)
 	CDDA(config, m_cdda);
 	m_cdda->add_route(0, "lheadphone", 1.0);
 	m_cdda->add_route(1, "rheadphone", 1.0);
-	m_cdda->set_cdrom_tag(*this);
 }
 
 //-------------------------------------------------
@@ -87,6 +84,7 @@ bool mcd_isa_device::read_sector(bool first)
 		if(m_cdrom_handle->get_track_type(m_cdrom_handle->get_track(lba)) == cdrom_file::CD_TRACK_AUDIO)
 		{
 			m_cdda->stop_audio();
+			m_cdda->set_cdrom(m_cdrom_handle);
 			m_cdda->start_audio(lba, m_readcount);
 			return true;
 		}
@@ -167,8 +165,8 @@ uint16_t mcd_isa_device::dack16_r(int line)
 		uint16_t ret = 0;
 		if(m_buf_idx < 2351)
 		{
-			ret = get_u16le(&m_buf[m_buf_idx]);
-			m_buf_idx += 2;
+			ret = m_buf[m_buf_idx++];
+			ret |= (m_buf[m_buf_idx++] << 8);
 		}
 		m_buf_count -= 2;
 		if(!m_buf_count)
@@ -277,8 +275,12 @@ void mcd_isa_device::cmd_w(uint8_t data)
 				uint32_t first = cdrom_file::lba_to_msf(150), last = cdrom_file::lba_to_msf(m_cdrom_handle->get_track_start(0xaa));
 				m_cmdbuf[1] = 1;
 				m_cmdbuf[2] = dec_2_bcd(m_cdrom_handle->get_last_track());
-				put_u24be(&m_cmdbuf[3], last);
-				put_u24be(&m_cmdbuf[6], first);
+				m_cmdbuf[3] = (last >> 16) & 0xff;
+				m_cmdbuf[4] = (last >> 8) & 0xff;
+				m_cmdbuf[5] = last & 0xff;
+				m_cmdbuf[6] = (first >> 16) & 0xff;
+				m_cmdbuf[7] = (first >> 8) & 0xff;
+				m_cmdbuf[8] = first & 0xff;
 				m_cmdbuf[9] = 0;
 				m_cmdbuf_count = 10;
 				m_readcount = 0;
@@ -299,9 +301,13 @@ void mcd_isa_device::cmd_w(uint8_t data)
 				m_cmdbuf[1] = (m_cdrom_handle->get_adr_control(m_curtoctrk) << 4) & 0xf0;
 				m_cmdbuf[2] = 0; // track num except when reading toc
 				m_cmdbuf[3] = dec_2_bcd(m_curtoctrk + 1); // index
-				put_u24be(&m_cmdbuf[4], len);
+				m_cmdbuf[4] = (len >> 16) & 0xff;
+				m_cmdbuf[5] = (len >> 8) & 0xff;
+				m_cmdbuf[6] = len & 0xff;
 				m_cmdbuf[7] = 0;
-				put_u24be(&m_cmdbuf[8], start);
+				m_cmdbuf[8] = (start >> 16) & 0xff;
+				m_cmdbuf[9] = (start >> 8) & 0xff;
+				m_cmdbuf[10] = start & 0xff;
 				if(m_curtoctrk >= tracks)
 					m_curtoctrk = 0;
 				else if(m_mode & MODE_GET_TOC)

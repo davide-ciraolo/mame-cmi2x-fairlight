@@ -318,7 +318,7 @@ void a2091_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-void a590_device::cfgin_w(int state)
+WRITE_LINE_MEMBER( a590_device::cfgin_w )
 {
 	// make sure we configure ourselves first
 	m_int6 = m_jp4->read() & 0x01;
@@ -328,7 +328,7 @@ void a590_device::cfgin_w(int state)
 	m_dmac->configin_w(state);
 }
 
-void a2091_device::cfgin_w(int state)
+WRITE_LINE_MEMBER( a2091_device::cfgin_w )
 {
 	// make sure we configure ourselves first
 	m_int6 = m_jp3->read() & 0x01;
@@ -358,7 +358,7 @@ void dmac_hdc_device_base::dmac_scsi_w(offs_t offset, uint8_t data)
 	}
 }
 
-void dmac_hdc_device_base::dmac_int_w(int state)
+WRITE_LINE_MEMBER( dmac_hdc_device_base::dmac_int_w )
 {
 	if (m_int6)
 		int6_w(state);
@@ -366,13 +366,13 @@ void dmac_hdc_device_base::dmac_int_w(int state)
 		int2_w(state);
 }
 
-void dmac_hdc_device_base::scsi_irq_w(int state)
+WRITE_LINE_MEMBER( dmac_hdc_device_base::scsi_irq_w )
 {
 	// should be or'ed with xt-ide IRQ
 	m_dmac->intx_w(state);
 }
 
-void dmac_hdc_device_base::scsi_drq_w(int state)
+WRITE_LINE_MEMBER( dmac_hdc_device_base::scsi_drq_w )
 {
 	m_dmac->xdreq_w(state);
 }

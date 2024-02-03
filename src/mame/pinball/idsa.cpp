@@ -59,7 +59,7 @@ public:
 	void idsa(machine_config &config);
 
 private:
-	void clock_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(clock_w);
 	uint8_t portb0_r(offs_t offset);
 	void port80_w(uint8_t data);
 	void port90_w(uint8_t data);
@@ -320,7 +320,7 @@ void idsa_state::ay2_b_w(uint8_t data)
 	//logerror("%s: AY2 port B = %02X\n", machine().describe_context(), data);
 }
 
-void idsa_state::clock_w(int state)
+WRITE_LINE_MEMBER( idsa_state::clock_w )
 {
 	if (state)
 	{

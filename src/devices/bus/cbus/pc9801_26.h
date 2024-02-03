@@ -45,7 +45,7 @@ private:
 	required_device<pc9801_slot_device> m_bus;
 	required_device<ym2203_device>  m_opn;
 
-	void sound_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(sound_irq);
 	u32 m_rom_base;
 };
 

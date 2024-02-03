@@ -1,8 +1,8 @@
 // license:BSD-3-Clause
 // copyright-holders:AJR
 
-#ifndef MAME_CITOH_CIT220_KBD_H
-#define MAME_CITOH_CIT220_KBD_H
+#ifndef MAME_MACHINE_CIT220_KBD_H
+#define MAME_MACHINE_CIT220_KBD_H
 
 #pragma once
 
@@ -26,10 +26,11 @@ public:
 	auto txd_callback() { return m_txd_callback.bind(); }
 
 	// serial line input
-	void write_rxd(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_rxd);
 
 protected:
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual ioport_constructor device_input_ports() const override;
 	virtual void device_add_mconfig(machine_config &config) override;
@@ -59,4 +60,4 @@ private:
 // device type declaration
 DECLARE_DEVICE_TYPE(CIT220P_KEYBOARD, cit220p_keyboard_device)
 
-#endif // MAME_CITOH_CIT220_KBD_H
+#endif // MAME_MACHINE_CIT220_KBD_H

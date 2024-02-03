@@ -19,8 +19,6 @@ Status: both CPUs start in the weeds.
 #include "screen.h"
 
 
-namespace {
-
 class uknc_state : public driver_device
 {
 public:
@@ -103,9 +101,6 @@ ROM_START( uknc )
 
 	ROM_REGION( 0x8000, "subcpu", ROMREGION_ERASEFF )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

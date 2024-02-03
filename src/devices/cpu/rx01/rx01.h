@@ -48,26 +48,27 @@ public:
 	auto shift_callback() { return m_interface_callback[4].bind(); }
 
 	// serial input for controller
-	int data_r() { return !data_in(); }
+	DECLARE_READ_LINE_MEMBER(data_r) { return !data_in(); }
 
 protected:
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
-	// device_execute_interface implementation
+	// device_execute_interface overrides
 	virtual u64 execute_clocks_to_cycles(u64 clocks) const noexcept override { return (clocks + 4 - 1) / 4; }
 	virtual u64 execute_cycles_to_clocks(u64 cycles) const noexcept override { return (cycles * 4); }
 	virtual void execute_set_input(int linenum, int state) override;
 	virtual void execute_run() override;
 
-	// device_disasm_interface implementation
+	// device_disasm_interface overrides
 	virtual std::unique_ptr<util::disasm_interface> create_disassembler() override;
 
-	// device_memory_interface implementation
+	// device_memory_interface overrides
 	virtual space_config_vector memory_space_config() const override;
 
-	// device_state_interface implementation
+	// device_state_interface overrides
 	virtual void state_string_export(const device_state_entry &entry, std::string &str) const override;
 
 private:

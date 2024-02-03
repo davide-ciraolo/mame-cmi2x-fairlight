@@ -31,9 +31,6 @@ able to deal with 256byte sectors so fails to load the irmx 512byte sector image
 #include "isbc_215g.h"
 #include "isbc_208.h"
 
-
-namespace {
-
 class isbc_state : public driver_device
 {
 public:
@@ -61,11 +58,11 @@ public:
 	void sm1810(machine_config &config);
 
 private:
-	void write_centronics_ack(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_ack);
 
-	void isbc86_tmr2_w(int state);
-	void isbc286_tmr2_w(int state);
-//  void isbc_uart8274_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(isbc86_tmr2_w);
+	DECLARE_WRITE_LINE_MEMBER(isbc286_tmr2_w);
+//  DECLARE_WRITE_LINE_MEMBER(isbc_uart8274_irq);
 	uint8_t get_slave_ack(offs_t offset);
 	void ppi_c_w(uint8_t data);
 	void upperen_w(uint8_t data);
@@ -74,9 +71,9 @@ private:
 
 	void edge_intr_clear_w(uint8_t data);
 	void status_register_w(uint8_t data);
-	void nmi_mask_w(int state);
-	void bus_intr_out1_w(int state);
-	void bus_intr_out2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(nmi_mask_w);
+	DECLARE_WRITE_LINE_MEMBER(bus_intr_out1_w);
+	DECLARE_WRITE_LINE_MEMBER(bus_intr_out2_w);
 	void isbc2861_mem(address_map &map);
 	void isbc286_io(address_map &map);
 	void isbc286_mem(address_map &map);
@@ -253,7 +250,7 @@ static DEVICE_INPUT_DEFAULTS_START( isbc286_terminal )
 	DEVICE_INPUT_DEFAULTS( "RS232_STOPBITS", 0xff, RS232_STOPBITS_1 )
 DEVICE_INPUT_DEFAULTS_END
 
-void isbc_state::isbc86_tmr2_w(int state)
+WRITE_LINE_MEMBER( isbc_state::isbc86_tmr2_w )
 {
 	m_uart8251->write_rxc(state);
 	m_uart8251->write_txc(state);
@@ -267,13 +264,13 @@ uint8_t isbc_state::get_slave_ack(offs_t offset)
 	return 0x00;
 }
 
-void isbc_state::isbc286_tmr2_w(int state)
+WRITE_LINE_MEMBER( isbc_state::isbc286_tmr2_w )
 {
 	m_uart8274->rxca_w(state);
 	m_uart8274->txca_w(state);
 }
 
-void isbc_state::write_centronics_ack(int state)
+WRITE_LINE_MEMBER( isbc_state::write_centronics_ack )
 {
 	m_cent_status_in->write_bit4(state);
 
@@ -310,7 +307,7 @@ void isbc_state::bioslo_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 }
 
 #if 0
-void isbc_state::isbc_uart8274_irq(int state)
+WRITE_LINE_MEMBER(isbc_state::isbc_uart8274_irq)
 {
 	m_uart8274->m1_r(); // always set
 	m_pic_0->ir6_w(state);
@@ -328,18 +325,18 @@ void isbc_state::status_register_w(uint8_t data)
 	m_statuslatch->write_bit(data & 0x07, BIT(data, 3));
 }
 
-void isbc_state::nmi_mask_w(int state)
+WRITE_LINE_MEMBER(isbc_state::nmi_mask_w)
 {
 	// combined with NMI input by 74LS08 AND gate at U12
 	m_nmi_enable = state;
 }
 
-void isbc_state::bus_intr_out1_w(int state)
+WRITE_LINE_MEMBER(isbc_state::bus_intr_out1_w)
 {
 	// Multibus interrupt request (active high)
 }
 
-void isbc_state::bus_intr_out2_w(int state)
+WRITE_LINE_MEMBER(isbc_state::bus_intr_out2_w)
 {
 	// Multibus interrupt request (active high)
 }
@@ -707,9 +704,6 @@ ROM_START( sm1810 )
 	ROM_LOAD16_BYTE( "sm1810.42-1.06-2.bin", 0x4000, 0x2000, CRC(ae015240) SHA1(2c345a9e0832a0f26493bda394b2c4ad7ada7aad))
 	ROM_LOAD16_BYTE( "sm1810.42-1.06-3.bin", 0x4001, 0x2000, CRC(9741a51a) SHA1(c9d3a6a5c51fe9814986517b0f4cbeae8200babc))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

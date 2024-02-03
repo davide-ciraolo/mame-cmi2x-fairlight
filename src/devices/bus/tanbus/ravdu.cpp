@@ -193,7 +193,7 @@ MC6845_UPDATE_ROW(tanbus_ravdu_device::crtc_update_row)
 	}
 }
 
-void tanbus_ravdu_device::vsync_changed(int state)
+WRITE_LINE_MEMBER(tanbus_ravdu_device::vsync_changed)
 {
 	m_trom->dew_w(state);
 }

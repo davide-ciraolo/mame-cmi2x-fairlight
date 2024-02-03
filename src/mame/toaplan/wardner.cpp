@@ -162,8 +162,8 @@ private:
 
 	void wardner_bank_w(uint8_t data);
 
-	void wardner_vblank_irq(int state);
-	void int_enable_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(wardner_vblank_irq);
+	DECLARE_WRITE_LINE_MEMBER(int_enable_w);
 
 	void dsp_io_map(address_map &map);
 	void dsp_program_map(address_map &map);
@@ -175,13 +175,13 @@ private:
 };
 
 
-void wardner_state::wardner_vblank_irq(int state)
+WRITE_LINE_MEMBER(wardner_state::wardner_vblank_irq)
 {
 	if (state && m_intenable)
 		m_maincpu->set_input_line(0, ASSERT_LINE);
 }
 
-void wardner_state::int_enable_w(int state)
+WRITE_LINE_MEMBER(wardner_state::int_enable_w)
 {
 	m_intenable = state;
 	if (!state)

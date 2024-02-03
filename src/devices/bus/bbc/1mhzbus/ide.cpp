@@ -215,7 +215,7 @@ void bbc_beebide_device::jim_w(offs_t offset, uint8_t data)
 	m_1mhzbus->jim_w(offset, data);
 }
 
-void bbc_beebide_device::irq_w(int state)
+WRITE_LINE_MEMBER(bbc_beebide_device::irq_w)
 {
 	if (BIT(m_links->read(), 0))
 	{

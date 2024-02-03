@@ -4,13 +4,7 @@
 
 #include "../../../Common/MyWindows.h"
 
-#if defined(__MINGW32__) || defined(__MINGW64__)
-#include <shlwapi.h>
-#else
 #include <Shlwapi.h>
-#endif
-
-#include "../../../../C/DllSecur.h"
 
 #include "../../../Common/MyInitGuid.h"
 
@@ -34,36 +28,33 @@
 #include "../../UI/GUI/ExtractGUI.h"
 #include "../../UI/GUI/ExtractRes.h"
 
+#include "../../../../C/DllSecur.h"
+
 using namespace NWindows;
 using namespace NFile;
 using namespace NDir;
 
-extern
-HINSTANCE g_hInstance;
 HINSTANCE g_hInstance;
 
 #ifndef UNDER_CE
 
-static
 DWORD g_ComCtl32Version;
 
 static DWORD GetDllVersion(LPCTSTR dllName)
 {
   DWORD dwVersion = 0;
-  const HINSTANCE hinstDll = LoadLibrary(dllName);
+  HINSTANCE hinstDll = LoadLibrary(dllName);
   if (hinstDll)
   {
-    const
-    DLLGETVERSIONPROC func_DllGetVersion = Z7_GET_PROC_ADDRESS(
-    DLLGETVERSIONPROC, hinstDll, "DllGetVersion");
-    if (func_DllGetVersion)
+    DLLGETVERSIONPROC pDllGetVersion = (DLLGETVERSIONPROC)GetProcAddress(hinstDll, "DllGetVersion");
+    if (pDllGetVersion)
     {
       DLLVERSIONINFO dvi;
       ZeroMemory(&dvi, sizeof(dvi));
       dvi.cbSize = sizeof(dvi);
-      const HRESULT hr = func_DllGetVersion(&dvi);
+      HRESULT hr = (*pDllGetVersion)(&dvi);
       if (SUCCEEDED(hr))
-        dwVersion = (DWORD)MAKELONG(dvi.dwMinorVersion, dvi.dwMajorVersion);
+        dwVersion = MAKELONG(dvi.dwMinorVersion, dvi.dwMajorVersion);
     }
     FreeLibrary(hinstDll);
   }
@@ -72,18 +63,16 @@ static DWORD GetDllVersion(LPCTSTR dllName)
 
 #endif
 
-extern
-bool g_LVN_ITEMACTIVATE_Support;
 bool g_LVN_ITEMACTIVATE_Support = true;
 
-static const wchar_t * const kUnknownExceptionMessage = L"ERROR: Unknown Error!";
+static const wchar_t *kUnknownExceptionMessage = L"ERROR: Unknown Error!";
 
-static void ErrorMessageForHRESULT(HRESULT res)
+void ErrorMessageForHRESULT(HRESULT res)
 {
   ShowErrorMessage(HResultToMessage(res));
 }
 
-static int APIENTRY WinMain2()
+int APIENTRY WinMain2()
 {
   // OleInitialize is required for ProgressBar in TaskBar.
   #ifndef UNDER_CE
@@ -112,7 +101,7 @@ static int APIENTRY WinMain2()
     const UString &s = commandStrings[i];
     if (s.Len() > 1 && s[0] == '-')
     {
-      const wchar_t c = MyCharLower_Ascii(s[1]);
+      wchar_t c = MyCharLower_Ascii(s[1]);
       if (c == 'y')
       {
         assumeYes = true;
@@ -163,7 +152,7 @@ static int APIENTRY WinMain2()
   CMyComPtr<IFolderArchiveExtractCallback> extractCallback = ecs;
   ecs->Init();
 
-  #ifndef Z7_NO_CRYPTO
+  #ifndef _NO_CRYPTO
   ecs->PasswordIsDefined = !password.IsEmpty();
   ecs->Password = password;
   #endif
@@ -189,7 +178,7 @@ static int APIENTRY WinMain2()
   v1.Add(fs2us(fullPath));
   v2.Add(fs2us(fullPath));
   NWildcard::CCensorNode wildcardCensor;
-  wildcardCensor.Add_Wildcard();
+  wildcardCensor.AddItem(true, L"*", true, true, true, true);
 
   bool messageWasDisplayed = false;
   result = ExtractGUI(codecs,
@@ -217,9 +206,7 @@ static int APIENTRY WinMain2()
   return NExitCode::kFatalError;
 }
 
-#if defined(_WIN32) && defined(_UNICODE) && !defined(_WIN64) && !defined(UNDER_CE)
 #define NT_CHECK_FAIL_ACTION ShowErrorMessage(L"Unsupported Windows version"); return NExitCode::kFatalError;
-#endif
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE /* hPrevInstance */,
   #ifdef UNDER_CE

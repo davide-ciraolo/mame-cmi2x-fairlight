@@ -96,14 +96,14 @@ uint32_t arm7_disassembler::ExtractImmediateOperand( uint32_t opcode )
 	/* rrrrbbbbbbbb */
 	uint32_t imm = opcode&0xff;
 	int r = ((opcode>>8)&0xf)*2;
-	return rotr_32(imm, r);
+	return (imm>>r)|(r?(imm<<(32-r)):0);
 }
 
 void arm7_disassembler::WriteShiftCount( std::ostream &stream, uint32_t opcode )
 {
 	if( opcode&0x10 ) /* Shift amount specified in bottom bits of RS */
 	{
-		util::stream_format( stream, "R%d", (opcode>>8)&0xf );
+		util::stream_format( stream, "R%d", (opcode>>7)&0xf );
 	}
 	else /* Shift amount immediate 5 bit unsigned integer */
 	{
@@ -181,7 +181,11 @@ void arm7_disassembler::WriteBranchAddress( std::ostream &stream, uint32_t pc, u
 	{
 		opcode |= 2;
 	}
-	opcode = util::sext( opcode, 26 );
+	opcode &= 0x03fffffe;
+	if( opcode & 0x02000000 )
+	{
+		opcode |= 0xfc000000; /* sign-extend */
+	}
 	pc += 8+opcode;
 	util::stream_format( stream, "0x%08X", pc );
 } /* WriteBranchAddress */
@@ -650,7 +654,7 @@ u32 arm7_disassembler::arm7_disasm( std::ostream &stream, uint32_t pc, uint32_t 
 			//hide zero offsets
 			if(opcode&0xfff) {
 				stream << ", #";
-				if( !(opcode&0x00800000 ))
+				if( opcode&0x00800000 )
 					stream << '-';
 				if( (opcode&0xfff) > 9)
 					stream << "0x";
@@ -1358,7 +1362,11 @@ u32 arm7_disassembler::thumb_disasm(std::ostream &stream, uint32_t pc, uint16_t 
 		}
 		else
 		{
-			offs = util::sext( ( opcode & THUMB_BRANCH_OFFS ) << 1, 12 );
+			offs = ( opcode & THUMB_BRANCH_OFFS ) << 1;
+			if( offs & 0x00000800 )
+			{
+				offs |= 0xfffff800;
+			}
 			stream << "B";
 			WritePadding(stream, start_position);
 			util::stream_format( stream, "0x%08X", uint32_t(pc + 4 + offs));
@@ -1372,7 +1380,11 @@ u32 arm7_disassembler::thumb_disasm(std::ostream &stream, uint32_t pc, uint16_t 
 		}
 		else
 		{
-			addr = util::sext( ( opcode & THUMB_BLOP_OFFS ) << 12, 23 );
+			addr = ( opcode & THUMB_BLOP_OFFS ) << 12;
+			if( addr & ( 1 << 22 ) )
+			{
+				addr |= 0xff800000;
+			}
 			util::stream_format( stream, "BL (HI) 0x%X", addr );
 			dasmflags = STEP_OVER;
 		}

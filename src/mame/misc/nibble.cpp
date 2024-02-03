@@ -47,7 +47,7 @@
 *************************************************************************/
 
 #include "emu.h"
-#include "cpu/upd7810/upd7810.h"
+#include "cpu/upd7810/upd7811.h"
 #include "sound/ay8910.h"
 #include "video/mc6845.h"
 #include "video/ramdac.h"
@@ -56,8 +56,6 @@
 #include "speaker.h"
 #include "tilemap.h"
 
-
-namespace {
 
 #define MASTER_CLOCK    XTAL(12'000'000)
 
@@ -90,7 +88,7 @@ private:
 
 	void nibble_palette(palette_device &palette) const;
 	uint32_t screen_update_nibble(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	[[maybe_unused]] INTERRUPT_GEN_MEMBER(nibble_interrupt);
+	INTERRUPT_GEN_MEMBER(nibble_interrupt);
 
 	void nibble_map(address_map &map);
 	void ramdac1_map(address_map &map);
@@ -402,8 +400,6 @@ ROM_START( l9nibble )
 	ROM_LOAD( "pal16l8acn.uxx",  0x0200, 0x0104, NO_DUMP )
 
 ROM_END
-
-} // anonymous namespace
 
 
 /*************************

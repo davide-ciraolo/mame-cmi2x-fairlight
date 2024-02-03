@@ -196,7 +196,7 @@ MC6845_UPDATE_ROW( tk02_device::crtc_update_row )
 	}
 }
 
-void tk02_device::de_w(int state)
+WRITE_LINE_MEMBER( tk02_device::de_w )
 {
 	m_de = state;
 }

@@ -67,9 +67,8 @@ DEVICE_IMAGE_LOAD_MEMBER( pockchalv1_state::cart_load )
 	m_cart->rom_alloc(m_rom_size, GENERIC_ROM8_WIDTH, ENDIANNESS_LITTLE);
 	m_cart->common_load_rom(m_cart->get_rom_base(), m_rom_size, "rom");
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
-
 void pockchalv1_state::video_start()
 {
 }

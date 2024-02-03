@@ -13,17 +13,17 @@
 
 /* Telmac 2000 */
 
-int tmc2000_state::rdata_r()
+READ_LINE_MEMBER( tmc2000_state::rdata_r )
 {
 	return BIT(m_color, 2);
 }
 
-int tmc2000_state::bdata_r()
+READ_LINE_MEMBER( tmc2000_state::bdata_r )
 {
 	return BIT(m_color, 1);
 }
 
-int tmc2000_state::gdata_r()
+READ_LINE_MEMBER( tmc2000_state::gdata_r )
 {
 	return BIT(m_color, 0);
 }

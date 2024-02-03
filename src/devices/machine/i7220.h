@@ -49,8 +49,8 @@ public:
 
 	void set_data_size(int data_size) { m_data_size = data_size; }
 
-	// device_image_interface implementation
-	virtual std::pair<std::error_condition, std::string> call_load() override;
+	// image-level overrides
+	virtual image_init_result call_load() override;
 
 	virtual bool is_readable()  const noexcept override { return true; }
 	virtual bool is_writeable() const noexcept override { return true; }
@@ -64,7 +64,7 @@ public:
 	void write(offs_t offset, uint8_t data);
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 	virtual void device_reset() override;
 

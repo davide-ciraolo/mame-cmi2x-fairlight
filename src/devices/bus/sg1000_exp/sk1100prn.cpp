@@ -80,25 +80,25 @@ void sk1100_printer_port_device::device_start()
 	m_device = get_card_device();
 }
 
-void sk1100_printer_port_device::data_w(int state)
+WRITE_LINE_MEMBER(sk1100_printer_port_device::data_w)
 {
 	if (m_device)
 		m_device->input_data(state);
 }
 
-void sk1100_printer_port_device::reset_w(int state)
+WRITE_LINE_MEMBER(sk1100_printer_port_device::reset_w)
 {
 	if (m_device)
 		m_device->input_reset(state);
 }
 
-void sk1100_printer_port_device::feed_w(int state)
+WRITE_LINE_MEMBER(sk1100_printer_port_device::feed_w)
 {
 	if (m_device)
 		m_device->input_feed(state);
 }
 
-int sk1100_printer_port_device::fault_r()
+READ_LINE_MEMBER(sk1100_printer_port_device::fault_r)
 {
 	if (m_device)
 		return m_device->output_fault();
@@ -106,7 +106,7 @@ int sk1100_printer_port_device::fault_r()
 		return 1;
 }
 
-int sk1100_printer_port_device::busy_r()
+READ_LINE_MEMBER(sk1100_printer_port_device::busy_r)
 {
 	if (m_device)
 		return m_device->output_busy();

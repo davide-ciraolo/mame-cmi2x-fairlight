@@ -40,8 +40,6 @@ to be a save command.
 #include "bus/rs232/rs232.h"
 
 
-namespace {
-
 class cm1800_state : public driver_device
 {
 public:
@@ -125,9 +123,6 @@ ROM_START( cm1800 )
 	ROM_REGION( 0x800, "roms", ROMREGION_ERASEFF )
 	ROM_LOAD( "cm1800.rom", 0x0000, 0x0800, CRC(85d71d25) SHA1(42dc87d2eddc2906fa26d35db88a2e29d50fb481) )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

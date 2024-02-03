@@ -12,8 +12,8 @@
 #include "emu.h"
 #include "pcf8583.h"
 
-#define LOG_DATA (1U << 1)
-#define LOG_LINE (1U << 2)
+#define LOG_DATA (1 << 1)
+#define LOG_LINE (1 << 2)
 
 
 #define VERBOSE (0)
@@ -69,6 +69,8 @@ void pcf8583_device::device_start()
 	save_item(NAME(m_irq));
 	save_item(NAME(m_data));
 	save_item(NAME(m_slave_address));
+
+	m_irq_cb.resolve_safe();
 }
 
 TIMER_CALLBACK_MEMBER(pcf8583_device::clock_tick)
@@ -201,7 +203,7 @@ bool pcf8583_device::nvram_write(util::write_stream &file)
 //  READ/WRITE HANDLERS
 //**************************************************************************
 
-void pcf8583_device::a0_w(int state)
+WRITE_LINE_MEMBER(pcf8583_device::a0_w)
 {
 	state &= 1;
 	if (BIT(m_slave_address, 1) != state)
@@ -211,7 +213,7 @@ void pcf8583_device::a0_w(int state)
 	}
 }
 
-void pcf8583_device::scl_w(int state)
+WRITE_LINE_MEMBER(pcf8583_device::scl_w)
 {
 	if (m_scl != state)
 	{
@@ -383,7 +385,7 @@ void pcf8583_device::scl_w(int state)
 	}
 }
 
-void pcf8583_device::sda_w(int state)
+WRITE_LINE_MEMBER(pcf8583_device::sda_w)
 {
 	state &= 1;
 	if (m_sdaw != state)
@@ -410,7 +412,7 @@ void pcf8583_device::sda_w(int state)
 	}
 }
 
-int pcf8583_device::sda_r()
+READ_LINE_MEMBER(pcf8583_device::sda_r)
 {
 	int res = m_sdar & 1;
 

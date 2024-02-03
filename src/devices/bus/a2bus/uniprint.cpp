@@ -36,7 +36,7 @@ protected:
 
 private:
 	// printer status inputs
-	void ack_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(ack_w);
 
 	required_device<centronics_device>      m_printer_conn;
 	required_device<output_latch_device>    m_printer_out;
@@ -209,7 +209,7 @@ void a2bus_uniprint_device::device_reset()
 //  printer status inputs
 //----------------------------------------------
 
-void a2bus_uniprint_device::ack_w(int state)
+WRITE_LINE_MEMBER(a2bus_uniprint_device::ack_w)
 {
 	if (bool(state) != bool(m_ack_in))
 	{

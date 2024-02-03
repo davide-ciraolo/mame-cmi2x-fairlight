@@ -155,13 +155,14 @@ void vertigo_state::vertigo_vproc_init()
 
 void vertigo_state::vertigo_vproc_reset()
 {
+	int i;
 	uint64_t *mcode;
 
 	m_vectorrom = (uint16_t *)memregion("user1")->base();
 	mcode = (uint64_t *)memregion("proms")->base();
 
 	/* Decode microcode */
-	for (int i = 0; i < MC_LENGTH; i++)
+	for (i = 0; i < MC_LENGTH; i++)
 	{
 		m_mc[i].x = (mcode[i] >> 44) & 0x3f;
 		m_mc[i].a = (mcode[i] >> 40) & 0xf;
@@ -326,7 +327,7 @@ void vertigo_state::vertigo_vgen(vector_generator &vg)
 	if (vg.c_l & 0x800)
 	{
 		vg.vfin = 1;
-		vg.c_l = (vg.c_l + 1) & 0xfff;
+		vg.c_l = (vg.c_l+1) & 0xfff;
 
 		if ((vg.c_l & 0x800) == 0)
 		{
@@ -344,15 +345,15 @@ void vertigo_state::vertigo_vgen(vector_generator &vg)
 			if (vg.adder_s & 0x800)
 			{
 				if (vg.hc1)
-					vg.c_h += vg.hud1 ? -1: 1;
+					vg.c_h += vg.hud1? -1: 1;
 				else
-					vg.c_v += vg.vud1 ? -1: 1;
+					vg.c_v += vg.vud1? -1: 1;
 				vg.adder_a = vg.l1;
 			}
 			else
 			{
-				vg.c_h += vg.hud2 ? -1: 1;
-				vg.c_v += vg.vud2 ? -1: 1;
+				vg.c_h += vg.hud2? -1: 1;
+				vg.c_v += vg.vud2? -1: 1;
 				vg.adder_a = vg.l2;
 			}
 
@@ -387,7 +388,7 @@ void vertigo_state::vertigo_vproc(int cycles, int irq4)
 
 	if (irq4) m_vector->clear_list();
 
-	auto profile = g_profiler.start(PROFILER_USER1);
+	g_profiler.start(PROFILER_USER1);
 
 	while (cycles--)
 	{
@@ -433,7 +434,7 @@ void vertigo_state::vertigo_vproc(int cycles, int irq4)
 		{
 		case S_RAMD:
 			m_vs.ramlatch = m_bsp.y;
-			if (cmc->iif == S_RAMDE && (cmc->rsel == 0) && (cmc->rwrite == 0))
+			if (cmc->iif==S_RAMDE && (cmc->rsel == 0) && (cmc->rwrite == 0))
 				m_vs.sram[cmc->x] = m_vs.ramlatch;
 			break;
 		case S_ROMA:
@@ -500,7 +501,7 @@ void vertigo_state::vertigo_vproc(int cycles, int irq4)
 			break;
 		case S_FEQ0:
 			/* ALU is 0 */
-			jcond = (m_bsp.f == 0) ? 1 : 0;
+			jcond = (m_bsp.f == 0)? 1 : 0;
 			break;
 		case S_Y10:
 			jcond = (m_bsp.y >> 10) & 1;
@@ -522,7 +523,7 @@ void vertigo_state::vertigo_vproc(int cycles, int irq4)
 			*/
 			if ((cmc->jpos != irq4) && cycles > 100)
 			{
-				cycles = 100;
+				cycles=100;
 			}
 			break;
 		default:
@@ -562,4 +563,6 @@ void vertigo_state::vertigo_vproc(int cycles, int irq4)
 			m_vs.pc = (m_vs.pc & 0x100) | ((m_vs.pc + 1) & 0xff);
 		}
 	}
+
+	g_profiler.stop();
 }

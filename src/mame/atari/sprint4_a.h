@@ -1,15 +1,10 @@
 // license:BSD-3-Clause
 // copyright-holders:Derrick Renaud
-
 /***************************************************************************
 
 Atari Sprint 4 + Ultra Tank Audio
 
 ***************************************************************************/
-#ifndef MAME_ATARI_SPRINT4_A_H
-#define MAME_ATARI_SPRINT4_A_H
-
-#pragma once
 
 #include "sound/discrete.h"
 
@@ -32,7 +27,7 @@ Atari Sprint 4 + Ultra Tank Audio
 #define ULTRATNK_EXPLOSION_DATA     SPRINT4_BANG_DATA
 #define ULTRATNK_ATTRACT_EN         SPRINT4_ATTRACT_EN
 
+/*----------- defined in audio/sprint4.c -----------*/
+
 DISCRETE_SOUND_EXTERN( sprint4_discrete );
 DISCRETE_SOUND_EXTERN( ultratnk_discrete );
-
-#endif // MAME_ATARI_SPRINT4_A_H

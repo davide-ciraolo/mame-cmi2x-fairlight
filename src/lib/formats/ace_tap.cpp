@@ -12,8 +12,6 @@ For more information see:
 
 #include "ace_tap.h"
 
-#include "multibyte.h"
-
 
 #define SMPLO   -32768
 #define SILENCE 0
@@ -97,8 +95,11 @@ static int ace_handle_tap(int16_t *buffer, const uint8_t *casdata)
 
 	while( data_pos < cas_size )
 	{
+		uint16_t  block_size;
+		int     i;
+
 		/* Handle a block of tape data */
-		uint16_t block_size = get_u16le( &casdata[data_pos] );
+		block_size = casdata[data_pos] + ( casdata[data_pos + 1] << 8 );
 		data_pos += 2;
 
 		/* Make sure there are enough bytes left */
@@ -109,7 +110,7 @@ static int ace_handle_tap(int16_t *buffer, const uint8_t *casdata)
 		sample_count += ace_tap_silence( buffer, sample_count, 2 * 44100 );
 
 		/* Add pilot tone samples: 4096 for header, 512 for data */
-		for( int i = ( block_size == 0x001A ) ? 4096 : 512; i; i-- )
+		for( i = ( block_size == 0x001A ) ? 4096 : 512; i; i-- )
 			sample_count += ace_tap_cycle( buffer, sample_count, 27, 27 );
 
 		/* Sync samples */

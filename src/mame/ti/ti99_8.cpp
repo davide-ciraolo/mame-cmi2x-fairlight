@@ -180,13 +180,13 @@ Known Issues (MZ, 2019-05-10)
 #include "speaker.h"
 
 // Debugging
-#define LOG_WARN        (1U << 1)   // Warnings
-#define LOG_CONFIG      (1U << 2)   // Configuration
-#define LOG_READY       (1U << 3)
-#define LOG_INTERRUPTS  (1U << 4)
-#define LOG_CRU         (1U << 5)
-#define LOG_CRUREAD     (1U << 6)
-#define LOG_RESETLOAD   (1U << 7)
+#define LOG_WARN        (1U<<1)   // Warnings
+#define LOG_CONFIG      (1U<<2)   // Configuration
+#define LOG_READY       (1U<<3)
+#define LOG_INTERRUPTS  (1U<<4)
+#define LOG_CRU         (1U<<5)
+#define LOG_CRUREAD     (1U<<6)
+#define LOG_RESETLOAD   (1U<<7)
 
 #define VERBOSE ( LOG_CONFIG | LOG_WARN | LOG_RESETLOAD )
 
@@ -238,30 +238,30 @@ private:
 	uint8_t cruread(offs_t offset);
 	void cruwrite(offs_t offset, uint8_t data);
 	void external_operation(offs_t offset, uint8_t data);
-	void clock_out(int state);
+	DECLARE_WRITE_LINE_MEMBER( clock_out );
 
 	// Connections from outside towards the CPU (callbacks)
-	void console_ready(int state);
-	void console_reset(int state);
-	void cpu_hold(int state);
-	void notconnected(int state);
+	DECLARE_WRITE_LINE_MEMBER( console_ready );
+	DECLARE_WRITE_LINE_MEMBER( console_reset );
+	DECLARE_WRITE_LINE_MEMBER( cpu_hold );
+	DECLARE_WRITE_LINE_MEMBER( notconnected );
 
 	// GROM clock (coming from Vaquerro)
-	void gromclk_in(int state);
+	DECLARE_WRITE_LINE_MEMBER( gromclk_in );
 
 	// Connections with the system interface chip 9901
-	void extint(int state);
-	void video_interrupt(int state);
+	DECLARE_WRITE_LINE_MEMBER( extint );
+	DECLARE_WRITE_LINE_MEMBER( video_interrupt );
 
 	// Connections with the system interface TMS9901
 	uint8_t psi_input(offs_t offset);
-	void keyC0(int state);
-	void keyC1(int state);
-	void keyC2(int state);
-	void keyC3(int state);
-	void audio_gate(int state);
-	void cassette_output(int state);
-	void cassette_motor(int state);
+	DECLARE_WRITE_LINE_MEMBER(keyC0);
+	DECLARE_WRITE_LINE_MEMBER(keyC1);
+	DECLARE_WRITE_LINE_MEMBER(keyC2);
+	DECLARE_WRITE_LINE_MEMBER(keyC3);
+	DECLARE_WRITE_LINE_MEMBER(audio_gate);
+	DECLARE_WRITE_LINE_MEMBER(cassette_output);
+	DECLARE_WRITE_LINE_MEMBER(cassette_motor);
 	void tms9901_interrupt(offs_t offset, uint8_t data);
 
 	void crumap(address_map &map);
@@ -508,22 +508,22 @@ void ti99_8_state::set_keyboard_column(int number, int data)
 	}
 }
 
-void ti99_8_state::keyC0(int state)
+WRITE_LINE_MEMBER( ti99_8_state::keyC0 )
 {
 	set_keyboard_column(0, state);
 }
 
-void ti99_8_state::keyC1(int state)
+WRITE_LINE_MEMBER( ti99_8_state::keyC1 )
 {
 	set_keyboard_column(1, state);
 }
 
-void ti99_8_state::keyC2(int state)
+WRITE_LINE_MEMBER( ti99_8_state::keyC2 )
 {
 	set_keyboard_column(2, state);
 }
 
-void ti99_8_state::keyC3(int state)
+WRITE_LINE_MEMBER( ti99_8_state::keyC3 )
 {
 	set_keyboard_column(3, state);
 }
@@ -531,7 +531,7 @@ void ti99_8_state::keyC3(int state)
 /*
     Control cassette tape unit motor (P6)
 */
-void ti99_8_state::cassette_motor(int state)
+WRITE_LINE_MEMBER( ti99_8_state::cassette_motor )
 {
 	m_cassette->change_state(state==ASSERT_LINE? CASSETTE_MOTOR_ENABLED : CASSETTE_MOTOR_DISABLED,CASSETTE_MASK_MOTOR);
 }
@@ -543,7 +543,7 @@ void ti99_8_state::cassette_motor(int state)
     We do not really need to emulate this as the tape recorder generates sound
     on its own.
 */
-void ti99_8_state::audio_gate(int state)
+WRITE_LINE_MEMBER( ti99_8_state::audio_gate )
 {
 }
 
@@ -551,7 +551,7 @@ void ti99_8_state::audio_gate(int state)
     Tape output (P9)
     I think polarity is correct, but don't take my word for it.
 */
-void ti99_8_state::cassette_output(int state)
+WRITE_LINE_MEMBER( ti99_8_state::cassette_output )
 {
 	m_cassette->output(state==ASSERT_LINE? +1 : -1);
 }
@@ -566,7 +566,7 @@ void ti99_8_state::tms9901_interrupt(offs_t offset, uint8_t data)
 /*
     set the state of TMS9901's INT2 (called by the VDP)
 */
-void ti99_8_state::video_interrupt(int state)
+WRITE_LINE_MEMBER( ti99_8_state::video_interrupt )
 {
 	LOGMASKED(LOG_INTERRUPTS, "VDP int 2 on tms9901, level=%02x\n", state);
 	m_int2 = (line_state)state;
@@ -591,7 +591,7 @@ void ti99_8_state::console_ready(int state)
 /*
     Enqueue a RESET signal.
 */
-void ti99_8_state::console_reset(int state)
+WRITE_LINE_MEMBER( ti99_8_state::console_reset )
 {
 	LOGMASKED(LOG_RESETLOAD, "Incoming RESET line = %d\n", state);
 	if (machine().phase() != machine_phase::INIT)
@@ -615,20 +615,20 @@ void ti99_8_state::console_reset(int state)
 /*
     The HOLD line leading to the CPU entering the HOLD state.
 */
-void ti99_8_state::cpu_hold(int state)
+WRITE_LINE_MEMBER( ti99_8_state::cpu_hold )
 {
 	LOGMASKED(LOG_INTERRUPTS, "Incoming HOLD line = %d\n", state);
 	m_cpu->hold_line(state);
 }
 
-void ti99_8_state::extint(int state)
+WRITE_LINE_MEMBER( ti99_8_state::extint )
 {
 	LOGMASKED(LOG_INTERRUPTS, "EXTINT level = %02x\n", state);
 	m_int1 = (line_state)state;
 	m_tms9901->set_int_line(1, state);
 }
 
-[[maybe_unused]] void ti99_8_state::notconnected(int state)
+[[maybe_unused]] WRITE_LINE_MEMBER( ti99_8_state::notconnected )
 {
 	LOGMASKED(LOG_INTERRUPTS, "Setting a not connected line ... ignored\n");
 }
@@ -644,7 +644,7 @@ void ti99_8_state::external_operation(offs_t offset, uint8_t data)
 /*
     Clock line from the CPU. Used to control wait state generation.
 */
-void ti99_8_state::clock_out(int state)
+WRITE_LINE_MEMBER( ti99_8_state::clock_out )
 {
 	m_tms9901->phi_line(state);
 	m_mainboard->clock_in(state);

@@ -24,8 +24,8 @@ public:
 
 	ds2401_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
-	void write(int state);
-	int read();
+	DECLARE_WRITE_LINE_MEMBER( write );
+	DECLARE_READ_LINE_MEMBER( read );
 	uint8_t direct_read(int index);
 
 protected:

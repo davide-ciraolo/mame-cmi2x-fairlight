@@ -82,8 +82,8 @@ private:
 	void pia51_w(offs_t offset, u8 data);
 	u8 p51b_r();
 	void sol_w(u8 data);
-	void p50ca2_w(int state);
-	void p51ca2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(p50ca2_w);
+	DECLARE_WRITE_LINE_MEMBER(p51ca2_w);
 	void sw_w(u8 data);
 	void lamp_w(u8 data);
 	void p50a_w(u8 data);
@@ -112,7 +112,7 @@ public:
 	void pent8085(machine_config &config);
 
 private:
-	void clock_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(clock_w);
 	void disp_w(offs_t, u8);
 	void io_map(address_map &map);
 	void mem_map(address_map &map);
@@ -366,7 +366,7 @@ void pent6800_state::p50b_w(u8 data)
 }
 
 // round LEDs on score panel
-void pent6800_state::p50ca2_w(int state)
+WRITE_LINE_MEMBER( pent6800_state::p50ca2_w )
 {
 	if ((!state) && (m_row < 8))
 	{
@@ -387,7 +387,7 @@ void pent6800_state::p51a_w(u8 data)
 }
 
 // Sound on/off
-void pent6800_state::p51ca2_w(int state)
+WRITE_LINE_MEMBER( pent6800_state::p51ca2_w )
 {
 	m_beep->set_state(state);
 }
@@ -421,7 +421,7 @@ void pent8085_state::disp_w(offs_t offset, u8 data)
 	m_digits[offset+20] = patterns[BIT(~data, 4, 4)];
 }
 
-void pent8085_state::clock_w(int state)
+WRITE_LINE_MEMBER( pent8085_state::clock_w )
 {
 	if (state)
 		m_v2cpu->set_input_line(I8085_RST55_LINE, HOLD_LINE);
@@ -492,12 +492,12 @@ void pent6800_state::pent6800(machine_config &config)
 	BEEP(config, m_beep, 387).add_route(ALL_OUTPUTS, "mono", 0.50);
 
 	/* Devices */
-	pia6821_device &pia50(PIA6821(config, "pia50"));
+	pia6821_device &pia50(PIA6821(config, "pia50", 0));
 	pia50.writepa_handler().set(FUNC(pent6800_state::p50a_w));
 	pia50.writepb_handler().set(FUNC(pent6800_state::p50b_w));
 	pia50.ca2_handler().set(FUNC(pent6800_state::p50ca2_w));
 
-	PIA6821(config, m_pia51);
+	PIA6821(config, m_pia51, 0);
 	m_pia51->writepa_handler().set(FUNC(pent6800_state::p51a_w));
 	m_pia51->readpb_handler().set(FUNC(pent6800_state::p51b_r));
 	m_pia51->writepb_handler().set(FUNC(pent6800_state::p51b_w));

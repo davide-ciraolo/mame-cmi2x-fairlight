@@ -662,7 +662,7 @@ u32 psikyo_state::screen_update_bootleg(screen_device &screen, bitmap_rgb32 &bit
 }
 
 
-void psikyo_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(psikyo_state::screen_vblank)
 {
 	// rising edge
 	if (state)
@@ -672,7 +672,7 @@ void psikyo_state::screen_vblank(int state)
 	}
 }
 
-void psikyo_state::screen_vblank_bootleg(int state)
+WRITE_LINE_MEMBER(psikyo_state::screen_vblank_bootleg)
 {
 	// rising edge
 	if (state)

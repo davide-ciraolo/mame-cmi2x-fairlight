@@ -17,8 +17,8 @@
 #include "charconv.h"
 #include "iflopimg.h"
 
+#include "formats/imageutl.h"
 #include "corestr.h"
-#include "multibyte.h"
 #include "opresolv.h"
 
 #include <cctype>
@@ -255,22 +255,15 @@ static int intl_toupper(int c)
 
 
 /* Amiga filename case insensitive string compare */
-static int intl_stricmp(std::string_view s1, std::string_view s2)
+static int intl_stricmp(const char *s1, const char *s2)
 {
-	auto s1_iter = s1.begin();
-	auto s2_iter = s2.begin();
-	while (true)
+	for (;;)
 	{
-		if (s1.end() == s1_iter)
-			return (s2.end() == s2_iter) ? 0 : -1;
-		else if (s2.end() == s2_iter)
-			return 1;
+		int c1 = intl_toupper(*s1++);
+		int c2 = intl_toupper(*s2++);
 
-		const int c1 = intl_toupper(uint8_t(*s1_iter++));
-		const int c2 = intl_toupper(uint8_t(*s2_iter++));
-		const int diff = c1 - c2;
-		if (diff)
-			return diff;
+		if (c1 == 0 || c1 != c2)
+			return c1 - c2;
 	}
 }
 
@@ -398,7 +391,7 @@ static uint32_t block_checksum(uint8_t *buffer, int length)
 
 	for (i = 0; i < length/4; i++)
 	{
-		chksum += get_u32be(&buffer[i*4]);
+		chksum += pick_integer_be(buffer, i*4, 4);
 	}
 
 	return -chksum;
@@ -474,7 +467,7 @@ static sec_type get_block_type(imgtool::image &img, int block)
 	if (ret) return ST_INVALID;
 
 	/* return type */
-	switch (get_s32be(&buffer[BSIZE-4]))
+	switch ((int32_t) pick_integer_be(buffer, BSIZE-4, 4))
 	{
 	case  1: return ST_ROOT;
 	case  2: return ST_USERDIR;
@@ -498,7 +491,7 @@ static imgtoolerr_t read_bitmap_block(imgtool::image &img, int block, bitmap_blo
 	if (ret) return ret;
 
 	/* fill in data */
-	bm->chksum = get_u32be(&buffer[0]);
+	bm->chksum = pick_integer_be(buffer, 0, 4);
 	copy_integer_array_be(bm->map, (uint32_t *) &buffer[4], MSIZE);
 
 	return IMGTOOLERR_SUCCESS;
@@ -512,7 +505,7 @@ static imgtoolerr_t write_bitmap_block(imgtool::image &img, int block, const bit
 	uint8_t buffer[BSIZE];
 
 	/* Setup buffer */
-	put_u32be(&buffer[0], bm->chksum);
+	place_integer_be(buffer, 0, 4, bm->chksum);
 	copy_integer_array_be((uint32_t *) &buffer[4], bm->map, MSIZE);
 
 	/* write block */
@@ -535,7 +528,7 @@ static imgtoolerr_t write_bitmap_block(imgtool::image &img, int block, const bit
 
 	/* fill in data */
 	copy_integer_array_be(bm->map, (uint32_t *) &buffer, MSIZE);
-	bm->next = get_u32be(&buffer[BSIZE-4]);
+	bm->next = pick_integer_be(buffer, BSIZE-4, 4);
 
 	return IMGTOOLERR_SUCCESS;
 }
@@ -554,17 +547,17 @@ static imgtoolerr_t read_root_block(imgtool::image &img, root_block *root)
 	/* copy data to root_block */
 	memset(root, 0, sizeof(root_block));
 
-	root->ht_size = get_u32be(&buffer[12]);
-	root->chksum = get_u32be(&buffer[20]);
+	root->ht_size = pick_integer_be(buffer, 12, 4);
+	root->chksum = pick_integer_be(buffer, 20, 4);
 	copy_integer_array_be(root->ht, (uint32_t *) &buffer[24], TSIZE);
-	root->bm_flag = get_u32be(&buffer[BSIZE-200]);
+	root->bm_flag = pick_integer_be(buffer, BSIZE-200, 4);
 	copy_integer_array_be(root->bm_pages, (uint32_t *) &buffer[BSIZE-196], 25);
 	copy_date_be(&root->r, (uint32_t *) &buffer[BSIZE-92]);
-	root->name_len = buffer[BSIZE-80];
+	root->name_len = pick_integer_be(buffer, BSIZE-80, 1);
 	memcpy(root->diskname, &buffer[BSIZE-79], 30);
 	copy_date_be(&root->v, (uint32_t *) &buffer[BSIZE-40]);
 	copy_date_be(&root->c, (uint32_t *) &buffer[BSIZE-28]);
-	root->extension = get_u32be(&buffer[BSIZE-8]);
+	root->extension = pick_integer_be(buffer, BSIZE-8, 4);
 
 	return IMGTOOLERR_SUCCESS;
 }
@@ -578,25 +571,25 @@ static imgtoolerr_t write_root_block(imgtool::image &img, const root_block *root
 	/* Setup buffer */
 	memset(buffer, 0, BSIZE);
 
-	put_u32be(&buffer[0], T_HEADER);
-	put_u32be(&buffer[12], root->ht_size);
-	put_u32be(&buffer[20], root->chksum);
+	place_integer_be(buffer, 0, 4, T_HEADER);
+	place_integer_be(buffer, 12, 4, root->ht_size);
+	place_integer_be(buffer, 20, 4, root->chksum);
 	copy_integer_array_be((uint32_t *) &buffer[24], root->ht, TSIZE);
-	put_u32be(&buffer[BSIZE-200], root->bm_flag);
+	place_integer_be(buffer, BSIZE-200, 4, root->bm_flag);
 	copy_integer_array_be((uint32_t *) &buffer[BSIZE-196], root->bm_pages, 25);
-	put_u32be(&buffer[BSIZE-92], root->r.days);
-	put_u32be(&buffer[BSIZE-88], root->r.mins);
-	put_u32be(&buffer[BSIZE-84], root->r.ticks);
-	buffer[BSIZE-80] = root->name_len;
+	place_integer_be(buffer, BSIZE-92, 4, root->r.days);
+	place_integer_be(buffer, BSIZE-88, 4, root->r.mins);
+	place_integer_be(buffer, BSIZE-84, 4, root->r.ticks);
+	place_integer_be(buffer, BSIZE-80, 1, root->name_len);
 	memcpy(&buffer[BSIZE-79], root->diskname, root->name_len);
-	put_u32be(&buffer[BSIZE-40], root->v.days);
-	put_u32be(&buffer[BSIZE-36], root->v.mins);
-	put_u32be(&buffer[BSIZE-32], root->v.ticks);
-	put_u32be(&buffer[BSIZE-28], root->c.days);
-	put_u32be(&buffer[BSIZE-24], root->c.mins);
-	put_u32be(&buffer[BSIZE-20], root->c.ticks);
-	put_u32be(&buffer[BSIZE-8], root->extension);
-	put_u32be(&buffer[BSIZE-4], ST_ROOT);
+	place_integer_be(buffer, BSIZE-40, 4, root->v.days);
+	place_integer_be(buffer, BSIZE-36, 4, root->v.mins);
+	place_integer_be(buffer, BSIZE-32, 4, root->v.ticks);
+	place_integer_be(buffer, BSIZE-28, 4, root->c.days);
+	place_integer_be(buffer, BSIZE-24, 4, root->c.mins);
+	place_integer_be(buffer, BSIZE-20, 4, root->c.ticks);
+	place_integer_be(buffer, BSIZE-8, 4, root->extension);
+	place_integer_be(buffer, BSIZE-4, 4, ST_ROOT);
 
 	/* write root block to image */
 	ret = write_block(img, get_total_blocks(img)/2, buffer);
@@ -617,25 +610,25 @@ static imgtoolerr_t read_file_block(imgtool::image &img, int block, file_block *
 	if (ret) return ret;
 
 	/* fill in data */
-	fb->header_key = get_u32be(&buffer[4]);
-	fb->high_seq = get_u32be(&buffer[8]);
-	fb->first_data = get_u32be(&buffer[16]);
-	fb->chksum = get_u32be(&buffer[20]);
+	fb->header_key = pick_integer_be(buffer, 4, 4);
+	fb->high_seq = pick_integer_be(buffer, 8, 4);
+	fb->first_data = pick_integer_be(buffer, 16, 4);
+	fb->chksum = pick_integer_be(buffer, 20, 4);
 	copy_integer_array_be(fb->data_blocks, (uint32_t *) &buffer[24], TSIZE);
-	fb->uid = get_u16be(&buffer[BSIZE-196]);
-	fb->gid = get_u16be(&buffer[BSIZE-194]);
-	fb->protect = get_u32be(&buffer[BSIZE-192]);
-	fb->byte_size = get_u32be(&buffer[BSIZE-188]);
-	fb->comm_len = buffer[BSIZE-184];
+	fb->uid = pick_integer_be(buffer, BSIZE-196, 2);
+	fb->gid = pick_integer_be(buffer, BSIZE-194, 2);
+	fb->protect = pick_integer_be(buffer, BSIZE-192, 4);
+	fb->byte_size = pick_integer_be(buffer, BSIZE-188, 4);
+	fb->comm_len = pick_integer_be(buffer, BSIZE-184, 1);
 	memcpy(fb->comment, &buffer[BSIZE-183], 79);
 	copy_date_be(&fb->date, (uint32_t *) &buffer[BSIZE-92]);
-	fb->name_len = buffer[BSIZE-80];
-	memcpy(fb->filename, &buffer[BSIZE-79], 30);
-	fb->real_entry = get_u32be(&buffer[BSIZE-44]);
-	fb->next_link = get_u32be(&buffer[BSIZE-40]);
-	fb->hash_chain = get_u32be(&buffer[BSIZE-16]);
-	fb->parent = get_u32be(&buffer[BSIZE-12]);
-	fb->extension = get_u32be(&buffer[BSIZE-8]);
+	fb->name_len = pick_integer_be(buffer, BSIZE-80, 1);
+	memcpy(fb->filename, (uint32_t *) &buffer[BSIZE-79], 30);
+	fb->real_entry = pick_integer_be(buffer, BSIZE-44, 4);
+	fb->next_link = pick_integer_be(buffer, BSIZE-40, 4);
+	fb->hash_chain = pick_integer_be(buffer, BSIZE-16, 4);
+	fb->parent = pick_integer_be(buffer, BSIZE-12, 4);
+	fb->extension = pick_integer_be(buffer, BSIZE-8, 4);
 
 	return IMGTOOLERR_SUCCESS;
 }
@@ -651,12 +644,12 @@ static imgtoolerr_t read_file_ext_block(imgtool::image &img, int block, file_ext
 	if (ret) return ret;
 
 	/* fill in data */
-	fe->header_key = get_u32be(&buffer[4]);
-	fe->high_seq = get_u32be(&buffer[8]);
-	fe->chksum = get_u32be(&buffer[20]);
+	fe->header_key = pick_integer_be(buffer, 4, 4);
+	fe->high_seq = pick_integer_be(buffer, 8, 4);
+	fe->chksum = pick_integer_be(buffer, 20, 4);
 	copy_integer_array_be(fe->data_blocks, (uint32_t *) &buffer[24], TSIZE);
-	fe->parent = get_u32be(&buffer[BSIZE-12]);
-	fe->extension = get_u32be(&buffer[BSIZE-8]);
+	fe->parent = pick_integer_be(buffer, BSIZE-12, 4);
+	fe->extension = pick_integer_be(buffer, BSIZE-8, 4);
 
 	return IMGTOOLERR_SUCCESS;
 }
@@ -672,11 +665,11 @@ static imgtoolerr_t read_data_block(imgtool::image &img, int block, data_block *
 	if (ret) return ret;
 
 	/* fill in data */
-	d->header_key = get_u32be(&buffer[4]);
-	d->seq_num = get_u32be(&buffer[8]);
-	d->data_size = get_u32be(&buffer[12]);
-	d->next_data = get_u32be(&buffer[16]);
-	d->chksum = get_u32be(&buffer[20]);
+	d->header_key = pick_integer_be(buffer, 4, 4);
+	d->seq_num = pick_integer_be(buffer, 8, 4);
+	d->data_size = pick_integer_be(buffer, 12, 4);
+	d->next_data = pick_integer_be(buffer, 16, 4);
+	d->chksum = pick_integer_be(buffer, 20, 4);
 	memcpy(d->data, &buffer[24], BSIZE-24);
 
 	return IMGTOOLERR_SUCCESS;
@@ -694,21 +687,21 @@ static imgtoolerr_t read_dir_block(imgtool::image &img, int block, dir_block *db
 	if (ret) return ret;
 
 	/* fill in data */
-	db->header_key = get_u32be(&buffer[4]);
-	db->chksum = get_u32be(&buffer[20]);
+	db->header_key = pick_integer_be(buffer, 4, 4);
+	db->chksum = pick_integer_be(buffer, 20, 4);
 	copy_integer_array_be(db->ht, (uint32_t *) &buffer[24], TSIZE);
-	db->uid = get_u16be(&buffer[BSIZE-196]);
-	db->gid = get_u16be(&buffer[BSIZE-194]);
-	db->protect = get_u32be(&buffer[BSIZE-192]);
-	db->comm_len = buffer[BSIZE-184];
+	db->uid = pick_integer_be(buffer, BSIZE-196, 2);
+	db->gid = pick_integer_be(buffer, BSIZE-194, 2);
+	db->protect = pick_integer_be(buffer, BSIZE-192, 4);
+	db->comm_len = pick_integer_be(buffer, BSIZE-184, 1);
 	memcpy(db->comment, &buffer[BSIZE-183], 79);
 	copy_date_be(&db->date, (uint32_t *) &buffer[BSIZE-92]);
-	db->name_len = buffer[BSIZE-80];
+	db->name_len = pick_integer_be(buffer, BSIZE-80, 1);
 	memcpy(db->dirname, (uint32_t *) &buffer[BSIZE-79], 30);
-	db->next_link = get_u32be(&buffer[BSIZE-40]);
-	db->hash_chain = get_u32be(&buffer[BSIZE-16]);
-	db->parent = get_u32be(&buffer[BSIZE-12]);
-	db->extension = get_u32be(&buffer[BSIZE-8]);
+	db->next_link = pick_integer_be(buffer, BSIZE-40, 4);
+	db->hash_chain = pick_integer_be(buffer, BSIZE-16, 4);
+	db->parent = pick_integer_be(buffer, BSIZE-12, 4);
+	db->extension = pick_integer_be(buffer, BSIZE-8, 4);
 
 	return IMGTOOLERR_SUCCESS;
 }
@@ -722,25 +715,25 @@ static imgtoolerr_t write_dir_block(imgtool::image &img, int block, const dir_bl
 	memset(buffer, 0, BSIZE);
 
 	/* Copy data */
-	put_u32be(&buffer[0], T_HEADER);
-	put_u32be(&buffer[4], db->header_key);
-	put_u32be(&buffer[20], db->chksum);
+	place_integer_be(buffer, 0, 4, T_HEADER);
+	place_integer_be(buffer, 4, 4, db->header_key);
+	place_integer_be(buffer, 20, 4, db->chksum);
 	copy_integer_array_be((uint32_t *) &buffer[24], db->ht, TSIZE);
-	put_u16be(&buffer[BSIZE-196], db->uid);
-	put_u16be(&buffer[BSIZE-194], db->gid);
-	put_u32be(&buffer[BSIZE-192], db->protect);
-	buffer[BSIZE-184] = db->comm_len;
-	memcpy(&buffer[BSIZE-183], db->comment, db->comm_len);
-	put_u32be(&buffer[BSIZE-92], db->date.days);
-	put_u32be(&buffer[BSIZE-88], db->date.mins);
-	put_u32be(&buffer[BSIZE-84], db->date.ticks);
-	buffer[BSIZE-80] = db->name_len;
-	memcpy(&buffer[BSIZE-79], db->dirname, db->name_len);
-	put_u32be(&buffer[BSIZE-40], db->next_link);
-	put_u32be(&buffer[BSIZE-16], db->hash_chain);
-	put_u32be(&buffer[BSIZE-12], db->parent);
-	put_u32be(&buffer[BSIZE-8], db->extension);
-	put_u32be(&buffer[BSIZE-4], ST_USERDIR);
+	place_integer_be(buffer, BSIZE-196, 2, db->uid);
+	place_integer_be(buffer, BSIZE-194, 2, db->gid);
+	place_integer_be(buffer, BSIZE-192, 4, db->protect);
+	place_integer_be(buffer, BSIZE-184, 1, db->comm_len);
+	memcpy((uint32_t *) &buffer[BSIZE-183], db->comment, db->comm_len);
+	place_integer_be(buffer, BSIZE-92, 4, db->date.days);
+	place_integer_be(buffer, BSIZE-88, 4, db->date.mins);
+	place_integer_be(buffer, BSIZE-84, 4, db->date.ticks);
+	place_integer_be(buffer, BSIZE-80, 1, db->name_len);
+	memcpy((uint32_t *) &buffer[BSIZE-79], db->dirname, db->name_len);
+	place_integer_be(buffer, BSIZE-40, 4, db->next_link);
+	place_integer_be(buffer, BSIZE-16, 4, db->hash_chain);
+	place_integer_be(buffer, BSIZE-12, 4, db->parent);
+	place_integer_be(buffer, BSIZE-8, 4, db->extension);
+	place_integer_be(buffer, BSIZE-4, 4, ST_USERDIR);
 
 	/* Write block to disk */
 	return write_block(img, block, buffer);
@@ -757,19 +750,19 @@ static imgtoolerr_t read_hardlink_block(imgtool::image &img, int block, hardlink
 	if (ret) return ret;
 
 	/* fill in data */
-	hl->header_key = get_u32be(&buffer[4]);
-	hl->chksum = get_u32be(&buffer[20]);
-	hl->protect = get_u32be(&buffer[BSIZE-192]);
-	hl->comm_len = buffer[BSIZE-184];
+	hl->header_key = pick_integer_be(buffer, 4, 4);
+	hl->chksum = pick_integer_be(buffer, 20, 4);
+	hl->protect = pick_integer_be(buffer, BSIZE-192, 4);
+	hl->comm_len = pick_integer_be(buffer, BSIZE-184, 1);
 	memcpy(hl->comment, &buffer[BSIZE-183], 79);
 	copy_date_be(&hl->date, (uint32_t *) &buffer[BSIZE-92]);
-	hl->name_len = buffer[BSIZE-80];
-	memcpy(hl->hlname, &buffer[BSIZE-79], 30);
-	hl->real_entry = get_u32be(&buffer[BSIZE-44]);
-	hl->next_link = get_u32be(&buffer[BSIZE-40]);
-	hl->hash_chain = get_u32be(&buffer[BSIZE-16]);
-	hl->parent = get_u32be(&buffer[BSIZE-12]);
-	hl->sec_type = get_u32be(&buffer[BSIZE-4]);
+	hl->name_len = pick_integer_be(buffer, BSIZE-80, 1);
+	memcpy(hl->hlname, (uint32_t *) &buffer[BSIZE-79], 30);
+	hl->real_entry = pick_integer_be(buffer, BSIZE-44, 4);
+	hl->next_link = pick_integer_be(buffer, BSIZE-40, 4);
+	hl->hash_chain = pick_integer_be(buffer, BSIZE-16, 4);
+	hl->parent = pick_integer_be(buffer, BSIZE-12, 4);
+	hl->sec_type = pick_integer_be(buffer, BSIZE-4, 4);
 
 	return IMGTOOLERR_SUCCESS;
 }
@@ -785,17 +778,17 @@ static imgtoolerr_t read_softlink_block(imgtool::image &img, int block, softlink
 	if (ret) return ret;
 
 	/* fill in data */
-	sl->header_key = get_u32be(&buffer[4]);
-	sl->chksum = get_u32be(&buffer[20]);
+	sl->header_key = pick_integer_be(buffer, 4, 4);
+	sl->chksum = pick_integer_be(buffer, 20, 4);
 	memcpy(sl->symbolic_name, &buffer[24], BSIZE-224);
-	sl->protect = get_u32be(&buffer[BSIZE-192]);
-	sl->comm_len = buffer[BSIZE-184];
+	sl->protect = pick_integer_be(buffer, BSIZE-192, 4);
+	sl->comm_len = pick_integer_be(buffer, BSIZE-184, 1);
 	memcpy(sl->comment, &buffer[BSIZE-183], 79);
 	copy_date_be(&sl->date, (uint32_t *) &buffer[BSIZE-92]);
-	sl->name_len = buffer[BSIZE-80];
-	memcpy(sl->slname, &buffer[BSIZE-79], 30);
-	sl->hash_chain = get_u32be(&buffer[BSIZE-16]);
-	sl->parent = get_u32be(&buffer[BSIZE-12]);
+	sl->name_len = pick_integer_be(buffer, BSIZE-80, 1);
+	memcpy(sl->slname, (uint32_t *) &buffer[BSIZE-79], 30);
+	sl->hash_chain = pick_integer_be(buffer, BSIZE-16, 4);
+	sl->parent = pick_integer_be(buffer, BSIZE-12, 4);
 
 	return IMGTOOLERR_SUCCESS;
 }
@@ -945,7 +938,7 @@ static imgtoolerr_t get_hash_chain(imgtool::image &img, int block, uint32_t *cha
 	if (ret) return ret;
 
 	/* Get chain value */
-	*chain = get_u32be(&buffer[BSIZE-16]);
+	*chain = pick_integer_be(buffer, BSIZE-16, 4);
 
 	return IMGTOOLERR_SUCCESS;
 }
@@ -961,7 +954,7 @@ static imgtoolerr_t set_hash_chain(imgtool::image &img, int block, uint32_t chai
 	if (ret) return ret;
 
 	/* Copy new hash chain value into it */
-	put_u32be(&buffer[BSIZE-16], chain);
+	place_integer_be(buffer, BSIZE-16, 4, chain);
 
 	/* Write it back again */
 	ret = write_block(img, block, buffer);
@@ -978,7 +971,7 @@ static imgtoolerr_t walk_hash_chain(imgtool::image &img, const char *path, int s
 	char name[31];
 
 	/* choose compare function depending on intl mode */
-	int (*cmp)(std::string_view, std::string_view) = is_intl(img) ? &intl_stricmp : &core_stricmp;
+	int (*cmp)(const char *, const char *) = is_intl(img) ? &intl_stricmp : &core_stricmp;
 
 	/* initialize filenames */
 	memset(name, 0, sizeof(name));
@@ -1178,11 +1171,11 @@ static imgtoolerr_t fix_chksum(imgtool::image &img, int block, int bitmap)
 	/* update checksum */
 	if (bitmap)
 	{
-		put_u32be(&buffer[0], chksum);
+		place_integer_be(buffer, 0, 4, chksum);
 	}
 	else
 	{
-		put_u32be(&buffer[20], chksum);
+		place_integer_be(buffer, 20, 4, chksum);
 	}
 
 	/* write back new block data */
@@ -1277,9 +1270,9 @@ static imgtoolerr_t update_block_modified_date(imgtool::image &img, int block)
 	amiga_setup_time(now, &date);
 
 	/* Write new time into block */
-	put_u32be(&buffer[BSIZE-92], date.days);
-	put_u32be(&buffer[BSIZE-88], date.mins);
-	put_u32be(&buffer[BSIZE-84], date.ticks);
+	place_integer_be(buffer, BSIZE-92, 4, date.days);
+	place_integer_be(buffer, BSIZE-88, 4, date.mins);
+	place_integer_be(buffer, BSIZE-84, 4, date.ticks);
 
 	/* Write block back to disk */
 	ret = write_block(img, block, buffer);

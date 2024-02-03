@@ -162,12 +162,11 @@ void setapcm_device<MaxVoices, Divider>::sound_stream_update(sound_stream &strea
 }
 
 //-------------------------------------------------
-//  rom_bank_pre_change - refresh the stream if the
-//  ROM banking changes
+//  rom_bank_updated - the rom bank has changed
 //-------------------------------------------------
 
 template<unsigned MaxVoices, unsigned Divider>
-void setapcm_device<MaxVoices, Divider>::rom_bank_pre_change()
+void setapcm_device<MaxVoices, Divider>::rom_bank_updated()
 {
 	m_stream->update();
 }

@@ -58,14 +58,6 @@
 
 #include "emupal.h"
 
-#define LOG_RTC         (1U << 1)
-#define LOG_PORT        (1U << 2)
-#define LOG_IRQ         (1U << 3)
-#define LOG_IRQ_VERBOSE (1U << 4)
-
-#define VERBOSE (0)
-#include "logmacro.h"
-
 
 namespace {
 
@@ -106,6 +98,9 @@ namespace {
 #define PCI_ID_9050     "pci:0b.0"
 
 #define DEBUG_CONSOLE   (0)
+#define LOG_RTC         (0)
+#define LOG_PORT        (0)
+#define LOG_IRQ         (0)
 
 class atlantis_state : public driver_device
 {
@@ -178,14 +173,14 @@ private:
 	uint32_t board_ctrl[CTRL_SIZE]{};
 	void update_asic_irq();
 
-	void vblank_irq(int state);
-	void zeus_irq(int state);
-	void ide_irq(int state);
-	void ioasic_irq(int state);
-	void watchdog_irq(int state);
-	void watchdog_reset(int state);
+	DECLARE_WRITE_LINE_MEMBER(vblank_irq);
+	DECLARE_WRITE_LINE_MEMBER(zeus_irq);
+	DECLARE_WRITE_LINE_MEMBER(ide_irq);
+	DECLARE_WRITE_LINE_MEMBER(ioasic_irq);
+	DECLARE_WRITE_LINE_MEMBER(watchdog_irq);
+	DECLARE_WRITE_LINE_MEMBER(watchdog_reset);
 
-	void duart_irq_callback(int state);
+	DECLARE_WRITE_LINE_MEMBER(duart_irq_callback);
 
 	DECLARE_CUSTOM_INPUT_MEMBER(port_mod_r);
 	uint16_t port_ctrl_r(offs_t offset);
@@ -242,13 +237,16 @@ uint32_t atlantis_state::board_ctrl_r(offs_t offset, uint32_t mem_mask)
 	case PLD_REV:
 		// ???
 		data = 0x1;
-		LOGMASKED(LOG_IRQ, "%s:board_ctrl_r read from PLD_REV offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
+		if (LOG_IRQ)
+			logerror("%s:board_ctrl_r read from PLD_REV offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
 		break;
 	case STATUS:
-		LOGMASKED(LOG_IRQ, "%s:board_ctrl_r read from STATUS offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
+		if (LOG_IRQ)
+			logerror("%s:board_ctrl_r read from STATUS offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
 		break;
 	default:
-		LOGMASKED(LOG_IRQ, "%s:board_ctrl_r read from offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
+		if (LOG_IRQ)
+			logerror("%s:board_ctrl_r read from offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
 		break;
 	}
 	return data;
@@ -285,7 +283,8 @@ void atlantis_state::board_ctrl_w(offs_t offset, uint32_t data, uint32_t mem_mas
 				m_zeus->reset();
 			}
 		}
-		LOGMASKED(LOG_IRQ, "%s:board_ctrl_w write to RESET offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
+		if (LOG_IRQ)
+			logerror("%s:board_ctrl_w write to RESET offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
 		break;
 	case VSYNC_CLEAR:
 		//VSYNC_IE (0x1)
@@ -299,12 +298,14 @@ void atlantis_state::board_ctrl_w(offs_t offset, uint32_t data, uint32_t mem_mas
 			else {
 			}
 		}
-		LOGMASKED(LOG_IRQ_VERBOSE, "%s:board_ctrl_w write to CTRL_VSYNC_CLEAR offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
+		if (0 && LOG_IRQ)
+			logerror("%s:board_ctrl_w write to CTRL_VSYNC_CLEAR offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
 		break;
 	case IRQ_EN:
 		// Zero bit will clear cause
 		update_asic_irq();
-		LOGMASKED(LOG_IRQ, "%s:board_ctrl_w write to IRQ_EN offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
+		if (LOG_IRQ)
+			logerror("%s:board_ctrl_w write to IRQ_EN offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
 		break;
 	case LED:
 		{
@@ -343,7 +344,8 @@ void atlantis_state::board_ctrl_w(offs_t offset, uint32_t data, uint32_t mem_mas
 		m_rtc->watchdog_write();
 		break;
 	default:
-		LOGMASKED(LOG_IRQ, "%s:board_ctrl_w write to offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
+		if (LOG_IRQ)
+			logerror("%s:board_ctrl_w write to offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
 		break;
 	}
 }
@@ -355,8 +357,8 @@ uint8_t atlantis_state::cmos_r(offs_t offset)
 	// Initial RTC check expects reads to the RTC to take some time
 	if (offset == 0x7ff9)
 		m_maincpu->eat_cycles(30);
-	else if (offset >= 0x7ff0 && offset != 0x7ff9)
-		LOGMASKED(LOG_RTC, "%s:RTC read from offset %04X = %08X\n", machine().describe_context(), offset, result);
+	if (LOG_RTC || ((offset >= 0x7ff0) && (offset != 0x7ff9)))
+		logerror("%s:RTC read from offset %04X = %08X\n", machine().describe_context(), offset, result);
 	return result;
 }
 
@@ -366,8 +368,8 @@ void atlantis_state::cmos_w(offs_t offset, uint8_t data, uint8_t mem_mask)
 	// User I/O 0 = Allow write to cmos[0]. Serial Write Enable?
 	if (offset == 0 && (m_user_io_state & 0x1)) {
 		// Data written is shifted by 1 bit each time.  Maybe a serial line output?
-		if (m_serial_count == 0)
-			LOGMASKED(LOG_RTC, "%s: cmos_w[0] start serial %08x = %02x\n", machine().describe_context(), offset, data);
+		if (LOG_RTC && m_serial_count == 0)
+			logerror("%s: cmos_w[0] start serial %08x = %02x\n", machine().describe_context(), offset, data);
 		m_serial_count++;
 		if (m_serial_count == 8)
 			m_serial_count = 0;
@@ -375,7 +377,8 @@ void atlantis_state::cmos_w(offs_t offset, uint8_t data, uint8_t mem_mask)
 	else if (m_cmos_write_enabled) {
 		m_rtc->write(offset, data);
 		m_cmos_write_enabled = false;
-		LOGMASKED(LOG_RTC, "%s:RTC write to offset %04X = %08X & %08X\n", machine().describe_context(), offset, data, mem_mask);
+		if (LOG_RTC || offset >= 0x7ff0)
+			logerror("%s:RTC write to offset %04X = %08X & %08X\n", machine().describe_context(), offset, data, mem_mask);
 	}
 }
 
@@ -412,7 +415,7 @@ uint32_t atlantis_state::user_io_input()
 /*************************************
 *  DUART interrupt handler
 *************************************/
-void atlantis_state::duart_irq_callback(int state)
+WRITE_LINE_MEMBER(atlantis_state::duart_irq_callback)
 {
 	uint32_t status_bit = 1 << DUART_IRQ_SHIFT;
 	if (state && !(board_ctrl[STATUS] & status_bit)) {
@@ -429,7 +432,7 @@ void atlantis_state::duart_irq_callback(int state)
 /*************************************
 *  Video interrupts
 *************************************/
-void atlantis_state::vblank_irq(int state)
+WRITE_LINE_MEMBER(atlantis_state::vblank_irq)
 {
 	//logerror("%s: atlantis_state::vblank state = %i\n", machine().describe_context(), state);
 	if (state) {
@@ -441,7 +444,7 @@ void atlantis_state::vblank_irq(int state)
 	update_asic_irq();
 }
 
-void atlantis_state::zeus_irq(int state)
+WRITE_LINE_MEMBER(atlantis_state::zeus_irq)
 {
 	//logerror("%s: atlantis_state::zeus_irq state = %i\n", machine().describe_context(), state);
 	if (state) {
@@ -456,7 +459,7 @@ void atlantis_state::zeus_irq(int state)
 /*************************************
 *  IDE interrupts
 *************************************/
-void atlantis_state::ide_irq(int state)
+WRITE_LINE_MEMBER(atlantis_state::ide_irq)
 {
 	if (state) {
 		m_maincpu->set_input_line(IDE_IRQ_NUM, ASSERT_LINE);
@@ -466,15 +469,17 @@ void atlantis_state::ide_irq(int state)
 		m_maincpu->set_input_line(IDE_IRQ_NUM, CLEAR_LINE);
 		m_irq_state &= ~(1 << IDE_IRQ_NUM);
 	}
-	LOGMASKED(LOG_IRQ, "%s: atlantis_state::ide_irq state = %i\n", machine().describe_context(), state);
+	if (LOG_IRQ)
+		logerror("%s: atlantis_state::ide_irq state = %i\n", machine().describe_context(), state);
 }
 
 /*************************************
 *  I/O ASIC interrupts
 *************************************/
-void atlantis_state::ioasic_irq(int state)
+WRITE_LINE_MEMBER(atlantis_state::ioasic_irq)
 {
-	LOGMASKED(LOG_IRQ, "%s: atlantis_state::ioasic_irq state = %i\n", machine().describe_context(), state);
+	if (LOG_IRQ)
+		logerror("%s: atlantis_state::ioasic_irq state = %i\n", machine().describe_context(), state);
 	if (state) {
 		board_ctrl[STATUS] |= (1 << IOASIC_IRQ_SHIFT);
 	}
@@ -487,9 +492,10 @@ void atlantis_state::ioasic_irq(int state)
 /*************************************
 *  Watchdog interrupts
 *************************************/
-void atlantis_state::watchdog_irq(int state)
+WRITE_LINE_MEMBER(atlantis_state::watchdog_irq)
 {
-	LOGMASKED(LOG_IRQ, "%s: atlantis_state::watchdog_irq state = %i\n", machine().describe_context(), state);
+	if (LOG_IRQ)
+		logerror("%s: atlantis_state::watchdog_irq state = %i\n", machine().describe_context(), state);
 	if (state) {
 		board_ctrl[STATUS] |= (1 << WDOG_IRQ_SHIFT);
 	}
@@ -502,7 +508,7 @@ void atlantis_state::watchdog_irq(int state)
 /*************************************
 *  Watchdog Reset
 *************************************/
-void atlantis_state::watchdog_reset(int state)
+WRITE_LINE_MEMBER(atlantis_state::watchdog_reset)
 {
 	if (state) {
 		printf("atlantis_state::watchdog_reset!!!\n");
@@ -525,12 +531,14 @@ void atlantis_state::update_asic_irq()
 		if (causeBits && !currState) {
 			m_maincpu->set_input_line(MIPS3_IRQ1 + irqIndex, ASSERT_LINE);
 			m_irq_state |= (2 << irqIndex);
-			LOGMASKED(LOG_IRQ, "atlantis_state::update_asic_irq Asserting IRQ(%d) CAUSE = %02X\n", irqIndex, board_ctrl[CAUSE]);
+			if (LOG_IRQ)
+				logerror("atlantis_state::update_asic_irq Asserting IRQ(%d) CAUSE = %02X\n", irqIndex, board_ctrl[CAUSE]);
 		}
 		else if (!(causeBits) && currState) {
 			m_maincpu->set_input_line(MIPS3_IRQ1 + irqIndex, CLEAR_LINE);
 			m_irq_state &= ~(2 << irqIndex);
-			LOGMASKED(LOG_IRQ, "atlantis_state::update_asic_irq Clearing IRQ(%d) CAUSE = %02X\n", irqIndex, board_ctrl[CAUSE]);
+			if (LOG_IRQ)
+				logerror("atlantis_state::update_asic_irq Clearing IRQ(%d) CAUSE = %02X\n", irqIndex, board_ctrl[CAUSE]);
 		}
 	}
 }
@@ -541,7 +549,8 @@ uint16_t atlantis_state::port_ctrl_r(offs_t offset)
 {
 	uint32_t newOffset = offset >> 17;
 	uint32_t result = m_port_data;
-	LOGMASKED(LOG_PORT, "%s: port_ctrl_r newOffset = %02X data = %08X\n", machine().describe_context(), newOffset, result);
+	if (LOG_PORT)
+		logerror("%s: port_ctrl_r newOffset = %02X data = %08X\n", machine().describe_context(), newOffset, result);
 	return result;
 }
 
@@ -562,11 +571,13 @@ void atlantis_state::port_ctrl_w(offs_t offset, uint16_t data, uint16_t mem_mask
 			m_port_data = (bits >> 8) & 7; // Row 2
 		else if (!(data & 0x40))
 			m_port_data = (bits >> 12) & 7; // Row 3
-		LOGMASKED(LOG_PORT, "%s: port_ctrl_w Keypad Row Sel = %04X bits = %08X\n", machine().describe_context(), data, bits);
+		if (LOG_PORT)
+			logerror("%s: port_ctrl_w Keypad Row Sel = %04X bits = %08X\n", machine().describe_context(), data, bits);
 		break;
 	}
 	default:
-		LOGMASKED(LOG_PORT, "%s: port_ctrl_w write to offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
+		if (LOG_PORT)
+			logerror("%s: port_ctrl_w write to offset %04X = %08X & %08X bus offset = %08X\n", machine().describe_context(), newOffset, data, mem_mask, offset);
 		break;
 	}
 }
@@ -895,7 +906,7 @@ ROM_START( mwskins )
 	ROM_REGION32_LE( 0x80000, PCI_ID_NILE":rom", 0 )  /* 512k for R4310 code */
 	ROM_LOAD( "skins_game_u4_boot_1.00.u4", 0x000000, 0x080000, CRC(0fe87720) SHA1(4b24abbe662a2d7b61e6a3f079e28b73605ba19f) ) // EPR 1.00 Feb 14 2000 12:20:22
 
-	DISK_REGION(PCI_ID_IDE":ide:0:hdd" )
+	DISK_REGION(PCI_ID_IDE":ide:0:hdd:image" )
 	DISK_IMAGE( "mwskins", 0, SHA1(5cb293a6fdb2478293f48ddfc93cdd018acb2bb5) )
 ROM_END
 
@@ -903,7 +914,7 @@ ROM_START( mwskinsa )
 	ROM_REGION32_LE( 0x80000, PCI_ID_NILE":rom", 0 )  /* 512k for R4310 code */
 	ROM_LOAD( "skins_game_u4_boot_1.00.u4", 0x000000, 0x080000, CRC(0fe87720) SHA1(4b24abbe662a2d7b61e6a3f079e28b73605ba19f) )
 
-	DISK_REGION(PCI_ID_IDE":ide:0:hdd" )
+	DISK_REGION(PCI_ID_IDE":ide:0:hdd:image" )
 	DISK_IMAGE( "mwskinsa", 0, SHA1(72497917b31156eb11a46bbcc6f22a254dcec044) )
 ROM_END
 
@@ -911,7 +922,7 @@ ROM_START( mwskinso )
 	ROM_REGION32_LE( 0x80000, PCI_ID_NILE":rom", 0 )  /* 512k for R4310 code */
 	ROM_LOAD( "skins_game_u4_boot_1.00.u4", 0x000000, 0x080000, CRC(0fe87720) SHA1(4b24abbe662a2d7b61e6a3f079e28b73605ba19f) )
 
-	DISK_REGION(PCI_ID_IDE":ide:0:hdd" )
+	DISK_REGION(PCI_ID_IDE":ide:0:hdd:image" )
 	DISK_IMAGE( "mwskins104", 0, SHA1(6917f66718999c144c854795c5856bf5659b85fa) )
 ROM_END
 
@@ -919,7 +930,7 @@ ROM_START( mwskinst )
 	ROM_REGION32_LE( 0x80000, PCI_ID_NILE":rom", 0 )  /* 512k for R4310 code */
 	ROM_LOAD( "boot101.bin", 0x000000, 0x080000, CRC(8b02035f) SHA1(e7c6c2711052230c117a9342f38c185e311f2950) ) // EPR 1.01 Apr 13 2000 11:18:32
 
-	DISK_REGION(PCI_ID_IDE":ide:0:hdd" )
+	DISK_REGION(PCI_ID_IDE":ide:0:hdd:image" )
 	DISK_IMAGE( "mwskinst", 0, SHA1(1edcf05bd9d5c9d1422e84bd713d1d120940e365) )
 	// another dump with data SHA1 cba09f0240dd797b554ae28b74416472d2327e5b is available, both have latest version 1.15 in the changelog at 0x934687
 ROM_END

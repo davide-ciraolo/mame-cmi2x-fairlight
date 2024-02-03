@@ -7,197 +7,168 @@
 //  SDLMAME by Olivier Galibert and R. Belmont
 //
 //============================================================
-#ifndef MAME_RENDER_WINGLCONTEXT_H
-#define MAME_RENDER_WINGLCONTEXT_H
 
 #pragma once
+
+#ifndef __WIN_GL_CONTEXT__
+#define __WIN_GL_CONTEXT__
 
 #include "modules/opengl/osd_opengl.h"
 #include "modules/lib/osdlib.h"
 
-#include "strconv.h"
+// Typedefs for dynamically loaded functions
+typedef PROC (WINAPI *wglGetProcAddress_fn)(LPCSTR);
+typedef HGLRC (WINAPI *wglCreateContext_fn)(HDC);
+typedef BOOL (WINAPI *wglDeleteContext_fn)(HGLRC);
+typedef BOOL (WINAPI *wglMakeCurrent_fn)(HDC, HGLRC);
 
-#include <cstring>
-#include <string>
-
+typedef const char * (WINAPI *wglGetExtensionsStringEXT_fn)(void);
+typedef BOOL (WINAPI *wglSwapIntervalEXT_fn)(int);
+typedef int (WINAPI *wglGetSwapIntervalEXT_fn)(void);
 
 class win_gl_context : public osd_gl_context
 {
 public:
-	using osd_gl_context::get_proc_address;
-
-	win_gl_context(HWND window) : m_context(nullptr), m_window(window), m_hdc(nullptr)
+	win_gl_context(HWND window) : osd_gl_context(), m_context(0), m_window(nullptr), m_hdc(0)
 	{
-		// open DLL and bind required functions
+		m_error[0] = 0;
+
 		opengl32_dll = osd::dynamic_module::open({ "opengl32.dll" });
+
 		pfn_wglGetProcAddress = opengl32_dll->bind<wglGetProcAddress_fn>("wglGetProcAddress");
 		pfn_wglCreateContext = opengl32_dll->bind<wglCreateContext_fn>("wglCreateContext");
 		pfn_wglDeleteContext = opengl32_dll->bind<wglDeleteContext_fn>("wglDeleteContext");
 		pfn_wglMakeCurrent = opengl32_dll->bind<wglMakeCurrent_fn>("wglMakeCurrent");
-		if (!pfn_wglGetProcAddress || !pfn_wglCreateContext || !pfn_wglDeleteContext || !pfn_wglMakeCurrent)
-			return;
 
-		m_hdc = GetDC(window);
-		if (!m_hdc)
+		if (pfn_wglGetProcAddress == nullptr || pfn_wglCreateContext == nullptr ||
+			pfn_wglDeleteContext == nullptr || pfn_wglMakeCurrent == nullptr)
 		{
-			get_last_error_string();
 			return;
 		}
 
-		if (setupPixelFormat())
-		{
-			m_context = (*pfn_wglCreateContext)(m_hdc);
-			if (!m_context)
-				get_last_error_string();
-		}
-		if (!m_context)
-			return;
+		pfn_wglGetExtensionsStringEXT = (wglGetExtensionsStringEXT_fn)(*pfn_wglGetProcAddress)("wglGetExtensionsStringEXT");
 
-		(*pfn_wglMakeCurrent)(m_hdc, m_context);
-
-		get_proc_address(pfn_wglGetExtensionsStringEXT, "wglGetExtensionsStringEXT");
 		if (WGLExtensionSupported("WGL_EXT_swap_control"))
 		{
-			get_proc_address(pfn_wglSwapIntervalEXT, "wglSwapIntervalEXT");
-			get_proc_address(pfn_wglGetSwapIntervalEXT, "wglGetSwapIntervalEXT");
+			pfn_wglSwapIntervalEXT = (BOOL (WINAPI *) (int)) getProcAddress("wglSwapIntervalEXT");
+			pfn_wglGetSwapIntervalEXT = (int (WINAPI *) (void)) getProcAddress("wglGetSwapIntervalEXT");
 		}
 		else
 		{
 			pfn_wglSwapIntervalEXT = nullptr;
 			pfn_wglGetSwapIntervalEXT = nullptr;
 		}
+
+		m_hdc = GetDC(window);
+		if (!setupPixelFormat(m_hdc))
+		{
+			m_context = (*pfn_wglCreateContext)(m_hdc);
+			if (!m_context)
+			{
+				FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, GetLastError(), 0, m_error, 255, nullptr);
+				return;
+			}
+			(*pfn_wglMakeCurrent)(m_hdc, m_context);
+		}
 	}
 
 	virtual ~win_gl_context()
 	{
-		if (m_context)
-			(*pfn_wglDeleteContext)(m_context);
-
-		if (m_hdc)
-			ReleaseDC(m_window, m_hdc);
+		(*pfn_wglDeleteContext)(m_context);
+		ReleaseDC(m_window, m_hdc);
 	}
 
-	virtual explicit operator bool() const override
-	{
-		return bool(m_context);
-	}
-
-	virtual void make_current() override
+	virtual void MakeCurrent() override
 	{
 		(*pfn_wglMakeCurrent)(m_hdc, m_context);
 	}
 
-	virtual const char *last_error_message() override
+	virtual const char *LastErrorMsg() override
 	{
-		if (!m_error.empty())
-			return m_error.c_str();
-		else
+		if (m_error[0] == 0)
 			return nullptr;
+		else
+			return m_error;
 	}
 
-	virtual void *get_proc_address(const char *proc) override
+	virtual void *getProcAddress(const char *proc) override
 	{
-		return reinterpret_cast<void *>(uintptr_t((*pfn_wglGetProcAddress)(proc)));
+		return (void *)(*pfn_wglGetProcAddress)(proc);
 	}
 
-	virtual bool set_swap_interval(const int swap) override
+	virtual int SetSwapInterval(const int swap) override
 	{
-		if (!pfn_wglSwapIntervalEXT)
-			return false;
-
-		pfn_wglSwapIntervalEXT(swap ? 1 : 0);
-		return true;
+		if (pfn_wglSwapIntervalEXT != nullptr)
+		{
+			pfn_wglSwapIntervalEXT(swap ? 1 : 0);
+		}
+		return 0;
 	}
 
-	virtual void swap_buffer() override
+	virtual void SwapBuffer() override
 	{
 		SwapBuffers(m_hdc);
 		//wglSwapLayerBuffers(GetDC(window().m_hwnd), WGL_SWAP_MAIN_PLANE);
 	}
 
 private:
-	// Typedefs for dynamically loaded functions
-	typedef PROC (WINAPI *wglGetProcAddress_fn)(LPCSTR);
-	typedef HGLRC (WINAPI *wglCreateContext_fn)(HDC);
-	typedef BOOL (WINAPI *wglDeleteContext_fn)(HGLRC);
-	typedef BOOL (WINAPI *wglMakeCurrent_fn)(HDC, HGLRC);
 
-	typedef const char * (WINAPI *wglGetExtensionsStringEXT_fn)();
-	typedef BOOL (WINAPI *wglSwapIntervalEXT_fn)(int);
-	typedef int (WINAPI *wglGetSwapIntervalEXT_fn)();
-
-	bool setupPixelFormat()
+	int setupPixelFormat(HDC hDC)
 	{
 		PIXELFORMATDESCRIPTOR pfd = {
-				sizeof(PIXELFORMATDESCRIPTOR),  // size
-				1,                              // version
-				PFD_SUPPORT_OPENGL |
-				PFD_DRAW_TO_WINDOW |
-				PFD_DOUBLEBUFFER,               // support double-buffering
-				PFD_TYPE_RGBA,                  // color type
-				32,                             // prefered color depth
-				0, 0, 0, 0, 0, 0,               // color bits (ignored)
-				0,                              // no alpha buffer
-				0,                              // alpha bits (ignored)
-				0,                              // no accumulation buffer
-				0, 0, 0, 0,                     // accum bits (ignored)
-				16,                             // depth buffer
-				0,                              // no stencil buffer
-				0,                              // no auxiliary buffers
-				PFD_MAIN_PLANE,                 // main layer
-				0,                              // reserved
-				0, 0, 0,                        // no layer, visible, damage masks
-			};
+			sizeof(PIXELFORMATDESCRIPTOR),  /* size */
+			1,                              /* version */
+			PFD_SUPPORT_OPENGL |
+			PFD_DRAW_TO_WINDOW |
+			PFD_DOUBLEBUFFER,               /* support double-buffering */
+			PFD_TYPE_RGBA,                  /* color type */
+			32,                             /* prefered color depth */
+			0, 0, 0, 0, 0, 0,               /* color bits (ignored) */
+			0,                              /* no alpha buffer */
+			0,                              /* alpha bits (ignored) */
+			0,                              /* no accumulation buffer */
+			0, 0, 0, 0,                     /* accum bits (ignored) */
+			16,                             /* depth buffer */
+			0,                              /* no stencil buffer */
+			0,                              /* no auxiliary buffers */
+			PFD_MAIN_PLANE,                 /* main layer */
+			0,                              /* reserved */
+			0, 0, 0,                        /* no layer, visible, damage masks */
+		};
 
-		const int pixelFormat = ChoosePixelFormat(m_hdc, &pfd);
+		int pixelFormat = ChoosePixelFormat(hDC, &pfd);
+
 		if (pixelFormat == 0)
 		{
-			get_last_error_string();
-			return false;
+			strcpy(m_error, "ChoosePixelFormat failed.");
+			return 1;
 		}
 
-		if (SetPixelFormat(m_hdc, pixelFormat, &pfd) != TRUE)
+		if (SetPixelFormat(hDC, pixelFormat, &pfd) != TRUE)
 		{
-			get_last_error_string();
-			return false;
+			strcpy(m_error, "SetPixelFormat failed.");
+			return 1;
 		}
-
-		return true;
+		return 0;
 	}
 
 	bool WGLExtensionSupported(const char *extension_name)
 	{
-		if (!pfn_wglGetExtensionsStringEXT)
+		if (pfn_wglGetExtensionsStringEXT == nullptr)
 			return false;
 
-		return strstr(pfn_wglGetExtensionsStringEXT(), extension_name) != nullptr;
-	}
+		//  printf("%s\n", pfn_wglGetExtensionsStringEXT());
 
-	void get_last_error_string()
-	{
-		LPTSTR buffer = nullptr;
-		const auto result = FormatMessage(
-				FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-				nullptr,
-				GetLastError(),
-				0,
-				LPTSTR(&buffer),
-				0,
-				nullptr);
-		if (!result || !buffer)
-		{
-			m_error.clear();
-			return;
-		}
-		try { m_error = osd::text::from_tstring(buffer); }
-		catch (...) { m_error.clear(); }
-		LocalFree(buffer);
+		if (strstr(pfn_wglGetExtensionsStringEXT(), extension_name) != nullptr)
+			return true;
+		else
+			return false;
 	}
 
 	HGLRC m_context;
-	HWND const m_window;
+	HWND m_window;
 	HDC m_hdc;
-	std::string m_error;
+	char m_error[256];
 
 	osd::dynamic_module::ptr     opengl32_dll;
 	wglGetProcAddress_fn         pfn_wglGetProcAddress;
@@ -210,4 +181,4 @@ private:
 	wglGetSwapIntervalEXT_fn     pfn_wglGetSwapIntervalEXT;
 };
 
-#endif // MAME_RENDER_WINGLCONTEXT_H
+#endif // __WIN_GL_CONTEXT__

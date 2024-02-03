@@ -18,6 +18,7 @@
 #include "mufdc.h"
 
 #include "formats/naslite_dsk.h"
+#include "formats/pc_dsk.h"
 
 
 //**************************************************************************
@@ -175,12 +176,12 @@ uint8_t mufdc_device::fdc_input_r()
 	return ~m_config->read();
 }
 
-void mufdc_device::fdc_irq_w(int state)
+WRITE_LINE_MEMBER( mufdc_device::fdc_irq_w )
 {
 	m_isa->irq6_w(state ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void mufdc_device::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( mufdc_device::fdc_drq_w )
 {
 	m_isa->drq2_w(state ? ASSERT_LINE : CLEAR_LINE);
 }

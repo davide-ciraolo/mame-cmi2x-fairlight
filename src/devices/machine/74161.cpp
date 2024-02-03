@@ -65,6 +65,9 @@ void ttl7416x_device::device_start()
 	save_item(NAME(m_pclock));
 	save_item(NAME(m_p));
 	save_item(NAME(m_out));
+
+	m_output_func.resolve_safe();
+	m_tc_func.resolve_safe();
 }
 
 void ttl7416x_device::device_reset()
@@ -138,7 +141,7 @@ void ttl7416x_device::increment()
 	m_out &= 0x0f;
 }
 
-void ttl7416x_device::clear_w(int state)
+WRITE_LINE_MEMBER( ttl7416x_device::clear_w )
 {
 	m_clear = state;
 	if (!m_synchronous_reset)
@@ -146,22 +149,22 @@ void ttl7416x_device::clear_w(int state)
 }
 
 
-void ttl7416x_device::pe_w(int state)
+WRITE_LINE_MEMBER( ttl7416x_device::pe_w )
 {
 	m_pe = state ^ 1;
 }
 
-void ttl7416x_device::cet_w(int state)
+WRITE_LINE_MEMBER( ttl7416x_device::cet_w )
 {
 	m_cet = state;
 }
 
-void ttl7416x_device::cep_w(int state)
+WRITE_LINE_MEMBER( ttl7416x_device::cep_w )
 {
 	m_cep = state;
 }
 
-void ttl7416x_device::clock_w(int state)
+WRITE_LINE_MEMBER( ttl7416x_device::clock_w )
 {
 	uint8_t last_clock = m_pclock;
 	m_pclock = state;
@@ -176,31 +179,31 @@ void ttl7416x_device::p_w(uint8_t data)
 	m_p = data & 0xf;
 }
 
-void ttl7416x_device::p1_w(int state)
+WRITE_LINE_MEMBER( ttl7416x_device::p1_w )
 {
 	m_p &= ~(1 << 0);
 	m_p |= (state << 0);
 }
 
-void ttl7416x_device::p2_w(int state)
+WRITE_LINE_MEMBER( ttl7416x_device::p2_w )
 {
 	m_p &= ~(1 << 1);
 	m_p |= (state << 1);
 }
 
-void ttl7416x_device::p3_w(int state)
+WRITE_LINE_MEMBER( ttl7416x_device::p3_w )
 {
 	m_p &= ~(1 << 2);
 	m_p |= (state << 2);
 }
 
-void ttl7416x_device::p4_w(int state)
+WRITE_LINE_MEMBER( ttl7416x_device::p4_w )
 {
 	m_p &= ~(1 << 3);
 	m_p |= (state << 3);
 }
 
-int ttl7416x_device::output_r()
+READ_LINE_MEMBER( ttl7416x_device::output_r )
 {
 	return m_out;
 }
@@ -209,7 +212,7 @@ int ttl7416x_device::output_r()
     TC is an asynchronous signal, depending on the current states of CET, CEP,
     and the counter value.
 */
-int ttl7416x_device::tc_r()
+READ_LINE_MEMBER( ttl7416x_device::tc_r )
 {
 	return ((m_cet==1) && (m_cep==1) && (m_out==m_limit-1))? 1:0;
 }

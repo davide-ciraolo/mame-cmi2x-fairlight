@@ -152,7 +152,7 @@ void pet_userport_joystick_and_sound_device::update_port2()
 }
 
 
-void pet_userport_joystick_and_sound_device::input_m(int state)
+DECLARE_WRITE_LINE_MEMBER( pet_userport_joystick_and_sound_device::input_m )
 {
 	m_dac->write(state);
 }

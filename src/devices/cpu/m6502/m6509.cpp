@@ -2,7 +2,7 @@
 // copyright-holders:Olivier Galibert
 /***************************************************************************
 
-    m6509.cpp
+    m6509.c
 
     6502 with banking and extended address bus
 

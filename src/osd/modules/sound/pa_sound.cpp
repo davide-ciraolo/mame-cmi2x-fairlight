@@ -9,45 +9,40 @@
 *******************************************************************c********/
 
 #include "sound_module.h"
-
 #include "modules/osdmodule.h"
 
 #ifndef NO_USE_PORTAUDIO
 
-#include "modules/lib/osdobj_common.h"
-#include "osdcore.h"
-
 #include <portaudio.h>
+#include "modules/lib/osdobj_common.h"
 
-#include <algorithm>
-#include <atomic>
-#include <climits>
-#include <cmath>
-#include <fstream>
 #include <iostream>
+#include <fstream>
 #include <sstream>
+#include <atomic>
+#include <cmath>
+#include <climits>
+#include <algorithm>
 
 #ifdef _WIN32
 #include "pa_win_wasapi.h"
 #endif
 
-
-namespace osd {
-
-namespace {
-
 #define LOG_FILE   "pa.log"
 #define LOG_BUFCNT 0
+
+using osd::s16;
 
 class sound_pa : public osd_module, public sound_module
 {
 public:
-	sound_pa() : osd_module(OSD_SOUND_PROVIDER, "portaudio")
+	sound_pa()
+		: osd_module(OSD_SOUND_PROVIDER, "portaudio"), sound_module()
 	{
 	}
 	virtual ~sound_pa() { }
 
-	virtual int init(osd_interface &osd, osd_options const &options) override;
+	virtual int init(osd_options const &options) override;
 	virtual void exit() override;
 
 	// sound_module
@@ -157,8 +152,6 @@ private:
 	PaStream*           m_pa_stream;
 	PaError             err;
 
-	int                 m_sample_rate;
-	int                 m_audio_latency;
 	int                 m_attenuation;
 
 	audio_buffer<s16>*  m_ab;
@@ -179,12 +172,8 @@ private:
 #endif
 };
 
-int sound_pa::init(osd_interface &osd, osd_options const &options)
+int sound_pa::init(osd_options const &options)
 {
-	m_sample_rate = options.sample_rate();
-	if (!m_sample_rate)
-		return 0;
-
 	PaStreamParameters   stream_params;
 	const PaStreamInfo*  stream_info;
 	const PaHostApiInfo* api_info;
@@ -192,6 +181,9 @@ int sound_pa::init(osd_interface &osd, osd_options const &options)
 
 	unsigned long        frames_per_callback = paFramesPerBufferUnspecified;
 	double               callback_interval;
+
+	if (!sample_rate())
+		return 0;
 
 	m_attenuation           = options.volume();
 	m_underflows            = 0;
@@ -202,7 +194,7 @@ int sound_pa::init(osd_interface &osd, osd_options const &options)
 	m_skip_threshold_ticks  = 0;
 	m_osd_tps               = osd_ticks_per_second();
 	m_buffer_min_ct         = INT_MAX;
-	m_audio_latency         = std::clamp<int>(options.audio_latency(), LATENCY_MIN, LATENCY_MAX);
+	m_audio_latency         = std::clamp<int>(m_audio_latency, LATENCY_MIN, LATENCY_MAX);
 
 	try {
 		m_ab = new audio_buffer<s16>(m_sample_rate, 2);
@@ -374,7 +366,7 @@ int sound_pa::callback(s16* output_buffer, size_t number_of_samples)
 				int adjust = m_buffer_min_ct - m_skip_threshold / 2;
 
 				// if adjustment is less than two milliseconds, don't bother
-				if (adjust / 2 > m_sample_rate / 500) {
+				if (adjust / 2 > sample_rate() / 500) {
 					m_ab->increment_playpos(adjust);
 					m_has_overflowed = true;
 				}
@@ -401,7 +393,7 @@ int sound_pa::callback(s16* output_buffer, size_t number_of_samples)
 
 void sound_pa::update_audio_stream(bool is_throttled, const s16 *buffer, int samples_this_frame)
 {
-	if (!m_sample_rate)
+	if (!sample_rate())
 		return;
 
 #if LOG_BUFCNT
@@ -436,7 +428,7 @@ void sound_pa::set_mastervolume(int attenuation)
 
 void sound_pa::exit()
 {
-	if (!m_sample_rate)
+	if (!sample_rate())
 		return;
 
 #if LOG_BUFCNT
@@ -466,14 +458,8 @@ void sound_pa::exit()
 		osd_printf_verbose("Sound: overflows=%d underflows=%d\n", m_overflows, m_underflows);
 }
 
-} // anonymous namespace
-
-} // namespace osd
-
 #else
-
-namespace osd { namespace { MODULE_NOT_SUPPORTED(sound_pa, OSD_SOUND_PROVIDER, "portaudio") } }
-
+	MODULE_NOT_SUPPORTED(sound_pa, OSD_SOUND_PROVIDER, "portaudio")
 #endif
 
-MODULE_DEFINITION(SOUND_PORTAUDIO, osd::sound_pa)
+MODULE_DEFINITION(SOUND_PORTAUDIO, sound_pa)

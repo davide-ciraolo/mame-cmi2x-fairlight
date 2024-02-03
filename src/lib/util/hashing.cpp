@@ -9,14 +9,10 @@
 ***************************************************************************/
 
 #include "hashing.h"
-
 #include "strformat.h"
-
-#include "eminline.h"
 
 #include <zlib.h>
 
-#include <algorithm>
 #include <iomanip>
 #include <sstream>
 
@@ -44,48 +40,53 @@ constexpr int char_to_hex(char c)
 }
 
 
-inline uint32_t sha1_b(uint32_t *data, unsigned i) noexcept
+constexpr uint32_t sha1_rol(uint32_t x, unsigned n)
+{
+	return (x << n) | (x >> (32 - n));
+}
+
+inline uint32_t sha1_b(uint32_t *data, unsigned i)
 {
 	uint32_t r = data[(i + 13) & 15U];
 	r ^= data[(i + 8) & 15U];
 	r ^= data[(i + 2) & 15U];
 	r ^= data[i & 15U];
-	r = rotl_32(r, 1);
+	r = sha1_rol(r, 1);
 	data[i & 15U] = r;
 	return r;
 }
 
-inline void sha1_r0(const uint32_t *data, std::array<uint32_t, 5> &d, unsigned i) noexcept
+inline void sha1_r0(const uint32_t *data, std::array<uint32_t, 5> &d, unsigned i)
 {
-	d[i % 5] = d[i % 5] + ((d[(i + 3) % 5] & (d[(i + 2) % 5] ^ d[(i + 1) % 5])) ^ d[(i + 1) % 5]) + data[i] + 0x5a827999U + rotl_32(d[(i + 4) % 5], 5);
-	d[(i + 3) % 5] = rotl_32(d[(i + 3) % 5], 30);
+	d[i % 5] = d[i % 5] + ((d[(i + 3) % 5] & (d[(i + 2) % 5] ^ d[(i + 1) % 5])) ^ d[(i + 1) % 5]) + data[i] + 0x5a827999U + sha1_rol(d[(i + 4) % 5], 5);
+	d[(i + 3) % 5] = sha1_rol(d[(i + 3) % 5], 30);
 }
 
-inline void sha1_r1(uint32_t *data, std::array<uint32_t, 5> &d, unsigned i) noexcept
+inline void sha1_r1(uint32_t *data, std::array<uint32_t, 5> &d, unsigned i)
 {
-	d[i % 5] = d[i % 5] + ((d[(i + 3) % 5] & (d[(i + 2) % 5] ^ d[(i + 1) % 5])) ^ d[(i + 1) % 5])+ sha1_b(data, i) + 0x5a827999U + rotl_32(d[(i + 4) % 5], 5);
-	d[(i + 3) % 5] = rotl_32(d[(i + 3) % 5], 30);
+	d[i % 5] = d[i % 5] + ((d[(i + 3) % 5] & (d[(i + 2) % 5] ^ d[(i + 1) % 5])) ^ d[(i + 1) % 5])+ sha1_b(data, i) + 0x5a827999U + sha1_rol(d[(i + 4) % 5], 5);
+	d[(i + 3) % 5] = sha1_rol(d[(i + 3) % 5], 30);
 }
 
-inline void sha1_r2(uint32_t *data, std::array<uint32_t, 5> &d, unsigned i) noexcept
+inline void sha1_r2(uint32_t *data, std::array<uint32_t, 5> &d, unsigned i)
 {
-	d[i % 5] = d[i % 5] + (d[(i + 3) % 5] ^ d[(i + 2) % 5] ^ d[(i + 1) % 5]) + sha1_b(data, i) + 0x6ed9eba1U + rotl_32(d[(i + 4) % 5], 5);
-	d[(i + 3) % 5] = rotl_32(d[(i + 3) % 5], 30);
+	d[i % 5] = d[i % 5] + (d[(i + 3) % 5] ^ d[(i + 2) % 5] ^ d[(i + 1) % 5]) + sha1_b(data, i) + 0x6ed9eba1U + sha1_rol(d[(i + 4) % 5], 5);
+	d[(i + 3) % 5] = sha1_rol(d[(i + 3) % 5], 30);
 }
 
-inline void sha1_r3(uint32_t *data, std::array<uint32_t, 5> &d, unsigned i) noexcept
+inline void sha1_r3(uint32_t *data, std::array<uint32_t, 5> &d, unsigned i)
 {
-	d[i % 5] = d[i % 5] + (((d[(i + 3) % 5] | d[(i + 2) % 5]) & d[(i + 1) % 5]) | (d[(i + 3) % 5] & d[(i + 2) % 5])) + sha1_b(data, i) + 0x8f1bbcdcU + rotl_32(d[(i + 4) % 5], 5);
-	d[(i + 3) % 5] = rotl_32(d[(i + 3) % 5], 30);
+	d[i % 5] = d[i % 5] + (((d[(i + 3) % 5] | d[(i + 2) % 5]) & d[(i + 1) % 5]) | (d[(i + 3) % 5] & d[(i + 2) % 5])) + sha1_b(data, i) + 0x8f1bbcdcU + sha1_rol(d[(i + 4) % 5], 5);
+	d[(i + 3) % 5] = sha1_rol(d[(i + 3) % 5], 30);
 }
 
-inline void sha1_r4(uint32_t *data, std::array<uint32_t, 5> &d, unsigned i) noexcept
+inline void sha1_r4(uint32_t *data, std::array<uint32_t, 5> &d, unsigned i)
 {
-	d[i % 5] = d[i % 5] + (d[(i + 3) % 5] ^ d[(i + 2) % 5] ^ d[(i + 1) % 5]) + sha1_b(data, i) + 0xca62c1d6U + rotl_32(d[(i + 4) % 5], 5);
-	d[(i + 3) % 5] = rotl_32(d[(i + 3) % 5], 30);
+	d[i % 5] = d[i % 5] + (d[(i + 3) % 5] ^ d[(i + 2) % 5] ^ d[(i + 1) % 5]) + sha1_b(data, i) + 0xca62c1d6U + sha1_rol(d[(i + 4) % 5], 5);
+	d[(i + 3) % 5] = sha1_rol(d[(i + 3) % 5], 30);
 }
 
-inline void sha1_process(std::array<uint32_t, 5> &st, uint32_t *data) noexcept
+inline void sha1_process(std::array<uint32_t, 5> &st, uint32_t *data)
 {
 	std::array<uint32_t, 5> d = st;
 	unsigned i = 0U;
@@ -127,18 +128,18 @@ const sum16_t sum16_t::null = { 0 };
 //  from_string - convert from a string
 //-------------------------------------------------
 
-bool sha1_t::from_string(std::string_view string) noexcept
+bool sha1_t::from_string(std::string_view string)
 {
 	// must be at least long enough to hold everything
-	std::fill(std::begin(m_raw), std::end(m_raw), 0);
+	memset(m_raw, 0, sizeof(m_raw));
 	if (string.length() < 2 * sizeof(m_raw))
 		return false;
 
 	// iterate through our raw buffer
-	for (auto &elem : m_raw)
+	for (auto & elem : m_raw)
 	{
-		int const upper = char_to_hex(string[0]);
-		int const lower = char_to_hex(string[1]);
+		int upper = char_to_hex(string[0]);
+		int lower = char_to_hex(string[1]);
 		if (upper == -1 || lower == -1)
 			return false;
 		elem = (upper << 4) | lower;
@@ -154,16 +155,12 @@ bool sha1_t::from_string(std::string_view string) noexcept
 
 std::string sha1_t::as_string() const
 {
-	std::string result(2 * std::size(m_raw), ' ');
-	auto it = result.begin();
-	for (auto const &elem : m_raw)
-	{
-		auto const upper = elem >> 4;
-		auto const lower = elem & 0x0f;
-		*it++ = ((10 > upper) ? '0' : ('a' - 10)) + upper;
-		*it++ = ((10 > lower) ? '0' : ('a' - 10)) + lower;
-	}
-	return result;
+	std::ostringstream buffer;
+	buffer.fill('0');
+	buffer << std::hex;
+	for (auto & elem : m_raw)
+		buffer << std::setw(2) << unsigned(elem);
+	return buffer.str();
 }
 
 
@@ -171,7 +168,7 @@ std::string sha1_t::as_string() const
 //  reset - prepare to digest a block of data
 //-------------------------------------------------
 
-void sha1_creator::reset() noexcept
+void sha1_creator::reset()
 {
 	m_cnt = 0U;
 	m_st[0] = 0xc3d2e1f0U;
@@ -186,7 +183,7 @@ void sha1_creator::reset() noexcept
 //  append - digest a block of data
 //-------------------------------------------------
 
-void sha1_creator::append(const void *data, uint32_t length) noexcept
+void sha1_creator::append(const void *data, uint32_t length)
 {
 #ifdef LSB_FIRST
 	constexpr unsigned swizzle = 3U;
@@ -221,7 +218,7 @@ void sha1_creator::append(const void *data, uint32_t length) noexcept
 //  finish - compute final hash
 //-------------------------------------------------
 
-sha1_t sha1_creator::finish() noexcept
+sha1_t sha1_creator::finish()
 {
 	const unsigned padlen = 64U - (63U & ((unsigned(m_cnt) >> 3) + 8U));
 	uint8_t padbuf[64];
@@ -249,18 +246,18 @@ sha1_t sha1_creator::finish() noexcept
 //  from_string - convert from a string
 //-------------------------------------------------
 
-bool md5_t::from_string(std::string_view string) noexcept
+bool md5_t::from_string(std::string_view string)
 {
 	// must be at least long enough to hold everything
-	std::fill(std::begin(m_raw), std::end(m_raw), 0);
+	memset(m_raw, 0, sizeof(m_raw));
 	if (string.length() < 2 * sizeof(m_raw))
 		return false;
 
 	// iterate through our raw buffer
-	for (auto &elem : m_raw)
+	for (auto & elem : m_raw)
 	{
-		int const upper = char_to_hex(string[0]);
-		int const lower = char_to_hex(string[1]);
+		int upper = char_to_hex(string[0]);
+		int lower = char_to_hex(string[1]);
 		if (upper == -1 || lower == -1)
 			return false;
 		elem = (upper << 4) | lower;
@@ -276,16 +273,12 @@ bool md5_t::from_string(std::string_view string) noexcept
 
 std::string md5_t::as_string() const
 {
-	std::string result(2 * std::size(m_raw), ' ');
-	auto it = result.begin();
-	for (auto const &elem : m_raw)
-	{
-		auto const upper = elem >> 4;
-		auto const lower = elem & 0x0f;
-		*it++ = ((10 > upper) ? '0' : ('a' - 10)) + upper;
-		*it++ = ((10 > lower) ? '0' : ('a' - 10)) + lower;
-	}
-	return result;
+	std::ostringstream buffer;
+	buffer.fill('0');
+	buffer << std::hex;
+	for (auto & elem : m_raw)
+		buffer << std::setw(2) << unsigned(elem);
+	return buffer.str();
 }
 
 
@@ -298,18 +291,18 @@ std::string md5_t::as_string() const
 //  from_string - convert from a string
 //-------------------------------------------------
 
-bool crc32_t::from_string(std::string_view string) noexcept
+bool crc32_t::from_string(std::string_view string)
 {
 	// must be at least long enough to hold everything
 	m_raw = 0;
-	if (string.length() < (2 * sizeof(m_raw)))
+	if (string.length() < 2 * sizeof(m_raw))
 		return false;
 
 	// iterate through our raw buffer
 	m_raw = 0;
 	for (int bytenum = 0; bytenum < sizeof(m_raw) * 2; bytenum++)
 	{
-		int const nibble = char_to_hex(string[0]);
+		int nibble = char_to_hex(string[0]);
 		if (nibble == -1)
 			return false;
 		m_raw = (m_raw << 4) | nibble;
@@ -334,7 +327,7 @@ std::string crc32_t::as_string() const
 //  the currently-accumulated value
 //-------------------------------------------------
 
-void crc32_creator::append(const void *data, uint32_t length) noexcept
+void crc32_creator::append(const void *data, uint32_t length)
 {
 	m_accum.m_raw = crc32(m_accum, reinterpret_cast<const Bytef *>(data), length);
 }
@@ -349,18 +342,18 @@ void crc32_creator::append(const void *data, uint32_t length) noexcept
 //  from_string - convert from a string
 //-------------------------------------------------
 
-bool crc16_t::from_string(std::string_view string) noexcept
+bool crc16_t::from_string(std::string_view string)
 {
 	// must be at least long enough to hold everything
 	m_raw = 0;
-	if (string.length() < (2 * sizeof(m_raw)))
+	if (string.length() < 2 * sizeof(m_raw))
 		return false;
 
 	// iterate through our raw buffer
 	m_raw = 0;
 	for (int bytenum = 0; bytenum < sizeof(m_raw) * 2; bytenum++)
 	{
-		int const nibble = char_to_hex(string[0]);
+		int nibble = char_to_hex(string[0]);
 		if (nibble == -1)
 			return false;
 		m_raw = (m_raw << 4) | nibble;
@@ -395,7 +388,7 @@ std::string crc16_t::as_string() const
  * @param   length  The length.
  */
 
-void crc16_creator::append(const void *data, uint32_t length) noexcept
+void crc16_creator::append(const void *data, uint32_t length)
 {
 	static const uint16_t s_table[256] =
 	{
@@ -452,18 +445,18 @@ void crc16_creator::append(const void *data, uint32_t length) noexcept
 //  from_string - convert from a string
 //-------------------------------------------------
 
-bool sum16_t::from_string(std::string_view string) noexcept
+bool sum16_t::from_string(std::string_view string)
 {
 	// must be at least long enough to hold everything
 	m_raw = 0;
-	if (string.length() < (2 * sizeof(m_raw)))
+	if (string.length() < 2 * sizeof(m_raw))
 		return false;
 
 	// iterate through our raw buffer
 	m_raw = 0;
 	for (int bytenum = 0; bytenum < sizeof(m_raw) * 2; bytenum++)
 	{
-		int const nibble = char_to_hex(string[0]);
+		int nibble = char_to_hex(string[0]);
 		if (nibble == -1)
 			return false;
 		m_raw = (m_raw << 4) | nibble;
@@ -498,7 +491,7 @@ std::string sum16_t::as_string() const
  * @param   length  The length.
  */
 
-void sum16_creator::append(const void *data, uint32_t length) noexcept
+void sum16_creator::append(const void *data, uint32_t length)
 {
 	const auto *src = reinterpret_cast<const uint8_t *>(data);
 

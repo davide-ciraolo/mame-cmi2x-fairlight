@@ -5,8 +5,8 @@
     Gaelco 3D serial hardware
 
 ***************************************************************************/
-#ifndef MAME_GAELCO_GAELCO3D_M_H
-#define MAME_GAELCO_GAELCO3D_M_H
+#ifndef MAME_MACHINE_GAELCO3D_H
+#define MAME_MACHINE_GAELCO3D_H
 
 #pragma once
 
@@ -30,9 +30,9 @@ public:
 	uint8_t status_r();
 	void data_w(uint8_t data);
 	uint8_t data_r();
-	void rts_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(rts_w);
 	/* Set to 1 during transmit, 0 for receive */
-	void tr_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(tr_w);
 
 
 	/* Big questions marks, related to serial i/o */
@@ -40,11 +40,11 @@ public:
 	/* Not used in surfplnt, but in radikalb
 	 * Set at beginning of transfer sub, cleared at end
 	 */
-	void unknown_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(unknown_w);
 
 
 	/* only used in radikalb, set at beginning of receive isr, cleared at end */
-	void irq_enable(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_enable);
 
 protected:
 	// device-level overrides
@@ -105,4 +105,4 @@ private:
 
 DECLARE_DEVICE_TYPE(GAELCO_SERIAL, gaelco_serial_device)
 
-#endif // MAME_GAELCO_GAELCO3D_M_H
+#endif // MAME_MACHINE_GAELCO3D_H

@@ -171,8 +171,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 #define MAIN_CLOCK  XTAL(12'000'000)
 #define AY_CLOCK    MAIN_CLOCK / 8
 #define SEC_CLOCK   XTAL(3'686'400)
@@ -603,8 +601,6 @@ ROM_END
 void wildpkr_state::init_wildpkr()
 {
 }
-
-} // anonymous namespace
 
 
 /*************************

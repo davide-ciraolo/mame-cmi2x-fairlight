@@ -9,8 +9,8 @@
 #include "emu.h"
 #include "saa5240.h"
 
-#define LOG_DATA (1U << 1)
-#define LOG_LINE (1U << 2)
+#define LOG_DATA (1 << 1)
+#define LOG_LINE (1 << 2)
 
 #define VERBOSE (LOG_DATA)
 #include "logmacro.h"
@@ -172,7 +172,7 @@ void saa5240_device::device_reset()
 //  READ/WRITE HANDLERS
 //**************************************************************************
 
-void saa5240_device::write_scl(int state)
+WRITE_LINE_MEMBER(saa5240_device::write_scl)
 {
 	if (m_i2c_scl != state)
 	{
@@ -335,7 +335,7 @@ void saa5240_device::write_scl(int state)
 	}
 }
 
-void saa5240_device::write_sda(int state)
+WRITE_LINE_MEMBER(saa5240_device::write_sda)
 {
 	state &= 1;
 	if (m_i2c_sdaw != state)
@@ -362,7 +362,7 @@ void saa5240_device::write_sda(int state)
 	}
 }
 
-int saa5240_device::read_sda()
+READ_LINE_MEMBER(saa5240_device::read_sda)
 {
 	int res = m_i2c_sdar & 1;
 
@@ -639,7 +639,7 @@ void saa5240_device::get_character_data(uint8_t data)
 //  vcs_w - video composite sync
 //-------------------------------------------------
 
-void saa5240_device::vcs_w(int state)
+WRITE_LINE_MEMBER(saa5240_device::vcs_w)
 {
 	if (state)
 	{
@@ -675,7 +675,7 @@ void saa5240_device::vcs_w(int state)
 //  f6_w - character display clock
 //-------------------------------------------------
 
-void saa5240_device::f6_w(int state)
+WRITE_LINE_MEMBER(saa5240_device::f6_w)
 {
 	if (state)
 	{

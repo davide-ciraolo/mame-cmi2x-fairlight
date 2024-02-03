@@ -157,8 +157,6 @@ Notes:
 #include "softlist.h"
 #include "speaker.h"
 
-#include "utf8.h"
-
 
 void v1050_state::set_interrupt(int line, int state)
 {
@@ -405,7 +403,7 @@ void v1050_state::sasi_data_w(uint8_t data)
 	}
 }
 
-void v1050_state::write_sasi_io(int state)
+WRITE_LINE_MEMBER( v1050_state::write_sasi_io )
 {
 	m_sasi_ctrl_in->write_bit4(state);
 
@@ -644,7 +642,7 @@ INPUT_PORTS_END
 
 // 8214 Interface
 
-void v1050_state::pic_int_w(int state)
+WRITE_LINE_MEMBER(v1050_state::pic_int_w)
 {
 	if (state == ASSERT_LINE)
 	{
@@ -705,12 +703,12 @@ void v1050_state::misc_ppi_pa_w(uint8_t data)
 	m_fdc->dden_w(BIT(data, 7));
 }
 
-void v1050_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER(v1050_state::write_centronics_busy)
 {
 	m_centronics_busy = state;
 }
 
-void v1050_state::write_centronics_perror(int state)
+WRITE_LINE_MEMBER(v1050_state::write_centronics_perror)
 {
 	m_centronics_perror = state;
 }
@@ -879,33 +877,33 @@ void v1050_state::rtc_ppi_pc_w(uint8_t data)
 
 // Keyboard 8251A Interface
 
-void v1050_state::write_keyboard_clock(int state)
+WRITE_LINE_MEMBER(v1050_state::write_keyboard_clock)
 {
 	m_uart_kb->write_txc(state);
 	m_uart_kb->write_rxc(state);
 }
 
-void v1050_state::kb_rxrdy_w(int state)
+WRITE_LINE_MEMBER( v1050_state::kb_rxrdy_w )
 {
 	set_interrupt(INT_KEYBOARD, state);
 }
 
 // Serial 8251A Interface
 
-void v1050_state::write_sio_clock(int state)
+WRITE_LINE_MEMBER(v1050_state::write_sio_clock)
 {
 	m_uart_sio->write_txc(state);
 	m_uart_sio->write_rxc(state);
 }
 
-void v1050_state::sio_rxrdy_w(int state)
+WRITE_LINE_MEMBER( v1050_state::sio_rxrdy_w )
 {
 	m_rxrdy = state;
 
 	set_interrupt(INT_RS_232, m_rxrdy || m_txrdy);
 }
 
-void v1050_state::sio_txrdy_w(int state)
+WRITE_LINE_MEMBER( v1050_state::sio_txrdy_w )
 {
 	m_txrdy = state;
 
@@ -936,14 +934,14 @@ static void v1050_floppies(device_slot_interface &device)
 	device.option_add("525qd", FLOPPY_525_QD); // Teac FD 55-FV-35-U
 }
 
-void v1050_state::fdc_intrq_w(int state)
+WRITE_LINE_MEMBER( v1050_state::fdc_intrq_w )
 {
 	m_fdc_irq = state;
 
 	update_fdc();
 }
 
-void v1050_state::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( v1050_state::fdc_drq_w )
 {
 	m_fdc_drq = state;
 

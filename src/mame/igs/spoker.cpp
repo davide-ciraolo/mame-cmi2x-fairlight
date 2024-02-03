@@ -69,7 +69,7 @@ public:
 	void init_spk116it();
 	void init_3super8();
 
-	int hopper_r();
+	DECLARE_READ_LINE_MEMBER(hopper_r);
 
 protected:
 	virtual void machine_start() override;
@@ -178,7 +178,7 @@ uint32_t spoker_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap
                                Misc Handlers
 ***************************************************************************/
 
-int spoker_state::hopper_r()
+READ_LINE_MEMBER(spoker_state::hopper_r)
 {
 	if (m_hopper) return !(m_screen->frame_number()%10);
 	return machine().input().code_pressed(KEYCODE_H);

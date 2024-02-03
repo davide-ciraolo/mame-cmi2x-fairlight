@@ -37,12 +37,10 @@ protected:
 	// optional information overrides
 	virtual const tiny_rom_entry *device_rom_region() const override;
 
-	virtual void map_io(address_space_installer &space) override;
-
 	uint16_t m_kanji_addr;
 
 private:
-	required_region_ptr<uint8_t> m_rom;
+	uint8_t *m_rom;
 };
 
 // device type definition

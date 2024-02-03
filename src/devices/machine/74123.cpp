@@ -27,17 +27,17 @@ DEFINE_DEVICE_TYPE(TTL74123, ttl74123_device, "ttl74123", "74123 TTL")
 //  ttl74123_device - constructor
 //-------------------------------------------------
 
-ttl74123_device::ttl74123_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
-	device_t(mconfig, TTL74123, tag, owner, clock),
-	m_clear_timer(nullptr),
-	m_output_timer(nullptr),
-	m_connection_type(TTL74123_NOT_GROUNDED_NO_DIODE),
-	m_res(1.0),
-	m_cap(1.0),
-	m_a(0),
-	m_b(0),
-	m_clear(0),
-	m_output_changed_cb(*this)
+ttl74123_device::ttl74123_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: device_t(mconfig, TTL74123, tag, owner, clock),
+		m_clear_timer(nullptr),
+		m_output_timer(nullptr),
+		m_connection_type(TTL74123_NOT_GROUNDED_NO_DIODE),
+		m_res(1.0),
+		m_cap(1.0),
+		m_a(0),
+		m_b(0),
+		m_clear(0),
+		m_output_changed_cb(*this)
 {
 }
 
@@ -47,6 +47,8 @@ ttl74123_device::ttl74123_device(const machine_config &mconfig, const char *tag,
 
 void ttl74123_device::device_start()
 {
+	m_output_changed_cb.resolve_safe();
+
 	m_clear_timer = timer_alloc(FUNC(ttl74123_device::clear_callback), this);
 	m_output_timer = timer_alloc(FUNC(ttl74123_device::output_callback), this);
 
@@ -189,7 +191,7 @@ void ttl74123_device::start_pulse()
 //  a_w - write register a data
 //-------------------------------------------------
 
-void ttl74123_device::a_w(int state)
+WRITE_LINE_MEMBER( ttl74123_device::a_w )
 {
 	/* start/regtrigger pulse if B=HI and falling edge on A (while clear is HI) */
 	if (!state && m_a && m_b && m_clear)
@@ -205,7 +207,7 @@ void ttl74123_device::a_w(int state)
 //  b_w - write register b data
 //-------------------------------------------------
 
-void ttl74123_device::b_w(int state)
+WRITE_LINE_MEMBER( ttl74123_device::b_w )
 {
 	/* start/regtrigger pulse if A=LO and rising edge on B (while clear is HI) */
 	if (state && !m_b && !m_a && m_clear)
@@ -221,7 +223,7 @@ void ttl74123_device::b_w(int state)
 //  clear_w - write register clear data
 //-------------------------------------------------
 
-void ttl74123_device::clear_w(int state)
+WRITE_LINE_MEMBER( ttl74123_device::clear_w )
 {
 	/* start/regtrigger pulse if B=HI and A=LO and rising edge on clear */
 	if (state && !m_a && m_b && !m_clear)
@@ -242,7 +244,7 @@ void ttl74123_device::clear_w(int state)
 //  reset_w - reset device
 //-------------------------------------------------
 
-void ttl74123_device::reset_w(int state)
+WRITE_LINE_MEMBER( ttl74123_device::reset_w )
 {
 	set_output();
 }

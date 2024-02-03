@@ -2,7 +2,7 @@
 // copyright-holders:Nigel Barnes
 /**********************************************************************
 
-    EMR BBC MIDI Interface
+    EMR BBC Midi Interface
 
     http://chrisacorns.computinghistory.org.uk/8bit_Upgrades/EMR_BBCMIDI.html
 
@@ -27,7 +27,7 @@
 //  DEVICE DEFINITIONS
 //**************************************************************************
 
-DEFINE_DEVICE_TYPE(BBC_EMRMIDI, bbc_emrmidi_device, "bbc_emrmidi", "EMR BBC MIDI Interface");
+DEFINE_DEVICE_TYPE(BBC_EMRMIDI, bbc_emrmidi_device, "bbc_emrmidi", "EMR BBC Midi Interface");
 
 
 //-------------------------------------------------
@@ -101,7 +101,7 @@ void bbc_emrmidi_device::fred_w(offs_t offset, uint8_t data)
 	}
 }
 
-void bbc_emrmidi_device::write_acia_clock(int state)
+WRITE_LINE_MEMBER(bbc_emrmidi_device::write_acia_clock)
 {
 	m_acia->write_txc(state);
 	m_acia->write_rxc(state);

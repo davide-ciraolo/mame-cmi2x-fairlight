@@ -78,8 +78,6 @@ TODO :
 #include "911_vdt.h"
 
 
-namespace {
-
 class ti990_10_state : public driver_device
 {
 public:
@@ -100,11 +98,11 @@ private:
 	void main_map(address_map &map);
 	void io_map(address_map &map);
 
-	void key_interrupt(int state);
-	void line_interrupt(int state);
-	void tape_interrupt(int state);
-	void set_int13(int state);
-	[[maybe_unused]] void ckon_ckof_callback(int state);
+	WRITE_LINE_MEMBER( key_interrupt );
+	WRITE_LINE_MEMBER( line_interrupt );
+	WRITE_LINE_MEMBER( tape_interrupt );
+	WRITE_LINE_MEMBER( set_int13 );
+	WRITE_LINE_MEMBER( ckon_ckof_callback );
 	uint8_t panel_read(offs_t offset);
 	void panel_write(uint8_t data);
 
@@ -146,7 +144,7 @@ void ti990_10_state::set_int_line(int line, int state)
 }
 
 
-void ti990_10_state::set_int13(int state)
+WRITE_LINE_MEMBER(ti990_10_state::set_int13)
 {
 	set_int_line(13, state);
 }
@@ -172,14 +170,14 @@ void ti990_10_state::hold_load()
 
 /* m_ckon_state: 1 if line clock active (RTCLR flip-flop on TI990/10 schematics -
 SMI sheet 4) */
-void ti990_10_state::line_interrupt(int state)
+WRITE_LINE_MEMBER(ti990_10_state::line_interrupt)
 {
 	// set_int10(state);
 	if (m_ckon_state)
 		set_int_line(5, 1);
 }
 
-void ti990_10_state::ckon_ckof_callback(int state)
+WRITE_LINE_MEMBER(ti990_10_state::ckon_ckof_callback)
 {
 	m_ckon_state = state;
 	if (! m_ckon_state)
@@ -283,7 +281,7 @@ void ti990_10_state::lrex_callback)
     We emulate a single VDT911 CRT terminal.
 */
 
-void ti990_10_state::key_interrupt(int state)
+WRITE_LINE_MEMBER(ti990_10_state::key_interrupt)
 {
 	// set_int10(state);
 }
@@ -326,7 +324,7 @@ void ti990_10_state::io_map(address_map &map)
 /*
     Callback from the tape controller.
 */
-void ti990_10_state::tape_interrupt(int state)
+WRITE_LINE_MEMBER(ti990_10_state::tape_interrupt)
 {
 	// set_int9(state);
 }
@@ -399,9 +397,6 @@ ROM_START(ti990_10)
 	ROM_REGION(vdt911_device::chr_region_len, vdt911_chr_region, ROMREGION_ERASEFF)
 
 ROM_END
-
-} // anonymous namespace
-
 
 //    YEAR  NAME      PARENT  COMPAT  MACHINE   INPUT  CLASS           INIT        COMPANY              FULLNAME                               FLAGS
 COMP( 1975, ti990_10, 0,      0,      ti990_10, 0,     ti990_10_state, empty_init, "Texas Instruments", "TI Model 990/10 Minicomputer System", MACHINE_NOT_WORKING )

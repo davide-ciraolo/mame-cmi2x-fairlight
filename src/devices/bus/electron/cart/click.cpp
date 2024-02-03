@@ -96,8 +96,9 @@ uint8_t electron_click_device::read(offs_t offset, int infc, int infd, int romqa
 	{
 		switch (offset & 0xff)
 		{
+		case 0xf8:
 		case 0xf9:
-			data = m_rtc->data_r();
+			data = m_rtc->read(offset & 0x01);
 			break;
 		case 0xfc:
 			data = m_page_register;
@@ -133,10 +134,8 @@ void electron_click_device::write(offs_t offset, uint8_t data, int infc, int inf
 		switch (offset & 0xff)
 		{
 		case 0xf8:
-			m_rtc->address_w(data);
-			break;
 		case 0xf9:
-			m_rtc->data_w(data);
+			m_rtc->write(offset & 0x01, data);
 			break;
 		case 0xfc:
 			m_page_register = data;

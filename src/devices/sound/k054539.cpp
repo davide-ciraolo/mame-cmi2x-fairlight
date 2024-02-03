@@ -1,5 +1,5 @@
 // license:BSD-3-Clause
-// copyright-holders:Olivier Galibert
+// copyright-holders:Aaron Giles
 /*********************************************************
 
     Konami 054539 (TOP) PCM Sound Chip
@@ -508,7 +508,8 @@ void k054539_device::device_start()
 {
 	m_timer = timer_alloc(FUNC(k054539_device::call_timer_handler), this);
 
-	// resolve delegates
+	// resolve / bind callbacks
+	m_timer_handler.resolve_safe();
 	m_apan_cb.resolve();
 
 	for (auto & elem : gain)
@@ -556,11 +557,10 @@ void k054539_device::device_reset()
 
 
 //-------------------------------------------------
-//  rom_bank_pre_change - refresh the stream if the
-//  ROM banking changes
+//  rom_bank_updated - the rom bank has changed
 //-------------------------------------------------
 
-void k054539_device::rom_bank_pre_change()
+void k054539_device::rom_bank_updated()
 {
 	stream->update();
 }

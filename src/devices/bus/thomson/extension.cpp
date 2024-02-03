@@ -11,9 +11,7 @@ DEFINE_DEVICE_TYPE(THOMSON_EXTENSION, thomson_extension_device, "thomson_extensi
 
 thomson_extension_device::thomson_extension_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
 	device_t(mconfig, THOMSON_EXTENSION, tag, owner, clock),
-	device_single_card_slot_interface<thomson_extension_interface>(mconfig, *this),
-	m_firq_callback(*this),
-	m_irq_callback(*this)
+	device_single_card_slot_interface<thomson_extension_interface>(mconfig, *this)
 {
 }
 
@@ -36,19 +34,7 @@ void thomson_extension_device::device_start()
 }
 
 thomson_extension_interface::thomson_extension_interface(const machine_config &mconfig, device_t &device) :
-	device_interface(device, "extension"),
-	m_ext(dynamic_cast<thomson_extension_device *>(device.owner()))
+	device_interface(device, "extension")
 {
 }
 
-void thomson_extension_interface::firq_w(int state)
-{
-	if(m_ext)
-		m_ext->m_firq_callback(state);
-}
-
-void thomson_extension_interface::irq_w(int state)
-{
-	if(m_ext)
-		m_ext->m_irq_callback(state);
-}

@@ -80,9 +80,6 @@
 #include "screen.h"
 #include "tilemap.h"
 
-
-namespace{
-
 #define MASTER_CLOCK    XTAL(8'000'000)   /* guess */
 
 
@@ -425,13 +422,13 @@ void jokrwild_state::jokrwild(machine_config &config)
 
 //  NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 
-	pia6821_device &pia0(PIA6821(config, "pia0"));
+	pia6821_device &pia0(PIA6821(config, "pia0", 0));
 	pia0.readpa_handler().set_ioport("IN0");
 	pia0.readpb_handler().set_ioport("IN1");
 	pia0.writepa_handler().set(FUNC(jokrwild_state::testa_w));
 	pia0.writepb_handler().set(FUNC(jokrwild_state::testb_w));
 
-	pia6821_device &pia1(PIA6821(config, "pia1"));
+	pia6821_device &pia1(PIA6821(config, "pia1", 0));
 	pia1.readpa_handler().set_ioport("IN2");
 	pia1.readpb_handler().set_ioport("IN3");
 
@@ -511,8 +508,6 @@ void jokrwild_state::init_jokrwild()
 		srcp[i] = srcp[i] ^ 0xcc ^ offs;
 	}
 }
-
-} // anonymous namespace
 
 
 /*************************

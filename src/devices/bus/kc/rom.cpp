@@ -126,7 +126,7 @@ void kc_8k_device::read(offs_t offset, uint8_t &data)
    MEI line write
 -------------------------------------------------*/
 
-void kc_8k_device::mei_w(int state)
+WRITE_LINE_MEMBER( kc_8k_device::mei_w )
 {
 	m_mei = state;
 

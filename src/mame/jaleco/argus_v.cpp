@@ -695,8 +695,7 @@ void argus_state::draw_sprites(bitmap_rgb32 &bitmap, const rectangle &cliprect, 
 			if (priority != pri)
 				m_blend->drawgfx(
 						*m_palette,
-						m_gfxdecode->gfx(0),
-						bitmap, cliprect,
+						bitmap,cliprect,m_gfxdecode->gfx(0),
 						tile,
 						color,
 						flipx, flipy,
@@ -807,15 +806,13 @@ void valtric_state::draw_sprites(bitmap_rgb32 &bitmap, const rectangle &cliprect
 				flipy = !flipy;
 			}
 
-			m_blend->drawgfx(
-					*m_palette,
-					m_gfxdecode->gfx(0),
-					bitmap, cliprect,
-					tile,
-					color,
-					flipx, flipy,
-					sx, sy,
-					15);
+			m_blend->drawgfx(*m_palette,
+						bitmap,cliprect,m_gfxdecode->gfx(0),
+						tile,
+						color,
+						flipx, flipy,
+						sx, sy,
+						15);
 		}
 	}
 }
@@ -857,15 +854,13 @@ void butasan_state::draw_sprites(bitmap_rgb32 &bitmap, const rectangle &cliprect
 
 			if ((offs >= 0x100 && offs <= 0x2ff) || (offs >= 0x400 && offs <= 0x57f))
 			{
-				m_blend->drawgfx(
-						*m_palette,
-						m_gfxdecode->gfx(0),
-						bitmap, cliprect,
-						tile,
-						color,
-						flipx, flipy,
-						sx, sy,
-						7);
+				m_blend->drawgfx(*m_palette,
+							bitmap,cliprect,m_gfxdecode->gfx(0),
+							tile,
+							color,
+							flipx, flipy,
+							sx, sy,
+							7);
 			}
 			else if ((offs >= 0x000 && offs <= 0x0ff) || (offs >= 0x300 && offs <= 0x3ff))
 			{
@@ -873,15 +868,13 @@ void butasan_state::draw_sprites(bitmap_rgb32 &bitmap, const rectangle &cliprect
 				{
 					td = (fx) ? (1 - i) : i;
 
-					m_blend->drawgfx(
-							*m_palette,
-							m_gfxdecode->gfx(0),
-							bitmap, cliprect,
-							tile + td,
-							color,
-							flipx, flipy,
-							sx + i * 16, sy,
-							7);
+					m_blend->drawgfx(*m_palette,
+								bitmap,cliprect,m_gfxdecode->gfx(0),
+								tile + td,
+								color,
+								flipx, flipy,
+								sx + i * 16, sy,
+								7);
 				}
 			}
 			else if (offs >= 0x580 && offs <= 0x61f)
@@ -895,15 +888,13 @@ void butasan_state::draw_sprites(bitmap_rgb32 &bitmap, const rectangle &cliprect
 						else
 							td = (fx) ? (i * 2) + 1 - j : i * 2 + j;
 
-						m_blend->drawgfx(
-								*m_palette,
-								m_gfxdecode->gfx(0),
-								bitmap, cliprect,
-								tile + td,
-								color,
-								flipx, flipy,
-								sx + j * 16, sy - i * 16,
-								7);
+						m_blend->drawgfx(*m_palette,
+									bitmap,cliprect,m_gfxdecode->gfx(0),
+									tile + td,
+									color,
+									flipx, flipy,
+									sx + j * 16, sy - i * 16,
+									7);
 					}
 				}
 			}
@@ -918,15 +909,13 @@ void butasan_state::draw_sprites(bitmap_rgb32 &bitmap, const rectangle &cliprect
 						else
 							td = (fx) ? (i * 4) + 3 - j : i * 4 + j;
 
-						m_blend->drawgfx(
-								*m_palette,
-								m_gfxdecode->gfx(0),
-								bitmap, cliprect,
-								tile + td,
-								color,
-								flipx, flipy,
-								sx + j * 16, sy - i * 16,
-								7);
+						m_blend->drawgfx(*m_palette,
+									bitmap,cliprect,m_gfxdecode->gfx(0),
+									tile + td,
+									color,
+									flipx, flipy,
+									sx + j * 16, sy - i * 16,
+									7);
 					}
 				}
 			}

@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
 <!--
-license:CC0-1.0
+license:CC0
 -->
 
-<softwarelist name="mephisto_mm4" description="Mephisto MM IV modules">
+<softwarelist name="mephisto_mm4" description="Mephisto MM IV Modules">
 
 <!-- HG 440 module is exclusively used with MM IV -->
 

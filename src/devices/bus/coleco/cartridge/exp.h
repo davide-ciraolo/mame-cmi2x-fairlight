@@ -68,17 +68,17 @@ public:
 	uint8_t bd_r(offs_t offset, uint8_t data, int _8000, int _a000, int _c000, int _e000);
 
 protected:
-	// device_t implementation
+	// device-level overrides
 	virtual void device_start() override;
 
-	// device_image_interface implementation
-	virtual std::pair<std::error_condition, std::string> call_load() override;
+	// image-level overrides
+	virtual image_init_result call_load() override;
 
 	virtual bool is_reset_on_load() const noexcept override { return true; }
 	virtual const char *image_interface() const noexcept override { return "coleco_cart"; }
 	virtual const char *file_extensions() const noexcept override { return "rom,col,bin"; }
 
-	// device_slot_interface implementation
+	// slot interface overrides
 	virtual std::string get_default_card_software(get_default_card_software_hook &hook) const override;
 
 	device_colecovision_cartridge_interface *m_card;

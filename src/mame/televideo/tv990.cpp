@@ -36,14 +36,11 @@
 #include "machine/ins8250.h"
 #include "machine/nvram.h"
 #include "machine/pc_lpt.h"
-#include "machine/pckeybrd.h"
 #include "sound/beep.h"
 #include "emupal.h"
 #include "screen.h"
 #include "speaker.h"
 
-
-namespace {
 
 #define RS232A_TAG      "rs232a"
 #define RS232B_TAG      "rs232b"
@@ -85,10 +82,10 @@ private:
 	uint8_t kbdc_r(offs_t offset);
 	void kbdc_w(offs_t offset, uint8_t data);
 
-	void uart0_irq(int state);
-	void uart1_irq(int state);
-	void lpt_irq(int state);
-	void vblank_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(uart0_irq);
+	DECLARE_WRITE_LINE_MEMBER(uart1_irq);
+	DECLARE_WRITE_LINE_MEMBER(lpt_irq);
+	DECLARE_WRITE_LINE_MEMBER(vblank_irq);
 
 	required_device<m68000_device> m_maincpu;
 	required_shared_ptr<uint16_t> m_vram;
@@ -106,7 +103,7 @@ private:
 	int m_height = 0;
 };
 
-void tv990_state::vblank_irq(int state)
+WRITE_LINE_MEMBER(tv990_state::vblank_irq)
 {
 	if (state)
 	{
@@ -133,17 +130,17 @@ TIMER_CALLBACK_MEMBER(tv990_state::trigger_row_irq)
 	m_screen->update_now();
 }
 
-void tv990_state::uart0_irq(int state)
+WRITE_LINE_MEMBER(tv990_state::uart0_irq)
 {
 	m_maincpu->set_input_line(M68K_IRQ_5, state);
 }
 
-void tv990_state::uart1_irq(int state)
+WRITE_LINE_MEMBER(tv990_state::uart1_irq)
 {
 	m_maincpu->set_input_line(M68K_IRQ_4, state);
 }
 
-void tv990_state::lpt_irq(int state)
+WRITE_LINE_MEMBER(tv990_state::lpt_irq)
 {
 	m_maincpu->set_input_line(M68K_IRQ_3, state);
 }
@@ -418,10 +415,6 @@ void tv990_state::tv990(machine_config &config)
 	KBDC8042(config, m_kbdc);
 	m_kbdc->set_keyboard_type(kbdc8042_device::KBDC8042_STANDARD);
 	m_kbdc->input_buffer_full_callback().set_inputline("maincpu", M68K_IRQ_2);
-	m_kbdc->set_keyboard_tag("at_keyboard");
-
-	at_keyboard_device &at_keyb(AT_KEYB(config, "at_keyboard", pc_keyboard_device::KEYBOARD_TYPE::AT, 1));
-	at_keyb.keypress().set(m_kbdc, FUNC(kbdc8042_device::keyboard_w));
 
 	NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 
@@ -441,9 +434,6 @@ ROM_START( tv995 )
 	ROM_LOAD16_BYTE( "995-65_u3.bin", 0x000000, 0x020000, CRC(2d71b6fe) SHA1(a2a3406c19308eb9232db319ea8f151949b2ac74) )
 	ROM_LOAD16_BYTE( "995-65_u4.bin", 0x000001, 0x020000, CRC(dc002af2) SHA1(9608e7a729c5ac0fc58f673eaf441d2f4f591ec6) )
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 COMP( 1992, tv990, 0, 0, tv990, tv990, tv990_state, empty_init, "TeleVideo", "TeleVideo 990",    MACHINE_SUPPORTS_SAVE )

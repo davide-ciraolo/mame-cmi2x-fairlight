@@ -2,7 +2,7 @@
 // copyright-holders:Fabio Priuli
 /*********************************************************************
 
-    formats/nfd_dsk.cpp
+    formats/nfd_dsk.h
 
     PC98 NFD disk images (info from: http://www.geocities.jp/t98next/dev.html )
 
@@ -90,17 +90,17 @@ nfd_format::nfd_format()
 {
 }
 
-const char *nfd_format::name() const noexcept
+const char *nfd_format::name() const
 {
 	return "nfd";
 }
 
-const char *nfd_format::description() const noexcept
+const char *nfd_format::description() const
 {
 	return "NFD disk image";
 }
 
-const char *nfd_format::extensions() const noexcept
+const char *nfd_format::extensions() const
 {
 	return "nfd";
 }
@@ -117,7 +117,7 @@ int nfd_format::identify(util::random_read &io, uint32_t form_factor, const std:
 	return 0;
 }
 
-bool nfd_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image &image) const
+bool nfd_format::load(util::random_read &io, uint32_t form_factor, const std::vector<uint32_t> &variants, floppy_image *image) const
 {
 	size_t actual;
 	uint64_t size;
@@ -237,13 +237,13 @@ bool nfd_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 	switch (disk_type)
 	{
 		case 0x10:  // 640K disk, 2DD
-			image.set_variant(floppy_image::DSDD);
+			image->set_variant(floppy_image::DSDD);
 			break;
 		//case 0x30:    // 1.44M disk, ?? (no images found)
 		//  break;
 		case 0x90:  // 1.2M disk, 2HD
 		default:
-			image.set_variant(floppy_image::DSHD);
+			image->set_variant(floppy_image::DSHD);
 			break;
 	}
 
@@ -283,7 +283,7 @@ bool nfd_format::load(util::random_read &io, uint32_t form_factor, const std::ve
 	return true;
 }
 
-bool nfd_format::supports_save() const noexcept
+bool nfd_format::supports_save() const
 {
 	return false;
 }

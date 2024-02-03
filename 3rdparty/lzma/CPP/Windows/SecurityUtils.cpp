@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 
+#include "../Common/MyString.h"
+
 #include "SecurityUtils.h"
 
 namespace NWindows {
@@ -32,7 +34,7 @@ bool MyLookupAccountSid(LPCTSTR systemName, PSID sid,
   
 static void SetLsaString(LPWSTR src, PLSA_UNICODE_STRING dest)
 {
-  const size_t len = (size_t)wcslen(src);
+  int len = (int)wcslen(src);
   dest->Length = (USHORT)(len * sizeof(WCHAR));
   dest->MaximumLength = (USHORT)((len + 1) * sizeof(WCHAR));
   dest->Buffer = src;
@@ -50,10 +52,8 @@ static void MyLookupSids(CPolicy &policy, PSID ps)
 }
 */
 
-extern "C" {
-
 #ifndef _UNICODE
-typedef BOOL (WINAPI * Func_LookupAccountNameW)(
+typedef BOOL (WINAPI * LookupAccountNameWP)(
     LPCWSTR lpSystemName,
     LPCWSTR lpAccountName,
     PSID Sid,
@@ -64,19 +64,14 @@ typedef BOOL (WINAPI * Func_LookupAccountNameW)(
     );
 #endif
 
-}
-
 static PSID GetSid(LPWSTR accountName)
 {
   #ifndef _UNICODE
-  const HMODULE hModule = GetModuleHandle(TEXT("advapi32.dll"));
-  if (!hModule)
+  HMODULE hModule = GetModuleHandle(TEXT("Advapi32.dll"));
+  if (hModule == NULL)
     return NULL;
-  const
-  Func_LookupAccountNameW lookupAccountNameW = Z7_GET_PROC_ADDRESS(
-  Func_LookupAccountNameW, hModule,
-      "LookupAccountNameW");
-  if (!lookupAccountNameW)
+  LookupAccountNameWP lookupAccountNameW = (LookupAccountNameWP)GetProcAddress(hModule, "LookupAccountNameW");
+  if (lookupAccountNameW == NULL)
     return NULL;
   #endif
 
@@ -86,21 +81,21 @@ static PSID GetSid(LPWSTR accountName)
     #ifdef _UNICODE
     ::LookupAccountNameW
     #else
-      lookupAccountNameW
+    lookupAccountNameW
     #endif
-        (NULL, accountName, NULL, &sidLen, NULL, &domainLen, &sidNameUse))
+    (NULL, accountName, NULL, &sidLen, NULL, &domainLen, &sidNameUse))
   {
     if (::GetLastError() == ERROR_INSUFFICIENT_BUFFER)
     {
-      const PSID pSid = ::HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sidLen);
+      PSID pSid = ::HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sidLen);
       LPWSTR domainName = (LPWSTR)::HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (domainLen + 1) * sizeof(WCHAR));
-      const BOOL res =
+      BOOL res =
         #ifdef _UNICODE
         ::LookupAccountNameW
         #else
-          lookupAccountNameW
+        lookupAccountNameW
         #endif
-            (NULL, accountName, pSid, &sidLen, domainName, &domainLen, &sidNameUse);
+        (NULL, accountName, pSid, &sidLen, domainName, &domainLen, &sidNameUse);
       ::HeapFree(GetProcessHeap(), 0, domainName);
       if (res)
         return pSid;
@@ -109,7 +104,7 @@ static PSID GetSid(LPWSTR accountName)
   return NULL;
 }
 
-#define Z7_WIN_SE_LOCK_MEMORY_NAME L"SeLockMemoryPrivilege"
+#define MY__SE_LOCK_MEMORY_NAME L"SeLockMemoryPrivilege"
 
 bool AddLockMemoryPrivilege()
 {
@@ -129,13 +124,13 @@ bool AddLockMemoryPrivilege()
       != 0)
     return false;
   LSA_UNICODE_STRING userRights;
-  wchar_t s[128] = Z7_WIN_SE_LOCK_MEMORY_NAME;
+  wchar_t s[128] = MY__SE_LOCK_MEMORY_NAME;
   SetLsaString(s, &userRights);
   WCHAR userName[256 + 2];
   DWORD size = 256;
   if (!GetUserNameW(userName, &size))
     return false;
-  const PSID psid = GetSid(userName);
+  PSID psid = GetSid(userName);
   if (psid == NULL)
     return false;
   bool res = false;
@@ -174,7 +169,7 @@ bool AddLockMemoryPrivilege()
       res = true;
     }
     */
-    const NTSTATUS status = policy.AddAccountRights(psid, &userRights);
+    NTSTATUS status = policy.AddAccountRights(psid, &userRights);
     if (status == 0)
       res = true;
     // ULONG res = LsaNtStatusToWinError(status);

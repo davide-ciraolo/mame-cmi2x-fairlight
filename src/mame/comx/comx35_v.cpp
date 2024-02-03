@@ -66,7 +66,7 @@ CDP1869_PCB_READ_MEMBER( comx35_state::comx35_pcb_r )
 	return BIT(pmd, 7);
 }
 
-void comx35_state::prd_w(int state)
+WRITE_LINE_MEMBER( comx35_state::prd_w )
 {
 	if ((m_prd == CLEAR_LINE) && (state == ASSERT_LINE))
 	{

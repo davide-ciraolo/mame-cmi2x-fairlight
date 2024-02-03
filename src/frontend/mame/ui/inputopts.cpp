@@ -87,7 +87,7 @@ void menu_input_options::menu_activated()
 }
 
 
-void menu_input_options::populate()
+void menu_input_options::populate(float &customtop, float &custombottom)
 {
 	bool inputmap, analog, toggle;
 	scan_inputs(machine(), inputmap, analog, toggle);
@@ -111,7 +111,7 @@ void menu_input_options::populate()
 }
 
 
-bool menu_input_options::handle(event const *ev)
+void menu_input_options::handle(event const *ev)
 {
 	if (ev && (IPT_UI_SELECT == ev->iptkey))
 	{
@@ -137,8 +137,6 @@ bool menu_input_options::handle(event const *ev)
 			break;
 		}
 	}
-
-	return false;
 }
 
 } // namespace ui

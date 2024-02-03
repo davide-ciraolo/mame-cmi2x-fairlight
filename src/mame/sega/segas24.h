@@ -4,8 +4,8 @@
  * Sega System 24
  *
  */
-#ifndef MAME_SEGA_SEGAS24_H
-#define MAME_SEGA_SEGAS24_H
+#ifndef MAME_INCLUDES_SEGAS24_H
+#define MAME_INCLUDES_SEGAS24_H
 
 #pragma once
 
@@ -132,7 +132,7 @@ private:
 	required_device<segas24_sprite_device> m_vsprite;
 	required_device<segas24_mixer_device> m_vmixer;
 
-	void irq_ym(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_ym);
 	uint16_t paletteram_r(offs_t offset);
 	void paletteram_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	uint16_t irq_r(offs_t offset);
@@ -166,7 +166,7 @@ private:
 	void irq_init();
 	void irq_timer_sync();
 	void irq_timer_start(int old_tmode);
-	void cnt1(int state);
+	WRITE_LINE_MEMBER(cnt1);
 	virtual void machine_start() override;
 	virtual void machine_reset() override;
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
@@ -201,4 +201,4 @@ private:
 	void dcclubj_cpu2_map(address_map &map);
 };
 
-#endif // MAME_SEGA_SEGAS24_H
+#endif // MAME_INCLUDES_SEGAS24_H

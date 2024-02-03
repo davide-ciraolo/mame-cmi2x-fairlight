@@ -56,11 +56,13 @@ Registers:
 #include "x1_010.h"
 
 
-#define LOG_SOUND          (1U << 1)
-#define LOG_REGISTER_WRITE (1U << 2)
-#define LOG_REGISTER_READ  (1U << 3)
-#define VERBOSE (0)
-#include "logmacro.h"
+#define VERBOSE_SOUND 0
+#define VERBOSE_REGISTER_WRITE 0
+#define VERBOSE_REGISTER_READ 0
+
+#define LOG_SOUND(...) do { if (VERBOSE_SOUND) logerror(__VA_ARGS__); } while (0)
+#define LOG_REGISTER_WRITE(...) do { if (VERBOSE_REGISTER_WRITE) logerror(__VA_ARGS__); } while (0)
+#define LOG_REGISTER_READ(...) do { if (VERBOSE_REGISTER_READ) logerror(__VA_ARGS__); } while (0)
 
 
 namespace {
@@ -114,7 +116,7 @@ void x1_010_device::device_start()
 		m_env_offset[i] = 0;
 	}
 	/* Print some more debug info */
-	LOGMASKED(LOG_SOUND, "masterclock = %d rate = %d\n", clock(), m_rate);
+	LOG_SOUND("masterclock = %d rate = %d\n", clock(), m_rate);
 
 	/* get stream channels */
 	m_stream = stream_alloc(0, 2, m_rate);
@@ -145,11 +147,10 @@ void x1_010_device::device_clock_changed()
 }
 
 //-------------------------------------------------
-//  rom_bank_pre_change - refresh the stream if the
-//  ROM banking changes
+//  rom_bank_updated - the rom bank has changed
 //-------------------------------------------------
 
-void x1_010_device::rom_bank_pre_change()
+void x1_010_device::rom_bank_updated()
 {
 	m_stream->update();
 }
@@ -178,7 +179,7 @@ void x1_010_device::write(offs_t offset, u8 data)
 		m_smp_offset[channel] = 0;
 		m_env_offset[channel] = 0;
 	}
-	LOGMASKED(LOG_REGISTER_WRITE, "%s: offset %6X : data %2X\n", machine().describe_context(), offset, data);
+	LOG_REGISTER_WRITE("%s: offset %6X : data %2X\n", machine().describe_context(), offset, data);
 	m_reg[offset] = data;
 }
 
@@ -190,7 +191,7 @@ u16 x1_010_device::word_r(offs_t offset)
 	u16 ret;
 	ret = m_HI_WORD_BUF[offset] << 8;
 	ret |= (read(offset) & 0xff);
-	LOGMASKED(LOG_REGISTER_READ, "%s: Read X1-010 Offset:%04X Data:%04X\n", machine().describe_context(), offset, ret);
+	LOG_REGISTER_READ("%s: Read X1-010 Offset:%04X Data:%04X\n", machine().describe_context(), offset, ret);
 	return ret;
 }
 
@@ -198,7 +199,7 @@ void x1_010_device::word_w(offs_t offset, u16 data)
 {
 	m_HI_WORD_BUF[offset] = (data >> 8) & 0xff;
 	write(offset, data & 0xff);
-	LOGMASKED(LOG_REGISTER_WRITE, "%s: Write X1-010 Offset:%04X Data:%04X\n", machine().describe_context(), offset, data);
+	LOG_REGISTER_WRITE("%s: Write X1-010 Offset:%04X Data:%04X\n", machine().describe_context(), offset, data);
 }
 
 
@@ -236,7 +237,7 @@ void x1_010_device::sound_stream_update(sound_stream &stream, std::vector<read_s
 				const u32 smp_step = freq;
 				if (smp_offs == 0)
 				{
-					LOGMASKED(LOG_SOUND, "Play sample %p - %p, channel %X volume %d:%d freq %X step %X offset %X\n",
+					LOG_SOUND("Play sample %p - %p, channel %X volume %d:%d freq %X step %X offset %X\n",
 						start, end, ch, volL, volR, freq, smp_step, smp_offs);
 				}
 				for (int i = 0; i < bufL.samples(); i++)
@@ -268,7 +269,7 @@ void x1_010_device::sound_stream_update(sound_stream &stream, std::vector<read_s
 				/* Print some more debug info */
 				if (smp_offs == 0)
 				{
-					LOGMASKED(LOG_SOUND, "Play waveform %X, channel %X volume %X freq %4X step %X offset %X\n",
+					LOG_SOUND("Play waveform %X, channel %X volume %X freq %4X step %X offset %X\n",
 						reg->volume, ch, reg->end, freq, smp_step, smp_offs);
 				}
 				for (int i = 0; i < bufL.samples(); i++)

@@ -48,8 +48,6 @@ Dumping Notes:
 #include "speaker.h"
 
 
-namespace {
-
 class gpworld_state : public driver_device
 {
 public:
@@ -69,7 +67,7 @@ public:
 
 private:
 	virtual void machine_start() override;
-	virtual void driver_start() override;
+	virtual void driver_init() override;
 
 	void mainmem(address_map &map);
 	void mainport(address_map &map);
@@ -459,7 +457,7 @@ INTERRUPT_GEN_MEMBER(gpworld_state::vblank_callback)
 	if (m_nmi_enable)
 	{
 		m_laserdisc->data_w(m_ldp_write_latch);
-		m_ldp_read_latch = m_laserdisc->data_r();
+		m_ldp_read_latch = m_laserdisc->status_r();
 		device.execute().pulse_input_line(INPUT_LINE_NMI, attotime::zero);
 	}
 
@@ -546,15 +544,13 @@ ROM_START( gpworld )
 ROM_END
 
 
-void gpworld_state::driver_start()
+void gpworld_state::driver_init()
 {
 	m_nmi_enable = 0;
 	m_start_lamp = 0;
 	m_brake_gas = 0;
 	m_ldp_write_latch = m_ldp_read_latch = 0;
 }
-
-} // anonymous namespace
 
 
 /*    YEAR  NAME      PARENT   MACHINE  INPUT    STATE          INIT        MONITOR  COMPANY  FULLNAME     FLAGS) */

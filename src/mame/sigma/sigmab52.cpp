@@ -120,8 +120,6 @@
 #include "sigmab52.lh"
 
 
-namespace {
-
 class sigmab52_state : public driver_device
 {
 public:
@@ -157,7 +155,7 @@ private:
 	void lamps2_w(offs_t offset, uint8_t data);
 	void tower_lamps_w(offs_t offset, uint8_t data);
 	void coin_enable_w(uint8_t data);
-	void ptm2_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(ptm2_irq);
 	void audiocpu_irq_update();
 
 	virtual void machine_start() override;
@@ -192,7 +190,7 @@ void sigmab52_state::audiocpu_irq_update()
 	m_audiocpu->set_input_line(M6809_IRQ_LINE, (m_6840ptm_2->irq_state() || m_audiocpu_cmd_irq) ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void sigmab52_state::ptm2_irq(int state)
+WRITE_LINE_MEMBER(sigmab52_state::ptm2_irq)
 {
 	audiocpu_irq_update();
 }
@@ -717,8 +715,6 @@ ROM_END
 void sigmab52_state::init_jwildb52()
 {
 }
-
-} // anonymous namespace
 
 
 /*************************

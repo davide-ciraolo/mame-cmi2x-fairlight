@@ -42,9 +42,8 @@
 #include "screen.h"
 #include "softlist_dev.h"
 #include "speaker.h"
-#include "utf8.h"
 
-void pc8001_base_state::crtc_reverse_w(int state)
+WRITE_LINE_MEMBER( pc8001_base_state::crtc_reverse_w )
 {
 	// rvv acts as a global flip for reverse attribute meaning
 	// (does not act on underlying palette)
@@ -123,8 +122,6 @@ UPD3301_DRAW_CHARACTER_MEMBER( pc8001_base_state::draw_text )
 	}
 
 	lowerline = bool(BIT(attr, 5));
-	// FIXME: ninjakmb (pc8801) sets 0x50 0x50 for all attribute strips
-	// bit 6 is undefined in the specs, is it for masking decoration(s)?
 	upperline = bool(BIT(attr, 4));
 	reverse = bool(BIT(attr, 2));
 	attr_blink = bool(BIT(attr, 1));
@@ -200,14 +197,23 @@ uint32_t pc8001_state::screen_update( screen_device &screen, bitmap_rgb32 &bitma
 
 /* Read/Write Handlers */
 
-/*
- * ---- ---x RTC C0
- * ---- --x- RTC C1
- * ---- -x-- RTC C2
- * ---- x--- RTC DATA IN
- */
-void pc8001_base_state::port10_w(uint8_t data)
+void pc8001_state::port10_w(uint8_t data)
 {
+	/*
+
+	    bit     description
+
+	    0       RTC C0
+	    1       RTC C1
+	    2       RTC C2
+	    3       RTC DATA IN
+	    4
+	    5
+	    6
+	    7
+
+	*/
+
 	// RTC
 	m_rtc->c0_w(BIT(data, 0));
 	m_rtc->c1_w(BIT(data, 1));
@@ -262,12 +268,12 @@ void pc8001mk2_state::port31_w(uint8_t data)
 	membank("bank2")->set_entry(data & 1);
 }
 
-void pc8001_base_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER( pc8001_state::write_centronics_busy )
 {
 	m_centronics_busy = state;
 }
 
-void pc8001_base_state::write_centronics_ack(int state)
+WRITE_LINE_MEMBER( pc8001_state::write_centronics_ack )
 {
 	m_centronics_ack = state;
 }
@@ -300,15 +306,23 @@ uint8_t pc8001_state::port40_r()
 	return data;
 }
 
-/*
- * --x- ---- SPEAKER
- * ---- x--- CRT /CLDS CLK
- * ---- -x-- RTC CLK
- * ---- --x- RTC STB
- * ---- ---x Centronics STROBE
- */
 void pc8001_state::port40_w(uint8_t data)
 {
+	/*
+
+	    bit     description
+
+	    0       STROBE
+	    1       RTC STB
+	    2       RTC CLK
+	    3       CRT /CLDS CLK
+	    4
+	    5       SPEAKER
+	    6
+	    7
+
+	*/
+
 	m_centronics->write_strobe(BIT(data, 0));
 
 	m_rtc->stb_w(BIT(data, 1));
@@ -358,7 +372,7 @@ void pc8001_state::pc8001_io(address_map &map)
 //  map(0xc1, 0xc1).rw(PC8011_CH1_I8251_TAG, FUNC(i8251_device::status_r), FUNC(i8251_device::control_w));
 //  map(0xc2, 0xc2).rw(PC8011_CH2_I8251_TAG, FUNC(i8251_device::data_r), FUNC(i8251_device::data_w));
 //  map(0xc3, 0xc3).rw(PC8011_CH2_I8251_TAG, FUNC(i8251_device::status_r), FUNC(i8251_device::control_w));
-//  map(0xc8, 0xc8) RS-232 output enable?
+//  map(0xc8, 0xc8) RS-232 output enable?)
 //  map(0xca, 0xca) RS-232 output disable?
 //  map(0xd0, 0xd3).rw(PC8011_IEEE488_I8255A_TAG, FUNC(i8255_device::read), FUNC(i8255_device::write));
 //  map(0xd8, 0xd8).r(FUNC(pc8001_state::pc8011_ieee488_control_signal_input_r));
@@ -617,7 +631,7 @@ INPUT_PORTS_END
 
 /* 8257 Interface */
 
-void pc8001_base_state::hrq_w(int state)
+WRITE_LINE_MEMBER( pc8001_base_state::hrq_w )
 {
 	/* HACK - this should be connected to the BUSREQ line of Z80 */
 	m_maincpu->set_input_line(INPUT_LINE_HALT, state);
@@ -639,10 +653,6 @@ void pc8001_base_state::machine_start()
 {
 	m_screen_reverse = false;
 
-	/* initialize RTC */
-	m_rtc->cs_w(1);
-	m_rtc->oe_w(1);
-
 	save_item(NAME(m_width80));
 	save_item(NAME(m_color));
 	save_item(NAME(m_screen_reverse));
@@ -654,6 +664,10 @@ void pc8001_state::machine_start()
 	pc8001_base_state::machine_start();
 
 	address_space &program = m_maincpu->space(AS_PROGRAM);
+
+	/* initialize RTC */
+	m_rtc->cs_w(1);
+	m_rtc->oe_w(1);
 
 	/* initialize DMA */
 	m_dma->ready_w(1);

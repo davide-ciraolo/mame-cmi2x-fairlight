@@ -20,11 +20,12 @@
 
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -68,7 +69,7 @@ void nes_racermate_device::pcb_reset()
 
  Board UNL-RACERMATE
 
- In MAME: *VERY* preliminary support. Also, it seems that this
+ In MESS: *VERY* preliminary support. Also, it seems that this
  board saves to battery the CHRRAM!!!
 
  -------------------------------------------------*/
@@ -81,7 +82,7 @@ void nes_racermate_device::update_banks()
 
 void nes_racermate_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("racermate write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("racermate write_h, offset: %04x, data: %02x\n", offset, data));
 
 	if (offset == 0x3000)
 	{

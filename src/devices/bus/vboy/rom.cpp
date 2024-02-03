@@ -9,7 +9,6 @@
 #include "bus/generic/slot.h"
 
 //#define VERBOSE 1
-//#define LOG_OUTPUT_FUNC osd_printf_info
 #include "logmacro.h"
 
 
@@ -39,7 +38,7 @@ vboy_flat_rom_device::vboy_flat_rom_device(machine_config const &mconfig, device
 }
 
 
-std::error_condition vboy_flat_rom_device::load()
+image_init_result vboy_flat_rom_device::load()
 {
 	// if the host has supplied a ROM space, install with appropriate mirroring
 	memory_region *const romregion(memregion("^rom"));
@@ -62,8 +61,9 @@ std::error_condition vboy_flat_rom_device::load()
 				romregion->bytes() >> 2,
 				0x00ff'ffff >> 2,
 				0,
+				0,
 				rom_base(),
-				[this, rom = &romregion->as_u32()] (offs_t begin, offs_t end, offs_t mirror, offs_t src)
+				[this, rom = reinterpret_cast<u32 *>(romregion->base())] (offs_t begin, offs_t end, offs_t mirror, offs_t src)
 				{
 					LOG(
 							"Install ROM 0x%08X-0x%08X at 0x%08X-0x%08X mirror %08X\n",
@@ -76,7 +76,7 @@ std::error_condition vboy_flat_rom_device::load()
 				});
 	}
 
-	return std::error_condition();
+	return image_init_result::PASS;
 }
 
 
@@ -96,10 +96,10 @@ vboy_flat_rom_sram_device::vboy_flat_rom_sram_device(machine_config const &mconf
 }
 
 
-std::error_condition vboy_flat_rom_sram_device::load()
+image_init_result vboy_flat_rom_sram_device::load()
 {
-	std::error_condition const result(vboy_flat_rom_device::load());
-	if (result)
+	image_init_result const result(vboy_flat_rom_device::load());
+	if (image_init_result::PASS != result)
 		return result;
 
 	memory_region *const sramregion(memregion("^sram"));
@@ -116,6 +116,7 @@ std::error_condition vboy_flat_rom_sram_device::load()
 				device_generic_cart_interface::install_non_power_of_two<2>(
 						sramregion->bytes() >> 1,
 						0x00ff'ffff >> 2,
+						0,
 						0,
 						chip_base(),
 						[this, sramregion] (offs_t begin, offs_t end, offs_t mirror, offs_t src)
@@ -149,6 +150,7 @@ std::error_condition vboy_flat_rom_sram_device::load()
 						sramregion->bytes() >> 2,
 						0x00ff'ffff >> 2,
 						0,
+						0,
 						chip_base(),
 						[this, sramregion] (offs_t begin, offs_t end, offs_t mirror, offs_t src)
 						{
@@ -181,7 +183,7 @@ std::error_condition vboy_flat_rom_sram_device::load()
 		battery_load(sramregion->base(), sramregion->bytes(), nullptr);
 	}
 
-	return std::error_condition();
+	return image_init_result::PASS;
 }
 
 

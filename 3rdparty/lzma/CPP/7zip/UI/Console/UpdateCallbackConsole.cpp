@@ -5,13 +5,10 @@
 #include "../../../Common/IntToString.h"
 
 #include "../../../Windows/ErrorMsg.h"
-#include "../../../Windows/FileName.h"
 
-#ifndef Z7_ST
+#ifndef _7ZIP_ST
 #include "../../../Windows/Synchronization.h"
 #endif
-
-// #include "../Common/PropIDUtils.h"
 
 #include "ConsoleClose.h"
 #include "UserInputUtils.h"
@@ -19,22 +16,22 @@
 
 using namespace NWindows;
 
-#ifndef Z7_ST
+#ifndef _7ZIP_ST
 static NSynchronization::CCriticalSection g_CriticalSection;
 #define MT_LOCK NSynchronization::CCriticalSectionLock lock(g_CriticalSection);
 #else
 #define MT_LOCK
 #endif
 
-static const wchar_t * const kEmptyFileAlias = L"[Content]";
+static const wchar_t *kEmptyFileAlias = L"[Content]";
 
-static const char * const kOpenArchiveMessage = "Open archive: ";
-static const char * const kCreatingArchiveMessage = "Creating archive: ";
-static const char * const kUpdatingArchiveMessage = "Updating archive: ";
-static const char * const kScanningMessage = "Scanning the drive:";
+static const char *kOpenArchiveMessage = "Open archive: ";
+static const char *kCreatingArchiveMessage = "Creating archive: ";
+static const char *kUpdatingArchiveMessage = "Updating archive: ";
+static const char *kScanningMessage = "Scanning the drive:";
 
-static const char * const kError = "ERROR: ";
-static const char * const kWarning = "WARNING: ";
+static const char *kError = "ERROR: ";
+static const char *kWarning = "WARNING: ";
 
 static HRESULT CheckBreak2()
 {
@@ -136,7 +133,7 @@ HRESULT CUpdateCallbackConsole::OpenResult(
   {
     if (_so)
     {
-      RINOK(Print_OpenArchive_Props(*_so, codecs, arcLink))
+      RINOK(Print_OpenArchive_Props(*_so, codecs, arcLink));
       *_so << endl;
     }
   }
@@ -146,11 +143,9 @@ HRESULT CUpdateCallbackConsole::OpenResult(
       _so->Flush();
     if (_se)
     {
-      *_se << kError;
-      _se->NormalizePrint_wstr(name);
-      *_se << endl;
+      *_se << kError << name << endl;
       HRESULT res = Print_OpenArchive_Error(*_se, codecs, arcLink);
-      RINOK(res)
+      RINOK(res);
       _se->Flush();
     }
   }
@@ -190,28 +185,10 @@ void CCallbackConsoleBase::CommonError(const FString &path, DWORD systemError, b
 
     *_se << endl << (isWarning ? kWarning : kError)
         << NError::MyFormatMessage(systemError)
-        << endl;
-    _se->NormalizePrint_UString(fs2us(path));
-    *_se << endl << endl;
+        << endl << fs2us(path) << endl << endl;
     _se->Flush();
   }
 }
-
-/*
-void CCallbackConsoleBase::CommonError(const char *message)
-{
-  ClosePercents2();
-  
-  if (_se)
-  {
-    if (_so)
-      _so->Flush();
-
-    *_se << endl << kError << message << endl;
-    _se->Flush();
-  }
-}
-*/
 
 
 HRESULT CCallbackConsoleBase::ScanError_Base(const FString &path, DWORD systemError)
@@ -228,7 +205,6 @@ HRESULT CCallbackConsoleBase::OpenFileError_Base(const FString &path, DWORD syst
 {
   MT_LOCK
   FailedFiles.AddError(path, systemError);
-  NumNonOpenFiles++;
   /*
   if (systemError == ERROR_SHARING_VIOLATION)
   {
@@ -265,7 +241,6 @@ static void PrintPropPair(AString &s, const char *name, UInt64 val)
 
 void PrintSize_bytes_Smart(AString &s, UInt64 val);
 void Print_DirItemsStat(AString &s, const CDirItemsStat &st);
-void Print_DirItemsStat2(AString &s, const CDirItemsStat2 &st);
 
 HRESULT CUpdateCallbackConsole::FinishScanning(const CDirItemsStat &st)
 {
@@ -284,7 +259,7 @@ HRESULT CUpdateCallbackConsole::FinishScanning(const CDirItemsStat &st)
   return S_OK;
 }
 
-static const char * const k_StdOut_ArcName = "StdOut";
+static const char *k_StdOut_ArcName = "StdOut";
 
 HRESULT CUpdateCallbackConsole::StartOpenArchive(const wchar_t *name)
 {
@@ -302,17 +277,11 @@ HRESULT CUpdateCallbackConsole::StartOpenArchive(const wchar_t *name)
 
 HRESULT CUpdateCallbackConsole::StartArchive(const wchar_t *name, bool updating)
 {
-  if (NeedPercents())
-    _percent.ClosePrint(true);
-  
-  _percent.ClearCurState();
-  NumNonOpenFiles = 0;
-
   if (_so)
   {
     *_so << (updating ? kUpdatingArchiveMessage : kCreatingArchiveMessage);
-    if (name)
-      _so->NormalizePrint_wstr(name);
+    if (name != 0)
+      *_so << name;
     else
       *_so << k_StdOut_ArcName;
    *_so << endl << endl;
@@ -328,17 +297,11 @@ HRESULT CUpdateCallbackConsole::FinishArchive(const CFinishArchiveStat &st)
   {
     AString s;
     // Print_UInt64_and_String(s, _percent.Files == 1 ? "file" : "files", _percent.Files);
-    PrintPropPair(s, "Files read from disk", _percent.Files - NumNonOpenFiles);
+    PrintPropPair(s, "Files read from disk", _percent.Files);
     s.Add_LF();
     s += "Archive size: ";
     PrintSize_bytes_Smart(s, st.OutArcFileSize);
     s.Add_LF();
-    if (st.IsMultiVolMode)
-    {
-      s += "Volumes: ";
-      s.Add_UInt32(st.NumVolumes);
-      s.Add_LF();
-    }
     *_so << endl;
     *_so << s;
     // *_so << endl;
@@ -353,7 +316,7 @@ HRESULT CUpdateCallbackConsole::WriteSfx(const wchar_t *name, UInt64 size)
   {
     *_so << "Write SFX: ";
     *_so << name;
-    AString s (" : ");
+    AString s = " : ";
     PrintSize_bytes_Smart(s, size);
     *_so << s << endl;
   }
@@ -379,7 +342,6 @@ HRESULT CUpdateCallbackConsole::DeletingAfterArchiving(const FString &path, bool
         _tempA.Add_Space();
         *_so << _tempA;
         _tempU = fs2us(path);
-        _so->Normalize_UString(_tempU);
         _so->PrintUString(_tempU, _tempA);
         *_so << endl;
         if (NeedFlush)
@@ -436,31 +398,14 @@ HRESULT CUpdateCallbackConsole::Finalize()
 }
 */
 
-
-void static PrintToDoStat(CStdOutStream *_so, const CDirItemsStat2 &stat, const char *name)
-{
-  AString s;
-  Print_DirItemsStat2(s, stat);
-  *_so << name << ": " << s << endl;
-}
-
-HRESULT CUpdateCallbackConsole::SetNumItems(const CArcToDoStat &stat)
+HRESULT CUpdateCallbackConsole::SetNumItems(UInt64 numItems)
 {
   if (_so)
   {
     ClosePercents_for_so();
-    if (!stat.DeleteData.IsEmpty())
-    {
-      *_so << endl;
-      PrintToDoStat(_so, stat.DeleteData, "Delete data from archive");
-    }
-    if (!stat.OldData.IsEmpty())
-      PrintToDoStat(_so, stat.OldData, "Keep old data in archive");
-    // if (!stat.NewData.IsEmpty())
-    {
-      PrintToDoStat(_so, stat.NewData, "Add new data to archive");
-    }
-    *_so << endl;
+    AString s;
+    PrintPropPair(s, "Items to compress", numItems);
+    *_so << s << endl << endl;
   }
   return S_OK;
 }
@@ -495,7 +440,7 @@ HRESULT CUpdateCallbackConsole::SetRatioInfo(const UInt64 * /* inSize */, const 
   return CheckBreak2();
 }
 
-HRESULT CCallbackConsoleBase::PrintProgress(const wchar_t *name, bool isDir, const char *command, bool showInLog)
+HRESULT CCallbackConsoleBase::PrintProgress(const wchar_t *name, const char *command, bool showInLog)
 {
   MT_LOCK
   
@@ -512,12 +457,7 @@ HRESULT CCallbackConsoleBase::PrintProgress(const wchar_t *name, bool isDir, con
 
     _tempU.Empty();
     if (name)
-    {
       _tempU = name;
-      if (isDir)
-        NWindows::NFile::NName::NormalizeDirPathPrefix(_tempU);
-      _so->Normalize_UString(_tempU);
-    }
     _so->PrintUString(_tempU, _tempA);
     *_so << endl;
     if (NeedFlush)
@@ -543,29 +483,7 @@ HRESULT CCallbackConsoleBase::PrintProgress(const wchar_t *name, bool isDir, con
   return CheckBreak2();
 }
 
-
-/*
-void CCallbackConsoleBase::PrintInfoLine(const UString &s)
-{
-  if (LogLevel < 1000)
-    return;
-
-  MT_LOCK
-
-  const bool show2 = (_so != NULL);
-
-  if (show2)
-  {
-    ClosePercents_for_so();
-    _so->PrintUString(s, _tempA);
-    *_so << endl;
-    if (NeedFlush)
-      _so->Flush();
-  }
-}
-*/
-
-HRESULT CUpdateCallbackConsole::GetStream(const wchar_t *name, bool isDir, bool isAnti, UInt32 mode)
+HRESULT CUpdateCallbackConsole::GetStream(const wchar_t *name, bool /* isDir */, bool isAnti, UInt32 mode)
 {
   if (StdOutMode)
     return S_OK;
@@ -595,7 +513,7 @@ HRESULT CUpdateCallbackConsole::GetStream(const wchar_t *name, bool isDir, bool 
       s = "Reading";
   }
   
-  return PrintProgress(name, isDir, s, LogLevel >= requiredLevel);
+  return PrintProgress(name, s, LogLevel >= requiredLevel);
 }
 
 HRESULT CUpdateCallbackConsole::OpenFileError(const FString &path, DWORD systemError)
@@ -608,19 +526,10 @@ HRESULT CUpdateCallbackConsole::ReadingFileError(const FString &path, DWORD syst
   return ReadingFileError_Base(path, systemError);
 }
 
-HRESULT CUpdateCallbackConsole::SetOperationResult(Int32 /* opRes */)
+HRESULT CUpdateCallbackConsole::SetOperationResult(Int32)
 {
   MT_LOCK
   _percent.Files++;
-  /*
-  if (opRes != NArchive::NUpdate::NOperationResult::kOK)
-  {
-    if (opRes == NArchive::NUpdate::NOperationResult::kError_FileChanged)
-    {
-      CommonError("Input file changed");
-    }
-  }
-  */
   return S_OK;
 }
 
@@ -641,9 +550,7 @@ HRESULT CUpdateCallbackConsole::ReportExtractResult(Int32 opRes, Int32 isEncrypt
 
       AString s;
       SetExtractErrorMessage(opRes, isEncrypted, s);
-      *_se << s << " : " << endl;
-      _se->NormalizePrint_wstr(name);
-      *_se << endl << endl;
+      *_se << s << " : " << endl << name << endl << endl;
       _se->Flush();
     }
     return S_OK;
@@ -652,7 +559,7 @@ HRESULT CUpdateCallbackConsole::ReportExtractResult(Int32 opRes, Int32 isEncrypt
 }
 
 
-HRESULT CUpdateCallbackConsole::ReportUpdateOperation(UInt32 op, const wchar_t *name, bool isDir)
+HRESULT CUpdateCallbackConsole::ReportUpdateOpeartion(UInt32 op, const wchar_t *name, bool /* isDir */)
 {
   // if (StdOutMode) return S_OK;
 
@@ -671,8 +578,6 @@ HRESULT CUpdateCallbackConsole::ReportUpdateOperation(UInt32 op, const wchar_t *
     case NUpdateNotifyOp::kSkip:      s = "."; requiredLevel = 2; break;
     case NUpdateNotifyOp::kDelete:    s = "D"; requiredLevel = 3; break;
     case NUpdateNotifyOp::kHeader:    s = "Header creation"; requiredLevel = 100; break;
-    case NUpdateNotifyOp::kInFileChanged: s = "Size of input file was changed:"; requiredLevel = 10; break;
-    // case NUpdateNotifyOp::kOpFinished:  s = "Finished"; requiredLevel = 100; break;
     default:
     {
       temp[0] = 'o';
@@ -682,17 +587,17 @@ HRESULT CUpdateCallbackConsole::ReportUpdateOperation(UInt32 op, const wchar_t *
     }
   }
 
-  return PrintProgress(name, isDir, s, LogLevel >= requiredLevel);
+  return PrintProgress(name, s, LogLevel >= requiredLevel);
 }
 
 /*
 HRESULT CUpdateCallbackConsole::SetPassword(const UString &
-    #ifndef Z7_NO_CRYPTO
+    #ifndef _NO_CRYPTO
     password
     #endif
     )
 {
-  #ifndef Z7_NO_CRYPTO
+  #ifndef _NO_CRYPTO
   PasswordIsDefined = true;
   Password = password;
   #endif
@@ -706,7 +611,7 @@ HRESULT CUpdateCallbackConsole::CryptoGetTextPassword2(Int32 *passwordIsDefined,
 
   *password = NULL;
 
-  #ifdef Z7_NO_CRYPTO
+  #ifdef _NO_CRYPTO
 
   *passwordIsDefined = false;
   return S_OK;
@@ -717,7 +622,7 @@ HRESULT CUpdateCallbackConsole::CryptoGetTextPassword2(Int32 *passwordIsDefined,
   {
     if (AskPassword)
     {
-      RINOK(GetPassword_HRESULT(_so, Password))
+      Password = GetPassword(_so);
       PasswordIsDefined = true;
     }
   }
@@ -735,7 +640,7 @@ HRESULT CUpdateCallbackConsole::CryptoGetTextPassword(BSTR *password)
   
   *password = NULL;
 
-  #ifdef Z7_NO_CRYPTO
+  #ifdef _NO_CRYPTO
 
   return E_NOTIMPL;
   
@@ -744,7 +649,7 @@ HRESULT CUpdateCallbackConsole::CryptoGetTextPassword(BSTR *password)
   if (!PasswordIsDefined)
   {
     {
-      RINOK(GetPassword_HRESULT(_so, Password))
+      Password = GetPassword(_so);
       PasswordIsDefined = true;
     }
   }
@@ -754,7 +659,7 @@ HRESULT CUpdateCallbackConsole::CryptoGetTextPassword(BSTR *password)
   COM_TRY_END
 }
 
-HRESULT CUpdateCallbackConsole::ShowDeleteFile(const wchar_t *name, bool isDir)
+HRESULT CUpdateCallbackConsole::ShowDeleteFile(const wchar_t *name, bool /* isDir */)
 {
   if (StdOutMode)
     return S_OK;
@@ -763,123 +668,7 @@ HRESULT CUpdateCallbackConsole::ShowDeleteFile(const wchar_t *name, bool isDir)
   {
     if (!name || name[0] == 0)
       name = kEmptyFileAlias;
-    return PrintProgress(name, isDir, "D", true);
+    return PrintProgress(name, "D", true);
   }
   return S_OK;
 }
-
-/*
-void GetPropName(PROPID propID, const wchar_t *name, AString &nameA, UString &nameU);
-
-static void GetPropName(PROPID propID, UString &nameU)
-{
-  AString nameA;
-  GetPropName(propID, NULL, nameA, nameU);
-  // if (!nameA.IsEmpty())
-    nameU = nameA;
-}
-
-
-static void AddPropNamePrefix(UString &s, PROPID propID)
-{
-  UString name;
-  GetPropName(propID, name);
-  s += name;
-  s += " = ";
-}
-
-void CCallbackConsoleBase::PrintPropInfo(UString &s, PROPID propID, const PROPVARIANT *value)
-{
-  AddPropNamePrefix(s, propID);
-  {
-    UString dest;
-    const int level = 9; // we show up to ns precision level
-    ConvertPropertyToString2(dest, *value, propID, level);
-    s += dest;
-  }
-  PrintInfoLine(s);
-}
-
-static void Add_IndexType_Index(UString &s, UInt32 indexType, UInt32 index)
-{
-  if (indexType == NArchive::NEventIndexType::kArcProp)
-  {
-  }
-  else
-  {
-    if (indexType == NArchive::NEventIndexType::kBlockIndex)
-    {
-      s += "#";
-    }
-    else if (indexType == NArchive::NEventIndexType::kOutArcIndex)
-    {
-    }
-    else
-    {
-      s += "indexType_";
-      s.Add_UInt32(indexType);
-      s.Add_Space();
-    }
-    s.Add_UInt32(index);
-  }
-  s += ": ";
-}
-
-HRESULT CUpdateCallbackConsole::ReportProp(UInt32 indexType, UInt32 index, PROPID propID, const PROPVARIANT *value)
-{
-  UString s;
-  Add_IndexType_Index(s, indexType, index);
-  PrintPropInfo(s, propID, value);
-  return S_OK;
-}
-
-static inline char GetHex(Byte value)
-{
-  return (char)((value < 10) ? ('0' + value) : ('a' + (value - 10)));
-}
-
-static void AddHexToString(UString &dest, const Byte *data, UInt32 size)
-{
-  for (UInt32 i = 0; i < size; i++)
-  {
-    Byte b = data[i];
-    dest += GetHex((Byte)((b >> 4) & 0xF));
-    dest += GetHex((Byte)(b & 0xF));
-  }
-}
-
-void HashHexToString(char *dest, const Byte *data, UInt32 size);
-
-HRESULT CUpdateCallbackConsole::ReportRawProp(UInt32 indexType, UInt32 index,
-    PROPID propID, const void *data, UInt32 dataSize, UInt32 propType)
-{
-  UString s;
-  propType = propType;
-  Add_IndexType_Index(s, indexType, index);
-  AddPropNamePrefix(s, propID);
-  if (propID == kpidChecksum)
-  {
-    char temp[k_HashCalc_DigestSize_Max + 8];
-    HashHexToString(temp, (const Byte *)data, dataSize);
-    s += temp;
-  }
-  else
-    AddHexToString(s, (const Byte *)data, dataSize);
-  PrintInfoLine(s);
-  return S_OK;
-}
-
-HRESULT CUpdateCallbackConsole::ReportFinished(UInt32 indexType, UInt32 index, Int32 opRes)
-{
-  UString s;
-  Add_IndexType_Index(s, indexType, index);
-  s += "finished";
-  if (opRes != NArchive::NUpdate::NOperationResult::kOK)
-  {
-    s += ": ";
-    s.Add_UInt32(opRes);
-  }
-  PrintInfoLine(s);
-  return S_OK;
-}
-*/

@@ -971,7 +971,7 @@ hle_device_base::~hle_device_base()
     handle serial input line changes
 --------------------------------------------------*/
 
-void hle_device_base::input_txd(int state)
+WRITE_LINE_MEMBER( hle_device_base::input_txd )
 {
 	device_buffered_serial_interface::rx_w(state);
 }

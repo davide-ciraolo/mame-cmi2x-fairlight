@@ -29,8 +29,6 @@
 #include <cctype>
 
 
-namespace {
-
 class ldplayer_state : public driver_device
 {
 public:
@@ -192,7 +190,7 @@ chd_file *ldplayer_state::get_disc()
 
 				// try to open the CHD
 
-				if (!machine().rom_load().set_disk_handle("laserdisc", fullpath))
+				if (!machine().rom_load().set_disk_handle("laserdisc", fullpath.c_str()))
 				{
 					m_filename.assign(dir->name);
 					found = true;
@@ -663,7 +661,6 @@ ROM_START( simpr8210 )
 	DISK_REGION( "laserdisc" )
 ROM_END
 
-} // anonymous namespace
 
 
 /*************************************

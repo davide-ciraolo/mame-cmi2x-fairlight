@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/tiki100_dsk.cpp
+    formats/tiki100_dsk.c
 
     TIKI 100 disk image format
 
@@ -14,17 +14,17 @@ tiki100_format::tiki100_format() : wd177x_format(formats)
 {
 }
 
-const char *tiki100_format::name() const noexcept
+const char *tiki100_format::name() const
 {
 	return "tiki100";
 }
 
-const char *tiki100_format::description() const noexcept
+const char *tiki100_format::description() const
 {
 	return "TIKI 100 disk image";
 }
 
-const char *tiki100_format::extensions() const noexcept
+const char *tiki100_format::extensions() const
 {
 	return "dsk";
 }

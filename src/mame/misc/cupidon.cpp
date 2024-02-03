@@ -20,8 +20,6 @@
 #include "speaker.h"
 
 
-namespace {
-
 class cupidon_state : public driver_device
 {
 public:
@@ -40,11 +38,11 @@ public:
 protected:
 	// devices
 	required_device<m68340_cpu_device> m_maincpu;
-	required_shared_ptr<uint16_t> m_gfxram;
+	required_shared_ptr<uint32_t> m_gfxram;
 
 	uint32_t screen_update_cupidon(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
-	uint16_t cupidon_return_ffffffff()
+	uint32_t cupidon_return_ffffffff()
 	{
 		return -1; // or it hits an illegal opcode (sleep on the 68340?)
 	}
@@ -62,9 +60,12 @@ uint32_t cupidon_state::screen_update_cupidon(screen_device &screen, bitmap_ind1
 			{
 				uint16_t *const destline = &bitmap.pix(ytile*16 + y);
 
-				for (int x=0;x<16;x++)
+				for (int x=0;x<8;x++)
 				{
-					destline[(xtile*16)+(x*2)+0] = m_gfxram[count];
+					uint32_t gfx = m_gfxram[count];
+
+					destline[(xtile*16)+(x*2)+0] = (gfx >> 16)&0xffff;
+					destline[(xtile*16)+(x*2)+1] = (gfx >> 0)&0xffff;
 
 					count++;
 				}
@@ -172,9 +173,6 @@ void cupidon_state::init_cupidon()
 void cupidon_state::init_funnyfm()
 {
 }
-
-} // anonymous namespace
-
 
 /* (c) date is from string in ROM, revision date is noted next to sets - Spellings are as found in ROM */
 GAME( 2004, tsarevna,  0,        cupidon, cupidon, cupidon_state, init_cupidon, ROT0, "Kupidon", "Tsarevna (v1.29)",         MACHINE_IS_SKELETON ) // 12 Oct 2005

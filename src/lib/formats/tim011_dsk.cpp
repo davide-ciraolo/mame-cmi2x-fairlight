@@ -14,17 +14,17 @@ tim011_format::tim011_format() : upd765_format(formats)
 {
 }
 
-const char *tim011_format::name() const noexcept
+const char *tim011_format::name() const
 {
 	return "tim011";
 }
 
-const char *tim011_format::description() const noexcept
+const char *tim011_format::description() const
 {
 	return "TIM 011 disk image";
 }
 
-const char *tim011_format::extensions() const noexcept
+const char *tim011_format::extensions() const
 {
 	return "img";
 }

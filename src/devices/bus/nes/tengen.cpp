@@ -23,11 +23,12 @@
 
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -204,7 +205,7 @@ void nes_tengen032_device::set_chr()
 void nes_tengen032_device::write_h(offs_t offset, u8 data)
 {
 	u8 helper, cmd;
-	LOG("tengen032 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("tengen032 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x6001)
 	{
@@ -272,7 +273,7 @@ void nes_tengen032_device::write_h(offs_t offset, u8 data)
 			break;
 
 		default:
-			LOG("Tengen 800032 write. addr: %04x value: %02x\n", offset + 0x8000, data);
+			LOG_MMC(("Tengen 800032 write. addr: %04x value: %02x\n", offset + 0x8000, data));
 			break;
 	}
 }
@@ -308,7 +309,7 @@ void nes_tengen037_device::set_chr()
 
 void nes_tengen037_device::write_h(offs_t offset, u8 data)
 {
-	LOG("tengen037 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("tengen037 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset & 0x6001)
 	{

@@ -870,6 +870,7 @@ LEGACY_FLOPPY_OPTIONS_END
 void fd800_legacy_device::device_start()
 {
 	logerror("fd800: start\n");
+	m_int_line.resolve();
 
 	for (auto & elem : m_drv)
 	{

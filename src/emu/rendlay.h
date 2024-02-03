@@ -71,7 +71,6 @@ class layout_element
 {
 public:
 	using environment = emu::render::detail::layout_environment;
-	using draw_delegate = delegate<void (int, bitmap_argb32 &)>;
 
 	// construction/destruction
 	layout_element(environment &env, util::xml::data_node const &elemnode);
@@ -82,13 +81,8 @@ public:
 	int default_state() const { return m_defstate; }
 	render_texture *state_texture(int state);
 
-	// set handlers
-	void set_draw_callback(draw_delegate &&handler);
-
 	// operations
 	void preload();
-	void invalidate() { m_invalidated = true; }
-	void prepare();
 
 private:
 	/// \brief A drawing component within a layout element
@@ -198,8 +192,6 @@ private:
 	int                         m_statemask;    // mask to apply to state values
 	bool                        m_foldhigh;     // whether we need to fold state values above the mask range
 	std::vector<texture>        m_elemtex;      // array of element textures used for managing the scaled bitmaps
-	draw_delegate               m_draw;         // draw delegate (called after components are drawn)
-	bool                        m_invalidated;  // force redrawing on next frame if set
 };
 
 
@@ -529,7 +521,7 @@ public:
 	void set_recomputed_callback(recomputed_delegate &&handler);
 
 	// operations
-	void prepare_items();
+	void prepare_items() { if (!m_prepare_items.isnull()) m_prepare_items(); }
 	void recompute(u32 visibility_mask, bool zoom_to_screens);
 	void preload();
 
@@ -580,7 +572,6 @@ private:
 	// cold items
 	std::string                 m_name;             // display name for the view
 	std::string                 m_unqualified_name; // the name exactly as specified in the layout file
-	element_map &               m_elemmap;          // reference to shared elements
 	item_id_map                 m_items_by_id;      // items with non-empty ID indexed by ID
 	visibility_toggle_vector    m_vistoggles;       // collections of items that can be shown/hidden
 	render_bounds               m_expbounds;        // explicit bounds of the view
@@ -607,7 +598,6 @@ public:
 
 	// getters
 	device_t &device() const { return m_device; }
-	element_map &elements() { return m_elemmap; }
 	element_map const &elements() const { return m_elemmap; }
 	view_list &views() { return m_viewlist; }
 	view_list const &views() const { return m_viewlist; }

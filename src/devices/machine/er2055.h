@@ -50,7 +50,7 @@ public:
 
 	// control lines -- all lines are specified as active-high (even CS2)
 	void set_control(uint8_t cs1, uint8_t cs2, uint8_t c1, uint8_t c2);
-	void set_clk(int state);
+	DECLARE_WRITE_LINE_MEMBER(set_clk);
 
 protected:
 	// device-level overrides

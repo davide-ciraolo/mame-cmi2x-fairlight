@@ -554,7 +554,7 @@ void sc4_state::sc4_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 						case 0x0330:
 							logerror("%08x meter write %04x\n",pc, data);
 							//m_meterstatus = (m_meterstatus&0xc0) | (data & 0x3f);
-							m_sec->clk_w(!BIT(data, 5));
+							m_sec->clk_w(~data&0x20);
 							break;
 
 						case 0x1248:
@@ -568,8 +568,7 @@ void sc4_state::sc4_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 						case 0x1330:
 							bfm_sc4_reel4_w(data&0xf);
 							//m_meterstatus = (m_meterstatus&0x3f) | ((data & 0x30) << 2);
-							m_sec->data_w(!BIT(data, 4));
-							m_sec->cs_w(!BIT(data, 5));
+							m_sec->data_w(~data&0x10);
 							break;
 
 						default:
@@ -617,10 +616,10 @@ void sc4_state::sc4_map(address_map &map)
 
 
 
-uint16_t sc4_adder4_state::adder4_mem_r(offs_t offset, uint16_t mem_mask)
+uint32_t sc4_adder4_state::adder4_mem_r(offs_t offset, uint32_t mem_mask)
 {
 	int pc = m_adder4cpu->pc();
-	int cs = m_adder4cpu->get_cs(offset * 2);
+	int cs = m_adder4cpu->get_cs(offset * 4);
 
 	switch ( cs )
 	{
@@ -628,7 +627,7 @@ uint16_t sc4_adder4_state::adder4_mem_r(offs_t offset, uint16_t mem_mask)
 			return m_adder4cpuregion[offset];
 
 		case 2:
-			offset &=0x7fff;
+			offset &=0x3fff;
 			return m_adder4ram[offset];
 
 		default:
@@ -640,10 +639,10 @@ uint16_t sc4_adder4_state::adder4_mem_r(offs_t offset, uint16_t mem_mask)
 	return 0x0000;
 }
 
-void sc4_adder4_state::adder4_mem_w(offs_t offset, uint16_t data, uint16_t mem_mask)
+void sc4_adder4_state::adder4_mem_w(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
 	int pc = m_adder4cpu->pc();
-	int cs = m_adder4cpu->get_cs(offset * 2);
+	int cs = m_adder4cpu->get_cs(offset * 4);
 
 	switch ( cs )
 	{
@@ -653,7 +652,7 @@ void sc4_adder4_state::adder4_mem_w(offs_t offset, uint16_t data, uint16_t mem_m
 			break;
 
 		case 2:
-			offset &=0x7fff;
+			offset &=0x3fff;
 			COMBINE_DATA(&m_adder4ram[offset]);
 			break;
 
@@ -676,14 +675,7 @@ void sc4_adder4_state::sc4_adder4_map(address_map &map)
 
 void bfm_sc45_state::bfm_sc4_reset_serial_vfd()
 {
-	if (m_vfd0)
-	{
-		m_vfd0->reset();
-	}
-	else
-	{
-		m_vfd1->reset();
-	}
+	m_vfd0->reset();
 	vfd_old_clock = false;
 }
 
@@ -718,13 +710,9 @@ void bfm_sc45_state::bfm_sc45_write_serial_vfd(bool cs, bool clock, bool data)
 						{
 							m_dm01->writedata(vfd_ser_value);
 						}
-						else if (m_vfd0)
-						{
-							m_vfd0->write_char(vfd_ser_value);
-						}
 						else
 						{
-							m_vfd1->write_char(vfd_ser_value);
+							m_vfd0->write_char(vfd_ser_value);
 						}
 					}
 				}
@@ -835,7 +823,7 @@ void sc4_state::machine_start()
 }
 
 
-void sc4_state::bfm_sc4_duart_irq_handler(int state)
+WRITE_LINE_MEMBER(sc4_state::bfm_sc4_duart_irq_handler)
 {
 	// triggers after reel tests on luckb, at the start on dnd...
 	// not sure this is right, causes some games to crash
@@ -846,7 +834,7 @@ void sc4_state::bfm_sc4_duart_irq_handler(int state)
 	}
 }
 
-void sc4_state::bfm_sc4_duart_txa(int state)
+WRITE_LINE_MEMBER(sc4_state::bfm_sc4_duart_txa)
 {
 	logerror("bfm_sc4_duart_tx\n");
 }
@@ -878,7 +866,7 @@ void sc4_state::bfm_sc4_duart_output_w(uint8_t data)
 }
 
 
-void sc4_state::m68307_duart_txa(int state)
+WRITE_LINE_MEMBER(sc4_state::m68307_duart_txa)
 {
 	logerror("m68307_duart_tx %02x\n", state);
 }
@@ -895,7 +883,7 @@ void sc4_state::m68307_duart_output_w(uint8_t data)
 }
 
 /* default dmd */
-void sc4_state::bfmdm01_busy(int state)
+WRITE_LINE_MEMBER(sc4_state::bfmdm01_busy)
 {
 	// Must tie back to inputs somehow!
 }
@@ -1280,7 +1268,7 @@ void sc4_adder4_state::machine_start()
 {
 	sc4_state::machine_start();
 
-	m_adder4ram = make_unique_clear<uint16_t[]>(0x8000);
+	m_adder4ram = make_unique_clear<uint32_t[]>(0x10000);
 }
 
 void sc4_adder4_state::sc4_adder4(machine_config &config)
@@ -1848,7 +1836,8 @@ ROM_START( sc4hrolr ) // uses RTC on romcard
 
 	ROM_REGION( 0x100000, "gals", 0 )
 	ROM_LOAD( "75585129.ic1.bin", 0x0000, 0x000117, CRC(2454bb33) SHA1(610cde14caef3f2d02f0076b924e015077c3832b) ) /* protected gal16v8 on romcard */
-ROM_END
+
+	ROM_END
 
 ROM_START( ad4skill )
 	ROM_REGION( 0x400000, "maincpu", ROMREGION_ERASEFF )

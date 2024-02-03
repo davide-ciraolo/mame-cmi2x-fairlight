@@ -39,7 +39,6 @@ Cassette considerations
 #include "huebler.h"
 #include "speaker.h"
 #include "screen.h"
-#include "utf8.h"
 
 /* Keyboard */
 
@@ -262,11 +261,11 @@ uint32_t amu880_state::screen_update(screen_device &screen, bitmap_rgb32 &bitmap
 
 /* Z80-CTC Interface */
 
-void amu880_state::ctc_z0_w(int state)
+WRITE_LINE_MEMBER(amu880_state::ctc_z0_w)
 {
 }
 
-void amu880_state::ctc_z2_w(int state)
+WRITE_LINE_MEMBER(amu880_state::ctc_z2_w)
 {
 	/* cassette clock @ 39kHz */
 	if (state)
@@ -296,7 +295,7 @@ void amu880_state::ctc_z2_w(int state)
 
 /* Z80-SIO Interface */
 
-void amu880_state::cassette_w(int state)
+WRITE_LINE_MEMBER(amu880_state::cassette_w)
 {
 	m_cassbit = state;
 }

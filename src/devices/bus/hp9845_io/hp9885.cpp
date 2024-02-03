@@ -146,7 +146,6 @@
 
 #include "emu.h"
 #include "hp9885.h"
-#include "formats/fs_hp98x5.h"
 #include "formats/hpi_dsk.h"
 
 // Debugging
@@ -280,7 +279,7 @@ void hp9885_device::ext_control_w(uint8_t data)
 	}
 }
 
-void hp9885_device::pctl_w(int state)
+WRITE_LINE_MEMBER(hp9885_device::pctl_w)
 {
 	m_pctl = state;
 	if (m_pctl) {
@@ -294,12 +293,12 @@ void hp9885_device::pctl_w(int state)
 	update_busy();
 }
 
-void hp9885_device::io_w(int state)
+WRITE_LINE_MEMBER(hp9885_device::io_w)
 {
 	LOG_HS("I/O = %d\n" , state);
 }
 
-void hp9885_device::preset_w(int state)
+WRITE_LINE_MEMBER(hp9885_device::preset_w)
 {
 	LOG("PRESET = %d\n" , state);
 }
@@ -307,9 +306,6 @@ void hp9885_device::preset_w(int state)
 static void hp9885_floppy_formats(format_registration &fr)
 {
 	fr.add(FLOPPY_HPI_FORMAT);
-	fr.add(fs::HP9825);
-	fr.add(fs::HP9831);
-	fr.add(fs::HP9845);
 };
 
 void hp9885_device::device_add_mconfig(machine_config &config)

@@ -41,9 +41,9 @@ public:
 	void write(offs_t offset, u8 data);
 
 	// control lines
-	void cs_w(int state);
-	void array_recall_w(int state);
-	void store_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(cs_w);
+	DECLARE_WRITE_LINE_MEMBER(array_recall_w);
+	DECLARE_WRITE_LINE_MEMBER(store_w);
 
 protected:
 	// device-level overrides

@@ -44,14 +44,14 @@ protected:
 	// interface-specific overrides
 	virtual u8 register_read(offs_t offset) override;
 	virtual void register_write(offs_t offset, u8 data) override;
-	virtual void f110_w(int state) override;
-	virtual void f300_w(int state) override;
+	virtual DECLARE_WRITE_LINE_MEMBER(f110_w) override;
+	virtual DECLARE_WRITE_LINE_MEMBER(f300_w) override;
 
 private:
-	void serial_input_w(int state);
-	void reader_control_w(int state);
-	int count_r();
-	void count_select_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(serial_input_w);
+	DECLARE_WRITE_LINE_MEMBER(reader_control_w);
+	DECLARE_READ_LINE_MEMBER(count_r);
+	DECLARE_WRITE_LINE_MEMBER(count_select_w);
 
 	required_device<pia6821_device> m_pia;
 	required_device<input_merger_device> m_loopback;
@@ -101,7 +101,7 @@ DEVICE_INPUT_DEFAULTS_END
 
 void ss50_mpc_device::device_add_mconfig(machine_config &config)
 {
-	PIA6821(config, m_pia); // actually MC6820
+	PIA6821(config, m_pia, 0); // actually MC6820
 	m_pia->writepa_handler().set("outgate", FUNC(input_merger_device::in_w<0>)).bit(0);
 	m_pia->cb2_handler().set(FUNC(ss50_mpc_device::reader_control_w));
 	m_pia->readpb_handler().set_ioport("STOP").mask(0x01).lshift(6);
@@ -133,24 +133,24 @@ void ss50_mpc_device::device_start()
 	save_item(NAME(m_count_select));
 }
 
-void ss50_mpc_device::serial_input_w(int state)
+WRITE_LINE_MEMBER(ss50_mpc_device::serial_input_w)
 {
 	m_pia->write_porta_line(7, state);
 	m_loopback->in_w<0>(state);
 }
 
 
-void ss50_mpc_device::reader_control_w(int state)
+WRITE_LINE_MEMBER(ss50_mpc_device::reader_control_w)
 {
 	m_loopback->in_w<1>(state);
 }
 
-int ss50_mpc_device::count_r()
+READ_LINE_MEMBER(ss50_mpc_device::count_r)
 {
 	return BIT(m_counter->count(), m_count_select ? 4 : 3);
 }
 
-void ss50_mpc_device::count_select_w(int state)
+WRITE_LINE_MEMBER(ss50_mpc_device::count_select_w)
 {
 	m_count_select = bool(state);
 }
@@ -174,13 +174,13 @@ void ss50_mpc_device::register_write(offs_t offset, u8 data)
 	m_pia->write(offset & 3, data);
 }
 
-void ss50_mpc_device::f110_w(int state)
+WRITE_LINE_MEMBER(ss50_mpc_device::f110_w)
 {
 	if (m_baud_jumper->read())
 		m_counter->clock_w(state);
 }
 
-void ss50_mpc_device::f300_w(int state)
+WRITE_LINE_MEMBER(ss50_mpc_device::f300_w)
 {
 	if (!m_baud_jumper->read())
 		m_counter->clock_w(state);

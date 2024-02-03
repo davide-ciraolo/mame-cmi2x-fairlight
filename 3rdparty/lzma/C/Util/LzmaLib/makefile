@@ -11,17 +11,14 @@ LIB_OBJS = \
 
 C_OBJS = \
   $O\Alloc.obj \
-  $O\CpuArch.obj \
   $O\LzFind.obj \
   $O\LzFindMt.obj \
-  $O\LzFindOpt.obj \
   $O\LzmaDec.obj \
   $O\LzmaEnc.obj \
   $O\LzmaLib.obj \
   $O\Threads.obj \
 
 OBJS = \
-  $O\Precomp.obj \
   $(LIB_OBJS) \
   $(C_OBJS) \
   $O\resource.res
@@ -31,24 +28,7 @@ OBJS = \
 $(SLIBPATH): $O $(OBJS)
 	lib -out:$(SLIBPATH) $(OBJS) $(LIBS)
 
-
-MAK_SINGLE_FILE = 1
-
-$O\Precomp.obj: Precomp.c
-	$(CCOMPL_PCH)
-
-!IFDEF MAK_SINGLE_FILE
-
 $(LIB_OBJS): $(*B).c
-	$(CCOMPL_USE)
+	$(COMPL_O2)
 $(C_OBJS): ../../$(*B).c
-	$(CCOMPL_USE)
-
-!ELSE
-
-{.}.c{$O}.obj::
-	$(CCOMPLB_USE)
-{../../../C}.c{$O}.obj::
-	$(CCOMPLB_USE)
-
-!ENDIF
+	$(COMPL_O2)

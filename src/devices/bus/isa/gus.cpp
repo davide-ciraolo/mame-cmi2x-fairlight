@@ -380,6 +380,21 @@ void gf1_device::device_start()
 {
 	acia6850_device::device_start();
 
+	int i;
+	double out = (double)(1 << 13);
+
+	m_txirq_handler.resolve_safe();
+	m_rxirq_handler.resolve_safe();
+	m_wave_irq_handler.resolve_safe();
+	m_ramp_irq_handler.resolve_safe();
+	m_timer1_irq_handler.resolve_safe();
+	m_timer2_irq_handler.resolve_safe();
+	m_sb_irq_handler.resolve_safe();
+	m_dma_irq_handler.resolve_safe();
+	m_drq1_handler.resolve_safe();
+	m_drq2_handler.resolve_safe();
+	m_nmi_handler.resolve_safe();
+
 	// TODO: make DRAM size configurable.  Can be 256k, 512k, 768k, or 1024k
 	m_wave_ram.resize(1024*1024);
 	memset(&m_wave_ram[0], 0, 1024*1024);
@@ -401,10 +416,9 @@ void gf1_device::device_start()
 	m_gf1_irq = 0;
 	m_midi_irq = 0;
 
-	double out = double(1 << 13);
-	for (int i = 4095; i >= 0; i--)
+	for (i=4095;i>=0;i--)
 	{
-		m_volume_table[i] = int16_t(out);
+		m_volume_table[i] = (int16_t)out;
 		out /= 1.002709201; /* 0.0235 dB Steps */
 	}
 
@@ -1453,7 +1467,7 @@ void isa16_gus_device::joy_w(offs_t offset, uint8_t data)
 	m_joy_time = machine().time();
 }
 
-void isa16_gus_device::wavetable_irq(int state)
+WRITE_LINE_MEMBER(isa16_gus_device::wavetable_irq)
 {
 	if(state)
 		set_irq(IRQ_WAVETABLE);
@@ -1461,7 +1475,7 @@ void isa16_gus_device::wavetable_irq(int state)
 		reset_irq(IRQ_WAVETABLE);
 }
 
-void isa16_gus_device::volumeramp_irq(int state)
+WRITE_LINE_MEMBER(isa16_gus_device::volumeramp_irq)
 {
 	if(state)
 		set_irq(IRQ_VOLUME_RAMP);
@@ -1469,7 +1483,7 @@ void isa16_gus_device::volumeramp_irq(int state)
 		reset_irq(IRQ_VOLUME_RAMP);
 }
 
-void isa16_gus_device::timer1_irq(int state)
+WRITE_LINE_MEMBER(isa16_gus_device::timer1_irq)
 {
 	if(state)
 		set_irq(IRQ_TIMER1);
@@ -1477,7 +1491,7 @@ void isa16_gus_device::timer1_irq(int state)
 		reset_irq(IRQ_TIMER1);
 }
 
-void isa16_gus_device::timer2_irq(int state)
+WRITE_LINE_MEMBER(isa16_gus_device::timer2_irq)
 {
 	if(state)
 		set_irq(IRQ_TIMER2);
@@ -1485,7 +1499,7 @@ void isa16_gus_device::timer2_irq(int state)
 		reset_irq(IRQ_TIMER2);
 }
 
-void isa16_gus_device::dma_irq(int state)
+WRITE_LINE_MEMBER(isa16_gus_device::dma_irq)
 {
 	if(state)
 		set_irq(IRQ_DRAM_TC_DMA);
@@ -1493,7 +1507,7 @@ void isa16_gus_device::dma_irq(int state)
 		reset_irq(IRQ_DRAM_TC_DMA);
 }
 
-void isa16_gus_device::sb_irq(int state)
+WRITE_LINE_MEMBER(isa16_gus_device::sb_irq)
 {
 	if(state)
 		set_midi_irq(IRQ_SB);
@@ -1501,7 +1515,7 @@ void isa16_gus_device::sb_irq(int state)
 		reset_midi_irq(IRQ_SB);
 }
 
-void isa16_gus_device::drq1_w(int state)
+WRITE_LINE_MEMBER(isa16_gus_device::drq1_w)
 {
 	m_isa->set_dma_channel(m_gf1->dma_channel1(), this, true);
 	switch(m_gf1->dma_channel1())
@@ -1526,7 +1540,7 @@ void isa16_gus_device::drq1_w(int state)
 	}
 }
 
-void isa16_gus_device::drq2_w(int state)
+WRITE_LINE_MEMBER(isa16_gus_device::drq2_w)
 {
 	m_isa->set_dma_channel(m_gf1->dma_channel2(), this, true);
 	switch(m_gf1->dma_channel2())
@@ -1675,7 +1689,7 @@ void isa16_gus_device::reset_midi_irq(uint8_t source)
 	logerror("GUS: Reset MIDI IRQ %02x\n",source);
 }
 
-void isa16_gus_device::midi_txirq(int state)
+WRITE_LINE_MEMBER( isa16_gus_device::midi_txirq )
 {
 	if (state)
 		set_midi_irq(IRQ_MIDI_TRANSMIT);
@@ -1683,7 +1697,7 @@ void isa16_gus_device::midi_txirq(int state)
 		reset_midi_irq(IRQ_MIDI_TRANSMIT | IRQ_MIDI_RECEIVE);
 }
 
-void isa16_gus_device::midi_rxirq(int state)
+WRITE_LINE_MEMBER( isa16_gus_device::midi_rxirq )
 {
 	if (state)
 		set_midi_irq(IRQ_MIDI_RECEIVE);
@@ -1691,13 +1705,13 @@ void isa16_gus_device::midi_rxirq(int state)
 		reset_midi_irq(IRQ_MIDI_TRANSMIT | IRQ_MIDI_RECEIVE);
 }
 
-void isa16_gus_device::write_acia_clock(int state)
+WRITE_LINE_MEMBER( isa16_gus_device::write_acia_clock )
 {
 	m_gf1->write_txc(state);
 	m_gf1->write_rxc(state);
 }
 
-void isa16_gus_device::nmi_w(int state)
+WRITE_LINE_MEMBER( isa16_gus_device::nmi_w)
 {
 	m_irq_status |= IRQ_SB;
 	m_isa->nmi();

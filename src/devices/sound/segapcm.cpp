@@ -58,11 +58,10 @@ void segapcm_device::device_clock_changed()
 
 
 //-------------------------------------------------
-//  rom_bank_pre_change - refresh the stream if the
-//  ROM banking changes
+//  rom_bank_updated - the rom bank has changed
 //-------------------------------------------------
 
-void segapcm_device::rom_bank_pre_change()
+void segapcm_device::rom_bank_updated()
 {
 	m_stream->update();
 }

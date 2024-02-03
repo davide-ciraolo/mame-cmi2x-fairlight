@@ -26,9 +26,6 @@ Terminal settings: 8 data bits, 2 stop bits, no parity @ 9600
 #include "machine/i8255.h"
 #include "bus/rs232/rs232.h"
 
-
-namespace {
-
 class konin_state : public driver_device
 {
 public:
@@ -43,7 +40,7 @@ public:
 	void konin(machine_config &config);
 
 private:
-	void picu_r3_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(picu_r3_w);
 
 	void io_map(address_map &map);
 	void mem_map(address_map &map);
@@ -55,7 +52,7 @@ private:
 	required_device<pit8253_device> m_iopit;
 };
 
-void konin_state::picu_r3_w(int state)
+WRITE_LINE_MEMBER(konin_state::picu_r3_w)
 {
 	m_picu->r_w(4, !state);
 }
@@ -151,9 +148,6 @@ ROM_START( konin )
 	ROM_LOAD( "009.bin", 0x4000, 0x0800, CRC(80947d15) SHA1(0757fb191913d79f306874684f9fc082ce18a28e))
 	ROM_LOAD( "010.bin", 0x4800, 0x0800, CRC(f0157e0c) SHA1(60ace1eaf0ba01a45987c2286e18f3d56441c994))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

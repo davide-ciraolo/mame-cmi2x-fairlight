@@ -101,7 +101,8 @@ public:
 		m_dac(*this, "dac"),
 		m_soundlatch(*this, "soundlatch"),
 		m_gfxdecode(*this, "gfxdecode"),
-		m_palette(*this, "palette")
+		m_palette(*this, "palette"),
+		m_watchdog(*this, "watchdog")
 	{ }
 
 	void looping(machine_config &config);
@@ -114,28 +115,29 @@ protected:
 	virtual void video_start() override;
 
 private:
-	void flip_screen_x_w(int state);
-	void flip_screen_y_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(flip_screen_x_w);
+	DECLARE_WRITE_LINE_MEMBER(flip_screen_y_w);
 	void videoram_w(offs_t offset, uint8_t data);
 	void colorram_w(offs_t offset, uint8_t data);
-	void level2_irq_set(int state);
-	void main_irq_ack_w(int state);
-	void souint_clr(int state);
-	void ballon_enable_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(level2_irq_set);
+	DECLARE_WRITE_LINE_MEMBER(main_irq_ack_w);
+	DECLARE_WRITE_LINE_MEMBER(watchdog_w);
+	DECLARE_WRITE_LINE_MEMBER(souint_clr);
+	DECLARE_WRITE_LINE_MEMBER(ballon_enable_w);
 	void out_0_w(uint8_t data);
 	void out_2_w(uint8_t data);
 	uint8_t adc_r();
 	void adc_w(uint8_t data);
-	void plr2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(plr2_w);
 	uint8_t cop_unk_r();
-	int cop_serial_r();
+	DECLARE_READ_LINE_MEMBER(cop_serial_r);
 	void cop_l_w(uint8_t data);
 	uint8_t protection_r();
-	[[maybe_unused]] void spcint(int state);
-	void int_update(int state);
+	[[maybe_unused]] DECLARE_WRITE_LINE_MEMBER(spcint);
+	DECLARE_WRITE_LINE_MEMBER(int_update);
 	void sound_sw(uint8_t data);
-	void ay_enable_w(int state);
-	void speech_enable_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(ay_enable_w);
+	DECLARE_WRITE_LINE_MEMBER(speech_enable_w);
 	TILE_GET_INFO_MEMBER(get_tile_info);
 	void palette(palette_device &palette) const;
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
@@ -164,6 +166,7 @@ private:
 	required_device<generic_latch_8_device> m_soundlatch;
 	required_device<gfxdecode_device> m_gfxdecode;
 	required_device<palette_device> m_palette;
+	required_device<watchdog_timer_device> m_watchdog;
 };
 
 
@@ -241,14 +244,14 @@ void looping_state::video_start()
  *
  *************************************/
 
-void looping_state::flip_screen_x_w(int state)
+WRITE_LINE_MEMBER(looping_state::flip_screen_x_w)
 {
 	flip_screen_x_set(!state);
 	m_bg_tilemap->set_scrollx(0, flip_screen() ? 128 : 0);
 }
 
 
-void looping_state::flip_screen_y_w(int state)
+WRITE_LINE_MEMBER(looping_state::flip_screen_y_w)
 {
 	flip_screen_y_set(!state);
 	m_bg_tilemap->set_scrollx(0, flip_screen() ? 256 : 0);
@@ -358,7 +361,7 @@ INTERRUPT_GEN_MEMBER(looping_state::interrupt)
 }
 
 
-void looping_state::level2_irq_set(int state)
+WRITE_LINE_MEMBER(looping_state::level2_irq_set)
 {
 	logerror("Level 2 int = %d\n", state);
 	if (state == 0)
@@ -366,14 +369,19 @@ void looping_state::level2_irq_set(int state)
 }
 
 
-void looping_state::main_irq_ack_w(int state)
+WRITE_LINE_MEMBER(looping_state::main_irq_ack_w)
 {
 	if (state == 0)
 		m_maincpu->set_input_line(INT_9995_INT1, CLEAR_LINE);
 }
 
+WRITE_LINE_MEMBER(looping_state::watchdog_w)
+{
+	m_watchdog->watchdog_reset();
+}
 
-void looping_state::souint_clr(int state)
+
+WRITE_LINE_MEMBER(looping_state::souint_clr)
 {
 	logerror("Soundint clr = %d\n", state);
 	if (state == 0)
@@ -381,14 +389,14 @@ void looping_state::souint_clr(int state)
 }
 
 
-void looping_state::spcint(int state)
+WRITE_LINE_MEMBER(looping_state::spcint)
 {
 	logerror("Speech /int = %d\n", state == ASSERT_LINE ? 1 : 0);
 	m_audiocpu->set_input_line(INT_9980A_LEVEL4, state == ASSERT_LINE ? CLEAR_LINE : ASSERT_LINE);
 }
 
 
-void looping_state::int_update(int state)
+WRITE_LINE_MEMBER(looping_state::int_update)
 {
 	// hack necessitated by flawed input logic in TMS9980A core
 	if (m_soundlatch->pending_r())
@@ -430,22 +438,22 @@ void looping_state::sound_sw(uint8_t data)
  *
  *************************************/
 
-void looping_state::ay_enable_w(int state)
+WRITE_LINE_MEMBER(looping_state::ay_enable_w)
 {
 	for (int output = 0; output < 3; output++)
 		m_aysnd->set_output_gain(output, state ? 1.0 : 0.0);
 }
 
 
-void looping_state::speech_enable_w(int state)
+WRITE_LINE_MEMBER(looping_state::speech_enable_w)
 {
 	m_tms->set_output_gain(0, state ? 1.0 : 0.0);
 }
 
 
-void looping_state::ballon_enable_w(int state)
+WRITE_LINE_MEMBER(looping_state::ballon_enable_w)
 {
-	logerror("ballon_enable_w = %d\n", state);
+	osd_printf_debug("ballon_enable_w = %d\n", state);
 }
 
 
@@ -462,7 +470,7 @@ void looping_state::out_2_w(uint8_t data) { osd_printf_debug("out2 = %02X\n", da
 uint8_t looping_state::adc_r() { osd_printf_debug("%04X:ADC read\n", m_maincpu->pc()); return 0xff; }
 void looping_state::adc_w(uint8_t data) { osd_printf_debug("%04X:ADC write = %02X\n", m_maincpu->pc(), data); }
 
-void looping_state::plr2_w(int state)
+WRITE_LINE_MEMBER(looping_state::plr2_w)
 {
 	/* set to 1 after IDLE, cleared to 0 during processing
 	   is this an LED on the PCB? */
@@ -481,7 +489,7 @@ uint8_t looping_state::cop_unk_r()
 	return 1;
 }
 
-int looping_state::cop_serial_r()
+READ_LINE_MEMBER(looping_state::cop_serial_r)
 {
 	return 1;
 }
@@ -630,9 +638,9 @@ void looping_state::looping(machine_config &config)
 	// Q4 = C0
 	// Q5 = C1
 	mainlatch.q_out_cb<6>().set(FUNC(looping_state::main_irq_ack_w));
-	mainlatch.q_out_cb<7>().set("watchdog", FUNC(watchdog_timer_device::reset_line_w)).invert();
+	mainlatch.q_out_cb<7>().set(FUNC(looping_state::watchdog_w));
 
-	WATCHDOG_TIMER(config, "watchdog");
+	WATCHDOG_TIMER(config, m_watchdog);
 
 	// video hardware
 	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));

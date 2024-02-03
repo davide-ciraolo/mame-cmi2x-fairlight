@@ -2,30 +2,28 @@
 
 #include "StdAfx.h"
 
-#include "../../C/CpuArch.h"
-
 #include "IntToString.h"
 
 #define CONVERT_INT_TO_STR(charType, tempSize) \
   unsigned char temp[tempSize]; unsigned i = 0; \
   while (val >= 10) { temp[i++] = (unsigned char)('0' + (unsigned)(val % 10)); val /= 10; } \
   *s++ = (charType)('0' + (unsigned)val); \
-  while (i != 0) { i--; *s++ = (charType)temp[i]; } \
-  *s = 0; \
-  return s;
+  while (i != 0) { i--; *s++ = temp[i]; } \
+  *s = 0;
 
-char * ConvertUInt32ToString(UInt32 val, char *s) throw()
+void ConvertUInt32ToString(UInt32 val, char *s) throw()
 {
-  CONVERT_INT_TO_STR(char, 16)
+  CONVERT_INT_TO_STR(char, 16);
 }
 
-char * ConvertUInt64ToString(UInt64 val, char *s) throw()
+void ConvertUInt64ToString(UInt64 val, char *s) throw()
 {
   if (val <= (UInt32)0xFFFFFFFF)
   {
-    return ConvertUInt32ToString((UInt32)val, s);
+    ConvertUInt32ToString((UInt32)val, s);
+    return;
   }
-  CONVERT_INT_TO_STR(char, 24)
+  CONVERT_INT_TO_STR(char, 24);
 }
 
 void ConvertUInt64ToOct(UInt64 val, char *s) throw()
@@ -48,12 +46,6 @@ void ConvertUInt64ToOct(UInt64 val, char *s) throw()
   while (i);
 }
 
-
-#define GET_HEX_CHAR(t) ((char)(((t < 10) ? ('0' + t) : ('A' + (t - 10)))))
-
-static inline char GetHexChar(unsigned t) { return GET_HEX_CHAR(t); }
-
-
 void ConvertUInt32ToHex(UInt32 val, char *s) throw()
 {
   UInt32 v = val;
@@ -67,13 +59,12 @@ void ConvertUInt32ToHex(UInt32 val, char *s) throw()
   s[i] = 0;
   do
   {
-    unsigned t = (unsigned)(val & 0xF);
+    unsigned t = (unsigned)((val & 0xF));
     val >>= 4;
-    s[--i] = GET_HEX_CHAR(t);
+    s[--i] = (char)((t < 10) ? ('0' + t) : ('A' + (t - 10)));
   }
   while (i);
 }
-
 
 void ConvertUInt64ToHex(UInt64 val, char *s) throw()
 {
@@ -88,9 +79,9 @@ void ConvertUInt64ToHex(UInt64 val, char *s) throw()
   s[i] = 0;
   do
   {
-    unsigned t = (unsigned)(val & 0xF);
+    unsigned t = (unsigned)((val & 0xF));
     val >>= 4;
-    s[--i] = GET_HEX_CHAR(t);
+    s[--i] = (char)((t < 10) ? ('0' + t) : ('A' + (t - 10)));
   }
   while (i);
 }
@@ -102,7 +93,7 @@ void ConvertUInt32ToHex8Digits(UInt32 val, char *s) throw()
   {
     unsigned t = val & 0xF;
     val >>= 4;
-    s[i] = GET_HEX_CHAR(t);
+    s[i] = (char)(((t < 10) ? ('0' + t) : ('A' + (t - 10))));
   }
 }
 
@@ -119,18 +110,19 @@ void ConvertUInt32ToHex8Digits(UInt32 val, wchar_t *s)
 }
 */
 
-wchar_t * ConvertUInt32ToString(UInt32 val, wchar_t *s) throw()
+void ConvertUInt32ToString(UInt32 val, wchar_t *s) throw()
 {
-  CONVERT_INT_TO_STR(wchar_t, 16)
+  CONVERT_INT_TO_STR(wchar_t, 16);
 }
 
-wchar_t * ConvertUInt64ToString(UInt64 val, wchar_t *s) throw()
+void ConvertUInt64ToString(UInt64 val, wchar_t *s) throw()
 {
   if (val <= (UInt32)0xFFFFFFFF)
   {
-    return ConvertUInt32ToString((UInt32)val, s);
+    ConvertUInt32ToString((UInt32)val, s);
+    return;
   }
-  CONVERT_INT_TO_STR(wchar_t, 24)
+  CONVERT_INT_TO_STR(wchar_t, 24);
 }
 
 void ConvertInt64ToString(Int64 val, char *s) throw()
@@ -140,7 +132,7 @@ void ConvertInt64ToString(Int64 val, char *s) throw()
     *s++ = '-';
     val = -val;
   }
-  ConvertUInt64ToString((UInt64)val, s);
+  ConvertUInt64ToString(val, s);
 }
 
 void ConvertInt64ToString(Int64 val, wchar_t *s) throw()
@@ -150,43 +142,5 @@ void ConvertInt64ToString(Int64 val, wchar_t *s) throw()
     *s++ = L'-';
     val = -val;
   }
-  ConvertUInt64ToString((UInt64)val, s);
-}
-
-
-static void ConvertByteToHex2Digits(unsigned v, char *s) throw()
-{
-  s[0] = GetHexChar(v >> 4);
-  s[1] = GetHexChar(v & 0xF);
-}
-
-static void ConvertUInt16ToHex4Digits(UInt32 val, char *s) throw()
-{
-  ConvertByteToHex2Digits(val >> 8, s);
-  ConvertByteToHex2Digits(val & 0xFF, s + 2);
-}
-
-char *RawLeGuidToString(const Byte *g, char *s) throw()
-{
-  ConvertUInt32ToHex8Digits(GetUi32(g   ),  s);  s += 8;  *s++ = '-';
-  ConvertUInt16ToHex4Digits(GetUi16(g + 4), s);  s += 4;  *s++ = '-';
-  ConvertUInt16ToHex4Digits(GetUi16(g + 6), s);  s += 4;  *s++ = '-';
-  for (unsigned i = 0; i < 8; i++)
-  {
-    if (i == 2)
-      *s++ = '-';
-    ConvertByteToHex2Digits(g[8 + i], s);
-    s += 2;
-  }
-  *s = 0;
-  return s;
-}
-
-char *RawLeGuidToString_Braced(const Byte *g, char *s) throw()
-{
-  *s++ = '{';
-  s = RawLeGuidToString(g, s);
-  *s++ = '}';
-  *s = 0;
-  return s;
+  ConvertUInt64ToString(val, s);
 }

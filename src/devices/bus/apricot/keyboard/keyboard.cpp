@@ -50,13 +50,16 @@ void apricot_keyboard_bus_device::device_start()
 {
 	// get connected keyboard
 	m_kbd = get_card_device();
+
+	// resolve callbacks
+	m_in_handler.resolve_safe();
 }
 
 //-------------------------------------------------
 //  host to module interface
 //-------------------------------------------------
 
-void apricot_keyboard_bus_device::out_w(int state)
+WRITE_LINE_MEMBER( apricot_keyboard_bus_device::out_w )
 {
 	if (m_kbd)
 		m_kbd->out_w(state);

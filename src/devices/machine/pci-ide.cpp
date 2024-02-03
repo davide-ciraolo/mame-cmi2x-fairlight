@@ -85,6 +85,8 @@ void ide_pci_device::device_start()
 	pci_bar[3] = 0x374;
 	pci_bar[4] = 0xf00;
 
+	m_irq_handler.resolve_safe();
+
 	intr_pin = 0x1;
 	intr_line = 0xe;
 
@@ -142,7 +144,7 @@ void ide_pci_device::ide2_write_cs1(offs_t offset, uint32_t data, uint32_t mem_m
 	m_ide2->write_cs1(1, data, mem_mask);
 }
 
-void ide_pci_device::ide_interrupt(int state)
+WRITE_LINE_MEMBER(ide_pci_device::ide_interrupt)
 {
 	// Call the callback
 	m_irq_handler(state);

@@ -93,7 +93,7 @@ inline void device_t::logerror(Format &&fmt, Params &&... args) const
 {
 	if (m_machine != nullptr && m_machine->allow_logging())
 	{
-		auto profile = g_profiler.start(PROFILER_LOGERROR);
+		g_profiler.start(PROFILER_LOGERROR);
 
 		// dump to the buffer
 		m_string_buffer.clear();
@@ -103,6 +103,8 @@ inline void device_t::logerror(Format &&fmt, Params &&... args) const
 		m_string_buffer.put('\0');
 
 		m_machine->strlog(&m_string_buffer.vec()[0]);
+
+		g_profiler.stop();
 	}
 }
 

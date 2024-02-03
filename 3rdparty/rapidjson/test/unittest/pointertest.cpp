@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -15,10 +15,7 @@
 #include "unittest.h"
 #include "rapidjson/pointer.h"
 #include "rapidjson/stringbuffer.h"
-#include "rapidjson/ostreamwrapper.h"
 #include <sstream>
-#include <map>
-#include <algorithm>
 
 using namespace rapidjson;
 
@@ -303,7 +300,7 @@ TEST(Pointer, Parse_URIFragment) {
     }
 
     {
-        // Decode UTF-8 percent encoding to UTF-8
+        // Decode UTF-8 perecent encoding to UTF-8
         Pointer p("#/%C2%A2");
         EXPECT_TRUE(p.IsValid());
         EXPECT_EQ(1u, p.GetTokenCount());
@@ -311,7 +308,7 @@ TEST(Pointer, Parse_URIFragment) {
     }
 
     {
-        // Decode UTF-8 percent encoding to UTF-16
+        // Decode UTF-8 perecent encoding to UTF-16
         GenericPointer<GenericValue<UTF16<> > > p(L"#/%C2%A2");
         EXPECT_TRUE(p.IsValid());
         EXPECT_EQ(1u, p.GetTokenCount());
@@ -320,7 +317,7 @@ TEST(Pointer, Parse_URIFragment) {
     }
 
     {
-        // Decode UTF-8 percent encoding to UTF-16
+        // Decode UTF-8 perecent encoding to UTF-16
         GenericPointer<GenericValue<UTF16<> > > p(L"#/%E2%82%AC");
         EXPECT_TRUE(p.IsValid());
         EXPECT_EQ(1u, p.GetTokenCount());
@@ -444,8 +441,8 @@ TEST(Pointer, Stringify) {
 }
 
 // Construct a Pointer with static tokens, no dynamic allocation involved.
-#define NAME(s) { s, static_cast<SizeType>(sizeof(s) / sizeof(s[0]) - 1), kPointerInvalidIndex }
-#define INDEX(i) { #i, static_cast<SizeType>(sizeof(#i) - 1), i }
+#define NAME(s) { s, sizeof(s) / sizeof(s[0]) - 1, kPointerInvalidIndex }
+#define INDEX(i) { #i, sizeof(#i) - 1, i }
 
 static const Pointer::Token kTokens[] = { NAME("foo"), INDEX(0) }; // equivalent to "/foo/0"
 
@@ -465,8 +462,7 @@ TEST(Pointer, ConstructorWithToken) {
 
 TEST(Pointer, CopyConstructor) {
     {
-        CrtAllocator allocator;
-        Pointer p("/foo/0", &allocator);
+        Pointer p("/foo/0");
         Pointer q(p);
         EXPECT_TRUE(q.IsValid());
         EXPECT_EQ(2u, q.GetTokenCount());
@@ -475,9 +471,6 @@ TEST(Pointer, CopyConstructor) {
         EXPECT_EQ(1u, q.GetTokens()[1].length);
         EXPECT_STREQ("0", q.GetTokens()[1].name);
         EXPECT_EQ(0u, q.GetTokens()[1].index);
-
-        // Copied pointer needs to have its own allocator
-        EXPECT_NE(&p.GetAllocator(), &q.GetAllocator());
     }
 
     // Static tokens
@@ -496,8 +489,7 @@ TEST(Pointer, CopyConstructor) {
 
 TEST(Pointer, Assignment) {
     {
-        CrtAllocator allocator;
-        Pointer p("/foo/0", &allocator);
+        Pointer p("/foo/0");
         Pointer q;
         q = p;
         EXPECT_TRUE(q.IsValid());
@@ -507,8 +499,7 @@ TEST(Pointer, Assignment) {
         EXPECT_EQ(1u, q.GetTokens()[1].length);
         EXPECT_STREQ("0", q.GetTokens()[1].name);
         EXPECT_EQ(0u, q.GetTokens()[1].index);
-        EXPECT_NE(&p.GetAllocator(), &q.GetAllocator());
-        q = static_cast<const Pointer &>(q);
+        q = q;
         EXPECT_TRUE(q.IsValid());
         EXPECT_EQ(2u, q.GetTokenCount());
         EXPECT_EQ(3u, q.GetTokens()[0].length);
@@ -516,7 +507,6 @@ TEST(Pointer, Assignment) {
         EXPECT_EQ(1u, q.GetTokens()[1].length);
         EXPECT_STREQ("0", q.GetTokens()[1].name);
         EXPECT_EQ(0u, q.GetTokens()[1].index);
-        EXPECT_NE(&p.GetAllocator(), &q.GetAllocator());
     }
 
     // Static tokens
@@ -532,36 +522,6 @@ TEST(Pointer, Assignment) {
         EXPECT_STREQ("0", q.GetTokens()[1].name);
         EXPECT_EQ(0u, q.GetTokens()[1].index);
     }
-}
-
-TEST(Pointer, Swap) {
-    Pointer p("/foo/0");
-    Pointer q(&p.GetAllocator());
-
-    q.Swap(p);
-    EXPECT_EQ(&q.GetAllocator(), &p.GetAllocator());
-    EXPECT_TRUE(p.IsValid());
-    EXPECT_TRUE(q.IsValid());
-    EXPECT_EQ(0u, p.GetTokenCount());
-    EXPECT_EQ(2u, q.GetTokenCount());
-    EXPECT_EQ(3u, q.GetTokens()[0].length);
-    EXPECT_STREQ("foo", q.GetTokens()[0].name);
-    EXPECT_EQ(1u, q.GetTokens()[1].length);
-    EXPECT_STREQ("0", q.GetTokens()[1].name);
-    EXPECT_EQ(0u, q.GetTokens()[1].index);
-
-    // std::swap compatibility
-    std::swap(p, q);
-    EXPECT_EQ(&p.GetAllocator(), &q.GetAllocator());
-    EXPECT_TRUE(q.IsValid());
-    EXPECT_TRUE(p.IsValid());
-    EXPECT_EQ(0u, q.GetTokenCount());
-    EXPECT_EQ(2u, p.GetTokenCount());
-    EXPECT_EQ(3u, p.GetTokens()[0].length);
-    EXPECT_STREQ("foo", p.GetTokens()[0].name);
-    EXPECT_EQ(1u, p.GetTokens()[1].length);
-    EXPECT_STREQ("0", p.GetTokens()[1].name);
-    EXPECT_EQ(0u, p.GetTokens()[1].index);
 }
 
 TEST(Pointer, Append) {
@@ -650,52 +610,6 @@ TEST(Pointer, Create) {
     }
 }
 
-static const char kJsonIds[] = "{\n"
-   "    \"id\": \"/root/\","
-   "    \"foo\":[\"bar\", \"baz\", {\"id\": \"inarray\", \"child\": 1}],\n"
-   "    \"int\" : 2,\n"
-   "    \"str\" : \"val\",\n"
-   "    \"obj\": {\"id\": \"inobj\", \"child\": 3},\n"
-   "    \"jbo\": {\"id\": true, \"child\": 4}\n"
-   "}";
-
-
-TEST(Pointer, GetUri) {
-    CrtAllocator allocator;
-    Document d;
-    d.Parse(kJsonIds);
-    Pointer::UriType doc("http://doc");
-    Pointer::UriType root("http://doc/root/");
-    Pointer::UriType empty = Pointer::UriType();
-
-    EXPECT_TRUE(Pointer("").GetUri(d, doc) == doc);
-    EXPECT_TRUE(Pointer("/foo").GetUri(d, doc) == root);
-    EXPECT_TRUE(Pointer("/foo/0").GetUri(d, doc) == root);
-    EXPECT_TRUE(Pointer("/foo/2").GetUri(d, doc) == root);
-    EXPECT_TRUE(Pointer("/foo/2/child").GetUri(d, doc) == Pointer::UriType("http://doc/root/inarray"));
-    EXPECT_TRUE(Pointer("/int").GetUri(d, doc) == root);
-    EXPECT_TRUE(Pointer("/str").GetUri(d, doc) == root);
-    EXPECT_TRUE(Pointer("/obj").GetUri(d, doc) == root);
-    EXPECT_TRUE(Pointer("/obj/child").GetUri(d, doc) == Pointer::UriType("http://doc/root/inobj"));
-    EXPECT_TRUE(Pointer("/jbo").GetUri(d, doc) == root);
-    EXPECT_TRUE(Pointer("/jbo/child").GetUri(d, doc) == root); // id not string
-
-    size_t unresolvedTokenIndex;
-    EXPECT_TRUE(Pointer("/abc").GetUri(d, doc, &unresolvedTokenIndex, &allocator) == empty); // Out of boundary
-    EXPECT_EQ(0u, unresolvedTokenIndex);
-    EXPECT_TRUE(Pointer("/foo/3").GetUri(d, doc, &unresolvedTokenIndex, &allocator) == empty); // Out of boundary
-    EXPECT_EQ(1u, unresolvedTokenIndex);
-    EXPECT_TRUE(Pointer("/foo/a").GetUri(d, doc, &unresolvedTokenIndex, &allocator) == empty); // "/foo" is an array, cannot query by "a"
-    EXPECT_EQ(1u, unresolvedTokenIndex);
-    EXPECT_TRUE(Pointer("/foo/0/0").GetUri(d, doc, &unresolvedTokenIndex, &allocator) == empty); // "/foo/0" is an string, cannot further query
-    EXPECT_EQ(2u, unresolvedTokenIndex);
-    EXPECT_TRUE(Pointer("/foo/0/a").GetUri(d, doc, &unresolvedTokenIndex, &allocator) == empty); // "/foo/0" is an string, cannot further query
-    EXPECT_EQ(2u, unresolvedTokenIndex);
-
-    Pointer::Token tokens[] = { { "foo ...", 3, kPointerInvalidIndex } };
-    EXPECT_TRUE(Pointer(tokens, 1).GetUri(d, doc) == root);
-}
-
 TEST(Pointer, Get) {
     Document d;
     d.Parse(kJson);
@@ -712,20 +626,16 @@ TEST(Pointer, Get) {
     EXPECT_EQ(&d["k\"l"], Pointer("/k\"l").Get(d));
     EXPECT_EQ(&d[" "], Pointer("/ ").Get(d));
     EXPECT_EQ(&d["m~n"], Pointer("/m~0n").Get(d));
-
-    EXPECT_TRUE(Pointer("/abc").Get(d) == 0);  // Out of boundary
+    EXPECT_TRUE(Pointer("/abc").Get(d) == 0);
     size_t unresolvedTokenIndex;
     EXPECT_TRUE(Pointer("/foo/2").Get(d, &unresolvedTokenIndex) == 0); // Out of boundary
-    EXPECT_EQ(1u, unresolvedTokenIndex);
+    EXPECT_EQ(1, unresolvedTokenIndex);
     EXPECT_TRUE(Pointer("/foo/a").Get(d, &unresolvedTokenIndex) == 0); // "/foo" is an array, cannot query by "a"
-    EXPECT_EQ(1u, unresolvedTokenIndex);
+    EXPECT_EQ(1, unresolvedTokenIndex);
     EXPECT_TRUE(Pointer("/foo/0/0").Get(d, &unresolvedTokenIndex) == 0); // "/foo/0" is an string, cannot further query
-    EXPECT_EQ(2u, unresolvedTokenIndex);
+    EXPECT_EQ(2, unresolvedTokenIndex);
     EXPECT_TRUE(Pointer("/foo/0/a").Get(d, &unresolvedTokenIndex) == 0); // "/foo/0" is an string, cannot further query
-    EXPECT_EQ(2u, unresolvedTokenIndex);
-
-    Pointer::Token tokens[] = { { "foo ...", 3, kPointerInvalidIndex } };
-    EXPECT_EQ(&d["foo"], Pointer(tokens, 1).Get(d));
+    EXPECT_EQ(2, unresolvedTokenIndex);
 }
 
 TEST(Pointer, GetWithDefault) {
@@ -952,7 +862,7 @@ TEST(Pointer, Set_NoAllocator) {
 #endif
 }
 
-TEST(Pointer, Swap_Value) {
+TEST(Pointer, Swap) {
     Document d;
     d.Parse(kJson);
     Document::AllocatorType& a = d.GetAllocator();
@@ -961,7 +871,7 @@ TEST(Pointer, Swap_Value) {
     EXPECT_STREQ("bar", d["foo"][1].GetString());
 }
 
-TEST(Pointer, Swap_Value_NoAllocator) {
+TEST(Pointer, Swap_NoAllocator) {
     Document d;
     d.Parse(kJson);
     Pointer("/foo/0").Swap(d, *Pointer("/foo/1").Get(d));
@@ -1044,13 +954,13 @@ TEST(Pointer, GetValueByPointer) {
 
     size_t unresolvedTokenIndex;
     EXPECT_TRUE(GetValueByPointer(d, "/foo/2", &unresolvedTokenIndex) == 0); // Out of boundary
-    EXPECT_EQ(1u, unresolvedTokenIndex);
+    EXPECT_EQ(1, unresolvedTokenIndex);
     EXPECT_TRUE(GetValueByPointer(d, "/foo/a", &unresolvedTokenIndex) == 0); // "/foo" is an array, cannot query by "a"
-    EXPECT_EQ(1u, unresolvedTokenIndex);
+    EXPECT_EQ(1, unresolvedTokenIndex);
     EXPECT_TRUE(GetValueByPointer(d, "/foo/0/0", &unresolvedTokenIndex) == 0); // "/foo/0" is an string, cannot further query
-    EXPECT_EQ(2u, unresolvedTokenIndex);
+    EXPECT_EQ(2, unresolvedTokenIndex);
     EXPECT_TRUE(GetValueByPointer(d, "/foo/0/a", &unresolvedTokenIndex) == 0); // "/foo/0" is an string, cannot further query
-    EXPECT_EQ(2u, unresolvedTokenIndex);
+    EXPECT_EQ(2, unresolvedTokenIndex);
 
     // const version
     const Value& v = d;
@@ -1058,13 +968,13 @@ TEST(Pointer, GetValueByPointer) {
     EXPECT_EQ(&d["foo"][0], GetValueByPointer(v, "/foo/0"));
 
     EXPECT_TRUE(GetValueByPointer(v, "/foo/2", &unresolvedTokenIndex) == 0); // Out of boundary
-    EXPECT_EQ(1u, unresolvedTokenIndex);
+    EXPECT_EQ(1, unresolvedTokenIndex);
     EXPECT_TRUE(GetValueByPointer(v, "/foo/a", &unresolvedTokenIndex) == 0); // "/foo" is an array, cannot query by "a"
-    EXPECT_EQ(1u, unresolvedTokenIndex);
+    EXPECT_EQ(1, unresolvedTokenIndex);
     EXPECT_TRUE(GetValueByPointer(v, "/foo/0/0", &unresolvedTokenIndex) == 0); // "/foo/0" is an string, cannot further query
-    EXPECT_EQ(2u, unresolvedTokenIndex);
+    EXPECT_EQ(2, unresolvedTokenIndex);
     EXPECT_TRUE(GetValueByPointer(v, "/foo/0/a", &unresolvedTokenIndex) == 0); // "/foo/0" is an string, cannot further query
-    EXPECT_EQ(2u, unresolvedTokenIndex);
+    EXPECT_EQ(2, unresolvedTokenIndex);
 
 }
 
@@ -1578,112 +1488,7 @@ TEST(Pointer, Ambiguity) {
     }
 }
 
-TEST(Pointer, ResolveOnObject) {
-    Document d;
-    EXPECT_FALSE(d.Parse("{\"a\": 123}").HasParseError());
-
-    {
-        Value::ConstObject o = static_cast<const Document&>(d).GetObject();
-        EXPECT_EQ(123, Pointer("/a").Get(o)->GetInt());
-    }
-
-    {
-        Value::Object o = d.GetObject();
-        Pointer("/a").Set(o, 456, d.GetAllocator());
-        EXPECT_EQ(456, Pointer("/a").Get(o)->GetInt());
-    }
-}
-
-TEST(Pointer, ResolveOnArray) {
-    Document d;
-    EXPECT_FALSE(d.Parse("[1, 2, 3]").HasParseError());
-
-    {
-        Value::ConstArray a = static_cast<const Document&>(d).GetArray();
-        EXPECT_EQ(2, Pointer("/1").Get(a)->GetInt());
-    }
-
-    {
-        Value::Array a = d.GetArray();
-        Pointer("/1").Set(a, 123, d.GetAllocator());
-        EXPECT_EQ(123, Pointer("/1").Get(a)->GetInt());
-    }
-}
-
-TEST(Pointer, LessThan) {
-    static const struct {
-        const char *str;
-        bool valid;
-    } pointers[] = {
-        { "/a/b",       true },
-        { "/a",         true },
-        { "/d/1",       true },
-        { "/d/2/z",     true },
-        { "/d/2/3",     true },
-        { "/d/2",       true },
-        { "/a/c",       true },
-        { "/e/f~g",     false },
-        { "/d/2/zz",    true },
-        { "/d/1",       true },
-        { "/d/2/z",     true },
-        { "/e/f~~g",    false },
-        { "/e/f~0g",    true },
-        { "/e/f~1g",    true },
-        { "/e/f.g",     true },
-        { "",           true }
-    };
-    static const char *ordered_pointers[] = {
-        "",
-        "/a",
-        "/a/b",
-        "/a/c",
-        "/d/1",
-        "/d/1",
-        "/d/2",
-        "/e/f.g",
-        "/e/f~1g",
-        "/e/f~0g",
-        "/d/2/3",
-        "/d/2/z",
-        "/d/2/z",
-        "/d/2/zz",
-        NULL,       // was invalid "/e/f~g"
-        NULL        // was invalid "/e/f~~g"
-    };
-    typedef MemoryPoolAllocator<> AllocatorType;
-    typedef GenericPointer<Value, AllocatorType> PointerType;
-    typedef std::multimap<PointerType, size_t> PointerMap;
-    PointerMap map;
-    PointerMap::iterator it;
-    AllocatorType allocator;
-    size_t i;
-
-    EXPECT_EQ(sizeof(pointers) / sizeof(pointers[0]),
-              sizeof(ordered_pointers) / sizeof(ordered_pointers[0]));
-
-    for (i = 0; i < sizeof(pointers) / sizeof(pointers[0]); ++i) {
-        it = map.insert(PointerMap::value_type(PointerType(pointers[i].str, &allocator), i));
-        if (!it->first.IsValid()) {
-            EXPECT_EQ(++it, map.end());
-        }
-    }
-
-    for (i = 0, it = map.begin(); it != map.end(); ++it, ++i) {
-        EXPECT_TRUE(it->second < sizeof(pointers) / sizeof(pointers[0]));
-        EXPECT_EQ(it->first.IsValid(), pointers[it->second].valid);
-        EXPECT_TRUE(i < sizeof(ordered_pointers) / sizeof(ordered_pointers[0]));
-        EXPECT_EQ(it->first.IsValid(), !!ordered_pointers[i]);
-        if (it->first.IsValid()) {
-            std::stringstream ss;
-            OStreamWrapper os(ss);
-            EXPECT_TRUE(it->first.Stringify(os));
-            EXPECT_EQ(ss.str(), pointers[it->second].str);
-            EXPECT_EQ(ss.str(), ordered_pointers[i]);
-        }
-    }
-}
-
-// https://github.com/Tencent/rapidjson/issues/483
+// https://github.com/miloyip/rapidjson/issues/483
 namespace myjson {
 
 class MyAllocator
@@ -1716,15 +1521,4 @@ TEST(Pointer, Issue483) {
     myjson::Value value(rapidjson::kStringType);
     value.SetString(mystr.c_str(), static_cast<SizeType>(mystr.length()), document.GetAllocator());
     myjson::Pointer(path.c_str()).Set(document, value, document.GetAllocator());
-}
-
-TEST(Pointer, Issue1899) {
-    typedef GenericPointer<Value, MemoryPoolAllocator<> > PointerType;
-    PointerType p;
-    PointerType q = p.Append("foo");
-    EXPECT_TRUE(PointerType("/foo") == q);
-    q = q.Append(1234);
-    EXPECT_TRUE(PointerType("/foo/1234") == q);
-    q = q.Append("");
-    EXPECT_TRUE(PointerType("/foo/1234/") == q);
 }

@@ -6,9 +6,6 @@
 // Note: the X1 input (typically an XTAL) is divided by 2 internally.
 // The device clock should therefore be twice the desired operating
 // frequency (and twice the speed rating suffixed to the part number).
-// Some high-performance AMD versions, however, generate the system
-// clock with a PLL and only support XTAL dividers other than 1 for
-// compatibility and power-saving modes.
 
 #include "emu.h"
 #include "i186.h"
@@ -130,27 +127,19 @@ const uint8_t i80186_cpu_device::m_i80186_timing[] =
 
 DEFINE_DEVICE_TYPE(I80186, i80186_cpu_device, "i80186", "Intel 80186")
 DEFINE_DEVICE_TYPE(I80188, i80188_cpu_device, "i80188", "Intel 80188")
-DEFINE_DEVICE_TYPE(AM186EM, am186em_device, "am186em", "AMD Am186EM")
-DEFINE_DEVICE_TYPE(AM188EM, am188em_device, "am188em", "AMD Am188EM")
-
-i80186_cpu_device::i80186_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
-	: i80186_cpu_device(mconfig, I80186, tag, owner, clock, 16)
-{
-}
 
 i80188_cpu_device::i80188_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: i80186_cpu_device(mconfig, I80188, tag, owner, clock, 8)
 {
+	memcpy(m_timing, m_i80186_timing, sizeof(m_i80186_timing));
+	set_irq_acknowledge_callback(*this, FUNC(i80186_cpu_device::inta_callback));
 }
 
-am186em_device::am186em_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
-	: i80186_cpu_device(mconfig, AM186EM, tag, owner, clock, 16)
+i80186_cpu_device::i80186_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: i80186_cpu_device(mconfig, I80186, tag, owner, clock, 16)
 {
-}
-
-am188em_device::am188em_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
-	: i80186_cpu_device(mconfig, AM188EM, tag, owner, clock, 8)
-{
+	memcpy(m_timing, m_i80186_timing, sizeof(m_i80186_timing));
+	set_irq_acknowledge_callback(*this, FUNC(i80186_cpu_device::inta_callback));
 }
 
 i80186_cpu_device::i80186_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, int data_bus_size)
@@ -158,7 +147,7 @@ i80186_cpu_device::i80186_cpu_device(const machine_config &mconfig, device_type 
 	, m_program_config("program", ENDIANNESS_LITTLE, data_bus_size, 20, 0)
 	, m_opcodes_config("opcodes", ENDIANNESS_LITTLE, data_bus_size, 20, 0)
 	, m_io_config("io", ENDIANNESS_LITTLE, data_bus_size, 16, 0)
-	, m_read_slave_ack_func(*this, 0)
+	, m_read_slave_ack_func(*this)
 	, m_out_chip_select_func(*this)
 	, m_out_tmrout0_func(*this)
 	, m_out_tmrout1_func(*this)
@@ -166,8 +155,6 @@ i80186_cpu_device::i80186_cpu_device(const machine_config &mconfig, device_type 
 	, m_irqa_cb(*this)
 	, m_irmx_irq_ack(*this)
 {
-	memcpy(m_timing, m_i80186_timing, sizeof(m_i80186_timing));
-	set_irq_acknowledge_callback(*this, FUNC(i80186_cpu_device::inta_callback));
 }
 
 device_memory_interface::space_config_vector i80186_cpu_device::memory_space_config() const
@@ -733,7 +720,13 @@ void i80186_cpu_device::device_start()
 	m_timer[1].int_timer = timer_alloc(FUNC(i80186_cpu_device::timer_elapsed), this);
 	m_timer[2].int_timer = timer_alloc(FUNC(i80186_cpu_device::timer_elapsed), this);
 
-	m_irmx_irq_ack.resolve_safe(0);
+	m_out_tmrout0_func.resolve_safe();
+	m_out_tmrout1_func.resolve_safe();
+	m_read_slave_ack_func.resolve_safe(0);
+	m_out_chip_select_func.resolve_safe();
+	m_irmx_irq_cb.resolve_safe();
+	m_irqa_cb.resolve_safe();
+	m_irmx_irq_ack.resolve();
 }
 
 void i80186_cpu_device::device_reset()
@@ -895,11 +888,17 @@ void i80186_cpu_device::write_word(uint32_t addr, uint16_t data)
  *************************************/
 IRQ_CALLBACK_MEMBER(i80186_cpu_device::inta_callback)
 {
-	// s-state 0 is irqack
-	m_irqa_cb(ASSERT_LINE);
-	m_irqa_cb(CLEAR_LINE);
+	if (!m_irqa_cb.isnull()) // s-state 0 is irqack
+	{
+		m_irqa_cb(ASSERT_LINE);
+		m_irqa_cb(CLEAR_LINE);
+	}
 	if (BIT(m_reloc, 14))
-		return m_irmx_irq_ack(device, irqline);
+	{
+		if (!m_irmx_irq_ack.isnull())
+			return m_irmx_irq_ack(device, irqline);
+		return 0;
+	}
 	return int_callback(device, irqline);
 }
 

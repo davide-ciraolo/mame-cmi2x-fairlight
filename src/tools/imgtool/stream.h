@@ -40,6 +40,7 @@ public:
 	uint64_t size() const;
 	int seek(int64_t pos, int where);
 	uint64_t tell();
+	void *getptr();
 	uint32_t putc(char c);
 	uint32_t puts(const char *s);
 	uint32_t printf(const char *fmt, ...) ATTR_PRINTF(2, 3);
@@ -50,6 +51,10 @@ public:
 
 	// fills sz bytes with b
 	uint64_t fill(unsigned char b, uint64_t sz);
+
+	// returns the CRC of a file
+	int crc(unsigned long *result);
+	static int file_crc(const char *fname, unsigned long *result);
 
 	// returns whether a stream is read only or not
 	bool is_read_only();

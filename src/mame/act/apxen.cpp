@@ -152,7 +152,7 @@ private:
 
 	static void floppy_formats(format_registration &fr);
 
-	void apvid_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(apvid_w);
 
 	uint16_t mem_r(offs_t offset, uint16_t mem_mask);
 	void mem_w(offs_t offset, uint16_t data, uint16_t mem_mask);
@@ -247,7 +247,7 @@ static void apricot_floppies(device_slot_interface &device)
 //  VIDEO EMULATION
 //**************************************************************************
 
-void apxen_state::apvid_w(int state)
+WRITE_LINE_MEMBER( apxen_state::apvid_w )
 {
 	m_apvid = bool(state);
 }

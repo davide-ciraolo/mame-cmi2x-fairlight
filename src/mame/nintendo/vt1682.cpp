@@ -76,13 +76,10 @@
 #define LOG_SRAM_WRITES      (1U << 2)
 #define LOG_OTHER            (1U << 3)
 
-#define LOG_ALL           (LOG_VRAM_WRITES | LOG_SRAM_WRITES | LOG_OTHER)
+#define LOG_ALL           ( LOG_VRAM_WRITES | LOG_SRAM_WRITES | LOG_OTHER )
 
 #define VERBOSE             (0)
 #include "logmacro.h"
-
-
-namespace {
 
 // NTSC uses XTAL(21'477'272) Sound CPU runs at exactly this, Main CPU runs at this / 4
 // PAL  uses XTAL(26'601'712) Sound CPU runs at exactly this, Main CPU runs at this / 5
@@ -128,7 +125,7 @@ public:
 		m_render_timer(*this, "render_timer")
 	{ }
 
-	[[maybe_unused]] void vt_vt1682(machine_config& config);
+	void vt_vt1682(machine_config& config);
 	void regular_init();
 
 protected:
@@ -150,10 +147,10 @@ protected:
 	required_device<screen_device> m_screen;
 	required_device<cpu_device> m_soundcpu;
 
-	void soundcpu_timera_irq(int state);
-	void soundcpu_timerb_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(soundcpu_timera_irq);
+	DECLARE_WRITE_LINE_MEMBER(soundcpu_timerb_irq);
 
-	void maincpu_timer_irq(int state);
+	DECLARE_WRITE_LINE_MEMBER(maincpu_timer_irq);
 
 	required_device<vrt_vt1682_timer_device> m_soundcpu_timer_a_dev;
 	required_device<vrt_vt1682_timer_device> m_soundcpu_timer_b_dev;
@@ -609,7 +606,7 @@ private:
 	int get_address_for_tilepos(int x, int y, int tilesize, uint16_t* pagebases);
 
 	void draw_tile_pixline(int segment, int tile, int yy, int x, int y, int palselect, int pal, int is16pix_high, int is16pix_wide, int bpp, int depth, int opaque, int flipx, int flipy, const rectangle& cliprect);
-	[[maybe_unused]] void draw_tile(int segment, int tile, int x, int y, int palselect, int pal, int is16pix_high, int is16pix_wide, int bpp, int depth, int opaque, int flipx, int flipy, const rectangle& cliprect);
+	void draw_tile(int segment, int tile, int x, int y, int palselect, int pal, int is16pix_high, int is16pix_wide, int bpp, int depth, int opaque, int flipx, int flipy, const rectangle& cliprect);
 	void draw_layer(int which, int opaque, const rectangle& cliprect);
 	void draw_sprites(const rectangle& cliprect);
 };
@@ -5326,7 +5323,7 @@ void vt_vt1682_state::vt1682_sound_reset_hack_w(offs_t offset, uint8_t data)
 	m_soundcpu->set_input_line(INPUT_LINE_RESET, ASSERT_LINE);
 }
 
-void vt_vt1682_state::soundcpu_timera_irq(int state)
+WRITE_LINE_MEMBER(vt_vt1682_state::soundcpu_timera_irq)
 {
 	if (state && !m_scpu_is_in_reset)
 		m_soundcpu->set_input_line(0, ASSERT_LINE);
@@ -5334,7 +5331,7 @@ void vt_vt1682_state::soundcpu_timera_irq(int state)
 		m_soundcpu->set_input_line(0, CLEAR_LINE);
 }
 
-void vt_vt1682_state::soundcpu_timerb_irq(int state)
+WRITE_LINE_MEMBER(vt_vt1682_state::soundcpu_timerb_irq)
 {
 // need to set proper vector (need IRQ priority manager function?)
 /*
@@ -5345,7 +5342,7 @@ void vt_vt1682_state::soundcpu_timerb_irq(int state)
 */
 }
 
-void vt_vt1682_state::maincpu_timer_irq(int state)
+WRITE_LINE_MEMBER(vt_vt1682_state::maincpu_timer_irq)
 {
 	// need to set proper vector (need IRQ priority manager function?)
 
@@ -6187,7 +6184,7 @@ ROM_START( gm235upc )
 	// also has RAM
 ROM_END
 
-} // anonymous namespace
+
 
 
 // TODO: this is a cartridge based system (actually, verify this, it seems some versions simply had built in games) move these to SL if verified as from cartridge config

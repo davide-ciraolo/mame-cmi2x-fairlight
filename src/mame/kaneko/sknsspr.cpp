@@ -45,6 +45,11 @@ void sknsspr_device::device_reset()
 	//printf("sknsspr_device::device_reset()\n");
 }
 
+void sknsspr_device::rom_bank_updated()
+{
+	//printf("sknsspr_device::rom_bank_updated()\n");
+}
+
 int sknsspr_device::skns_rle_decode ( int romoffset, int size )
 {
 	int decodeoffset = 0;
@@ -83,9 +88,9 @@ void sknsspr_device::skns_sprite_kludge(int x, int y)
 	u32 zxd = 0x10000-(zx_s);        \
 	u32 zys = 0x10000-(zy_m);            \
 	u32 zyd = 0x10000-(zy_s);        \
-	u32 bxs = 0, bys = 0, xs, ys;               \
-	int xd, yd, old, old2;      \
+	int xs, ys, xd, yd, old, old2;      \
 	int step_spr = step;                \
+	int bxs = 0, bys = 0;               \
 	rectangle clip;                 \
 	clip.min_x = cliprect.min_x<<16;                 \
 	clip.max_x = (cliprect.max_x+1)<<16;                 \
@@ -133,7 +138,7 @@ void sknsspr_device::skns_sprite_kludge(int x, int y)
 #define z_loop_x()          \
 	xs = bxs;                   \
 	xd = x;                 \
-	while(xs < sx && xd < clip.max_x)
+	while(xs < sx && xd <= clip.max_x)
 
 #define z_loop_x_flip()         \
 	xs = bxs;                   \
@@ -143,7 +148,7 @@ void sknsspr_device::skns_sprite_kludge(int x, int y)
 #define z_loop_y()          \
 	ys = bys;                   \
 	yd = y;                 \
-	while(ys < sy && yd < clip.max_y)
+	while(ys < sy && yd <= clip.max_y)
 
 #define z_loop_y_flip()         \
 	ys = bys;                   \

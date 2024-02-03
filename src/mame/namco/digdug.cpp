@@ -188,14 +188,14 @@ void digdug_state::bg_select_w(uint8_t data)
 	}
 }
 
-void digdug_state::tx_color_mode_w(int state)
+WRITE_LINE_MEMBER(digdug_state::tx_color_mode_w)
 {
 	// select alpha layer color mode (see tx_get_tile_info)
 	m_tx_color_mode = state;
 	m_fg_tilemap->mark_all_dirty();
 }
 
-void digdug_state::bg_disable_w(int state)
+WRITE_LINE_MEMBER(digdug_state::bg_disable_w)
 {
 	// "disable" background (see bg_get_tile_info)
 	m_bg_disable = state;

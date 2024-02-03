@@ -112,12 +112,12 @@ void sams_memory_expansion_device::cruwrite(offs_t offset, uint8_t data)
 		m_crulatch->write_bit((offset & 0x000e) >> 1, data);
 }
 
-void sams_memory_expansion_device::access_mapper_w(int state)
+WRITE_LINE_MEMBER(sams_memory_expansion_device::access_mapper_w)
 {
 	m_access_mapper = state;
 }
 
-void sams_memory_expansion_device::map_mode_w(int state)
+WRITE_LINE_MEMBER(sams_memory_expansion_device::map_mode_w)
 {
 	m_map_mode = state;
 }

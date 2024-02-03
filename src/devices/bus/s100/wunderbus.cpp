@@ -53,7 +53,7 @@ DEFINE_DEVICE_TYPE(S100_WUNDERBUS, s100_wunderbus_device, "s100_wunderbus", "Mor
 
 */
 
-void s100_wunderbus_device::pic_int_w(int state)
+WRITE_LINE_MEMBER( s100_wunderbus_device::pic_int_w )
 {
 	m_bus->irq_w(state);
 }
@@ -71,7 +71,7 @@ DEVICE_INPUT_DEFAULTS_END
 //  UPD1990A_INTERFACE( rtc_intf )
 //-------------------------------------------------
 
-void s100_wunderbus_device::rtc_tp_w(int state)
+WRITE_LINE_MEMBER( s100_wunderbus_device::rtc_tp_w )
 {
 	if (state)
 	{

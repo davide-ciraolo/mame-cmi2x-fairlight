@@ -12,17 +12,16 @@
  ******************************************************************************/
 
 #include "emu.h"
-
+#include "cpu/z80/z80.h"
+#include "machine/z80daisy.h"
+#include "machine/z80daisy_generic.h"
 #include "bus/centronics/ctronics.h"
 #include "bus/einstein/pipe/pipe.h"
 #include "bus/einstein/userport/userport.h"
-#include "bus/generic/carts.h"
-#include "bus/generic/slot.h"
 #include "bus/rs232/rs232.h"
 #include "imagedev/cassette.h"
 #include "imagedev/floppy.h"
 #include "imagedev/snapquik.h"
-#include "cpu/z80/z80.h"
 #include "machine/adc0844.h"
 #include "machine/i8251.h"
 #include "machine/ram.h"
@@ -30,19 +29,14 @@
 #include "machine/timer.h"
 #include "machine/wd_fdc.h"
 #include "machine/z80ctc.h"
-#include "machine/z80daisy.h"
-#include "machine/z80daisy_generic.h"
 #include "machine/z80pio.h"
-#include "sound/ay8910.h"
 #include "video/tms9928a.h"
 #include "video/v9938.h"
-
+#include "sound/ay8910.h"
 #include "screen.h"
 #include "softlist_dev.h"
 #include "speaker.h"
 
-
-namespace {
 
 /***************************************************************************
     CONSTANTS
@@ -84,7 +78,6 @@ public:
 		m_psg(*this, IC_I030),
 		m_centronics(*this, "centronics"),
 		m_strobe_timer(*this, "strobe"),
-		m_rom2(*this, "rom2"),
 		m_bios(*this, "bios"),
 		m_bank1(*this, "bank1"),
 		m_bank2(*this, "bank2"),
@@ -123,18 +116,18 @@ private:
 	void reset_w(uint8_t data);
 	uint8_t rom_r();
 	void rom_w(uint8_t data);
-	template <int Src> void int_w(int state);
+	template <int src> DECLARE_WRITE_LINE_MEMBER(int_w);
 	uint8_t kybint_msk_r();
 	void kybint_msk_w(uint8_t data);
 	void adcint_msk_w(uint8_t data);
 	void fireint_msk_w(uint8_t data);
 	void evdpint_msk_w(uint8_t data);
 	void drsel_w(uint8_t data);
-	void write_centronics_ack(int state);
-	void write_centronics_busy(int state);
-	void write_centronics_perror(int state);
-	void write_centronics_fault(int state);
-	void ardy_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_ack);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_busy);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_perror);
+	DECLARE_WRITE_LINE_MEMBER(write_centronics_fault);
+	DECLARE_WRITE_LINE_MEMBER(ardy_w);
 	TIMER_DEVICE_CALLBACK_MEMBER(strobe_callback);
 
 	uint8_t system_r();
@@ -165,7 +158,6 @@ private:
 	required_device<ay8910_device> m_psg;
 	required_device<centronics_device> m_centronics;
 	required_device<timer_device> m_strobe_timer;
-	optional_device<generic_slot_device> m_rom2;
 	required_memory_region m_bios;
 	required_memory_bank m_bank1;
 	required_memory_bank m_bank2;
@@ -289,27 +281,27 @@ void einstein_state::drsel_w(uint8_t data)
     CENTRONICS
 ***************************************************************************/
 
-void einstein_state::write_centronics_ack(int state)
+WRITE_LINE_MEMBER(einstein_state::write_centronics_ack)
 {
 	m_centronics_ack = state;
 }
 
-void einstein_state::write_centronics_busy(int state)
+WRITE_LINE_MEMBER( einstein_state::write_centronics_busy )
 {
 	m_centronics_busy = state;
 }
 
-void einstein_state::write_centronics_perror(int state)
+WRITE_LINE_MEMBER( einstein_state::write_centronics_perror )
 {
 	m_centronics_perror = state;
 }
 
-void einstein_state::write_centronics_fault(int state)
+WRITE_LINE_MEMBER( einstein_state::write_centronics_fault )
 {
 	m_centronics_fault = state;
 }
 
-void einstein_state::ardy_w(int state)
+WRITE_LINE_MEMBER( einstein_state::ardy_w )
 {
 	if (m_strobe == 0 && state == 1)
 	{
@@ -350,14 +342,13 @@ static const z80_daisy_config einst256_daisy_chain[] =
 	{ nullptr }
 };
 
-template <int Src>
-void einstein_state::int_w(int state)
+template <int src> WRITE_LINE_MEMBER( einstein_state::int_w )
 {
 	int old = m_int;
 
 	if (state)
 	{
-		m_int |= (1 << Src);
+		m_int |= (1 << src);
 		if (!old)
 		{
 			m_maincpu->set_input_line(INPUT_LINE_IRQ0, ASSERT_LINE);
@@ -366,7 +357,7 @@ void einstein_state::int_w(int state)
 	}
 	else
 	{
-		m_int &= ~(1 << Src);
+		m_int &= ~(1 << src);
 		if (old && !m_int)
 		{
 			m_maincpu->set_input_line(INPUT_LINE_IRQ0, CLEAR_LINE);
@@ -479,12 +470,6 @@ void einstein_state::machine_start()
 
 void einstein_state::machine_reset()
 {
-	// 2nd rom socket
-	if (m_rom2.found() && m_rom2->exists())
-	{
-		memcpy(m_bios->base() + 0x4000, m_rom2->get_rom_base(), m_rom2->get_rom_size());
-	}
-
 	// rom enabled on reset
 	m_rom_enabled = 1;
 	m_bank1->set_entry(m_rom_enabled);
@@ -845,27 +830,27 @@ QUICKLOAD_LOAD_MEMBER(einstein_state::quickload_cb)
 	address_space& prog_space = m_maincpu->space(AS_PROGRAM);
 
 	if (image.length() >= 0xfd00)
-		return std::make_pair(image_error::INVALIDLENGTH, std::string());
+		return image_init_result::FAIL;
 
-	// disable ROM
+	/* disable rom */
 	m_rom_enabled = 0;
 	m_bank1->set_entry(m_rom_enabled);
 
-	// load image
-	uint16_t const quickload_size = image.length();
+	/* load image */
+	uint16_t quickload_size = image.length();
 	for (uint16_t i = 0; i < quickload_size; i++)
 	{
 		uint8_t data;
 
 		if (image.fread(&data, 1) != 1)
-			return std::make_pair(image_error::UNSPECIFIED, std::string());
+			return image_init_result::FAIL;
 		prog_space.write_byte(i + 0x100, data);
 	}
 
-	// start program
+	/* start program */
 	m_maincpu->set_pc(0x100);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 
@@ -973,6 +958,13 @@ void einstein_state::einstein(machine_config &config)
 	FLOPPY_CONNECTOR(config, IC_I042 ":2", einstein_floppies, "525qd", floppy_image_device::default_mfm_floppy_formats).enable_sound(true);
 	FLOPPY_CONNECTOR(config, IC_I042 ":3", einstein_floppies, "525qd", floppy_image_device::default_mfm_floppy_formats).enable_sound(true);
 
+	/* software lists */
+	SOFTWARE_LIST(config, "disk_list").set_original("einstein").set_filter("TC01");
+
+	quickload_image_device &quickload(QUICKLOAD(config, "quickload", "com", attotime::from_seconds(2)));
+	quickload.set_load_callback(FUNC(einstein_state::quickload_cb));
+	quickload.set_interface("einstein_quik");
+
 	/* RAM is provided by 8k DRAM ICs i009, i010, i011, i012, i013, i014, i015 and i016 */
 	/* internal ram */
 	RAM(config, RAM_TAG).set_default_size("64K");
@@ -985,17 +977,6 @@ void einstein_state::einstein(machine_config &config)
 
 	/* user port */
 	EINSTEIN_USERPORT(config, "user").bstb_handler().set(IC_I063, FUNC(z80pio_device::strobe_b));
-
-	/* 2nd rom socket I024 */
-	GENERIC_SOCKET(config, m_rom2, generic_linear_slot, "einstein_rom", "bin,rom");
-
-	/* software lists */
-	SOFTWARE_LIST(config, "disk_list").set_original("einstein").set_filter("TC01");
-	SOFTWARE_LIST(config, "rom_list").set_original("einstein_rom");
-
-	quickload_image_device &quickload(QUICKLOAD(config, "quickload", "com", attotime::from_seconds(2)));
-	quickload.set_load_callback(FUNC(einstein_state::quickload_cb));
-	quickload.set_interface("einstein_quik");
 }
 
 void einstein_state::einst256(machine_config &config)
@@ -1010,7 +991,6 @@ void einstein_state::einst256(machine_config &config)
 	config.device_remove(IC_I042 ":3");
 	config.device_remove("pipe");
 	config.device_remove("user");
-	config.device_remove("rom2");
 
 	/* basic machine hardware */
 	m_maincpu->set_addrmap(AS_IO, &einstein_state::einst256_io);
@@ -1064,8 +1044,6 @@ ROM_START( einst256 )
 	/* i008 */
 	ROM_LOAD("mos21.i008", 0x0000, 0x4000, CRC(d1bb5efc) SHA1(9168df70af6746c88748049d1b9d119a29e605de) )
 ROM_END
-
-} // anonymous namespace
 
 
 /***************************************************************************

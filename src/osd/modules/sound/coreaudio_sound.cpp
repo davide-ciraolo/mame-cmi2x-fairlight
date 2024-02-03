@@ -8,10 +8,9 @@
 
 #include "sound_module.h"
 #include "modules/osdmodule.h"
+#include "modules/lib/osdobj_common.h"
 
 #ifdef SDLMAME_MACOSX
-
-#include "modules/lib/osdobj_common.h"
 
 #include <AvailabilityMacros.h>
 #include <AudioToolbox/AudioToolbox.h>
@@ -25,9 +24,16 @@
 #include <cstring>
 
 
-namespace osd {
+#ifdef MAC_OS_X_VERSION_MAX_ALLOWED
 
-namespace {
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 1060
+
+typedef ComponentDescription AudioComponentDescription;
+
+#endif // MAC_OS_X_VERSION_MAX_ALLOWED < 1060
+
+#endif // MAC_OS_X_VERSION_MAX_ALLOWED
+
 
 class sound_coreaudio : public osd_module, public sound_module
 {
@@ -37,8 +43,6 @@ public:
 		sound_module(),
 		m_graph(nullptr),
 		m_node_count(0),
-		m_sample_rate(0),
-		m_audio_latency(0),
 		m_sample_bytes(0),
 		m_headroom(0),
 		m_buffer_size(0),
@@ -55,7 +59,7 @@ public:
 	{
 	}
 
-	virtual int init(osd_interface &osd, osd_options const &options) override;
+	virtual int init(osd_options const &options) override;
 	virtual void exit() override;
 
 	// sound_module
@@ -169,29 +173,25 @@ private:
 	unsigned    m_node_count;
 	node_detail m_node_details[EFFECT_COUNT_MAX + 2];
 
-	int         m_sample_rate;
-	int         m_audio_latency;
-	uint32_t    m_sample_bytes;
-	uint32_t    m_headroom;
-	uint32_t    m_buffer_size;
+	uint32_t      m_sample_bytes;
+	uint32_t      m_headroom;
+	uint32_t      m_buffer_size;
 	std::unique_ptr<int8_t []> m_buffer;
-	uint32_t    m_playpos;
-	uint32_t    m_writepos;
+	uint32_t      m_playpos;
+	uint32_t      m_writepos;
 	bool        m_in_underrun;
-	int32_t     m_scale;
+	int32_t       m_scale;
 	unsigned    m_overflows;
 	unsigned    m_underflows;
 };
 
 
-int sound_coreaudio::init(osd_interface &osd, const osd_options &options)
+int sound_coreaudio::init(const osd_options &options)
 {
 	OSStatus err;
 
 	// Don't bother with any of this if sound is disabled
-	m_sample_rate = options.sample_rate();
-	m_audio_latency = options.audio_latency();
-	if (m_sample_rate == 0)
+	if (sample_rate() == 0)
 		return 0;
 
 	// Create the output graph
@@ -201,7 +201,7 @@ int sound_coreaudio::init(osd_interface &osd, const osd_options &options)
 
 	// Set audio stream format for two-channel native-endian 16-bit packed linear PCM
 	AudioStreamBasicDescription format;
-	format.mSampleRate          = m_sample_rate;
+	format.mSampleRate          = sample_rate();
 	format.mFormatID            = kAudioFormatLinearPCM;
 	format.mFormatFlags         = kAudioFormatFlagsNativeEndian
 								| kLinearPCMFormatFlagIsSignedInteger
@@ -226,8 +226,8 @@ int sound_coreaudio::init(osd_interface &osd, const osd_options &options)
 	m_sample_bytes = format.mBytesPerFrame;
 
 	// Allocate buffer
-	m_headroom = m_sample_bytes * (clamped_latency() * m_sample_rate / 40);
-	m_buffer_size = m_sample_bytes * std::max<uint32_t>(m_sample_rate * (clamped_latency() + 3) / 40, 256U);
+	m_headroom = m_sample_bytes * (clamped_latency() * sample_rate() / 40);
+	m_buffer_size = m_sample_bytes * std::max<uint32_t>(sample_rate() * (clamped_latency() + 3) / 40, 256U);
 	try
 	{
 		m_buffer = std::make_unique<int8_t []>(m_buffer_size);
@@ -292,7 +292,7 @@ void sound_coreaudio::exit()
 
 void sound_coreaudio::update_audio_stream(bool is_throttled, int16_t const *buffer, int samples_this_frame)
 {
-	if ((m_sample_rate == 0) || !m_buffer)
+	if ((sample_rate() == 0) || !m_buffer)
 		return;
 
 	uint32_t const bytes_this_frame = samples_this_frame * m_sample_bytes;
@@ -927,17 +927,16 @@ CFPropertyListRef sound_coreaudio::load_property_list(char const *name) const
 		return nullptr;
 	}
 
-	CFErrorRef msg = nullptr;
-	CFPropertyListRef const result = CFPropertyListCreateWithData(
+	CFStringRef msg = nullptr;
+	CFPropertyListRef const result = CFPropertyListCreateFromXMLData(
 			nullptr,
 			data,
 			kCFPropertyListImmutable,
-			nullptr,
 			&msg);
 	CFRelease(data);
 	if ((nullptr == result) || (nullptr != msg))
 	{
-		std::unique_ptr<char []> const buf = (nullptr != msg) ? convert_cfstring_to_utf8(CFErrorCopyDescription(msg)) : nullptr;
+		std::unique_ptr<char []> const buf = (nullptr != msg) ? convert_cfstring_to_utf8(msg) : nullptr;
 		if (nullptr != msg)
 			CFRelease(msg);
 
@@ -1014,14 +1013,8 @@ OSStatus sound_coreaudio::render_callback(
 	return ((sound_coreaudio *)refcon)->render(action_flags, timestamp, bus_number, number_frames, data);
 }
 
-} // anonymous namespace
+#else /* SDLMAME_MACOSX */
+	MODULE_NOT_SUPPORTED(sound_coreaudio, OSD_SOUND_PROVIDER, "coreaudio")
+#endif
 
-} // namespace osd
-
-#else // SDLMAME_MACOSX
-
-namespace osd { namespace { MODULE_NOT_SUPPORTED(sound_coreaudio, OSD_SOUND_PROVIDER, "coreaudio") } }
-
-#endif // SDLMAME_MACOSX
-
-MODULE_DEFINITION(SOUND_COREAUDIO, osd::sound_coreaudio)
+MODULE_DEFINITION(SOUND_COREAUDIO, sound_coreaudio)

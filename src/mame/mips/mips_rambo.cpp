@@ -17,6 +17,7 @@
 #include "emu.h"
 #include "mips_rambo.h"
 
+#define LOG_GENERAL (1U << 0)
 #define LOG_REG     (1U << 1)
 #define LOG_DMA     (1U << 2)
 
@@ -32,7 +33,7 @@ mips_rambo_device::mips_rambo_device(const machine_config &mconfig, const char *
 	, m_parity_out_cb(*this)
 	, m_timer_out_cb(*this)
 	, m_buzzer_out_cb(*this)
-	, m_channel{{ 0,0,0,0,0,0, false, {*this, 0}, {*this} }, { 0,0,0,0,0,0, false, {*this, 0}, {*this} }}
+	, m_channel{{ 0,0,0,0,0,0, false, *this, *this }, { 0,0,0,0,0,0, false, *this, *this }}
 	, m_buzzer_out_state(0)
 {
 }
@@ -61,6 +62,17 @@ void mips_rambo_device::map(address_map &map)
 
 void mips_rambo_device::device_start()
 {
+	m_irq_out_cb.resolve_safe();
+	m_parity_out_cb.resolve_safe();
+	m_timer_out_cb.resolve_safe();
+	m_buzzer_out_cb.resolve_safe();
+
+	for (dma_t &ch : m_channel)
+	{
+		ch.read_cb.resolve_safe(0);
+		ch.write_cb.resolve_safe();
+	}
+
 	m_timer = timer_alloc(FUNC(mips_rambo_device::timer), this);
 	m_dma = timer_alloc(FUNC(mips_rambo_device::dma), this);
 	m_buzzer = timer_alloc(FUNC(mips_rambo_device::buzzer), this);
@@ -345,10 +357,10 @@ u32 mips_rambo_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap
 	return 0;
 }
 
-template void mips_rambo_device::drq_w<0>(int state);
-template void mips_rambo_device::drq_w<1>(int state);
+template WRITE_LINE_MEMBER(mips_rambo_device::drq_w<0>);
+template WRITE_LINE_MEMBER(mips_rambo_device::drq_w<1>);
 
-template <unsigned Channel> void mips_rambo_device::drq_w(int state)
+template <unsigned Channel> WRITE_LINE_MEMBER(mips_rambo_device::drq_w)
 {
 	dma_t &channel = m_channel[Channel];
 

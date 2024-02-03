@@ -179,8 +179,6 @@ BIT N - ( scale < 50% ) ? 1 : 0
 #include "speaker.h"
 
 
-namespace {
-
 static const int ZOOM_TABLE_SIZE=1<<14;
 static const int NUM_SCANLINES=256-8;
 static const int NUM_VBLANK_LINES=8;
@@ -208,7 +206,7 @@ public:
 	{ }
 
 	void wheelfir(machine_config &config);
-	int adc_eoc_r();
+	DECLARE_READ_LINE_MEMBER(adc_eoc_r);
 
 protected:
 	virtual void machine_start() override;
@@ -254,9 +252,9 @@ private:
 	void wheelfir_7c0000_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	uint16_t wheelfir_7c0000_r(offs_t offset, uint16_t mem_mask = ~0);
 	void coin_cnt_w(uint16_t data);
-	void adc_eoc_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(adc_eoc_w);
 	uint32_t screen_update_wheelfir(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	void screen_vblank_wheelfir(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank_wheelfir);
 	TIMER_DEVICE_CALLBACK_MEMBER(scanline_timer_callback);
 	void ramdac_map(address_map &map);
 	void wheelfir_main(address_map &map);
@@ -512,7 +510,7 @@ uint32_t wheelfir_state::screen_update_wheelfir(screen_device &screen, bitmap_in
 	return 0;
 }
 
-void wheelfir_state::screen_vblank_wheelfir(int state)
+WRITE_LINE_MEMBER(wheelfir_state::screen_vblank_wheelfir)
 {
 	// rising edge
 	if (state)
@@ -638,12 +636,12 @@ static INPUT_PORTS_START( wheelfir )
 	PORT_BIT(0xff, 0x00, IPT_PEDAL2) PORT_INVERT PORT_SENSITIVITY(100) PORT_KEYDELTA(10) PORT_NAME("Brake Pedal") PORT_MINMAX(0x00, 0xff) PORT_REVERSE
 INPUT_PORTS_END
 
-int wheelfir_state::adc_eoc_r()
+READ_LINE_MEMBER( wheelfir_state::adc_eoc_r )
 {
 	return m_adc_eoc;
 }
 
-void wheelfir_state::adc_eoc_w(int state)
+WRITE_LINE_MEMBER( wheelfir_state::adc_eoc_w )
 {
 	m_adc_eoc = state;
 }
@@ -784,8 +782,5 @@ ROM_START( wheelfir )
 	ROM_REGION16_BE(0x80, "eeprom", 0)
 	ROM_LOAD16_WORD_SWAP( "eeprom", 0x000000, 0x000080, CRC(961e4bc9) SHA1(8944504bf56a272e9aa08185e73c6b4212d52383) )
 ROM_END
-
-} // anonymous namespace
-
 
 GAME( 199?, wheelfir,    0, wheelfir,    wheelfir, wheelfir_state, empty_init, ROT0,  "TCH", "Wheels & Fire", MACHINE_IMPERFECT_GRAPHICS)

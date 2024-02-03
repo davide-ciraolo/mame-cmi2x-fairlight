@@ -41,7 +41,6 @@
 #include "wavwrite.h"
 
 #include <atomic>
-#include <cstdarg>
 #include <iostream>
 
 

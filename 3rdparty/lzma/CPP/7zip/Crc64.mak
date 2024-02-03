@@ -1,6 +1,6 @@
 C_OBJS = $(C_OBJS) \
   $O\XzCrc64.obj
-!IF "$(PLATFORM)" == "ia64" || "$(PLATFORM)" == "mips" || "$(PLATFORM)" == "arm" || "$(PLATFORM)" == "arm64"
+!IF "$(CPU)" == "IA64" || "$(CPU)" == "MIPS" || "$(CPU)" == "ARM"
 C_OBJS = $(C_OBJS) \
 !ELSE
 ASM_OBJS = $(ASM_OBJS) \

@@ -65,6 +65,17 @@ ttl7474_device::ttl7474_device(const machine_config &mconfig, const char *tag, d
 
 
 //-------------------------------------------------
+//  device_resolve_objects - complete setup
+//-------------------------------------------------
+
+void ttl7474_device::device_resolve_objects()
+{
+	m_output_func.resolve_safe();
+	m_comp_output_func.resolve_safe();
+}
+
+
+//-------------------------------------------------
 //  device_start - device-specific startup
 //-------------------------------------------------
 
@@ -142,7 +153,7 @@ void ttl7474_device::update()
 //  clear_w - set the clear line state
 //-------------------------------------------------
 
-void ttl7474_device::clear_w(int state)
+WRITE_LINE_MEMBER( ttl7474_device::clear_w )
 {
 	m_clear = state & 1;
 	update();
@@ -153,7 +164,7 @@ void ttl7474_device::clear_w(int state)
 //  clear_w - set the clear line state
 //-------------------------------------------------
 
-void ttl7474_device::preset_w(int state)
+WRITE_LINE_MEMBER( ttl7474_device::preset_w )
 {
 	m_preset = state & 1;
 	update();
@@ -164,7 +175,7 @@ void ttl7474_device::preset_w(int state)
 //  clock_w - set the clock line state
 //-------------------------------------------------
 
-void ttl7474_device::clock_w(int state)
+WRITE_LINE_MEMBER( ttl7474_device::clock_w )
 {
 	m_clk = state & 1;
 	update();
@@ -175,7 +186,7 @@ void ttl7474_device::clock_w(int state)
 //  d_w - set the d line state
 //-------------------------------------------------
 
-void ttl7474_device::d_w(int state)
+WRITE_LINE_MEMBER( ttl7474_device::d_w )
 {
 	m_d = state & 1;
 	update();
@@ -186,7 +197,7 @@ void ttl7474_device::d_w(int state)
 //  output_r - get the output line state
 //-------------------------------------------------
 
-int ttl7474_device::output_r()
+READ_LINE_MEMBER( ttl7474_device::output_r )
 {
 	return m_output!=0;
 }
@@ -196,7 +207,7 @@ int ttl7474_device::output_r()
 //  output_comp_r - get the output-compare line state
 //-----------------------------------------------------
 
-int ttl7474_device::output_comp_r()
+READ_LINE_MEMBER( ttl7474_device::output_comp_r )
 {
 	return m_output_comp!=0;
 }

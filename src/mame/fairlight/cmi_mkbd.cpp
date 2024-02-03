@@ -67,6 +67,10 @@ cmi_music_keyboard_device::cmi_music_keyboard_device(const machine_config &mconf
 
 void cmi_music_keyboard_device::device_resolve_objects()
 {
+	m_cmi_txd.resolve_safe();
+	m_cmi_rts.resolve_safe();
+	m_kbd_txd.resolve_safe();
+	m_kbd_rts.resolve_safe();
 	m_digit.resolve();
 }
 
@@ -136,7 +140,7 @@ void cmi_music_keyboard_device::cmi10_u20_b_w(u8 data)
 {
 }
 
-int cmi_music_keyboard_device::cmi10_u20_cb1_r()
+READ_LINE_MEMBER( cmi_music_keyboard_device::cmi10_u20_cb1_r )
 {
 	int bk = m_cmi10_pia_u20->a_output();
 	int bit = 0;
@@ -149,7 +153,7 @@ int cmi_music_keyboard_device::cmi10_u20_cb1_r()
 	return !bit;
 }
 
-void cmi_music_keyboard_device::cmi10_u20_cb2_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi10_u20_cb2_w )
 {
 	uint8_t data = m_cmi10_pia_u20->a_output() & 0x7f;
 	uint8_t b_port = m_cmi10_pia_u20->b_output();
@@ -183,7 +187,7 @@ template <unsigned N> void cmi_music_keyboard_device::update_dp(offs_t offset, u
 }
 
 /* Begin Conversion */
-void cmi_music_keyboard_device::cmi10_u21_cb2_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi10_u21_cb2_w )
 {
 	// if 0
 //  state = state;
@@ -296,7 +300,7 @@ u8 cmi_music_keyboard_device::cmi10_u21_a_r()
 #endif
 }
 
-void cmi_music_keyboard_device::kbd_acia_int(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::kbd_acia_int )
 {
 	m_kbd_acia_irq = state;
 
@@ -306,7 +310,7 @@ void cmi_music_keyboard_device::kbd_acia_int(int state)
 		m_cpu->set_input_line(INPUT_LINE_IRQ0, CLEAR_LINE);
 }
 
-void cmi_music_keyboard_device::cmi_acia_int(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi_acia_int )
 {
 	m_cmi_acia_irq = state;
 
@@ -316,42 +320,42 @@ void cmi_music_keyboard_device::cmi_acia_int(int state)
 		m_cpu->set_input_line(INPUT_LINE_IRQ0, CLEAR_LINE);
 }
 
-void cmi_music_keyboard_device::cmi_txd_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi_txd_w )
 {
 	m_cmi_txd(state);
 }
 
-void cmi_music_keyboard_device::cmi_rts_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi_rts_w )
 {
 	m_cmi_rts(state);
 }
 
-void cmi_music_keyboard_device::cmi_rxd_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi_rxd_w )
 {
 	m_acia_cmi->write_rxd(state);
 }
 
-void cmi_music_keyboard_device::cmi_cts_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi_cts_w )
 {
 	m_acia_cmi->write_cts(state);
 }
 
-void cmi_music_keyboard_device::kbd_txd_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::kbd_txd_w )
 {
 	m_kbd_txd(state);
 }
 
-void cmi_music_keyboard_device::kbd_rts_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::kbd_rts_w )
 {
 	m_kbd_rts(state);
 }
 
-void cmi_music_keyboard_device::kbd_rxd_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::kbd_rxd_w )
 {
 	m_acia_kbd->write_rxd(state);
 }
 
-void cmi_music_keyboard_device::kbd_cts_w(int state)
+WRITE_LINE_MEMBER( cmi_music_keyboard_device::kbd_cts_w )
 {
 	m_acia_kbd->write_cts(state);
 }

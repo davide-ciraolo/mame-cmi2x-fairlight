@@ -28,12 +28,12 @@
 DEFINE_DEVICE_TYPE(C64_MIDI_SCI, c64_sequential_midi_cartridge_device, "c64_midisci", "C64 Sequential Circuits MIDI")
 
 
-void c64_sequential_midi_cartridge_device::acia_irq_w(int state)
+WRITE_LINE_MEMBER( c64_sequential_midi_cartridge_device::acia_irq_w )
 {
 	m_slot->irq_w(state);
 }
 
-void c64_sequential_midi_cartridge_device::write_acia_clock(int state)
+WRITE_LINE_MEMBER( c64_sequential_midi_cartridge_device::write_acia_clock )
 {
 	m_acia->write_txc(state);
 	m_acia->write_rxc(state);

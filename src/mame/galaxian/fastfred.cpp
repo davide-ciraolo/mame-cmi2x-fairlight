@@ -144,7 +144,7 @@ MACHINE_START_MEMBER(fastfred_state,imago)
 	m_gfxdecode->gfx(1)->set_source(m_imago_sprites);
 }
 
-void fastfred_state::imago_dma_irq_w(int state)
+WRITE_LINE_MEMBER(fastfred_state::imago_dma_irq_w)
 {
 	m_maincpu->set_input_line(0, state ? ASSERT_LINE : CLEAR_LINE);
 }
@@ -177,7 +177,7 @@ uint8_t fastfred_state::imago_sprites_offset_r(offs_t offset)
 	return 0xff; //not really used
 }
 
-void fastfred_state::nmi_mask_w(int state)
+WRITE_LINE_MEMBER(fastfred_state::nmi_mask_w)
 {
 	m_nmi_mask = state;
 	if (!m_nmi_mask)
@@ -598,7 +598,7 @@ static GFXDECODE_START( gfx_imago )
 	GFXDECODE_ENTRY( "gfx4",  0,      gfx_8x8x1,       0x140,  1 )
 GFXDECODE_END
 
-void fastfred_state::vblank_irq(int state)
+WRITE_LINE_MEMBER(fastfred_state::vblank_irq)
 {
 	if (state && m_nmi_mask)
 		m_maincpu->set_input_line(INPUT_LINE_NMI, ASSERT_LINE);

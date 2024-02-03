@@ -29,6 +29,8 @@ nextmo_device::nextmo_device(const machine_config &mconfig, const char *tag, dev
 
 void nextmo_device::device_start()
 {
+	irq_cb.resolve_safe();
+	drq_cb.resolve_safe();
 }
 
 void nextmo_device::device_reset()
@@ -86,7 +88,8 @@ void nextmo_device::r7_w(uint8_t data)
 	if(r7 & 0xc0) {
 		logerror("nextmo: start dma %02x %02x\n", r6, r7);
 		sector_pos = 0;
-		drq_cb(true);
+		if(!drq_cb.isnull())
+			drq_cb(true);
 	}
 }
 
@@ -114,7 +117,8 @@ void nextmo_device::check_dma_end()
 	else
 		limit = r6 & 0x20 ? 0x400 : 0x510;
 	if(sector_pos == limit) {
-		drq_cb(false);
+		if(!drq_cb.isnull())
+			drq_cb(false);
 		if(r7 & 0x40) {
 			if(r6 & 0x20)
 				check_ecc();

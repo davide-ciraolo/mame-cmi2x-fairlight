@@ -23,7 +23,8 @@ files.
 The following files are supported:
 
 history.xml
-    From Gaming-History (formerly Arcade-History)
+    From `Gaming-History <https://www.arcade-history.com/>`_ (formerly
+    Arcade-History)
 mameinfo.dat
     From `MASH’s MAMEINFO <https://mameinfo.mameworld.info/>`_
 messinfo.dat

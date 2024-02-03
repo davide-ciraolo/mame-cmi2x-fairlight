@@ -115,7 +115,7 @@ void maygay1b_state::cpu0_firq(int data)
 
 
 // IRQ from Duart (hopper?)
-void maygay1b_state::duart_irq_handler(int state)
+WRITE_LINE_MEMBER(maygay1b_state::duart_irq_handler)
 {
 	m_maincpu->set_input_line(M6809_IRQ_LINE,  state?ASSERT_LINE:CLEAR_LINE);
 }
@@ -347,17 +347,17 @@ void maygay1b_state::m1_meter_w(uint8_t data)
 	}
 }
 
-void maygay1b_state::ramen_w(int state)
+WRITE_LINE_MEMBER(maygay1b_state::ramen_w)
 {
 	m_RAMEN = state;
 }
 
-void maygay1b_state::alarmen_w(int state)
+WRITE_LINE_MEMBER(maygay1b_state::alarmen_w)
 {
 	m_ALARMEN = state;
 }
 
-void maygay1b_state::nmien_w(int state)
+WRITE_LINE_MEMBER(maygay1b_state::nmien_w)
 {
 	if (m_NMIENABLE == 0 && state)
 	{
@@ -367,21 +367,21 @@ void maygay1b_state::nmien_w(int state)
 	m_NMIENABLE = state;
 }
 
-void maygay1b_state::rts_w(int state)
+WRITE_LINE_MEMBER(maygay1b_state::rts_w)
 {
 }
 
-void maygay1b_state::psurelay_w(int state)
+WRITE_LINE_MEMBER(maygay1b_state::psurelay_w)
 {
 	m_PSUrelay = state;
 }
 
-void maygay1b_state::wdog_w(int state)
+WRITE_LINE_MEMBER(maygay1b_state::wdog_w)
 {
 	m_WDOG = state;
 }
 
-void maygay1b_state::srsel_w(int state)
+WRITE_LINE_MEMBER(maygay1b_state::srsel_w)
 {
 	// this is the ROM banking?
 	logerror("rom bank %02x\n", state);
@@ -729,7 +729,7 @@ void maygay1b_state::maygay_m1(machine_config &config)
 	m_duart68681->irq_cb().set(FUNC(maygay1b_state::duart_irq_handler));
 	m_duart68681->inport_cb().set(FUNC(maygay1b_state::m1_duart_r));
 
-	pia6821_device &pia(PIA6821(config, "pia"));
+	pia6821_device &pia(PIA6821(config, "pia", 0));
 	pia.writepa_handler().set(FUNC(maygay1b_state::m1_pia_porta_w));
 	pia.writepb_handler().set(FUNC(maygay1b_state::m1_pia_portb_w));
 

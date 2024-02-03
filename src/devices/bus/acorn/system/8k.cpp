@@ -137,13 +137,16 @@ void acorn_8k_device::device_reset()
 //  IMPLEMENTATION
 //**************************************************************************
 
-std::pair<std::error_condition, std::string> acorn_8k_device::load_rom(device_image_interface &image, generic_slot_device *slot)
+image_init_result acorn_8k_device::load_rom(device_image_interface &image, generic_slot_device *slot)
 {
-	uint32_t const size = slot->common_get_size("rom");
+	uint32_t size = slot->common_get_size("rom");
 
 	// socket accepts 2K and 4K ROM only
 	if (size != 0x0800 && size != 0x1000)
-		return std::make_pair(image_error::INVALIDLENGTH, "Invalid size: Only 2K/4K is supported");
+	{
+		image.seterror(image_error::INVALIDIMAGE, "Invalid size: Only 2K/4K is supported");
+		return image_init_result::FAIL;
+	}
 
 	slot->rom_alloc(0x1000, GENERIC_ROM8_WIDTH, ENDIANNESS_LITTLE);
 	slot->common_load_rom(slot->get_rom_base(), size, "rom");
@@ -152,5 +155,5 @@ std::pair<std::error_condition, std::string> acorn_8k_device::load_rom(device_im
 	uint8_t *rom = slot->get_rom_base();
 	if (size <= 0x0800) memcpy(rom + 0x0800, rom, 0x0800);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }

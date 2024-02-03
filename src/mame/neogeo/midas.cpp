@@ -52,8 +52,7 @@
 *************************************************************************************************************/
 
 #include "emu.h"
-
-#include "neogeo_spr.h"
+#include "neogeo.h"
 
 #include "cpu/m68000/m68000.h"
 #include "cpu/mcs51/mcs51.h"
@@ -61,9 +60,7 @@
 #include "sound/ymz280b.h"
 #include "machine/eepromser.h"
 #include "machine/ticket.h"
-
 #include "emupal.h"
-#include "screen.h"
 #include "speaker.h"
 
 
@@ -118,7 +115,7 @@ private:
 	required_shared_ptr<uint16_t> m_zoomram;
 	required_region_ptr<uint8_t> m_zoomtable;
 
-	void screen_vblank(int state);
+	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
 
 	void hammer_map(address_map &map);
 	void livequiz_map(address_map &map);
@@ -619,7 +616,7 @@ void midas_state::machine_reset()
 {
 }
 
-void midas_state::screen_vblank(int state)
+WRITE_LINE_MEMBER(midas_state::screen_vblank)
 {
 	if (state) m_sprgen->buffer_vram();
 }
@@ -633,17 +630,17 @@ void midas_state::livequiz(machine_config &config)
 	m_maincpu->set_addrmap(AS_PROGRAM, &midas_state::livequiz_map);
 	m_maincpu->set_vblank_int("screen", FUNC(midas_state::irq1_line_hold));
 
-	pic16c56_device &pic1(PIC16C56(config, "pic1", XTAL(24'000'000) / 6)); // !! PIC12C508 !! unknown MHz
+	pic16c56_device &pic1(PIC16C56(config, "pic1", XTAL(24'000'000) / 6));  // !! PIC12C508 !! unknown MHz
 	pic1.set_disable(); // Currently not hooked up
 
-	pic16c56_device &pic2(PIC16C56(config, "pic2", XTAL(24'000'000) / 6)); // !! PIC12C508 !! unknown MHz
+	pic16c56_device &pic2(PIC16C56(config, "pic2", XTAL(24'000'000) / 6));  // !! PIC12C508 !! unknown MHz
 	pic2.set_disable(); // Currently not hooked up
 
 	EEPROM_93C46_16BIT(config, m_eeprom);
 
 	/* video hardware */
 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
-	m_screen->set_raw(XTAL(24'000'000) / 4, NEOGEO_HTOTAL, NEOGEO_HBEND, NEOGEO_HBSTART, NEOGEO_VTOTAL, NEOGEO_VBEND, NEOGEO_VBSTART);
+	m_screen->set_raw(NEOGEO_PIXEL_CLOCK, NEOGEO_HTOTAL, NEOGEO_HBEND, NEOGEO_HBSTART, NEOGEO_VTOTAL, NEOGEO_VBEND, NEOGEO_VBSTART);
 	m_screen->set_screen_update(FUNC(midas_state::screen_update));
 	m_screen->screen_vblank().set(FUNC(midas_state::screen_vblank));
 
@@ -687,7 +684,7 @@ void midas_state::hammer(machine_config &config)
 
 	/* video hardware */
 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
-	m_screen->set_raw(XTAL(24'000'000) / 4, NEOGEO_HTOTAL, NEOGEO_HBEND, NEOGEO_HBSTART, NEOGEO_VTOTAL, NEOGEO_VBEND, NEOGEO_VBSTART);
+	m_screen->set_raw(NEOGEO_PIXEL_CLOCK, NEOGEO_HTOTAL, NEOGEO_HBEND, NEOGEO_HBSTART, NEOGEO_VTOTAL, NEOGEO_VBEND, NEOGEO_VBSTART);
 	m_screen->set_screen_update(FUNC(midas_state::screen_update));
 	m_screen->screen_vblank().set(FUNC(midas_state::screen_vblank));
 
@@ -823,7 +820,7 @@ void midas_state::init_livequiz()
 	uint16_t *rom = (uint16_t *) memregion("maincpu")->base();
 
 	// PROTECTION CHECKS
-	rom[0x13345a/2] = 0x4e75;
+	rom[0x13345a/2] =   0x4e75;
 }
 
 /***************************************************************************************

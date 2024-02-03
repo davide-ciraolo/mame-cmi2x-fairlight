@@ -2,7 +2,7 @@
 // copyright-holders:Robbbert
 /*********************************************************************
 
-    formats/applix_dsk.cpp
+    formats/applix_dsk.c
 
     Applix disk image format
 
@@ -14,17 +14,17 @@ applix_format::applix_format() : wd177x_format(formats)
 {
 }
 
-const char *applix_format::name() const noexcept
+const char *applix_format::name() const
 {
 	return "applix";
 }
 
-const char *applix_format::description() const noexcept
+const char *applix_format::description() const
 {
 	return "Applix disk image";
 }
 
-const char *applix_format::extensions() const noexcept
+const char *applix_format::extensions() const
 {
 	return "raw";
 }

@@ -11,9 +11,6 @@
 #include "sound/dac.h"
 #include "speaker.h"
 
-
-namespace {
-
 class pubtimed_state : public driver_device
 {
 public:
@@ -67,8 +64,5 @@ ROM_START(pubtimed)
 	ROM_REGION(0x200, "plds", 0)
 	ROM_LOAD("sc3922_pal20l10.u11", 0x000, 0x117, NO_DUMP)
 ROM_END
-
-} // anonymous namespace
-
 
 GAME(1987, pubtimed, 0, pubtimed, pubtimed, pubtimed_state, empty_init, ROT0, "Merit-Nomac Industries", "Pub Time Darts", MACHINE_NOT_WORKING | MACHINE_MECHANICAL)

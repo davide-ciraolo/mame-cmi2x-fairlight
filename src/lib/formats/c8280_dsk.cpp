@@ -2,7 +2,7 @@
 // copyright-holders:Curt Coder
 /*********************************************************************
 
-    formats/c8280_dsk.cpp
+    formats/c8280_dsk.c
 
     Commodore 8280 disk image format
 
@@ -14,17 +14,17 @@ c8280_format::c8280_format() : wd177x_format(formats)
 {
 }
 
-const char *c8280_format::name() const noexcept
+const char *c8280_format::name() const
 {
 	return "c8280";
 }
 
-const char *c8280_format::description() const noexcept
+const char *c8280_format::description() const
 {
 	return "Commodore 8280 disk image";
 }
 
-const char *c8280_format::extensions() const noexcept
+const char *c8280_format::extensions() const
 {
 	return "dsk";
 }

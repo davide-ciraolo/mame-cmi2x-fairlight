@@ -17,6 +17,8 @@
 #include "machine/pc_fdc.h"
 #include "imagedev/floppy.h"
 
+//#define LOG_GENERAL   (1U << 0) //defined in logmacro.h already
+
 //#define VERBOSE (LOG_GENERAL)
 //#define LOG_OUTPUT_STREAM std::cout
 
@@ -67,6 +69,9 @@ void pc_fdc_family_device::device_add_mconfig(machine_config &config)
 
 void pc_fdc_family_device::device_start()
 {
+	intrq_cb.resolve();
+	drq_cb.resolve();
+
 	for(int i=0; i<4; i++) {
 		char name[2] = {static_cast<char>('0'+i), 0};
 		floppy_connector *conn = subdevice<floppy_connector>(name);
@@ -147,7 +152,7 @@ void pc_fdc_family_device::check_irq()
 {
 	bool pirq = irq;
 	irq = fdc_irq && (dor & 4) && (dor & 8);
-	if(irq != pirq) {
+	if(irq != pirq && !intrq_cb.isnull()) {
 		LOG("pc_irq = %d\n", irq);
 		intrq_cb(irq);
 	}
@@ -157,7 +162,7 @@ void pc_fdc_family_device::check_drq()
 {
 	bool pdrq = drq;
 	drq = fdc_drq && (dor & 4) && (dor & 8);
-	if(drq != pdrq)
+	if(drq != pdrq && !drq_cb.isnull())
 		drq_cb(drq);
 }
 

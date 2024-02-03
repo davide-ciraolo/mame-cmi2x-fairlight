@@ -3,8 +3,6 @@
 #ifndef MAME_MACHINE_MB8795_H
 #define MAME_MACHINE_MB8795_H
 
-#include "dinetwork.h"
-
 class mb8795_device :   public device_t,
 						public device_network_interface
 {

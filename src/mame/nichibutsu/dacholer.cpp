@@ -43,9 +43,6 @@
 #include "speaker.h"
 #include "tilemap.h"
 
-
-namespace {
-
 class dacholer_state : public driver_device
 {
 public:
@@ -66,7 +63,7 @@ public:
 	void itaten(machine_config &config);
 	void dacholer(machine_config &config);
 
-	int snd_ack_r();
+	DECLARE_READ_LINE_MEMBER(snd_ack_r);
 
 private:
 	void bg_scroll_x_w(uint8_t data);
@@ -86,7 +83,7 @@ private:
 	uint32_t screen_update_dacholer(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	INTERRUPT_GEN_MEMBER(sound_irq);
 	void draw_sprites( bitmap_ind16 &bitmap, const rectangle &cliprect );
-	void adpcm_int(int state);
+	DECLARE_WRITE_LINE_MEMBER(adpcm_int);
 	void itaten_main_map(address_map &map);
 	void itaten_snd_io_map(address_map &map);
 	void itaten_snd_map(address_map &map);
@@ -306,7 +303,7 @@ void dacholer_state::snd_ack_w(uint8_t data)
 	m_snd_ack = data;
 }
 
-int dacholer_state::snd_ack_r()
+READ_LINE_MEMBER(dacholer_state::snd_ack_r)
 {
 	return m_snd_ack;       //guess ...
 }
@@ -571,7 +568,7 @@ INTERRUPT_GEN_MEMBER(dacholer_state::sound_irq)
 	}
 }
 
-void dacholer_state::adpcm_int(int state)
+WRITE_LINE_MEMBER(dacholer_state::adpcm_int)
 {
 	if (m_snd_interrupt_enable == 1 || (m_snd_interrupt_enable == 0 && m_msm_toggle == 1))
 	{
@@ -844,8 +841,6 @@ ROM_START( itaten )
 	ROM_LOAD( "af-2.1h",  0x0020, 0x0020, CRC(e1cac297) SHA1(f15326d04d006d9d029a6565aebf9daf3657bc2a) )
 	ROM_LOAD( "af-1.3n",  0x0040, 0x0020, CRC(5638e485) SHA1(5d892111936a8eb7646c03a17300069be9a2b442) )
 ROM_END
-
-} // anonymous namespace
 
 
 GAME( 1983, dacholer, 0, dacholer, dacholer, dacholer_state, empty_init, ROT0, "Nichibutsu",         "Dacholer",               MACHINE_SUPPORTS_SAVE )

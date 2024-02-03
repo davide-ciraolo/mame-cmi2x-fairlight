@@ -67,6 +67,7 @@ void driver_device::static_set_callback(device_t &device, callback_type type, dr
 
 void driver_device::empty_init()
 {
+	driver_init();
 }
 
 
@@ -77,6 +78,16 @@ void driver_device::empty_init()
 std::vector<std::string> driver_device::searchpath() const
 {
 	return m_searchpath;
+}
+
+
+//-------------------------------------------------
+//  driver_init - default implementation which
+//  does nothing
+//-------------------------------------------------
+
+void driver_device::driver_init()
+{
 }
 
 
@@ -249,7 +260,10 @@ void driver_device::device_reset_after_children()
 
 	sound_reset();
 
-	video_reset();
+	if (!m_callbacks[CB_VIDEO_RESET].isnull())
+		m_callbacks[CB_VIDEO_RESET]();
+	else
+		video_reset();
 }
 
 
@@ -314,16 +328,16 @@ void driver_device::updateflip()
 //  flip_screen_set - set global flip
 //-------------------------------------------------
 
-void driver_device::flip_screen_set(int state)
+void driver_device::flip_screen_set(u32 on)
 {
 	// normalize to all 1
-	if (state)
-		state = 0xff;
+	if (on)
+		on = ~0;
 
 	// if something's changed, handle it
-	if (m_flip_screen_x != state || m_flip_screen_y != state)
+	if (m_flip_screen_x != on || m_flip_screen_y != on)
 	{
-		m_flip_screen_x = m_flip_screen_y = state;
+		m_flip_screen_x = m_flip_screen_y = on;
 		updateflip();
 	}
 }
@@ -333,16 +347,16 @@ void driver_device::flip_screen_set(int state)
 //  flip_screen_x_set - set global horizontal flip
 //-------------------------------------------------
 
-void driver_device::flip_screen_x_set(int state)
+void driver_device::flip_screen_x_set(u32 on)
 {
 	// normalize to all 1
-	if (state)
-		state = 0xff;
+	if (on)
+		on = ~0;
 
 	// if something's changed, handle it
-	if (m_flip_screen_x != state)
+	if (m_flip_screen_x != on)
 	{
-		m_flip_screen_x = state;
+		m_flip_screen_x = on;
 		updateflip();
 	}
 }
@@ -352,16 +366,16 @@ void driver_device::flip_screen_x_set(int state)
 //  flip_screen_y_set - set global vertical flip
 //-------------------------------------------------
 
-void driver_device::flip_screen_y_set(int state)
+void driver_device::flip_screen_y_set(u32 on)
 {
 	// normalize to all 1
-	if (state)
-		state = 0xff;
+	if (on)
+		on = ~0;
 
 	// if something's changed, handle it
-	if (m_flip_screen_y != state)
+	if (m_flip_screen_y != on)
 	{
-		m_flip_screen_y = state;
+		m_flip_screen_y = on;
 		updateflip();
 	}
 }

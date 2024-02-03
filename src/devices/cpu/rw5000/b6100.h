@@ -63,7 +63,6 @@ protected:
 	void data_48x4(address_map &map);
 
 	// opcode handlers
-	virtual void op_tkbs() override;
 	virtual void op_read() override;
 };
 

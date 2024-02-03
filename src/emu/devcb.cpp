@@ -257,6 +257,7 @@ template class devcb_write8::creator_impl<devcb_write8::latched_inputline_builde
 template class devcb_write8::creator_impl<devcb_write8::ioport_builder>;
 template class devcb_write8::creator_impl<devcb_write8::membank_builder>;
 template class devcb_write8::creator_impl<devcb_write8::output_builder>;
+template class devcb_write8::creator_impl<devcb_write8::log_builder>;
 
 template class devcb_write16::creator_impl<devcb_write16::delegate_builder<write8s_delegate> >;
 template class devcb_write16::creator_impl<devcb_write16::delegate_builder<write16s_delegate> >;
@@ -276,6 +277,7 @@ template class devcb_write16::creator_impl<devcb_write16::latched_inputline_buil
 template class devcb_write16::creator_impl<devcb_write16::ioport_builder>;
 template class devcb_write16::creator_impl<devcb_write16::membank_builder>;
 template class devcb_write16::creator_impl<devcb_write16::output_builder>;
+template class devcb_write16::creator_impl<devcb_write16::log_builder>;
 
 template class devcb_write32::creator_impl<devcb_write32::delegate_builder<write8s_delegate> >;
 template class devcb_write32::creator_impl<devcb_write32::delegate_builder<write16s_delegate> >;
@@ -295,6 +297,7 @@ template class devcb_write32::creator_impl<devcb_write32::latched_inputline_buil
 template class devcb_write32::creator_impl<devcb_write32::ioport_builder>;
 template class devcb_write32::creator_impl<devcb_write32::membank_builder>;
 template class devcb_write32::creator_impl<devcb_write32::output_builder>;
+template class devcb_write32::creator_impl<devcb_write32::log_builder>;
 
 template class devcb_write64::creator_impl<devcb_write64::delegate_builder<write8s_delegate> >;
 template class devcb_write64::creator_impl<devcb_write64::delegate_builder<write16s_delegate> >;
@@ -314,6 +317,7 @@ template class devcb_write64::creator_impl<devcb_write64::latched_inputline_buil
 template class devcb_write64::creator_impl<devcb_write64::ioport_builder>;
 template class devcb_write64::creator_impl<devcb_write64::membank_builder>;
 template class devcb_write64::creator_impl<devcb_write64::output_builder>;
+template class devcb_write64::creator_impl<devcb_write64::log_builder>;
 
 template class devcb_write_line::creator_impl<devcb_write_line::delegate_builder<write8s_delegate> >;
 template class devcb_write_line::creator_impl<devcb_write_line::delegate_builder<write16s_delegate> >;
@@ -333,11 +337,11 @@ template class devcb_write_line::creator_impl<devcb_write_line::latched_inputlin
 template class devcb_write_line::creator_impl<devcb_write_line::ioport_builder>;
 template class devcb_write_line::creator_impl<devcb_write_line::membank_builder>;
 template class devcb_write_line::creator_impl<devcb_write_line::output_builder>;
+template class devcb_write_line::creator_impl<devcb_write_line::log_builder>;
 
 
 devcb_base::devcb_base(device_t &owner)
-	: device_resolver_base(owner)
-	, m_owner(owner)
+	: m_owner(owner)
 {
 }
 

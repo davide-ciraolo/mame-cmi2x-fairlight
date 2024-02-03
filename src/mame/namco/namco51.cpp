@@ -61,19 +61,19 @@
 #include "screen.h"
 
 
-void namco_51xx_device::reset(int state)
+WRITE_LINE_MEMBER( namco_51xx_device::reset )
 {
 	// Reset line is active low.
 	m_cpu->set_input_line(INPUT_LINE_RESET, !state);
 }
 
-void namco_51xx_device::vblank(int state)
+WRITE_LINE_MEMBER( namco_51xx_device::vblank )
 {
 	// The timer is active on falling edges.
 	m_cpu->clock_w(!state);
 }
 
-void namco_51xx_device::rw(int state)
+WRITE_LINE_MEMBER(namco_51xx_device::rw)
 {
 	machine().scheduler().synchronize(timer_expired_delegate(FUNC(namco_51xx_device::rw_sync),this), state);
 }
@@ -83,7 +83,7 @@ TIMER_CALLBACK_MEMBER( namco_51xx_device::rw_sync )
 	m_rw = param;
 }
 
-void namco_51xx_device::chip_select(int state)
+WRITE_LINE_MEMBER( namco_51xx_device::chip_select )
 {
 	m_cpu->set_input_line(0, state);
 }
@@ -163,7 +163,7 @@ namco_51xx_device::namco_51xx_device(const machine_config &mconfig, const char *
 	, m_cpu(*this, "mcu")
 	, m_portO(0)
 	, m_rw(0)
-	, m_in(*this, 0)
+	, m_in(*this)
 	, m_out(*this)
 	, m_lockout(*this)
 {
@@ -175,6 +175,13 @@ namco_51xx_device::namco_51xx_device(const machine_config &mconfig, const char *
 
 void namco_51xx_device::device_start()
 {
+	/* resolve our read callbacks */
+	m_in.resolve_all_safe(0);
+
+	/* resolve our write callbacks */
+	m_out.resolve_safe();
+	m_lockout.resolve_safe();
+
 	save_item(NAME(m_portO));
 	save_item(NAME(m_rw));
 }

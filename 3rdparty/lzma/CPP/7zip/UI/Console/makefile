@@ -1,11 +1,15 @@
 PROG = 7z.exe
+MY_CONSOLE = 1
 CFLAGS = $(CFLAGS)  \
-  -DZ7_EXTERNAL_CODECS \
+  -DEXTERNAL_CODECS \
+
+!IFNDEF UNDER_CE
+CFLAGS = $(CFLAGS) -DWIN_LONG_PATH -D_7ZIP_LARGE_PAGES -DSUPPORT_DEVICE_FILE
+!ENDIF
 
 COMMON_OBJS = \
   $O\CommandLineParser.obj \
   $O\CRC.obj \
-  $O\DynLimBuf.obj \
   $O\IntToString.obj \
   $O\ListFileUtils.obj \
   $O\NewHandler.obj \
@@ -32,7 +36,6 @@ WIN_OBJS = \
   $O\PropVariantConv.obj \
   $O\Registry.obj \
   $O\System.obj \
-  $O\SystemInfo.obj \
   $O\TimeUtils.obj \
 
 7ZIP_COMMON_OBJS = \
@@ -42,7 +45,6 @@ WIN_OBJS = \
   $O\FilterCoder.obj \
   $O\LimitedStreams.obj \
   $O\MethodProps.obj \
-  $O\MultiOutStream.obj \
   $O\ProgressUtils.obj \
   $O\PropId.obj \
   $O\StreamObjects.obj \
@@ -50,13 +52,12 @@ WIN_OBJS = \
   $O\UniqBlocks.obj \
 
 AR_COMMON_OBJS = \
-  $O\ItemNameUtils.obj \
   $O\OutStreamWithCRC.obj \
 
 COMPRESS_OBJS = \
   $O\CopyCoder.obj \
 
-C_OBJS = $(C_OBJS) \
+C_OBJS = \
   $O\Alloc.obj \
   $O\CpuArch.obj \
   $O\Sort.obj \

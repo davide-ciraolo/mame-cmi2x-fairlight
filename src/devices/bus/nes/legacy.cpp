@@ -20,11 +20,12 @@
 
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -116,13 +117,13 @@ void nes_ffe8_device::pcb_reset()
  Known Boards: FFE3 Copier Board
  Games: Hacked versions of games
 
- In MAME: Supported? (I have no games to test this)
+ In MESS: Supported? (I have no games to test this)
 
  -------------------------------------------------*/
 
 void nes_ffe3_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("mapper8 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("mapper8 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	chr8(data & 0x07, CHRROM);
 	prg16_89ab(data >> 3);
@@ -135,7 +136,7 @@ void nes_ffe3_device::write_h(offs_t offset, uint8_t data)
  Known Boards: FFE4 Copier Board
  Games: Hacked versions of games
 
- In MAME: Supported? Not sure if we could also have ExRAM or not...
+ In MESS: Supported? Not sure if we could also have ExRAM or not...
  However, priority is pretty low for this mapper.
 
  -------------------------------------------------*/
@@ -157,7 +158,7 @@ TIMER_CALLBACK_MEMBER(nes_ffe4_device::irq_timer_tick)
 
 void nes_ffe4_device::write_l(offs_t offset, uint8_t data)
 {
-	LOG("mapper6 write_l, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("mapper6 write_l, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset)
 	{
@@ -205,7 +206,7 @@ uint8_t nes_ffe4_device::chr_r(offs_t offset)
 
 void nes_ffe4_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("mapper6 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("mapper6 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	if (!m_latch)  // when in "FFE mode" we are forced to use CHRRAM/EXRAM bank?
 	{
@@ -234,13 +235,13 @@ void nes_ffe4_device::write_h(offs_t offset, uint8_t data)
  Known Boards: FFE8 Copier Board
  Games: Hacked versions of games
 
- In MAME: Partially Supported.
+ In MESS: Partially Supported.
 
  -------------------------------------------------*/
 
 void nes_ffe8_device::write_l(offs_t offset, uint8_t data)
 {
-	LOG("mapper17 write_l, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("mapper17 write_l, offset: %04x, data: %02x\n", offset, data));
 
 	switch (offset)
 	{

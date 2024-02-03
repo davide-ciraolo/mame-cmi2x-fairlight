@@ -74,19 +74,18 @@
 #include <cmath>
 #include <functional>
 
-#define LOG_BANK_UPDATE  (1U << 1)
-#define LOG_DEFAULT_TASK (1U << 2)
-#define LOG_PAGE_WRITE   (1U << 3)
-#define LOG_HALT         (1U << 4)
-#define LOG_TASK         (1U << 5)
-#define LOG_KEYBOARD     (1U << 6)
-#define LOG_VIDEO        (1U << 7)
-#define LOG_DISK         (1U << 8)
-#define LOG_INTS         (1U << 9)
-#define LOG_ALL          (LOG_BAK_UPDATE | LOG_DEFAULT_TASK | LOG_PAGE_WRITE | LOG_HALT | LOG_TASK | LOG_KEYBOARD | LOG_VIDEO | LOG_DISK | LOG_INTS)
+#define VERBOSE 0
 
-#define VERBOSE (0) // LOG_ALL
-#include "logmacro.h"
+
+#define LOG_BANK_UPDATE(x) do { if (VERBOSE) logerror x; } while (0)
+#define LOG_DEFAULT_TASK(x) do { if (VERBOSE) logerror x; } while (0)
+#define LOG_PAGE_WRITE(x) do { if (VERBOSE) logerror x; } while (0)
+#define LOG_HALT(x) do { if (VERBOSE) logerror x; } while (0)
+#define LOG_TASK(x) do { if (VERBOSE) logerror x; } while (0)
+#define LOG_KEYBOARD(x) do { if (VERBOSE) logerror x; } while (0)
+#define LOG_VIDEO(x) do { if (VERBOSE) logerror x; } while (0)
+#define LOG_DISK(x) do { if (VERBOSE) logerror x; } while (0)
+#define LOG_INTS(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //static int DMA_NMI;               /* DMA cpu has received an NMI */
@@ -121,7 +120,7 @@ void dgn_beta_state::UpdateBanks(int first, int last)
 	int                 bank_end;
 	int                 MapPage;
 
-	LOGMASKED(LOG_BANK_UPDATE, "\n\n%s Updating banks %d to %d\n", machine().describe_context(), first, last);
+	LOG_BANK_UPDATE(("\n\n%s Updating banks %d to %d\n", machine().describe_context(), first, last));
 	for(Page=first;Page<=last;Page++)
 	{
 		bank_start  = Page < 16 ? Page * 0x1000 : 0xff00;
@@ -172,11 +171,11 @@ void dgn_beta_state::UpdateBanks(int first, int last)
 			space_1.unmap_write(bank_start, bank_end);
 		}
 
-		LOGMASKED(LOG_BANK_UPDATE, "UpdateBanks:MapPage=$%02X readbank=$%X\n",MapPage,(int)(uintptr_t)readbank);
-		LOGMASKED(LOG_BANK_UPDATE, "PageRegsSet Task=%X Page=%x\n",m_TaskReg,Page);
-		//LOGMASKED(LOG_BANK_UPDATE, "%X)\n",membank(Page+1));
-		LOGMASKED(LOG_BANK_UPDATE, "memory_install_write8_handler CPU=0\n");
-		LOGMASKED(LOG_BANK_UPDATE, "memory_install_write8_handler CPU=1\n");
+		LOG_BANK_UPDATE(("UpdateBanks:MapPage=$%02X readbank=$%X\n",MapPage,(int)(uintptr_t)readbank));
+		LOG_BANK_UPDATE(("PageRegsSet Task=%X Page=%x\n",m_TaskReg,Page));
+		//LOG_BANK_UPDATE(("%X)\n",membank(Page+1)));
+		LOG_BANK_UPDATE(("memory_install_write8_handler CPU=0\n"));
+		LOG_BANK_UPDATE(("memory_install_write8_handler CPU=1\n"));
 	}
 }
 
@@ -185,7 +184,7 @@ void dgn_beta_state::SetDefaultTask()
 {
 	int     Idx;
 
-	LOGMASKED(LOG_DEFAULT_TASK, "SetDefaultTask()\n");
+	LOG_DEFAULT_TASK(("SetDefaultTask()\n"));
 	//if (VERBOSE) debug_console_printf(machine())->set_base("Set Default task\n");
 
 	m_TaskReg=NoPagingTask;
@@ -230,7 +229,7 @@ void dgn_beta_state::dgn_beta_page_w(offs_t offset, uint8_t data)
 {
 	m_PageRegs[m_PIATaskReg][offset].value=data;
 
-	LOGMASKED(LOG_PAGE_WRITE, "PageRegWrite : task=$%X  offset=$%X value=$%X\n",m_PIATaskReg,offset,data);
+	LOG_PAGE_WRITE(("PageRegWrite : task=$%X  offset=$%X value=$%X\n",m_PIATaskReg,offset,data));
 
 	if (m_EnableMapRegs)
 	{
@@ -333,7 +332,7 @@ uint8_t dgn_beta_state::d_pia0_pb_r()
 		"KEY5", "KEY6", "KEY7", "KEY8", "KEY9"
 	};
 
-	LOGMASKED(LOG_KEYBOARD,"PB Read\n");
+	LOG_KEYBOARD(("PB Read\n"));
 
 	m_KAny_next = 0;
 
@@ -359,7 +358,7 @@ uint8_t dgn_beta_state::d_pia0_pb_r()
 
 	RetVal = (m_KInDat_next<<5) | (m_KAny_next<<2);
 
-	LOGMASKED(LOG_KEYBOARD,"FC22=$%02X KAny=%d\n", RetVal, m_KAny_next);
+	LOG_KEYBOARD(("FC22=$%02X KAny=%d\n", RetVal, m_KAny_next));
 
 	return RetVal;
 }
@@ -369,12 +368,12 @@ void dgn_beta_state::d_pia0_pb_w(uint8_t data)
 	int InClkState;
 	//int   OutClkState;
 
-	LOGMASKED(LOG_KEYBOARD,"PB Write\n");
+	LOG_KEYBOARD(("PB Write\n"));
 
 	InClkState  = data & KInClk;
 	//OutClkState   = data & KOutClk;
 
-	LOGMASKED(LOG_KEYBOARD,"InClkState=$%02X OldInClkState=$%02X Keyrow=$%02X ",InClkState,(m_d_pia0_pb_last & KInClk),m_Keyrow);
+	LOG_KEYBOARD(("InClkState=$%02X OldInClkState=$%02X Keyrow=$%02X ",InClkState,(m_d_pia0_pb_last & KInClk),m_Keyrow));
 
 	/* Input clock bit has changed state */
 	if ((InClkState) != (m_d_pia0_pb_last & KInClk))
@@ -384,17 +383,17 @@ void dgn_beta_state::d_pia0_pb_w(uint8_t data)
 		{
 			m_KInDat_next=(~m_Keyrow & 0x40)>>6;
 			m_Keyrow = ((m_Keyrow<<1) | 0x01) & 0x7F ;
-			LOGMASKED(LOG_KEYBOARD,"Keyrow=$%02X KInDat_next=%X\n",m_Keyrow,m_KInDat_next);
+			LOG_KEYBOARD(("Keyrow=$%02X KInDat_next=%X\n",m_Keyrow,m_KInDat_next));
 		}
 	}
 
 	m_d_pia0_pb_last=data;
 }
 
-void dgn_beta_state::d_pia0_cb2_w(int state)
+WRITE_LINE_MEMBER(dgn_beta_state::d_pia0_cb2_w)
 {
 	int RowNo;
-	LOGMASKED(LOG_KEYBOARD,"\nCB2 Write\n");
+	LOG_KEYBOARD(("\nCB2 Write\n"));
 
 	/* load keyrow on rising edge of CB2 */
 	if((state==1) && (m_d_pia0_cb2_last==0))
@@ -406,7 +405,7 @@ void dgn_beta_state::d_pia0_cb2_w(int state)
 		/* In the beta the shift registers are a cmos 4015, and a cmos 4013 in series */
 		m_RowShifter = (m_RowShifter<<1) | ((m_d_pia0_pb_last & KOutDat)>>4);
 		m_RowShifter &= 0x3FF;
-		LOGMASKED(LOG_KEYBOARD,"Rowshifter=$%02X Keyrow=$%02X\n",m_RowShifter,m_Keyrow);
+		LOG_KEYBOARD(("Rowshifter=$%02X Keyrow=$%02X\n",m_RowShifter,m_Keyrow));
 		if (VERBOSE) machine().debugger().console().printf("rowshifter clocked, value=%3X, RowNo=%d, Keyrow=%2X\n",m_RowShifter,RowNo,m_Keyrow);
 	}
 
@@ -414,12 +413,12 @@ void dgn_beta_state::d_pia0_cb2_w(int state)
 }
 
 
-void dgn_beta_state::d_pia0_irq_a(int state)
+WRITE_LINE_MEMBER(dgn_beta_state::d_pia0_irq_a)
 {
 	cpu0_recalc_irq(state);
 }
 
-void dgn_beta_state::d_pia0_irq_b(int state)
+WRITE_LINE_MEMBER(dgn_beta_state::d_pia0_irq_b)
 {
 	cpu0_recalc_firq(state);
 }
@@ -453,7 +452,7 @@ void dgn_beta_state::d_pia1_pa_w(uint8_t data)
 		else
 			HALT_DMA = CLEAR_LINE;
 
-		LOGMASKED(LOG_HALT, "DMA_CPU HALT=%d\n", HALT_DMA);
+		LOG_HALT(("DMA_CPU HALT=%d\n", HALT_DMA));
 		m_dmacpu->set_input_line(INPUT_LINE_HALT, HALT_DMA);
 
 		/* CPU un-halted let it run ! */
@@ -483,7 +482,7 @@ void dgn_beta_state::d_pia1_pa_w(uint8_t data)
 
 	// not connected: bit 5 = ENP
 	m_fdc->dden_w(BIT(data, 6));
-	LOGMASKED(LOG_DISK, "Set density %s\n", BIT(data, 6) ? "low" : "high");
+	LOG_DISK(("Set density %s\n", BIT(data, 6) ? "low" : "high"));
 }
 
 uint8_t dgn_beta_state::d_pia1_pb_r()
@@ -504,7 +503,7 @@ void dgn_beta_state::d_pia1_pb_w(uint8_t data)
 		else
 			HALT_CPU = ASSERT_LINE;
 
-		LOGMASKED(LOG_HALT, "MAIN_CPU HALT=%d\n", HALT_CPU);
+		LOG_HALT(("MAIN_CPU HALT=%d\n", HALT_CPU));
 		m_maincpu->set_input_line(INPUT_LINE_HALT, HALT_CPU);
 
 		m_d_pia1_pb_last = data & 0x02;
@@ -515,12 +514,12 @@ void dgn_beta_state::d_pia1_pb_w(uint8_t data)
 	}
 }
 
-void dgn_beta_state::d_pia1_irq_a(int state)
+WRITE_LINE_MEMBER(dgn_beta_state::d_pia1_irq_a)
 {
 	cpu0_recalc_irq(state);
 }
 
-void dgn_beta_state::d_pia1_irq_b(int state)
+WRITE_LINE_MEMBER(dgn_beta_state::d_pia1_irq_b)
 {
 	cpu0_recalc_irq(state);
 }
@@ -546,7 +545,7 @@ void dgn_beta_state::d_pia2_pa_w(uint8_t data)
 	int OldEnableMap;
 	int NMI;
 
-	LOGMASKED(LOG_TASK, "FCC0 write : $%02X\n", data);
+	LOG_TASK(("FCC0 write : $%02X\n", data));
 
 	/* Bit 7 of $FFC0, seems to control NMI on second CPU */
 	NMI=(data & 0x80);
@@ -554,7 +553,7 @@ void dgn_beta_state::d_pia2_pa_w(uint8_t data)
 	/* only take action if NMI changed */
 	if(NMI != m_DMA_NMI_LAST)
 	{
-		LOGMASKED(LOG_INTS, "cpu1 NMI : %d\n", NMI);
+		LOG_INTS(("cpu1 NMI : %d\n", NMI));
 		if(!NMI)
 		{
 			m_dmacpu->set_input_line(INPUT_LINE_NMI, ASSERT_LINE);
@@ -580,7 +579,7 @@ void dgn_beta_state::d_pia2_pa_w(uint8_t data)
 	OldTask = m_PIATaskReg;
 	m_PIATaskReg = data & 0x0F;
 
-	LOGMASKED(LOG_TASK, "OldTask=$%02X EnableMapRegs=%d OldEnableMap=%d\n", OldTask, m_EnableMapRegs, OldEnableMap);
+	LOG_TASK(("OldTask=$%02X EnableMapRegs=%d OldEnableMap=%d\n", OldTask, m_EnableMapRegs, OldEnableMap));
 
 	// Mapping was enabled or disabled, select appropriate task reg
 	// and map it in
@@ -602,7 +601,7 @@ void dgn_beta_state::d_pia2_pa_w(uint8_t data)
 			UpdateBanks(0, IOPage + 1);
 		}
 	}
-	LOGMASKED(LOG_TASK, "TaskReg=$%02X PIATaskReg=$%02X\n", m_TaskReg, m_PIATaskReg);
+	LOG_TASK(("TaskReg=$%02X PIATaskReg=$%02X\n", m_TaskReg, m_PIATaskReg));
 }
 
 uint8_t dgn_beta_state::d_pia2_pb_r()
@@ -616,12 +615,12 @@ void dgn_beta_state::d_pia2_pb_w(uint8_t data)
 	dgnbeta_vid_set_gctrl(data);
 }
 
-void dgn_beta_state::d_pia2_irq_a(int state)
+WRITE_LINE_MEMBER(dgn_beta_state::d_pia2_irq_a)
 {
 	cpu0_recalc_irq(state);
 }
 
-void dgn_beta_state::d_pia2_irq_b(int state)
+WRITE_LINE_MEMBER(dgn_beta_state::d_pia2_irq_b)
 {
 	cpu0_recalc_irq(state);
 }
@@ -643,7 +642,7 @@ void dgn_beta_state::cpu0_recalc_irq(int state)
 		IRQ = CLEAR_LINE;
 
 	m_maincpu->set_input_line(M6809_IRQ_LINE, IRQ);
-	LOGMASKED(LOG_INTS, "cpu0 IRQ : %d\n", IRQ);
+	LOG_INTS(("cpu0 IRQ : %d\n", IRQ));
 }
 
 void dgn_beta_state::cpu0_recalc_firq(int state)
@@ -658,7 +657,7 @@ void dgn_beta_state::cpu0_recalc_firq(int state)
 
 	m_maincpu->set_input_line(M6809_FIRQ_LINE, FIRQ);
 
-	LOGMASKED(LOG_INTS, "cpu0 FIRQ : %d\n", FIRQ);
+	LOG_INTS(("cpu0 FIRQ : %d\n", FIRQ));
 }
 
 /* CPU 1 */
@@ -666,7 +665,7 @@ void dgn_beta_state::cpu0_recalc_firq(int state)
 void dgn_beta_state::cpu1_recalc_firq(int state)
 {
 	m_dmacpu->set_input_line(M6809_FIRQ_LINE, state);
-	LOGMASKED(LOG_INTS, "cpu1 FIRQ : %d\n",state);
+	LOG_INTS(("cpu1 FIRQ : %d\n",state));
 }
 
 /********************************************************************************************/
@@ -674,18 +673,18 @@ void dgn_beta_state::cpu1_recalc_firq(int state)
 /********************************************************************************************/
 
 /* The INTRQ line goes through pia2 ca1, in exactly the same way as DRQ from DragonDos does */
-void dgn_beta_state::dgnbeta_fdc_intrq_w(int state)
+WRITE_LINE_MEMBER( dgn_beta_state::dgnbeta_fdc_intrq_w )
 {
-	LOGMASKED(LOG_DISK, "dgnbeta_fdc_intrq_w(%d)\n", state);
+	LOG_DISK(("dgnbeta_fdc_intrq_w(%d)\n", state));
 
 	if(m_wd2797_written)
 		m_pia_2->ca1_w(state);
 }
 
 /* DRQ is routed through various logic to the FIRQ interrupt line on *BOTH* CPUs */
-void dgn_beta_state::dgnbeta_fdc_drq_w(int state)
+WRITE_LINE_MEMBER( dgn_beta_state::dgnbeta_fdc_drq_w )
 {
-	LOGMASKED(LOG_DISK, "dgnbeta_fdc_drq_w(%d)\n", state);
+	LOG_DISK(("dgnbeta_fdc_drq_w(%d)\n", state));
 	cpu1_recalc_firq(state);
 }
 
@@ -713,7 +712,7 @@ void dgn_beta_state::ScanInKeyboard(void)
 		"KEY5", "KEY6", "KEY7", "KEY8", "KEY9"
 	};
 
-	LOGMASKED(LOG_KEYBOARD,"Scanning Host keyboard\n");
+	LOG_KEYBOARD(("Scanning Host keyboard\n"));
 
 	for(Idx=0; Idx<NoKeyrows; Idx++)
 	{
@@ -724,11 +723,11 @@ void dgn_beta_state::ScanInKeyboard(void)
 			Row = 0x7f;
 
 		m_Keyboard[Idx]=Row;
-		LOGMASKED(LOG_KEYBOARD,"Keyboard[%d]=$%02X\n",Idx,Row);
+		LOG_KEYBOARD(("Keyboard[%d]=$%02X\n",Idx,Row));
 
 		if (Row != 0x7F)
 		{
-			LOGMASKED(LOG_KEYBOARD,"Found Pressed Key\n");
+			LOG_KEYBOARD(("Found Pressed Key\n"));
 		}
 	}
 #endif
@@ -743,7 +742,7 @@ void dgn_beta_state::dgn_beta_frame_interrupt (int data)
 	else
 		m_pia_2->cb2_w(CLEAR_LINE);
 
-//    LOGMASKED(LOG_VIDEO, "Vblank\n");
+//    LOG_VIDEO(("Vblank\n"));
 	ScanInKeyboard();
 }
 
@@ -823,14 +822,14 @@ offs_t dgn_beta_state::dgnbeta_dasm_override(std::ostream &stream, offs_t pc, co
 	return coco_state::os9_dasm_override(stream, pc, opcodes, params);
 }
 
-void dgn_beta_state::execute_beta_dat_log(const std::vector<std::string_view> &params)
+void dgn_beta_state::execute_beta_dat_log(const std::vector<std::string> &params)
 {
 	m_LogDatWrites = !m_LogDatWrites;
 
 	machine().debugger().console().printf("DAT register write info set : %d\n", m_LogDatWrites);
 }
 
-void dgn_beta_state::execute_beta_key_dump(const std::vector<std::string_view> &params)
+void dgn_beta_state::execute_beta_key_dump(const std::vector<std::string> &params)
 {
 	for (int idx = 0; idx < NoKeyrows; idx++)
 	{

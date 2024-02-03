@@ -46,20 +46,21 @@ public:
 	uint32_t high_mem_r(offs_t offset, uint32_t mem_mask = ~0);
 	void high_mem_w(offs_t offset, uint32_t data, uint32_t mem_mask = ~0);
 
-	void spvmd_w(int state);
-	void sndrq_w(int state);
-	void vidrq_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(spvmd_w);
+	DECLARE_WRITE_LINE_MEMBER(sndrq_w);
+	DECLARE_WRITE_LINE_MEMBER(vidrq_w);
 
 protected:
-	// device_t implementation
+	// device-level overrides
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
-	// device_memory_interface implementation
+	// device_memory_interface overrides
 	virtual space_config_vector memory_space_config() const override;
 
 private:
-	void memc_map_debug_commands(const std::vector<std::string_view> &params);
+	void memc_map_debug_commands(const std::vector<std::string> &params);
 	uint32_t dram_address(uint32_t address);
 	bool is_valid_access(int page, bool write);
 	uint32_t invalid_access(bool is_write, offs_t offset, uint32_t data, uint32_t mem_mask = ~0);

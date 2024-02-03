@@ -141,7 +141,7 @@ void centiped_state::centiped_videoram_w(offs_t offset, uint8_t data)
  *
  *************************************/
 
-void centiped_state::flip_screen_w(int state)
+WRITE_LINE_MEMBER(centiped_state::flip_screen_w)
 {
 	m_flipscreen = state;
 }

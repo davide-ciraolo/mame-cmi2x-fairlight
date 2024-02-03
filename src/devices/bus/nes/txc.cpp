@@ -7,10 +7,10 @@
 
  Here we emulate the following PCBs
 
- * TXC 01-22000-400 [mapper 36]
  * TXC 22111 [mapper 132]
  * TXC Du Ma Racing [mapper 172]
  * TXC Mahjong Block [mapper 172]
+ * TXC Strike Wolf [mapper 36]
  * TXC Commandos (and many more) [mapper 241]
 
  TODO:
@@ -25,11 +25,12 @@
 
 
 #ifdef NES_PCB_DEBUG
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE 1
 #else
-#define VERBOSE (0)
+#define VERBOSE 0
 #endif
-#include "logmacro.h"
+
+#define LOG_MMC(x) do { if (VERBOSE) logerror x; } while (0)
 
 
 //-------------------------------------------------
@@ -39,7 +40,7 @@
 DEFINE_DEVICE_TYPE(NES_TXC_22211,      nes_txc_22211_device,     "nes_txc_22211",   "NES Cart TXC 22211 PCB")
 DEFINE_DEVICE_TYPE(NES_TXC_DUMARACING, nes_txc_dumarc_device,    "nes_txc_dumarc",  "NES Cart TXC Du Ma Racing PCB")
 DEFINE_DEVICE_TYPE(NES_TXC_MJBLOCK,    nes_txc_mjblock_device,   "nes_txc_mjblock", "NES Cart TXC Mahjong Block PCB")
-DEFINE_DEVICE_TYPE(NES_TXC_STRIKEW,    nes_txc_strikew_device,   "nes_txc_strikew", "NES Cart TXC 01-22000-400 PCB")
+DEFINE_DEVICE_TYPE(NES_TXC_STRIKEW,    nes_txc_strikew_device,   "nes_txc_strikew", "NES Cart TXC Strike Wolf PCB")
 DEFINE_DEVICE_TYPE(NES_TXC_COMMANDOS,  nes_txc_commandos_device, "nes_txc_comm",    "NES Cart TXC Cart Commandos PCB") // and others
 
 
@@ -63,7 +64,7 @@ nes_txc_mjblock_device::nes_txc_mjblock_device(const machine_config &mconfig, co
 {
 }
 
-nes_txc_strikew_device::nes_txc_strikew_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
+nes_txc_strikew_device::nes_txc_strikew_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: nes_nrom_device(mconfig, NES_TXC_STRIKEW, tag, owner, clock)
 {
 }
@@ -89,19 +90,6 @@ void nes_txc_22211_device::pcb_reset()
 	m_reg[0] = m_reg[1] = m_reg[2] = m_reg[3] = 0;
 }
 
-void nes_txc_strikew_device::device_start()
-{
-	common_start();
-	save_item(NAME(m_reg));
-}
-
-void nes_txc_strikew_device::pcb_reset()
-{
-	prg32(0);
-	chr8(0, m_chr_source);
-	m_reg[0] = m_reg[1] = m_reg[2] = m_reg[3] = 0;
-}
-
 
 
 
@@ -121,13 +109,13 @@ void nes_txc_strikew_device::pcb_reset()
 
  iNES: mapper 132
 
- In MAME: Supported.
+ In MESS: Supported.
 
  -------------------------------------------------*/
 
 void nes_txc_22211_device::write_l(offs_t offset, uint8_t data)
 {
-	LOG("TXC 22111 write_l, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("TXC 22111 write_l, offset: %04x, data: %02x\n", offset, data));
 
 	if (offset < 4)
 		m_reg[offset & 0x03] = data;
@@ -135,7 +123,7 @@ void nes_txc_22211_device::write_l(offs_t offset, uint8_t data)
 
 uint8_t nes_txc_22211_device::read_l(offs_t offset)
 {
-	LOG("TXC 22111 read_l, offset: %04x\n", offset);
+	LOG_MMC(("TXC 22111 read_l, offset: %04x\n", offset));
 
 	if (offset == 0x0000)
 		return (m_reg[1] ^ m_reg[2]) | 0x40;
@@ -145,7 +133,7 @@ uint8_t nes_txc_22211_device::read_l(offs_t offset)
 
 void nes_txc_22211_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("TXC 22111 write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("TXC 22111 write_h, offset: %04x, data: %02x\n", offset, data));
 
 	prg32(m_reg[2] >> 2);
 	chr8(m_reg[2], CHRROM);
@@ -162,13 +150,13 @@ void nes_txc_22211_device::write_h(offs_t offset, uint8_t data)
 
  iNES: mapper 172
 
- In MAME: Supported.
+ In MESS: Supported.
 
  -------------------------------------------------*/
 
 void nes_txc_dumarc_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("TXC Du Ma Racing write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("TXC Du Ma Racing write_h, offset: %04x, data: %02x\n", offset, data));
 
 	prg32(m_reg[2] >> 2);
 	chr8(bitswap<2>(data ^ m_reg[2], 4, 5), CHRROM);
@@ -185,13 +173,13 @@ void nes_txc_dumarc_device::write_h(offs_t offset, uint8_t data)
 
  iNES: mapper 172
 
- In MAME: Supported.
+ In MESS: Supported.
 
  -------------------------------------------------*/
 
 uint8_t nes_txc_mjblock_device::read_l(offs_t offset)
 {
-	LOG("TXC mjblock read_l, offset: %04x\n", offset);
+	LOG_MMC(("TXC mjblock read_l, offset: %04x\n", offset));
 
 	if (offset == 0x0000)
 		return (m_reg[1] ^ m_reg[2]) | 0x41;
@@ -201,59 +189,29 @@ uint8_t nes_txc_mjblock_device::read_l(offs_t offset)
 
 /*-------------------------------------------------
 
- TXC 01-22000-400 Board
+ Bootleg Board 'Strike Wolf' by TXC
 
- Games: F-15 City War, Policeman, Puzzle, Strike Wolf,
- Venice Beach Volley
+ Games: Strike Wolf and Policeman
 
  iNES: mapper 36
 
- In MAME: Supported.
+ In MESS: Supported (Policeman requires no bus conflict
+          though, or it has glitches)
 
  -------------------------------------------------*/
 
-u8 nes_txc_strikew_device::read_l(offs_t offset)
+void nes_txc_strikew_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("TXC 01-22000-400 read_l, offset: %04x\n", offset);
+	LOG_MMC(("TXC Strike Wolf write_h, offset: %04x, data: %02x\n", offset, data));
 
-	offset += 0x100;
-	if (offset & 0x100)
-		return (get_open_bus() & 0xcf) | m_reg[0] << 4;
+	// this pcb is subject to bus conflict
+	data = account_bus_conflict(offset, data);
 
-	return get_open_bus();
-}
-
-void nes_txc_strikew_device::write_l(offs_t offset, u8 data)
-{
-	LOG("TXC 01-22000-400 write_l, offset: %04x, data: %02x\n", offset, data);
-
-	offset += 0x100;
-	switch (offset & 0x103)
+	if ((offset >= 0x400) && (offset < 0x7fff))
 	{
-		case 0x100:
-			if (m_reg[3] & 1)
-				m_reg[0] = (m_reg[0] + 1) & 0x03;
-			else if (m_reg[1] & 1)
-				m_reg[0] = m_reg[2] ^ 0x03;
-			else
-				m_reg[0] = m_reg[2];
-			break;
-		case 0x101:
-		case 0x102:
-		case 0x103:
-			m_reg[offset & 0x03] = BIT(data, 4, 2);
-			break;
+		prg32(data >> 4);
+		chr8(data & 0x0f, CHRROM);
 	}
-
-	if (offset & 0x200)
-		chr8(data, CHRROM);
-}
-
-void nes_txc_strikew_device::write_h(offs_t offset, u8 data)
-{
-	LOG("TXC 01-22000-400 write_h, offset: %04x, data: %02x\n", offset, data);
-
-	prg32(m_reg[0]);
 }
 
 /*-------------------------------------------------
@@ -268,7 +226,7 @@ void nes_txc_strikew_device::write_h(offs_t offset, u8 data)
 
  iNES: mapper 241
 
- In MAME: Supported.
+ In MESS: Supported.
 
  -------------------------------------------------*/
 
@@ -279,7 +237,7 @@ uint8_t nes_txc_commandos_device::read_l(offs_t offset)
 
 void nes_txc_commandos_device::write_h(offs_t offset, uint8_t data)
 {
-	LOG("TXC Commandos write_h, offset: %04x, data: %02x\n", offset, data);
+	LOG_MMC(("TXC Commandos write_h, offset: %04x, data: %02x\n", offset, data));
 
 	prg32(data);
 }

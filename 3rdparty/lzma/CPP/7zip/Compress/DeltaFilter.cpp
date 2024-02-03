@@ -23,40 +23,41 @@ struct CDelta
 };
 
 
-#ifndef Z7_EXTRACT_ONLY
+#ifndef EXTRACT_ONLY
 
-class CEncoder Z7_final:
+class CEncoder:
   public ICompressFilter,
   public ICompressSetCoderProperties,
   public ICompressWriteCoderProperties,
-  public CMyUnknownImp,
-  CDelta
+  CDelta,
+  public CMyUnknownImp
 {
-  Z7_IFACES_IMP_UNK_3(
-      ICompressFilter,
-      ICompressSetCoderProperties,
-      ICompressWriteCoderProperties)
+public:
+  MY_UNKNOWN_IMP3(ICompressFilter, ICompressSetCoderProperties, ICompressWriteCoderProperties)
+  INTERFACE_ICompressFilter(;)
+  STDMETHOD(SetCoderProperties)(const PROPID *propIDs, const PROPVARIANT *props, UInt32 numProps);
+  STDMETHOD(WriteCoderProperties)(ISequentialOutStream *outStream);
 };
 
-Z7_COM7F_IMF(CEncoder::Init())
+STDMETHODIMP CEncoder::Init()
 {
   DeltaInit();
   return S_OK;
 }
 
-Z7_COM7F_IMF2(UInt32, CEncoder::Filter(Byte *data, UInt32 size))
+STDMETHODIMP_(UInt32) CEncoder::Filter(Byte *data, UInt32 size)
 {
   Delta_Encode(_state, _delta, data, size);
   return size;
 }
 
-Z7_COM7F_IMF(CEncoder::SetCoderProperties(const PROPID *propIDs, const PROPVARIANT *props, UInt32 numProps))
+STDMETHODIMP CEncoder::SetCoderProperties(const PROPID *propIDs, const PROPVARIANT *props, UInt32 numProps)
 {
   UInt32 delta = _delta;
   for (UInt32 i = 0; i < numProps; i++)
   {
     const PROPVARIANT &prop = props[i];
-    const PROPID propID = propIDs[i];
+    PROPID propID = propIDs[i];
     if (propID >= NCoderPropID::kReduceSize)
       continue;
     if (prop.vt != VT_UI4)
@@ -77,39 +78,40 @@ Z7_COM7F_IMF(CEncoder::SetCoderProperties(const PROPID *propIDs, const PROPVARIA
   return S_OK;
 }
 
-Z7_COM7F_IMF(CEncoder::WriteCoderProperties(ISequentialOutStream *outStream))
+STDMETHODIMP CEncoder::WriteCoderProperties(ISequentialOutStream *outStream)
 {
-  const Byte prop = (Byte)(_delta - 1);
+  Byte prop = (Byte)(_delta - 1);
   return outStream->Write(&prop, 1, NULL);
 }
 
 #endif
 
 
-class CDecoder Z7_final:
+class CDecoder:
   public ICompressFilter,
   public ICompressSetDecoderProperties2,
-  public CMyUnknownImp,
-  CDelta
+  CDelta,
+  public CMyUnknownImp
 {
-  Z7_IFACES_IMP_UNK_2(
-      ICompressFilter,
-      ICompressSetDecoderProperties2)
+public:
+  MY_UNKNOWN_IMP2(ICompressFilter, ICompressSetDecoderProperties2)
+  INTERFACE_ICompressFilter(;)
+  STDMETHOD(SetDecoderProperties2)(const Byte *data, UInt32 size);
 };
 
-Z7_COM7F_IMF(CDecoder::Init())
+STDMETHODIMP CDecoder::Init()
 {
   DeltaInit();
   return S_OK;
 }
 
-Z7_COM7F_IMF2(UInt32, CDecoder::Filter(Byte *data, UInt32 size))
+STDMETHODIMP_(UInt32) CDecoder::Filter(Byte *data, UInt32 size)
 {
   Delta_Decode(_state, _delta, data, size);
   return size;
 }
 
-Z7_COM7F_IMF(CDecoder::SetDecoderProperties2(const Byte *props, UInt32 size))
+STDMETHODIMP CDecoder::SetDecoderProperties2(const Byte *props, UInt32 size)
 {
   if (size != 1)
     return E_INVALIDARG;

@@ -32,18 +32,18 @@
 // ----------------------------------
 // Flags for debugging
 
-#define LOG_WARN        (1U << 1)    // Warnings
-#define LOG_CONFIG      (1U << 2)    // Configuration
-#define LOG_EPROM       (1U << 3)    // Access to EPROM
-#define LOG_CONTR       (1U << 4)    // Access to controller
-#define LOG_RAM         (1U << 5)    // Access to SRAM
-#define LOG_READY       (1U << 6)    // READY line
-#define LOG_SIGNALS     (1U << 7)    // IRQ and HLD lines
-#define LOG_DRQ         (1U << 8)    // DRQ line (too noisy in SIGNALS)
-#define LOG_DRIVE       (1U << 9)    // Drive operations
-#define LOG_CRU         (1U << 10)   // CRU operations
+#define LOG_WARN        (1U<<1)    // Warnings
+#define LOG_CONFIG      (1U<<2)    // Configuration
+#define LOG_EPROM       (1U<<3)    // Access to EPROM
+#define LOG_CONTR       (1U<<4)    // Access to controller
+#define LOG_RAM         (1U<<5)    // Access to SRAM
+#define LOG_READY       (1U<<6)    // READY line
+#define LOG_SIGNALS     (1U<<7)    // IRQ and HLD lines
+#define LOG_DRQ         (1U<<8)    // DRQ line (too noisy in SIGNALS)
+#define LOG_DRIVE       (1U<<9)    // Drive operations
+#define LOG_CRU         (1U<<10)   // CRU operations
 
-#define VERBOSE (LOG_GENERAL | LOG_WARN | LOG_CONFIG)
+#define VERBOSE ( LOG_GENERAL | LOG_WARN | LOG_CONFIG )
 #include "logmacro.h"
 
 #define CCDCC_TAG "ti99_ccdcc"
@@ -177,19 +177,19 @@ void corcomp_fdc_device::operate_ready_line()
 /*
     Callbacks from the WDC chip
 */
-void corcomp_fdc_device::fdc_irq_w(int state)
+WRITE_LINE_MEMBER( corcomp_fdc_device::fdc_irq_w )
 {
 	LOGMASKED(LOG_SIGNALS, "INTRQ callback = %d\n", state);
 	operate_ready_line();
 }
 
-void corcomp_fdc_device::fdc_drq_w(int state)
+WRITE_LINE_MEMBER( corcomp_fdc_device::fdc_drq_w )
 {
 	LOGMASKED(LOG_DRQ, "DRQ callback = %d\n", state);
 	operate_ready_line();
 }
 
-void corcomp_fdc_device::fdc_hld_w(int state)
+WRITE_LINE_MEMBER( corcomp_fdc_device::fdc_hld_w )
 {
 	LOGMASKED(LOG_SIGNALS, "HLD callback = %d\n", state);
 }
@@ -281,7 +281,7 @@ void corcomp_fdc_device::cruwrite(offs_t offset, uint8_t data)
 	}
 }
 
-void corcomp_fdc_device::clock_in(int state)
+WRITE_LINE_MEMBER( corcomp_fdc_device::clock_in )
 {
 	m_tms9901->phi_line(state);
 }
@@ -329,7 +329,7 @@ uint8_t corcomp_fdc_device::tms9901_input(offs_t offset)
 	}
 }
 
-void corcomp_fdc_device::select_dsk(int state)
+WRITE_LINE_MEMBER( corcomp_fdc_device::select_dsk )
 {
 	if (state == CLEAR_LINE)
 	{
@@ -371,7 +371,7 @@ void corcomp_fdc_device::select_dsk(int state)
 	}
 }
 
-void corcomp_fdc_device::side_select(int state)
+WRITE_LINE_MEMBER( corcomp_fdc_device::side_select )
 {
 	// Select side of disk (bit 7)
 	if (m_selected_drive != 0)
@@ -384,7 +384,7 @@ void corcomp_fdc_device::side_select(int state)
 /*
     All floppy motors are operated by the same line.
 */
-void corcomp_fdc_device::motor_w(int state)
+WRITE_LINE_MEMBER( corcomp_fdc_device::motor_w )
 {
 	LOGMASKED(LOG_DRIVE, "Motor %s\n", state? "on" : "off");
 	m_wdc->set_force_ready(state==ASSERT_LINE);
@@ -398,14 +398,14 @@ void corcomp_fdc_device::motor_w(int state)
 /*
     Push the P11 state to the variable.
 */
-void corcomp_fdc_device::select_bank(int state)
+WRITE_LINE_MEMBER( corcomp_fdc_device::select_bank )
 {
 	LOGMASKED(LOG_CRU, "Set bank %d\n", state);
 	m_banksel = (state==ASSERT_LINE);
 	operate_ready_line();
 }
 
-void corcomp_fdc_device::select_card(int state)
+WRITE_LINE_MEMBER( corcomp_fdc_device::select_card )
 {
 	LOGMASKED(LOG_CRU, "Select card = %d\n", state);
 	m_cardsel = (state==ASSERT_LINE);
@@ -611,7 +611,7 @@ void ccfdc_dec_pal_device::device_config_complete()
 /*
     Indicates 9901 addressing.
 */
-int ccfdc_dec_pal_device::address9901()
+READ_LINE_MEMBER( ccfdc_dec_pal_device::address9901 )
 {
 	return ((m_board->get_address() & 0xff80)==0x1100)? ASSERT_LINE : CLEAR_LINE;
 }
@@ -619,7 +619,7 @@ int ccfdc_dec_pal_device::address9901()
 /*
     Indicates SRAM addressing.
 */
-int ccfdc_dec_pal_device::addressram()
+READ_LINE_MEMBER( ccfdc_dec_pal_device::addressram )
 {
 	return ((m_board->card_selected()) &&
 		(m_board->get_address() & 0xff80)==0x4000)? ASSERT_LINE : CLEAR_LINE;
@@ -628,7 +628,7 @@ int ccfdc_dec_pal_device::addressram()
 /*
     Indicates WDC addressing.
 */
-int ccfdc_dec_pal_device::addresswdc()
+READ_LINE_MEMBER( ccfdc_dec_pal_device::addresswdc )
 {
 	return ((m_board->card_selected()) &&
 		(m_board->get_address() & 0xff80)==0x5f80)? ASSERT_LINE : CLEAR_LINE;
@@ -637,7 +637,7 @@ int ccfdc_dec_pal_device::addresswdc()
 /*
     Indicates DSR addressing.
 */
-int ccfdc_dec_pal_device::address4()
+READ_LINE_MEMBER( ccfdc_dec_pal_device::address4 )
 {
 	return ((m_board->card_selected()) &&
 		(m_board->get_address() & 0xe000)==0x4000)? ASSERT_LINE : CLEAR_LINE;
@@ -646,7 +646,7 @@ int ccfdc_dec_pal_device::address4()
 /*
     Indicates SRAM selection.
 */
-int ccfdc_sel_pal_device::selectram()
+READ_LINE_MEMBER( ccfdc_sel_pal_device::selectram )
 {
 	return (m_decpal->addressram() && (m_board->upper_bank()))
 		? ASSERT_LINE : CLEAR_LINE;
@@ -655,7 +655,7 @@ int ccfdc_sel_pal_device::selectram()
 /*
     Indicates WDC selection.
 */
-int ccfdc_sel_pal_device::selectwdc()
+READ_LINE_MEMBER( ccfdc_sel_pal_device::selectwdc )
 {
 	return (m_decpal->addresswdc() && ((m_board->get_address()&1)==0))? ASSERT_LINE : CLEAR_LINE;
 }
@@ -663,7 +663,7 @@ int ccfdc_sel_pal_device::selectwdc()
 /*
     Indicates EPROM selection.
 */
-int ccfdc_sel_pal_device::selectdsr()
+READ_LINE_MEMBER( ccfdc_sel_pal_device::selectdsr )
 {
 	return (m_decpal->address4()
 		&& !m_decpal->addresswdc()
@@ -690,7 +690,7 @@ ccdcc_palu1_device::ccdcc_palu1_device(const machine_config &mconfig, const char
 /*
     Wait state logic
 */
-int ccdcc_palu1_device::ready_out()
+READ_LINE_MEMBER( ccdcc_palu1_device::ready_out )
 {
 	bool wdc = m_decpal->addresswdc();                         // Addressing the WDC
 	bool lastdig = (m_board->get_address()&7)==6;              // Address ends with 6 or e (5ff6, 5ffe)
@@ -773,7 +773,7 @@ ccfdc_palu12_device::ccfdc_palu12_device(const machine_config &mconfig, const ch
     Indicates 9901 addressing. In this PAL version, the A9 address line is
     also used.
 */
-int ccfdc_palu12_device::address9901()
+READ_LINE_MEMBER( ccfdc_palu12_device::address9901 )
 {
 	return ((m_board->get_address() & 0xffc0)==0x1100)? ASSERT_LINE : CLEAR_LINE;
 }
@@ -788,7 +788,7 @@ ccfdc_palu6_device::ccfdc_palu6_device(const machine_config &mconfig, const char
     That is, when writing (/WE=0), A12 must be 1 (addresses 5ff8..e),
     otherwise (/WE=1), A12 must be 0 (addresses 5ff0..6)
 */
-int ccfdc_palu6_device::selectwdc()
+READ_LINE_MEMBER( ccfdc_palu6_device::selectwdc )
 {
 	return (m_decpal->addresswdc()
 		&& ((m_board->get_address()&1)==0)
@@ -799,7 +799,7 @@ int ccfdc_palu6_device::selectwdc()
     Indicates EPROM selection. The Rev A selector PAL leads back some of
     its outputs for this calculation.
 */
-int ccfdc_palu6_device::selectdsr()
+READ_LINE_MEMBER( ccfdc_palu6_device::selectdsr )
 {
 	return (m_decpal->address4() && !selectwdc() && !selectram())? ASSERT_LINE : CLEAR_LINE;
 }
@@ -809,7 +809,7 @@ int ccfdc_palu6_device::selectdsr()
     board which evaluates whether the trap is active.
 */
 
-int ccfdc_palu6_device::ready_out()
+READ_LINE_MEMBER( ccfdc_palu6_device::ready_out )
 {
 	bool wdc = m_decpal->addresswdc();                   // Addressing the WDC
 	bool even = (m_board->get_address()&1)==0;          // A15 = 0

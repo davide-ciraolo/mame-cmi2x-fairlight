@@ -47,6 +47,18 @@ fdc37c665gt_device::fdc37c665gt_device(const machine_config &mconfig, const char
 
 void fdc37c665gt_device::device_start()
 {
+	m_fintr_callback.resolve_safe();
+	m_fdrq_callback.resolve_safe();
+	m_pintr1_callback.resolve_safe();
+	m_irq3_callback.resolve_safe();
+	m_irq4_callback.resolve_safe();
+	m_txd1_callback.resolve_safe();
+	m_ndtr1_callback.resolve_safe();
+	m_nrts1_callback.resolve_safe();
+	m_txd2_callback.resolve_safe();
+	m_ndtr2_callback.resolve_safe();
+	m_nrts2_callback.resolve_safe();
+
 	// Configuration registers and related bits aren't affected by soft resets
 	// Default addresses
 	com_addresses[0] = 0x3f8;
@@ -310,7 +322,7 @@ void fdc37c665gt_device::write_configuration_register(int index, int data)
 	}
 }
 
-void fdc37c665gt_device::irq_floppy_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::irq_floppy_w)
 {
 	if (!enabled_logical[LogicalDevice::FDC]) {
 		return;
@@ -319,7 +331,7 @@ void fdc37c665gt_device::irq_floppy_w(int state)
 	m_fintr_callback(state);
 }
 
-void fdc37c665gt_device::irq_parallel_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::irq_parallel_w)
 {
 	if (!enabled_logical[LogicalDevice::Parallel]) {
 		return;
@@ -328,7 +340,7 @@ void fdc37c665gt_device::irq_parallel_w(int state)
 	m_pintr1_callback(state);
 }
 
-void fdc37c665gt_device::irq_serial1_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::irq_serial1_w)
 {
 	if (!enabled_logical[LogicalDevice::Serial1]) {
 		return;
@@ -337,7 +349,7 @@ void fdc37c665gt_device::irq_serial1_w(int state)
 	m_irq4_callback(state);
 }
 
-void fdc37c665gt_device::txd_serial1_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::txd_serial1_w)
 {
 	if (!enabled_logical[LogicalDevice::Serial1]) {
 		return;
@@ -346,7 +358,7 @@ void fdc37c665gt_device::txd_serial1_w(int state)
 	m_txd1_callback(state);
 }
 
-void fdc37c665gt_device::dtr_serial1_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::dtr_serial1_w)
 {
 	if (!enabled_logical[LogicalDevice::Serial1]) {
 		return;
@@ -355,7 +367,7 @@ void fdc37c665gt_device::dtr_serial1_w(int state)
 	m_ndtr1_callback(state);
 }
 
-void fdc37c665gt_device::rts_serial1_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::rts_serial1_w)
 {
 	if (!enabled_logical[LogicalDevice::Serial1]) {
 		return;
@@ -364,7 +376,7 @@ void fdc37c665gt_device::rts_serial1_w(int state)
 	m_nrts1_callback(state);
 }
 
-void fdc37c665gt_device::irq_serial2_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::irq_serial2_w)
 {
 	if (!enabled_logical[LogicalDevice::Serial2]) {
 		return;
@@ -373,7 +385,7 @@ void fdc37c665gt_device::irq_serial2_w(int state)
 	m_irq3_callback(state);
 }
 
-void fdc37c665gt_device::txd_serial2_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::txd_serial2_w)
 {
 	if (!enabled_logical[LogicalDevice::Serial2]) {
 		return;
@@ -382,7 +394,7 @@ void fdc37c665gt_device::txd_serial2_w(int state)
 	m_txd2_callback(state);
 }
 
-void fdc37c665gt_device::dtr_serial2_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::dtr_serial2_w)
 {
 	if (!enabled_logical[LogicalDevice::Serial2]) {
 		return;
@@ -391,7 +403,7 @@ void fdc37c665gt_device::dtr_serial2_w(int state)
 	m_ndtr2_callback(state);
 }
 
-void fdc37c665gt_device::rts_serial2_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::rts_serial2_w)
 {
 	if (!enabled_logical[LogicalDevice::Serial2]) {
 		return;
@@ -400,52 +412,52 @@ void fdc37c665gt_device::rts_serial2_w(int state)
 	m_nrts2_callback(state);
 }
 
-void fdc37c665gt_device::rxd1_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::rxd1_w)
 {
 	m_serial[0]->rx_w(state);
 }
 
-void fdc37c665gt_device::ndcd1_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::ndcd1_w)
 {
 	m_serial[0]->dcd_w(state);
 }
 
-void fdc37c665gt_device::ndsr1_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::ndsr1_w)
 {
 	m_serial[0]->dsr_w(state);
 }
 
-void fdc37c665gt_device::nri1_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::nri1_w)
 {
 	m_serial[0]->ri_w(state);
 }
 
-void fdc37c665gt_device::ncts1_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::ncts1_w)
 {
 	m_serial[0]->cts_w(state);
 }
 
-void fdc37c665gt_device::rxd2_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::rxd2_w)
 {
 	m_serial[1]->rx_w(state);
 }
 
-void fdc37c665gt_device::ndcd2_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::ndcd2_w)
 {
 	m_serial[1]->dcd_w(state);
 }
 
-void fdc37c665gt_device::ndsr2_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::ndsr2_w)
 {
 	m_serial[1]->dsr_w(state);
 }
 
-void fdc37c665gt_device::nri2_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::nri2_w)
 {
 	m_serial[1]->ri_w(state);
 }
 
-void fdc37c665gt_device::ncts2_w(int state)
+WRITE_LINE_MEMBER(fdc37c665gt_device::ncts2_w)
 {
 	m_serial[1]->cts_w(state);
 }

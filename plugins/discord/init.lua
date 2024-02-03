@@ -1,15 +1,13 @@
 -- license:BSD-3-Clause
 -- copyright-holders:Carl
-local exports = {
-	name = "discord",
-	version = "0.0.1",
-	description = "Discord presence",
-	license = "BSD-3-Clause",
-	author = { name = "Carl" } }
+local exports = {}
+exports.name = "discord"
+exports.version = "0.0.1"
+exports.description = "Discord presence"
+exports.license = "BSD-3-Clause"
+exports.author = { name = "Carl" }
 
 local discord = exports
-
-local reset_subscription, pause_subscription, resume_subscription
 
 function discord.startplugin()
 	local pipe = emu.file("rw")
@@ -100,16 +98,16 @@ function discord.startplugin()
 		end
 	end
 
-	reset_subscription = emu.add_machine_reset_notifier(function ()
+	emu.register_start(function()
 		starttime = os.time()
 		update("Playing")
 	end)
 
-	pause_subscription = emu.add_machine_pause_notifier(function ()
+	emu.register_pause(function()
 		update("Paused")
 	end)
 
-	resume_subscription = emu.add_machine_resume_notifier(function ()
+	emu.register_resume(function()
 		update("Playing")
 	end)
 end

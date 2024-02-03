@@ -42,7 +42,7 @@ void device_jakks_gamekey_interface::rom_alloc(uint32_t size, const char *tag)
 {
 	if (m_rom == nullptr)
 	{
-		m_rom = device().machine().memory().region_alloc(std::string(tag).append(JAKKSSLOT_ROM_REGION_TAG), size, 1, ENDIANNESS_BIG)->base();
+		m_rom = device().machine().memory().region_alloc(std::string(tag).append(JAKKSSLOT_ROM_REGION_TAG).c_str(), size, 1, ENDIANNESS_BIG)->base();
 		m_rom_size = size;
 	}
 }
@@ -125,15 +125,16 @@ static const char *jakks_gamekey_get_slot(int type)
  call load
  -------------------------------------------------*/
 
-std::pair<std::error_condition, std::string> jakks_gamekey_slot_device::call_load()
+image_init_result jakks_gamekey_slot_device::call_load()
 {
 	if (m_cart)
 	{
-		uint32_t const len = !loaded_through_softlist() ? length() : get_software_region_length("rom");
+		uint8_t *ROM;
+		uint32_t len = !loaded_through_softlist() ? length() : get_software_region_length("rom");
 
 		m_cart->rom_alloc(len, tag());
 
-		uint8_t *const ROM = m_cart->get_rom_base();
+		ROM = m_cart->get_rom_base();
 
 		if (!loaded_through_softlist())
 			fread(ROM, len);
@@ -152,9 +153,11 @@ std::pair<std::error_condition, std::string> jakks_gamekey_slot_device::call_loa
 			if (pcb_name)
 				m_type = jakks_gamekey_get_pcb_id(pcb_name);
 		}
+
+		return image_init_result::PASS;
 	}
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 

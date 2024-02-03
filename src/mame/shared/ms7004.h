@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Sergey Svishchev
-#ifndef MAME_SHARED_MS7004_H
-#define MAME_SHARED_MS7004_H
+#ifndef MAME_MACHINE_MS7004_H
+#define MAME_MACHINE_MS7004_H
 
 #pragma once
 
@@ -27,7 +27,7 @@ public:
 	auto tx_handler() { return m_tx_handler.bind(); }
 	auto rts_handler() { return m_rts_handler.bind(); }
 
-	void write_rxd(int state);
+	DECLARE_WRITE_LINE_MEMBER( write_rxd );
 
 	void ms7004_map(address_map &map);
 protected:
@@ -54,11 +54,11 @@ private:
 
 	void p1_w(uint8_t data);
 	void p2_w(uint8_t data);
-	int t1_r();
+	DECLARE_READ_LINE_MEMBER( t1_r );
 	template<int P> void i8243_port_w(uint8_t data);
 };
 
 // device type definition
 DECLARE_DEVICE_TYPE(MS7004, ms7004_device)
 
-#endif // MAME_SHARED_MS7004_H
+#endif // MAME_MACHINE_MS7004_H

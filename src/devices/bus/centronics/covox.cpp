@@ -4,10 +4,6 @@
 
     Covox Speech Thing
 
-    Notes:
-    - "Jast Sound" is very similar conceptually to a Covox Speech Thing.
-      https://www.generation-msx.nl/hardware/jast/jast-sound/1638/
-
 ***************************************************************************/
 
 #include "emu.h"

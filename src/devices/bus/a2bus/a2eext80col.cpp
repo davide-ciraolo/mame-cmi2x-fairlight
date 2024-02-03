@@ -2,7 +2,7 @@
 // copyright-holders:R. Belmont
 /*********************************************************************
 
-    a2eext80col.cpp
+    a2eext80col.c
 
     Apple IIe Extended 80 Column Card (64K of RAM, double-hi-res)
 
@@ -51,27 +51,22 @@ void a2eaux_ext80col_device::device_reset()
 {
 }
 
-u8 a2eaux_ext80col_device::read_auxram(uint16_t offset)
+uint8_t a2eaux_ext80col_device::read_auxram(uint16_t offset)
 {
 	return m_ram[offset];
 }
 
-void a2eaux_ext80col_device::write_auxram(uint16_t offset, u8 data)
+void a2eaux_ext80col_device::write_auxram(uint16_t offset, uint8_t data)
 {
 	m_ram[offset] = data;
 }
 
-u8 *a2eaux_ext80col_device::get_vram_ptr()
+uint8_t *a2eaux_ext80col_device::get_vram_ptr()
 {
 	return &m_ram[0];
 }
 
-u8 *a2eaux_ext80col_device::get_auxbank_ptr()
+uint8_t *a2eaux_ext80col_device::get_auxbank_ptr()
 {
 	return &m_ram[0];
-}
-
-u16 a2eaux_ext80col_device::get_auxbank_mask()
-{
-	return 0xffff;
 }

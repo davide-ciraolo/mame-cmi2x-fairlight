@@ -49,11 +49,12 @@ uint8_t ds12885ext_device::read_extended(offs_t offset)
 	switch (offset)
 	{
 	case 0:
-	case 2:
-		return get_address();
 	case 1:
+		return read(offset);
+		break;
+	case 2:
 	case 3:
-		return data_r();
+		return read(offset - 2);
 		break;
 	default:
 		return 0xff;
@@ -65,16 +66,16 @@ void ds12885ext_device::write_extended(offs_t offset, uint8_t data)
 	switch (offset)
 	{
 	case 0:
-		address_w(data & 127);
+		write(offset, data & 127);
 		break;
 	case 1:
-		data_w(data);
+		write(offset, data);
 		break;
 	case 2:
-		address_w(data);
+		write(offset - 2, data);
 		break;
 	case 3:
-		data_w(data);
+		write(offset - 2, data);
 		break;
 	}
 }

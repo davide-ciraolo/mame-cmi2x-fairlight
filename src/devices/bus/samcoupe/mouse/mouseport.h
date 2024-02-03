@@ -52,7 +52,7 @@ public:
 	auto mseint_handler() { return m_mseint_handler.bind(); }
 
 	// called from cart device
-	void mseint_w(int state) { m_mseint_handler(state); }
+	DECLARE_WRITE_LINE_MEMBER( mseint_w ) { m_mseint_handler(state); }
 
 	// called from host
 	uint8_t read();

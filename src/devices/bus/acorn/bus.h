@@ -69,8 +69,8 @@ public:
 
 	address_space &memspace() const { return *m_space; }
 
-	void irq_w(int state);
-	void nmi_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(irq_w);
+	DECLARE_WRITE_LINE_MEMBER(nmi_w);
 
 	void add_slot(acorn_bus_slot_device &slot);
 

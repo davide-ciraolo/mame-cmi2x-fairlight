@@ -1,7 +1,7 @@
 // Extract.h
 
-#ifndef ZIP7_INC_EXTRACT_H
-#define ZIP7_INC_EXTRACT_H
+#ifndef __EXTRACT_H
+#define __EXTRACT_H
 
 #include "../../../Windows/FileFind.h"
 
@@ -17,28 +17,20 @@
 struct CExtractOptionsBase
 {
   CBoolPair ElimDup;
-
-  bool ExcludeDirItems;
-  bool ExcludeFileItems;
-
+  
   bool PathMode_Force;
   bool OverwriteMode_Force;
   NExtract::NPathMode::EEnum PathMode;
   NExtract::NOverwriteMode::EEnum OverwriteMode;
-  NExtract::NZoneIdMode::EEnum ZoneMode;
   
   FString OutputDir;
   CExtractNtOptions NtOptions;
-  UString HashDir;
 
   CExtractOptionsBase():
-      ExcludeDirItems(false),
-      ExcludeFileItems(false),
       PathMode_Force(false),
       OverwriteMode_Force(false),
       PathMode(NExtract::NPathMode::kFullPaths),
-      OverwriteMode(NExtract::NOverwriteMode::kAsk),
-      ZoneMode(NExtract::NZoneIdMode::kNone)
+      OverwriteMode(NExtract::NOverwriteMode::kAsk)
       {}
 };
 
@@ -52,21 +44,19 @@ struct CExtractOptions: public CExtractOptionsBase
   // bool ShowDialog;
   // bool PasswordEnabled;
   // UString Password;
-  #ifndef Z7_SFX
+  #ifndef _SFX
   CObjectVector<CProperty> Properties;
   #endif
 
-  /*
-  #ifdef Z7_EXTERNAL_CODECS
+  #ifdef EXTERNAL_CODECS
   CCodecs *Codecs;
   #endif
-  */
 
   CExtractOptions():
+      TestMode(false),
       StdInMode(false),
       StdOutMode(false),
-      YesToAll(false),
-      TestMode(false)
+      YesToAll(false)
       {}
 };
 
@@ -87,7 +77,6 @@ struct CDecompressStat
 };
 
 HRESULT Extract(
-    // DECL_EXTERNAL_CODECS_LOC_VARS
     CCodecs *codecs,
     const CObjectVector<COpenType> &types,
     const CIntVector &excludedFormats,
@@ -96,8 +85,7 @@ HRESULT Extract(
     const CExtractOptions &options,
     IOpenCallbackUI *openCallback,
     IExtractCallbackUI *extractCallback,
-    IFolderArchiveExtractCallback *faeCallback,
-    #ifndef Z7_SFX
+    #ifndef _SFX
     IHashCalc *hash,
     #endif
     UString &errorMessage,

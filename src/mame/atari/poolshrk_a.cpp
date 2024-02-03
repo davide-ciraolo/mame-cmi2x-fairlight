@@ -1,14 +1,13 @@
 // license:BSD-3-Clause
 // copyright-holders:Derrick Renaud
-
 /*************************************************************************
 
-    atari\poolshrk_a.cpp
+    audio\poolshrk.c
 
 *************************************************************************/
 #include "emu.h"
-
-#include "poolshrk_a.h"
+#include "poolshrk.h"
+#include "sound/discrete.h"
 
 /************************************************************************/
 /* poolshrk Sound System Analog emulation                               */
@@ -46,6 +45,16 @@ static const discrete_mixer_desc poolshrk_mixer =
 	1000000
 };
 
+/* Nodes - Inputs */
+#define POOLSHRK_BUMP_EN    NODE_01
+#define POOLSHRK_CLICK_EN   NODE_02
+#define POOLSHRK_SCORE_EN   NODE_03
+/* Nodes - Sounds */
+#define POOLSHRK_BUMP_SND       NODE_10
+#define POOLSHRK_SCRATCH_SND    NODE_11
+#define POOLSHRK_CLICK_SND      NODE_12
+#define POOLSHRK_SCORE_SND      NODE_13
+
 DISCRETE_SOUND_START(poolshrk_discrete)
 	/************************************************/
 	/* Input register mapping for poolshrk          */
@@ -59,7 +68,7 @@ DISCRETE_SOUND_START(poolshrk_discrete)
 
 	/************************************************/
 	/* Scratch is just the trigger sent directly    */
-	/* to the output.  We take care of its          */
+	/* to the output.  We take care of it's         */
 	/* amplitude right in it's DISCRETE_INPUTX.     */
 	/************************************************/
 
@@ -140,3 +149,30 @@ DISCRETE_SOUND_START(poolshrk_discrete)
 	DISCRETE_MIXER4(NODE_90, 1, POOLSHRK_SCRATCH_SND, POOLSHRK_CLICK_SND, POOLSHRK_SCORE_SND, POOLSHRK_BUMP_SND, &poolshrk_mixer)
 	DISCRETE_OUTPUT(NODE_90, 1)
 DISCRETE_SOUND_END
+
+
+/*************************************
+ *
+ *  Write handlers
+ *
+ *************************************/
+
+void poolshrk_state::scratch_sound_w(offs_t offset, uint8_t data)
+{
+	m_discrete->write(POOLSHRK_SCRATCH_SND, offset & 1);
+}
+
+void poolshrk_state::score_sound_w(uint8_t data)
+{
+	m_discrete->write(POOLSHRK_SCORE_EN, 1); /* this will trigger the sound code for 1 sample */
+}
+
+void poolshrk_state::click_sound_w(uint8_t data)
+{
+	m_discrete->write(POOLSHRK_CLICK_EN, 1); /* this will trigger the sound code for 1 sample */
+}
+
+void poolshrk_state::bump_sound_w(offs_t offset, uint8_t data)
+{
+	m_discrete->write(POOLSHRK_BUMP_EN, offset & 1);
+}

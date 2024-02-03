@@ -95,7 +95,7 @@ TILE_GET_INFO_MEMBER(nemesis_state::get_fg_tile_info)
 }
 
 
-void nemesis_state::gfx_flipx_w(int state)
+WRITE_LINE_MEMBER(nemesis_state::gfx_flipx_w)
 {
 	m_flipscreen = state;
 
@@ -107,7 +107,7 @@ void nemesis_state::gfx_flipx_w(int state)
 	machine().tilemap().set_flip_all(m_tilemap_flip);
 }
 
-void nemesis_state::gfx_flipy_w(int state)
+WRITE_LINE_MEMBER(nemesis_state::gfx_flipy_w)
 {
 	if (state)
 		m_tilemap_flip |= TILEMAP_FLIPY;
@@ -159,6 +159,7 @@ void nemesis_state::salamand_control_port_word_w(offs_t offset, uint16_t data, u
 void nemesis_state::create_palette_lookups()
 {
 	// driver is 74LS09 (AND gates with open collector)
+
 	static const res_net_info nemesis_net_info =
 	{
 		RES_NET_VCC_5V | RES_NET_VBIAS_5V | RES_NET_VIN_OPEN_COL,

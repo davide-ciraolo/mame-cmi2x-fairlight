@@ -33,8 +33,6 @@
 #include "splus.lh"
 
 
-namespace {
-
 #define DEBUG_OUTPUT 0
 
 class splus_state : public driver_device
@@ -738,9 +736,6 @@ ROM_START( spss4240 ) /* Coral Reef (SS4240) */
 	ROM_REGION( 0x02000, "reeldata", 0 )
 	ROM_LOAD( "ss4240.u53",   0x00000, 0x02000, CRC(c5715b9b) SHA1(8b0ca15b520a5c8e1ebec13e3a1dc304fb40aea0) )
 ROM_END
-
-} // anonymous namespace
-
 
 /*************************
 *      Game Drivers      *

@@ -52,7 +52,7 @@ public:
 	{ }
 
 	void dms86(machine_config &config);
-	void nmi_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(nmi_w);
 
 protected:
 	virtual void machine_start() override;
@@ -75,7 +75,7 @@ private:
 };
 
 
-void dms86_state::nmi_w(int state)
+WRITE_LINE_MEMBER(dms86_state::nmi_w)
 {
 	m_maincpu->set_input_line(INPUT_LINE_NMI, state);
 }

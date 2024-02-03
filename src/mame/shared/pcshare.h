@@ -1,16 +1,15 @@
 // license:BSD-3-Clause
 // copyright-holders:Peter Trauner
-#ifndef MAME_SHARED_PCSHARE_H
-#define MAME_SHARED_PCSHARE_H
+#ifndef MAME_MACHINE_PCSHARE_H
+#define MAME_MACHINE_PCSHARE_H
 
 #pragma once
 
-#include "machine/8042kbdc.h"
 #include "machine/am9517a.h"
-#include "machine/mc146818.h"
 #include "machine/pic8259.h"
 #include "machine/pit8253.h"
-
+#include "machine/mc146818.h"
+#include "machine/8042kbdc.h"
 
 class pcat_base_state : public driver_device
 {
@@ -28,22 +27,26 @@ public:
 	{
 	}
 
-	void pc_dma_hrq_changed(int state);
+	DECLARE_WRITE_LINE_MEMBER(pc_dma_hrq_changed);
 	uint8_t pc_dma_read_byte(offs_t offset);
 	void pc_dma_write_byte(offs_t offset, uint8_t data);
 	uint8_t dma_page_select_r(offs_t offset);
 	void dma_page_select_w(offs_t offset, uint8_t data);
 	void set_dma_channel(int channel, int state);
-	void pc_dack0_w(int state);
-	void pc_dack1_w(int state);
-	void pc_dack2_w(int state);
-	void pc_dack3_w(int state);
+	DECLARE_WRITE_LINE_MEMBER( pc_dack0_w );
+	DECLARE_WRITE_LINE_MEMBER( pc_dack1_w );
+	DECLARE_WRITE_LINE_MEMBER( pc_dack2_w );
+	DECLARE_WRITE_LINE_MEMBER( pc_dack3_w );
 	uint8_t get_slave_ack(offs_t offset);
-	void at_pit8254_out2_changed(int state);
+	DECLARE_WRITE_LINE_MEMBER( at_pit8254_out2_changed );
 
 protected:
 	void pcat_common(machine_config &config);
-	void pcat_common_nokeyboard(machine_config &config);
+	void pcvideo_vga(machine_config &config);
+	void pcvideo_trident_vga(machine_config &config);
+	void pcvideo_s3_vga(machine_config &config);
+	void pcvideo_cirrus_gd5428(machine_config &config);
+	void pcvideo_cirrus_gd5430(machine_config &config);
 
 	void pcat32_io_common(address_map &map);
 
@@ -62,4 +65,4 @@ protected:
 	int m_pit_out2 = 0;
 };
 
-#endif // MAME_SHARED_PCSHARE_H
+#endif // MAME_MACHINE_PCSHARE_H

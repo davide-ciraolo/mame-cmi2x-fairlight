@@ -2,14 +2,14 @@
 // copyright-holders:Raphael Nabet
 /*************************************************************************
 
-    shared/mitcrt.h
+    video/crt.h
 
     CRT video emulation for TX-0 and PDP-1
 
 *************************************************************************/
 
-#ifndef MAME_SHARED_MITCRT_H
-#define MAME_SHARED_MITCRT_H
+#ifndef MAME_VIDEO_CRT_H
+#define MAME_VIDEO_CRT_H
 
 #pragma once
 
@@ -73,4 +73,4 @@ DECLARE_DEVICE_TYPE(CRT, crt_device)
 
 
 
-#endif // MAME_SHARED_MITCRT_H
+#endif // MAME_VIDEO_CRT_H

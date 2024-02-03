@@ -107,8 +107,6 @@ ToDo:
 #include "machine/terminal.h"
 
 
-namespace {
-
 class d6809_state : public driver_device
 {
 public:
@@ -221,9 +219,6 @@ ROM_START( d6809 )
 	ROM_REGION( 0x2000, "roms", 0 )
 	ROM_LOAD( "d6809.rom", 0x0000, 0x2000, CRC(2ceb40b8) SHA1(780111541234b4f0f781a118d955df61daa56e7e))
 ROM_END
-
-} // anonymous namespace
-
 
 /* Driver */
 

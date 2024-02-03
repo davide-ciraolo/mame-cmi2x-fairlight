@@ -27,7 +27,7 @@
 
 *******************************************************************************/
 
-void primo_state::vblank_irq(int state)
+WRITE_LINE_MEMBER(primo_state::vblank_irq)
 {
 	if (state && m_nmi)
 		m_maincpu->pulse_input_line(INPUT_LINE_NMI, attotime::zero);
@@ -286,14 +286,18 @@ SNAPSHOT_LOAD_MEMBER(primo_state::snapshot_cb)
 	std::vector<uint8_t> snapshot_data(image.length());
 
 	if (image.fread(&snapshot_data[0], image.length()) != image.length())
-		return std::make_pair(image_error::UNSPECIFIED, std::string());
+	{
+		return image_init_result::FAIL;
+	}
 
 	if (strncmp((char *)&snapshot_data[0], "PS01", 4))
-		return std::make_pair(image_error::INVALIDIMAGE, std::string());
+	{
+		return image_init_result::FAIL;
+	}
 
 	setup_pss(&snapshot_data[0], image.length());
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 /*******************************************************************************
@@ -318,15 +322,17 @@ void primo_state::setup_pp(uint8_t* quickload_data, uint32_t quickload_size)
 
 QUICKLOAD_LOAD_MEMBER(primo_state::quickload_cb)
 {
-	size_t const quickload_size = image.length();
+	size_t quickload_size = image.length();
 	std::vector<uint8_t> quickload_data(quickload_size);
 
 	if (image.fread(&quickload_data[0], quickload_size) != quickload_size)
-		return std::make_pair(image_error::UNSPECIFIED, std::string());
+	{
+		return image_init_result::FAIL;
+	}
 
 	setup_pp(&quickload_data[0], quickload_size);
 
-	return std::make_pair(std::error_condition(), std::string());
+	return image_init_result::PASS;
 }
 
 u32 primo_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)

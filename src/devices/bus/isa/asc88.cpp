@@ -62,7 +62,7 @@ void asc88_device::device_reset()
 	control_w(0);
 }
 
-void asc88_device::irq_w(int state)
+WRITE_LINE_MEMBER(asc88_device::irq_w)
 {
 	if (m_irq != state)
 	{
@@ -76,7 +76,7 @@ void asc88_device::irq_w(int state)
 	}
 }
 
-void asc88_device::drq_w(int state)
+WRITE_LINE_MEMBER(asc88_device::drq_w)
 {
 	if (m_drq != state)
 	{

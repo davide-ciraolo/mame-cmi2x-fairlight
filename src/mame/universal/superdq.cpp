@@ -29,8 +29,6 @@
 #include "tilemap.h"
 
 
-namespace {
-
 #define MASTER_CLOCK    20000000
 
 
@@ -155,7 +153,7 @@ INTERRUPT_GEN_MEMBER(superdq_state::superdq_vblank)
 	/* status is read when the STATUS line from the laserdisc
 	   toggles (600usec after the vblank). We could set up a
 	   timer to do that, but this works as well */
-	m_ld_in_latch = m_laserdisc->data_r();
+	m_ld_in_latch = m_laserdisc->status_r();
 
 	/* command is written when the COMMAND line from the laserdisc
 	   toggles (680usec after the vblank). We could set up a
@@ -414,7 +412,6 @@ ROM_START( superdqa )       /* short scenes, alternate */
 	DISK_IMAGE_READONLY( "superdq", 0, NO_DUMP )
 ROM_END
 
-} // anonymous namespace
 
 
 /*************************************

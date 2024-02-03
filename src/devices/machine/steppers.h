@@ -35,8 +35,6 @@
 
 #define SRU_200STEP_REEL        11
 
-#define SYS5_100STEP_REEL       12
-
 
 class stepper_device : public device_t
 {

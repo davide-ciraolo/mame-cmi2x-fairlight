@@ -36,15 +36,16 @@ public:
 	auto rs232_conn_txd_handler() { return m_rs232_conn_txd_handler.bind(); }
 	auto rs232_conn_dtr_handler() { return m_rs232_conn_dtr_handler.bind(); }
 	auto rs232_conn_rts_handler() { return m_rs232_conn_rts_handler.bind(); }
-	void rs232_conn_dcd_w(int state);
-	void rs232_conn_dsr_w(int state);
-	void rs232_conn_ri_w(int state);
-	void rs232_conn_cts_w(int state);
-	void rs232_conn_rxd_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_dcd_w);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_dsr_w);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_ri_w);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_cts_w);
+	DECLARE_WRITE_LINE_MEMBER(rs232_conn_rxd_w);
 
 protected:
 	exorterm155_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, u32 clock);
 
+	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
@@ -76,19 +77,19 @@ private:
 
 	void mem_map(address_map &map);
 
-	void acia_txd_w(int state);
-	void acia_rts_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(acia_txd_w);
+	DECLARE_WRITE_LINE_MEMBER(acia_rts_w);
 
 	// Clocks
-	void write_f1_clock(int state);
-	void write_f3_clock(int state);
-	void write_f5_clock(int state);
-	void write_f6_clock(int state);
-	void write_f7_clock(int state);
-	void write_f8_clock(int state);
-	void write_f9_clock(int state);
-	void write_f11_clock(int state);
-	void write_f13_clock(int state);
+	DECLARE_WRITE_LINE_MEMBER(write_f1_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f3_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f5_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f6_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f7_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f8_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f9_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f11_clock);
+	DECLARE_WRITE_LINE_MEMBER(write_f13_clock);
 
 	u8 m_dsr;
 
@@ -102,10 +103,10 @@ private:
 	u8 m_inv_video;
 	u8 m_special_char_disp;
 
-	void sys_timer_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(sys_timer_w);
 	u8 m_sys_timer_count;
 
-	void pia_cfg_cb2_w(int state);
+	DECLARE_WRITE_LINE_MEMBER(pia_cfg_cb2_w);
 
 	u8 pia_kbd_pa_r();
 	u8 pia_kbd_pb_r();

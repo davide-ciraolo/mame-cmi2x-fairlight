@@ -161,7 +161,8 @@ TILE_GET_INFO_MEMBER(tilemap038_device::get_tile_info)
 		code ^= tile_index & 1;
 		code ^= ((tile_index / (512 / 8)) & 1) * 2;
 
-		m_038_cb(true, color, pri, code);
+		if (!m_038_cb.isnull())
+			m_038_cb(true, color, pri, code);
 	}
 	else if (tile_is_8x8())
 	{
@@ -171,7 +172,8 @@ TILE_GET_INFO_MEMBER(tilemap038_device::get_tile_info)
 		pri   = (tile & 0xc0000000) >> (32 - 2);
 		code  = (tile & 0x0003ffff);
 
-		m_038_cb(false, color, pri, code);
+		if (!m_038_cb.isnull())
+			m_038_cb(false, color, pri, code);
 	}
 
 	tileinfo.set(m_gfxno, code, color, 0);
@@ -181,7 +183,7 @@ TILE_GET_INFO_MEMBER(tilemap038_device::get_tile_info)
 
 void tilemap038_device::device_start()
 {
-	m_038_cb.resolve_safe();
+	m_038_cb.resolve();
 	m_vregs = make_unique_clear<u16[]>(0x6/2);
 
 	if (m_vram_16x16 == nullptr && m_vram_8x8 == nullptr)

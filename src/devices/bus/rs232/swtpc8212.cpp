@@ -34,19 +34,19 @@ ioport_constructor swtpc8212_terminal_device::device_input_ports() const
 	return INPUT_PORTS_NAME(swtpc8212_terminal);
 }
 
-void swtpc8212_terminal_device::input_txd(int state)
+WRITE_LINE_MEMBER(swtpc8212_terminal_device::input_txd)
 {
 	m_swtpc8212->rs232_conn_rxd_w(state);
 }
 
-void swtpc8212_terminal_device::route_term_rts(int state)
+WRITE_LINE_MEMBER(swtpc8212_terminal_device::route_term_rts)
 {
 	// Loop the terminal RTS output to the terminal CTS input.
 	m_swtpc8212->rs232_conn_cts_w(state);
 }
 
 // This terminal uses DTR for hardware flow control.
-void swtpc8212_terminal_device::route_term_dtr(int state)
+WRITE_LINE_MEMBER(swtpc8212_terminal_device::route_term_dtr)
 {
 	if (m_flow_control->read())
 	{
