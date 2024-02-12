@@ -38,7 +38,7 @@
 #include "screen.h"
 
 
-#define LOG_BANK    (1U <<  1)
+#define LOG_BANK    (1U << 1)
 
 #define VERBOSE (LOG_GENERAL)
 //#define LOG_OUTPUT_FUNC osd_printf_info
@@ -46,6 +46,8 @@
 
 #define LOGBANK(format, ...)    LOGMASKED(LOG_BANK,   "%11.6f at %s: " format, machine().time().as_double(), machine().describe_context(), __VA_ARGS__)
 
+
+namespace {
 
 class rt1715_state : public driver_device
 {
@@ -78,8 +80,8 @@ private:
 	void memory_write_byte(offs_t offset, uint8_t data);
 	uint8_t io_read_byte(offs_t offset);
 	void io_write_byte(offs_t offset, uint8_t data);
-	DECLARE_WRITE_LINE_MEMBER(busreq_w);
-	DECLARE_WRITE_LINE_MEMBER(tc_w);
+	void busreq_w(int state);
+	void tc_w(int state);
 	void rt1715_floppy_enable(uint8_t data);
 	uint8_t k7658_led1_r();
 	uint8_t k7658_led2_r();
@@ -91,7 +93,7 @@ private:
 	void rt1715w_krfd_w(uint8_t data);
 	void rt1715_palette(palette_device &palette) const;
 	I8275_DRAW_CHARACTER_MEMBER(crtc_display_pixels);
-	DECLARE_WRITE_LINE_MEMBER(crtc_drq_w);
+	void crtc_drq_w(int state);
 
 	void k7658_io(address_map &map);
 	void k7658_mem(address_map &map);
@@ -154,7 +156,7 @@ void rt1715_state::rt1715w_krfd_w(uint8_t data)
 	m_krfd = data;
 }
 
-WRITE_LINE_MEMBER(rt1715_state::tc_w)
+void rt1715_state::tc_w(int state)
 {
 	m_fdc->tc_w(state & BIT(m_krfd, 7));
 }
@@ -399,7 +401,7 @@ void rt1715_state::io_write_byte(offs_t offset, uint8_t data)
 	prog_space.write_byte(offset, data);
 }
 
-WRITE_LINE_MEMBER(rt1715_state::busreq_w)
+void rt1715_state::busreq_w(int state)
 {
 	// since our Z80 has no support for BUSACK, we assume it is granted immediately
 	m_maincpu->set_input_line(INPUT_LINE_HALT, state);
@@ -410,7 +412,7 @@ WRITE_LINE_MEMBER(rt1715_state::busreq_w)
     VIDEO EMULATION
 ***************************************************************************/
 
-WRITE_LINE_MEMBER(rt1715_state::crtc_drq_w)
+void rt1715_state::crtc_drq_w(int state)
 {
 	if (state)
 	{
@@ -874,6 +876,8 @@ ROM_START( rt1715w )
 	ROM_REGION(0x0100, "prom", 0)
 	ROM_LOAD("287.bin", 0x0000, 0x0100, CRC(8508360c) SHA1(d262a8c3cf2d284c67f23b853e0d59ae5cc1d4c8)) // /CAS decoder prom, 74S287
 ROM_END
+
+} // anonymous namespace
 
 
 /***************************************************************************

@@ -44,7 +44,7 @@ protected:
 	virtual int recv_dev(uint8_t **buf);
 
 private:
-	void recv(int param);
+	void recv(int32_t param);
 
 	class device_network_interface *m_dev;
 	emu_timer *m_timer;
@@ -55,5 +55,6 @@ void add_netdev(const char *name, const char *description, create_netdev func);
 void clear_netdev();
 const std::vector<std::unique_ptr<osd_netdev::entry_t>>& get_netdev_list();
 int netdev_count();
+void osd_list_network_adapters();
 
 #endif // MAME_OSD_OSDNET_H

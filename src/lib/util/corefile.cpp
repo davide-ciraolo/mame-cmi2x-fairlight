@@ -12,13 +12,10 @@
 
 #include "coretmpl.h"
 #include "osdcore.h"
-#include "path.h"
 #include "unicode.h"
 #include "vecstream.h"
 
-#include <algorithm>
 #include <cassert>
-#include <cctype>
 #include <cstring>
 #include <iterator>
 #include <limits>
@@ -66,7 +63,7 @@ public:
 	virtual char *gets(char *s, int n) override { return m_file.gets(s, n); }
 
 	virtual int puts(std::string_view s) override { return m_file.puts(s); }
-	virtual int vprintf(util::format_argument_pack<std::ostream> const &args) override { return m_file.vprintf(args); }
+	virtual int vprintf(util::format_argument_pack<char> const &args) override { return m_file.vprintf(args); }
 	virtual std::error_condition truncate(std::uint64_t offset) override { return m_file.truncate(offset); }
 
 private:
@@ -91,7 +88,7 @@ public:
 	virtual int ungetc(int c) override;
 	virtual char *gets(char *s, int n) override;
 	virtual int puts(std::string_view s) override;
-	virtual int vprintf(util::format_argument_pack<std::ostream> const &args) override;
+	virtual int vprintf(util::format_argument_pack<char> const &args) override;
 
 protected:
 	core_text_file(std::uint32_t openflags)
@@ -537,12 +534,12 @@ int core_text_file::puts(std::string_view s)
 //  vprintf - vfprintf to a text file
 //-------------------------------------------------
 
-int core_text_file::vprintf(util::format_argument_pack<std::ostream> const &args)
+int core_text_file::vprintf(util::format_argument_pack<char> const &args)
 {
 	m_printf_buffer.clear();
 	m_printf_buffer.reserve(1024);
 	m_printf_buffer.seekp(0, ovectorstream::beg);
-	util::stream_format<std::ostream, std::ostream>(m_printf_buffer, args);
+	util::stream_format(m_printf_buffer, args);
 	return puts(buf_to_string_view(m_printf_buffer));
 }
 
@@ -1057,71 +1054,3 @@ std::error_condition core_file::load(std::string_view filename, std::vector<uint
 }
 
 } // namespace util
-
-
-
-/***************************************************************************
-    FILENAME UTILITIES
-***************************************************************************/
-
-// -------------------------------------------------
-// core_filename_extract_base - extract the base
-// name from a filename; note that this makes
-// assumptions about path separators
-// -------------------------------------------------
-
-std::string_view core_filename_extract_base(std::string_view name, bool strip_extension) noexcept
-{
-	// find the start of the basename
-	auto const start = std::find_if(name.rbegin(), name.rend(), &util::is_directory_separator);
-	if (start == name.rbegin())
-		return std::string_view();
-
-	// find the end of the basename
-	auto const chop_position = strip_extension
-		? std::find(name.rbegin(), start, '.')
-		: start;
-	auto const end = ((chop_position != start) && (std::next(chop_position) != start))
-		? std::next(chop_position)
-		: name.rbegin();
-
-	return std::string_view(&*start.base(), end.base() - start.base());
-}
-
-
-// -------------------------------------------------
-// core_filename_extract_extension
-// -------------------------------------------------
-
-std::string_view core_filename_extract_extension(std::string_view filename, bool strip_period) noexcept
-{
-	auto loc = filename.find_last_of('.');
-	if (loc != std::string_view::npos)
-		return filename.substr(loc + (strip_period ? 1 : 0));
-	else
-		return std::string_view();
-}
-
-
-// -------------------------------------------------
-// core_filename_ends_with - does the given
-// filename end with the specified extension?
-// -------------------------------------------------
-
-bool core_filename_ends_with(std::string_view filename, std::string_view extension) noexcept
-{
-	auto namelen = filename.length();
-	auto extlen = extension.length();
-
-	// first if the extension is bigger than the name, we definitely don't match
-	bool matches = namelen >= extlen;
-
-	// work backwards checking for a match
-	while (matches && extlen > 0 && namelen > 0)
-	{
-		if (tolower((uint8_t)filename[--namelen]) != tolower((uint8_t)extension[--extlen]))
-			matches = false;
-	}
-
-	return matches;
-}

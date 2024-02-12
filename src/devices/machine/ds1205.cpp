@@ -10,6 +10,7 @@
 #include "emu.h"
 #include "ds1205.h"
 
+#include <cstdarg>
 #include <cstdio>
 
 
@@ -173,7 +174,7 @@ void ds1205_device::readbit( u8 *buffer )
 	}
 }
 
-WRITE_LINE_MEMBER( ds1205_device::write_rst )
+void ds1205_device::write_rst(int state)
 {
 	if( m_rst != state )
 	{
@@ -205,7 +206,7 @@ WRITE_LINE_MEMBER( ds1205_device::write_rst )
 	}
 }
 
-WRITE_LINE_MEMBER( ds1205_device::write_clk )
+void ds1205_device::write_clk(int state)
 {
 	if( m_clk != state )
 	{
@@ -382,7 +383,7 @@ WRITE_LINE_MEMBER( ds1205_device::write_clk )
 	}
 }
 
-WRITE_LINE_MEMBER( ds1205_device::write_dq )
+void ds1205_device::write_dq(int state)
 {
 	if( m_dqw != state )
 	{
@@ -392,7 +393,7 @@ WRITE_LINE_MEMBER( ds1205_device::write_dq )
 	}
 }
 
-READ_LINE_MEMBER( ds1205_device::read_dq )
+int ds1205_device::read_dq()
 {
 	if( m_dqr == DQ_HIGH_IMPEDANCE )
 	{

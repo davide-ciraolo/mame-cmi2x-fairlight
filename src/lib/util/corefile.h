@@ -87,7 +87,7 @@ public:
 	virtual int puts(std::string_view s) = 0;
 
 	// printf-style text write to a file
-	virtual int vprintf(util::format_argument_pack<std::ostream> const &args) = 0;
+	virtual int vprintf(util::format_argument_pack<char> const &args) = 0;
 	template <typename Format, typename... Params> int printf(Format &&fmt, Params &&...args)
 	{
 		return vprintf(util::make_format_argument_pack(std::forward<Format>(fmt), std::forward<Params>(args)...));
@@ -98,22 +98,6 @@ public:
 };
 
 } // namespace util
-
-
-/***************************************************************************
-    FUNCTION PROTOTYPES
-***************************************************************************/
-
-/* ----- filename utilities ----- */
-
-// extract the base part of a filename (remove extensions and paths)
-std::string_view core_filename_extract_base(std::string_view name, bool strip_extension = false) noexcept;
-
-// extracts the file extension from a filename
-std::string_view core_filename_extract_extension(std::string_view filename, bool strip_period = false) noexcept;
-
-// true if the given filename ends with a particular extension
-bool core_filename_ends_with(std::string_view filename, std::string_view extension) noexcept;
 
 
 #endif // MAME_LIB_UTIL_COREFILE_H

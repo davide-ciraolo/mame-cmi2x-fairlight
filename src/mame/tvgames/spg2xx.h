@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:Ryan Holtz, David Haywood
-#ifndef MAME_INCLUDES_SPG2XX_H
-#define MAME_INCLUDES_SPG2XX_H
+#ifndef MAME_TVGAMES_SPG2XX_H
+#define MAME_TVGAMES_SPG2XX_H
 
 #pragma once
 
@@ -307,6 +307,7 @@ public:
 	void ordentv(machine_config &config);
 
 	void init_ordentv();
+	void init_jeuint();
 
 protected:
 
@@ -346,6 +347,7 @@ public:
 	{ }
 
 	void doraphone(machine_config &config);
+	void doraphonep(machine_config &config);
 
 private:
 	uint16_t porta_r(offs_t offset, uint16_t mem_mask = ~0);
@@ -358,4 +360,4 @@ private:
 
 
 
-#endif // MAME_INCLUDES_SPG2XX_H
+#endif // MAME_TVGAMES_SPG2XX_H

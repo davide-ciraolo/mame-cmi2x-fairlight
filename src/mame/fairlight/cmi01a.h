@@ -6,8 +6,8 @@
 
 ***************************************************************************/
 
-#ifndef MAME_AUDIO_CMI01A_H
-#define MAME_AUDIO_CMI01A_H
+#ifndef MAME_FAIRLIGHT_CMI01A_H
+#define MAME_FAIRLIGHT_CMI01A_H
 
 #include "machine/6821pia.h"
 #include "machine/6840ptm.h"
@@ -33,7 +33,6 @@ public:
 	void set_master_osc(double mosc) { m_mosc = mosc; }
 
 protected:
-	virtual void device_resolve_objects() override;
 	virtual void device_start() override;
 	virtual void device_reset() override;
 	virtual void device_add_mconfig(machine_config &config) override;
@@ -82,16 +81,22 @@ private:
 	// New functions below this line
 	void update_rstb_pulser();
 	void set_run_load_xor(const bool run_load_xor);
+	TIMER_CALLBACK_MEMBER(rstb_pulse_cb);
+	void set_not_rstb(const bool not_rstb);
 
 	void update_bcas_q1_enable();
+	TIMER_CALLBACK_MEMBER(bcas_q1_tick);
 
 	void set_zx_flipflop_clock(const bool zx_ff_clk);
 	void set_zx_flipflop_state(const bool zx_ff);
 
 	void pulse_zcint();
+	TIMER_CALLBACK_MEMBER(zcint_pulse_cb);
+	void set_not_zcint(const bool not_zcint);
 
 	void set_not_load(const bool not_load);
 
+	void update_gzx();
 	void set_gzx(const bool gzx);
 
 	void update_not_eload();
@@ -118,6 +123,9 @@ private:
 
 	u32         m_channel;
 
+	emu_timer * m_zcint_pulse_timer = nullptr;
+	emu_timer * m_rstb_pulse_timer = nullptr;
+	emu_timer * m_bcas_q1_timer = nullptr;
 	emu_timer * m_sample_timer = nullptr;
 
 	devcb_write_line m_irq_cb;
@@ -137,6 +145,7 @@ private:
 	bool        m_run = false;
 	bool        m_not_rstb = true;
 	bool        m_not_load = false;
+	bool        m_not_zcint = true;
 	bool        m_not_wpe = true;
 	bool        m_new_addr = false;
 
@@ -145,6 +154,8 @@ private:
 	bool        m_not_eload = true;
 
 	bool        m_bcas_q1_enabled = true;
+	bool        m_bcas_q1 = false;
+	bool        m_bcas_q2 = false;
 
 	int         m_env_dir = 0;
 	u8          m_env = 0;
@@ -176,4 +187,4 @@ private:
 // device type definition
 DECLARE_DEVICE_TYPE(CMI01A_CHANNEL_CARD, cmi01a_device)
 
-#endif // MAME_AUDIO_CMI01A_H
+#endif // MAME_FAIRLIGHT_CMI01A_H

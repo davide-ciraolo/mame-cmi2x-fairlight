@@ -116,7 +116,6 @@ void c140_device::device_start()
 {
 	m_sample_rate = m_baserate = clock();
 
-	m_int1_callback.resolve_safe();
 	m_int1_timer = timer_alloc(FUNC(c140_device::int1_on), this);
 
 	m_stream = stream_alloc(0, 2, m_sample_rate);
@@ -204,7 +203,7 @@ void c140_device::device_clock_changed()
 }
 
 
-void c140_device::rom_bank_updated()
+void c140_device::rom_bank_pre_change()
 {
 	m_stream->update();
 }

@@ -14,6 +14,8 @@
 #include "emu.h"
 #include "zs01.h"
 
+#include <cstdarg>
+
 #define VERBOSE_LEVEL ( 0 )
 
 inline void ATTR_PRINTF( 3, 4 ) zs01_device::verboselog( int n_level, const char *s_fmt, ... )
@@ -97,7 +99,7 @@ void zs01_device::device_reset()
 	m_previous_byte = 0;
 }
 
-WRITE_LINE_MEMBER( zs01_device::write_rst )
+void zs01_device::write_rst(int state)
 {
 	if( m_rst != state )
 	{
@@ -115,7 +117,7 @@ WRITE_LINE_MEMBER( zs01_device::write_rst )
 	m_rst = state;
 }
 
-WRITE_LINE_MEMBER( zs01_device::write_cs )
+void zs01_device::write_cs(int state)
 {
 	if( m_cs != state )
 	{
@@ -335,7 +337,7 @@ int zs01_device::data_offset()
 	return m_write_buffer[ 1 ] * SIZE_DATA_BUFFER;
 }
 
-WRITE_LINE_MEMBER( zs01_device::write_scl )
+void zs01_device::write_scl(int state)
 {
 	if( m_scl != state )
 	{
@@ -595,7 +597,7 @@ WRITE_LINE_MEMBER( zs01_device::write_scl )
 	m_scl = state;
 }
 
-WRITE_LINE_MEMBER( zs01_device::write_sda )
+void zs01_device::write_sda(int state)
 {
 	if( m_sdaw != state )
 	{
@@ -635,7 +637,7 @@ WRITE_LINE_MEMBER( zs01_device::write_sda )
 	m_sdaw = state;
 }
 
-READ_LINE_MEMBER( zs01_device::read_sda )
+int zs01_device::read_sda()
 {
 	if( m_cs != 0 )
 	{

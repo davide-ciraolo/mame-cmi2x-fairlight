@@ -14,8 +14,8 @@
  *
  ****************************************************************************/
 
-#ifndef MAME_INCLUDES_CYBIKO_H
-#define MAME_INCLUDES_CYBIKO_H
+#ifndef MAME_CYBIKO_CYBIKO_H
+#define MAME_CYBIKO_CYBIKO_H
 
 #include "bus/rs232/rs232.h"
 
@@ -93,12 +93,9 @@ private:
 	DECLARE_QUICKLOAD_LOAD_MEMBER(quickload_cybiko);
 	DECLARE_QUICKLOAD_LOAD_MEMBER(quickload_cybikoxt);
 
-	void cybikov1_io(address_map &map);
 	void cybikov1_mem(address_map &map);
-	void cybikov2_io(address_map &map);
 	void cybikov2_mem(address_map &map);
-	void cybikoxt_io(address_map &map);
 	void cybikoxt_mem(address_map &map);
 };
 
-#endif // MAME_INCLUDES_CYBIKO_H
+#endif // MAME_CYBIKO_CYBIKO_H

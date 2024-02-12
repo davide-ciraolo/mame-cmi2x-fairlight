@@ -46,6 +46,7 @@ const help_item f_static_help_list[] =
 		"  Breakpoints\n"
 		"  Watchpoints\n"
 		"  Registerpoints\n"
+		"  Exception Points\n"
 		"  Expressions\n"
 		"  Comments\n"
 		"  Cheats\n"
@@ -138,6 +139,7 @@ const help_item f_static_help_list[] =
 		"  gn[i] [<count>] -- resumes execution, sets temp breakpoint <count> instructions ahead\n"
 		"  ge[x] [<exception>[,<condition>]] -- resumes execution, setting temp breakpoint if <exception> is raised\n"
 		"  gi[nt] [<irqline>] -- resumes execution, setting temp breakpoint if <irqline> is taken (F7)\n"
+		"  gp [<condition>] -- resumes execution, setting temp breakpoint if privilege level changes\n"
 		"  gt[ime] <milliseconds> -- resumes execution until the given delay has elapsed\n"
 		"  gv[blank] -- resumes execution, setting temp breakpoint on the next VBLANK (F8)\n"
 		"  n[ext] -- executes until the next CPU switch (F6)\n"
@@ -189,6 +191,18 @@ const help_item f_static_help_list[] =
 		"  rpdisable [<rpnum>[,...]] -- disabled given registerpoints or all if no <rpnum> specified\n"
 		"  rpenable [<rpnum>[,...]]  -- enables given registerpoints or all if no <rpnum> specified\n"
 		"  rplist [<CPU>] -- lists all the registerpoints\n"
+	},
+	{
+		"exceptionpoints",
+		"\n"
+		"Exception Point Commands\n"
+		"Type help <command> for further details on each command\n"
+		"\n"
+		"  ep[set] <type>[,<condition>[,<action>]] -- sets exception point on <type>\n"
+		"  epclear [<epnum>] -- clears a given exception point or all if no <epnum> specified\n"
+		"  epdisable [<epnum>] -- disabled a given exception point or all if no <epnum> specified\n"
+		"  epenable [<epnum>]  -- enables a given exception point or all if no <epnum> specified\n"
+		"  eplist -- lists all the exception points\n"
 	},
 	{
 		"expressions",
@@ -1036,6 +1050,27 @@ const help_item f_static_help_list[] =
 		"acknowledged on the current CPU.\n"
 	},
 	{
+		"gp",
+		"\n"
+		"  gp [<condition>]\n"
+		"\n"
+		"The gp command resumes execution of the current code.  Control will not be returned to "
+		"the debugger until a breakpoint or watchpoint is hit, or the privilege level of the current "
+		"CPU changes.  The optional <condition> parameter lets you specify an expression that will "
+		"be evaluated each time the privilege level changes.  If the expression evaluates to true "
+		"(non-zero), execution will halt; otherwise, execution will continue with no notification.\n"
+		"\n"
+		"Examples:\n"
+		"\n"
+		"gp\n"
+		"  Resume execution until the next break/watchpoint or the privilege level of the current "
+		"CPU changes.\n"
+		"\n"
+		"gp {pc != 1234}\n"
+		"  Resume execution until the next break/watchpoint or the privilege level of the current "
+		"CPU changes, disregarding the instruction at address 1234.\n"
+	},
+	{
 		"gtime",
 		"\n"
 		"  gt[ime] <milliseconds>\n"
@@ -1555,6 +1590,92 @@ const help_item f_static_help_list[] =
 		"actions attached to them.\n"
 	},
 	{
+		"epset",
+		"\n"
+		"  ep[set] <type>[,<condition>[,<action>]]\n"
+		"\n"
+		"Sets a new exception point for exceptions of type <type> on the currently visible CPU. "
+		"The optional <condition> parameter lets you specify an expression that will be evaluated "
+		"each time the exception point is hit. If the result of the expression is true (non-zero), "
+		"the exception point will actually halt execution at the start of the exception handler; "
+		"otherwise, execution will continue with no notification. The optional <action> parameter "
+		"provides a command that is executed whenever the exception point is hit and the "
+		"<condition> is true. Note that you may need to embed the action within braces { } in order "
+		"to prevent commas and semicolons from being interpreted as applying to the epset command "
+		"itself.\n"
+		"\n"
+		"The numbering of exceptions depends upon the CPU type. Causes of exceptions may include "
+		"internally or externally vectored interrupts, errors occurring within instructions and "
+		"system calls.\n"
+		"\n"
+		"Each exception point that is set is assigned an index which can be used in other "
+		"exception point commands to reference this exception point.\n"
+		"\n"
+		"Examples:\n"
+		"\n"
+		"ep 2\n"
+		"  Set an exception that will halt execution whenever the visible CPU raises exception "
+		"number 2.\n"
+	},
+	{
+		"epclear",
+		"\n"
+		"  epclear [<epnum>[,...]]\n"
+		"\n"
+		"The epclear command clears exception points. If <epnum> is specified, only the requested "
+		"exception points are cleared, otherwise all exception points are cleared.\n"
+		"\n"
+		"Examples:\n"
+		"\n"
+		"epclear 3\n"
+		"  Clear exception point index 3.\n"
+		"\n"
+		"epclear\n"
+		"  Clear all exception points.\n"
+	},
+	{
+		"epdisable",
+		"\n"
+		"  epdisable [<epnum>[,...]]\n"
+		"\n"
+		"The epdisable command disables exception points. If <epnum> is specified, only the requested "
+		"exception points are disabled, otherwise all exception points are disabled. Note that "
+		"disabling an exception point does not delete it, it just temporarily marks the exception "
+		"point as inactive.\n"
+		"\n"
+		"Examples:\n"
+		"\n"
+		"epdisable 3\n"
+		"  Disable exception point index 3.\n"
+		"\n"
+		"epdisable\n"
+		"  Disable all exception points.\n"
+	},
+	{
+		"epenable",
+		"\n"
+		"  epenable [<epnum>[,...]]\n"
+		"\n"
+		"The epenable command enables exception points. If <epnum> is specified, only the "
+		"requested exception points are enabled, otherwise all exception points are enabled.\n"
+		"\n"
+		"Examples:\n"
+		"\n"
+		"epenable 3\n"
+		"  Enable exception point index 3.\n"
+		"\n"
+		"epenable\n"
+		"  Enable all exception points.\n"
+	},
+	{
+		"eplist",
+		"\n"
+		"  eplist\n"
+		"\n"
+		"The eplist command lists all the current exception points, along with their index and "
+		"any conditions or actions attached to them.\n"
+	},
+	{
 		"map",
 		"\n"
 		"  map[{d|i|o}] <address>[:<space>]\n"
@@ -1924,10 +2045,12 @@ private:
 	help_map m_help_list;
 	help_item const *m_uncached_help = std::begin(f_static_help_list);
 
+	util::ovectorstream m_message_buffer;
+
 	help_manager() = default;
 
 public:
-	char const *find(std::string_view tag)
+	std::string_view find(std::string_view tag)
 	{
 		// find a cached exact match if possible
 		std::string const lower = strmakelower(tag);
@@ -1963,16 +2086,17 @@ public:
 			if ((m_help_list.end() == next) || (next->first.substr(0, lower.length()) != lower))
 				return candidate->second;
 
-			// TODO: pointers to static strings are bad, mmmkay?
-			static char ambig_message[1024];
-			int msglen = std::sprintf(ambig_message, "Ambiguous help request, did you mean:\n");
+			m_message_buffer.clear();
+			m_message_buffer.reserve(1024);
+			m_message_buffer.seekp(0, util::ovectorstream::beg);
+			m_message_buffer << "Ambiguous help request, did you mean:\n";
 			do
 			{
-				msglen += std::sprintf(&ambig_message[msglen], "  help %.*s?\n", int(candidate->first.length()), &candidate->first[0]);
+				util::stream_format(m_message_buffer, "  help %.*s?\n", int(candidate->first.length()), &candidate->first[0]);
 				++candidate;
 			}
 			while ((m_help_list.end() != candidate) && (candidate->first.substr(0, lower.length()) == lower));
-			return ambig_message;
+			return util::buf_to_string_view(m_message_buffer);
 		}
 
 		// take the first help entry if no matches at all
@@ -1994,7 +2118,7 @@ public:
     PUBLIC INTERFACE
 ***************************************************************************/
 
-const char *debug_get_help(std::string_view tag)
+std::string_view debug_get_help(std::string_view tag)
 {
 	return help_manager::instance().find(tag);
 }

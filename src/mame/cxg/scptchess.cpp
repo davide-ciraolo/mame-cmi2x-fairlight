@@ -1,15 +1,19 @@
 // license:BSD-3-Clause
 // copyright-holders:hap
 // thanks-to:Sean Riddle
-/******************************************************************************
+/*******************************************************************************
 
 CXG Sensor Computachess (CXG-001 or WA-001)
 CXG Portachess, Portachess II, Computachess IV, Sphinx Chess Voyager
 
 Sensor Computachess is White & Allcock's first original chesscomputer. Cassia's
 Chess Mate (aka Computachess) doesn't really count since it was a bootleg of
-Fidelity Chess Challenger 10. The chess engine is by Mark Taylor, it's the same
-one as in Mini Chess released by SciSys earlier that year.
+Fidelity Chess Challenger 10.
+
+It was programmed by Intelligent Software (formerly known as Philidor Software).
+After loosening ties with SciSys, Intelligent Software provided the software for
+various chess computer companies. The chess engine is by Mark Taylor, it's the
+same one as in Mini Chess released by SciSys earlier that year.
 
 Initially, it had a "Sound" button for turning the beeps off. This was later
 changed to the more useful "New Game". With Portachess, they added a "Save"
@@ -28,14 +32,14 @@ Portachess II:
 - Hitachi HD44801C89 MCU @ ~400kHz (serial 202: from Portachess 1985 version)
 - rest same as above
 
-HD44801A50 used in:
+HD44801A50 MCU is used in:
 - CXG Sensor Computachess (1981 version) - 1st use
 - CXG Portachess (1983 version, has "Sound" button)
 - Hanimex HCG 1500
 - Schneider Sensor Chesspartner MK 3
 - Systema Computachess
 
-HD44801C89 used in:
+HD44801C89 MCU is used in:
 - CXG Portachess (1985 version, "NEW 16 LEVELS") - 1st use
 - CXG Sensor Computachess (1985 rerelease, "NEW 16 LEVELS")
 - CXG Portachess II (1986)
@@ -47,18 +51,20 @@ HD44801C89 used in:
 - Schneider Sensor Chessmaster MK 6
 - Schneider Sensor Chesspartner MK 4
 
-******************************************************************************/
+*******************************************************************************/
 
 #include "emu.h"
+
 #include "cpu/hmcs40/hmcs40.h"
 #include "machine/sensorboard.h"
 #include "sound/dac.h"
 #include "video/pwm.h"
+
 #include "speaker.h"
 
 // internal artwork
-#include "cxg_scptchess_v1.lh" // clickable
-#include "cxg_scptchess_v2.lh" // clickable
+#include "cxg_scptchess_v1.lh"
+#include "cxg_scptchess_v2.lh"
 
 
 namespace {
@@ -92,13 +98,13 @@ private:
 	required_device<dac_bit_interface> m_dac;
 	required_ioport m_inputs;
 
+	u8 m_inp_mux = 0;
+	u8 m_led_data = 0;
+
 	void update_display();
 	template<int N> void mux_w(u8 data);
 	void leds_w(u16 data);
 	u16 input_r();
-
-	u8 m_inp_mux = 0;
-	u8 m_led_data = 0;
 };
 
 void scptchess_state::machine_start()
@@ -109,9 +115,9 @@ void scptchess_state::machine_start()
 
 
 
-/******************************************************************************
+/*******************************************************************************
     I/O
-******************************************************************************/
+*******************************************************************************/
 
 void scptchess_state::update_display()
 {
@@ -154,9 +160,9 @@ u16 scptchess_state::input_r()
 
 
 
-/******************************************************************************
+/*******************************************************************************
     Input Ports
-******************************************************************************/
+*******************************************************************************/
 
 static INPUT_PORTS_START( scptchess_v1 )
 	PORT_START("IN.0")
@@ -177,14 +183,14 @@ INPUT_PORTS_END
 
 
 
-/******************************************************************************
+/*******************************************************************************
     Machine Configs
-******************************************************************************/
+*******************************************************************************/
 
 void scptchess_state::scptchess_v1(machine_config &config)
 {
-	/* basic machine hardware */
-	HD44801(config, m_maincpu, 400000);
+	// basic machine hardware
+	HD44801(config, m_maincpu, 400'000);
 	m_maincpu->write_r<2>().set(FUNC(scptchess_state::mux_w<0>));
 	m_maincpu->write_r<3>().set(FUNC(scptchess_state::mux_w<1>));
 	m_maincpu->write_d().set(FUNC(scptchess_state::leds_w));
@@ -194,11 +200,11 @@ void scptchess_state::scptchess_v1(machine_config &config)
 	m_board->init_cb().set(m_board, FUNC(sensorboard_device::preset_chess));
 	m_board->set_delay(attotime::from_msec(150));
 
-	/* video hardware */
+	// video hardware
 	PWM_DISPLAY(config, m_display).set_size(8, 2);
 	config.set_default_layout(layout_cxg_scptchess_v1);
 
-	/* sound hardware */
+	// sound hardware
 	SPEAKER(config, "speaker").front_center();
 	DAC_1BIT(config, m_dac).add_route(ALL_OUTPUTS, "speaker", 0.25);
 }
@@ -211,9 +217,9 @@ void scptchess_state::scptchess_v2(machine_config &config)
 
 
 
-/******************************************************************************
+/*******************************************************************************
     ROM Definitions
-******************************************************************************/
+*******************************************************************************/
 
 ROM_START( scptchess )
 	ROM_REGION( 0x2000, "maincpu", 0 )
@@ -229,10 +235,10 @@ ROM_END
 
 
 
-/******************************************************************************
+/*******************************************************************************
     Drivers
-******************************************************************************/
+*******************************************************************************/
 
-//    YEAR  NAME        PARENT    CMP MACHINE       INPUT         STATE            INIT        COMPANY, FULLNAME, FLAGS
-CONS( 1981, scptchess,  0,         0, scptchess_v1, scptchess_v1, scptchess_state, empty_init, "CXG Systems / White & Allcock", "Sensor Computachess (1981 version)", MACHINE_SUPPORTS_SAVE | MACHINE_CLICKABLE_ARTWORK )
-CONS( 1985, scptchessa, scptchess, 0, scptchess_v2, scptchess_v2, scptchess_state, empty_init, "CXG Systems / Newcrest Technology", "Sensor Computachess (1985 version)", MACHINE_SUPPORTS_SAVE | MACHINE_CLICKABLE_ARTWORK )
+//    YEAR  NAME        PARENT     COMPAT  MACHINE       INPUT         CLASS            INIT        COMPANY, FULLNAME, FLAGS
+SYST( 1981, scptchess,  0,         0,      scptchess_v1, scptchess_v1, scptchess_state, empty_init, "CXG Systems / White & Allcock / Intelligent Software", "Sensor Computachess (1981 version)", MACHINE_SUPPORTS_SAVE | MACHINE_CLICKABLE_ARTWORK )
+SYST( 1985, scptchessa, scptchess, 0,      scptchess_v2, scptchess_v2, scptchess_state, empty_init, "CXG Systems / Newcrest Technology / Intelligent Software", "Sensor Computachess (1985 version)", MACHINE_SUPPORTS_SAVE | MACHINE_CLICKABLE_ARTWORK )

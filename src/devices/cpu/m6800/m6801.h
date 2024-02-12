@@ -11,21 +11,18 @@
 
 enum
 {
-	M6801_IRQ_LINE = M6800_IRQ_LINE,
-	M6801_TIN_LINE, // P20/Tin Input Capture line (edge sense). Active edge is selectable by internal reg.
-	M6801_SC1_LINE,
-	M6801_IS_LINE // IS3(6801) or ISF(6301Y)
+	M6801_TIN_LINE = M6800_LINE_MAX, // P20/TIN Input Capture line (edge sense). Active edge is selectable by internal reg.
+	M6801_IS3_LINE, // SC1/IOS/IS3 (P54/IS on HD6301Y)
+	M6801_STBY_LINE, // STBY pin, or internal standby
+
+	M6801_LINE_MAX
 };
 
-enum
-{
-	M6803_IRQ_LINE = M6800_IRQ_LINE
-};
+#define M6801_IRQ1_LINE M6800_IRQ_LINE
+#define M6803_IRQ1_LINE M6800_IRQ_LINE
+#define HD6301_IRQ1_LINE M6800_IRQ_LINE
 
-enum
-{
-	HD6301_IRQ_LINE = M6800_IRQ_LINE
-};
+#define HD6301_IRQ2_LINE M6801_LINE_MAX // HD6301X/Y
 
 enum
 {
@@ -40,11 +37,12 @@ enum
 };
 
 
-class m6801_cpu_device : public m6800_cpu_device
+class m6801_cpu_device : public m6800_cpu_device, public device_nvram_interface
 {
 public:
 	m6801_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
+	// port 1-4 I/O, DDR is passed through mem_mask
 	auto in_p1_cb() { return m_in_port_func[0].bind(); }
 	auto out_p1_cb() { return m_out_port_func[0].bind(); }
 	auto in_p2_cb() { return m_in_port_func[1].bind(); }
@@ -57,25 +55,33 @@ public:
 	auto out_sc2_cb() { return m_out_sc2_func.bind(); }
 	auto out_ser_tx_cb() { return m_out_sertx_func.bind(); }
 
-	void m6801_io(address_map &map); // FIXME: privatize this
+	void nvram_set_battery(int state) { m_nvram_battery = bool(state); } // default is 1 (nvram_enable_backup needs to be true)
+	void nvram_set_default_value(uint8_t val) { m_nvram_defval = val; } // default is 0
+	auto standby_cb() { return m_standby_func.bind(); } // notifier (not an output pin)
+	int standby() { return suspended(SUSPEND_REASON_CLOCK) ? 1 : 0; }
 
 	void m6801_clock_serial();
 
 protected:
-	m6801_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, const m6800_cpu_device::op_func *insn, const uint8_t *cycles, address_map_constructor internal = address_map_constructor());
+	m6801_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, const m6800_cpu_device::op_func *insn, const uint8_t *cycles, address_map_constructor internal, int nvram_bytes);
 
-	// device-level overrides
-	virtual void device_resolve_objects() override;
+	// device_t implementation
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
-	// device_execute_interface overrides
+	// device_nvram_interface implementation
+	virtual void nvram_default() override;
+	virtual bool nvram_read(util::read_stream &file) override;
+	virtual bool nvram_write(util::write_stream &file) override;
+
+	// device_execute_interface implementation
 	virtual uint64_t execute_clocks_to_cycles(uint64_t clocks) const noexcept override { return (clocks + 4 - 1) / 4; }
 	virtual uint64_t execute_cycles_to_clocks(uint64_t cycles) const noexcept override { return (cycles * 4); }
-	virtual uint32_t execute_input_lines() const noexcept override { return 5; }
+	virtual uint32_t execute_input_lines() const noexcept override { return 6; }
+	virtual bool execute_input_edge_triggered(int inputnum) const noexcept override { return m6800_cpu_device::execute_input_edge_triggered(inputnum) || inputnum == M6801_STBY_LINE; }
 	virtual void execute_set_input(int inputnum, int state) override;
 
-	// device_disasm_interface overrides
+	// device_disasm_interface implementation
 	virtual std::unique_ptr<util::disasm_interface> create_disassembler() override;
 
 	void p1_ddr_w(uint8_t data);
@@ -93,7 +99,6 @@ protected:
 	uint8_t p4_data_r();
 	void p4_data_w(uint8_t data);
 
-protected:
 	uint8_t tcsr_r();
 	void tcsr_w(uint8_t data);
 	uint8_t ch_r();
@@ -114,10 +119,13 @@ protected:
 	uint8_t sci_rdr_r();
 	void sci_tdr_w(uint8_t data);
 
-	uint8_t rcr_r();
-	void rcr_w(uint8_t data);
+	virtual uint8_t rcr_r();
+	virtual void rcr_w(uint8_t data);
 	uint8_t ff_r();
 
+	void m6801_io(address_map &map);
+	void m6801_mem(address_map &map);
+	void hd6801_mem(address_map &map);
 	void m6803_mem(address_map &map);
 
 	devcb_read8::array<4> m_in_port_func;
@@ -125,49 +133,55 @@ protected:
 
 	devcb_write_line m_out_sc2_func;
 	devcb_write_line m_out_sertx_func;
+	devcb_write_line m_standby_func;
 
+	required_shared_ptr<uint8_t> m_internal_ram;
+	const int m_nvram_bytes;
+	uint8_t m_nvram_defval;
+	bool m_nvram_battery;
 	int m_sclk_divider;
 
-	/* internal registers */
-	uint8_t   m_port_ddr[4];
-	uint8_t   m_port_data[4];
-	uint8_t   m_p3csr;          // Port 3 Control/Status Register
-	uint8_t   m_tcsr;           /* Timer Control and Status Register */
-	uint8_t   m_pending_tcsr;   /* pending IRQ flag for clear IRQflag process */
-	uint8_t   m_irq2;           /* IRQ2 flags */
-	uint8_t   m_ram_ctrl;
-	PAIR    m_counter;        /* free running counter */
-	PAIR    m_output_compare; /* output compare       */
-	uint16_t  m_input_capture;  /* input capture        */
-	bool m_pending_isf_clear;
-	int     m_port3_latched;
+	// internal registers
+	uint8_t  m_port_ddr[4];
+	uint8_t  m_port_data[4];
+	uint8_t  m_p3csr;             // Port 3 Control/Status Register
+	uint8_t  m_tcsr;              // Timer Control and Status Register
+	uint8_t  m_pending_tcsr;      // pending IRQ flag for clear IRQflag process
+	uint8_t  m_ram_ctrl;
+	PAIR     m_counter;           // free running counter
+	PAIR     m_output_compare[3]; // output compare (MC6801U4 and HD6301X have more than one)
+	uint16_t m_input_capture;     // input capture
+	bool     m_pending_isf_clear;
+	int      m_port3_latched;
+	bool     m_port2_written;
 
-	uint8_t   m_trcsr, m_rmcr, m_rdr, m_tdr, m_rsr, m_tsr;
-	int     m_rxbits, m_txbits, m_txstate, m_trcsr_read_tdre, m_trcsr_read_orfe, m_trcsr_read_rdrf, m_tx, m_ext_serclock;
-	bool    m_use_ext_serclock;
-	bool    m_port2_written;
+	uint8_t  m_trcsr, m_rmcr, m_rdr, m_tdr, m_rsr, m_tshr;
+	int      m_rxbits, m_txbits, m_txstate, m_trcsr_read_tdre, m_trcsr_read_orfe, m_trcsr_read_rdrf, m_tx, m_ext_serclock;
+	bool     m_use_ext_serclock;
 
-	int     m_latch09;
+	uint8_t  m_latch09;
+	int      m_is3_state;
 
-	PAIR    m_timer_over;
+	PAIR     m_timer_over;
 	emu_timer *m_sci_timer;
-
-	/* point of next timer event */
-	uint32_t m_timer_next;
-
-	int     m_sc1_state;
+	uint32_t m_timer_next; // point of next timer event
 
 	static const uint8_t cycles_6803[256];
 	static const uint8_t cycles_63701[256];
 	static const op_func m6803_insn[256];
 	static const op_func hd63701_insn[256];
 
-	virtual void m6800_check_irq2() override;
+	bool check_irq2_ici();
+	bool check_irq2_oci();
+	bool check_irq2_toi();
+	bool check_irq2_sci();
+	virtual void check_irq2() override;
+	void take_irq2(const char *message, uint16_t irq_vector);
+
 	virtual void increment_counter(int amount) override;
 	virtual void eat_cycles() override;
 	virtual void cleanup_counters() override;
 
-	virtual void modified_tcsr();
 	virtual void set_timer_event();
 	virtual void modified_counters();
 	virtual void check_timer_event();
@@ -176,8 +190,50 @@ protected:
 	int m6800_rx();
 	void serial_transmit();
 	void serial_receive();
-	TIMER_CALLBACK_MEMBER( sci_tick );
+	TIMER_CALLBACK_MEMBER(sci_tick);
 	void set_os3(int state);
+};
+
+
+class m6801u4_cpu_device : public m6801_cpu_device
+{
+public:
+	m6801u4_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
+
+protected:
+	// device_t implementation
+	virtual void device_start() override;
+	virtual void device_reset() override;
+
+private:
+	void m6801u4_io(address_map &map);
+	void m6801u4_mem(address_map &map);
+
+	virtual void check_irq2() override;
+	virtual void set_timer_event() override;
+	virtual void modified_counters() override;
+	virtual void check_timer_event() override;
+	virtual void cleanup_counters() override;
+
+	uint8_t tcr2_r();
+	void tcr2_w(uint8_t data);
+	uint8_t tsr_r();
+
+	template<int N> uint8_t ocr2h_r();
+	template<int N> void ocr2h_w(uint8_t data);
+	template<int N> uint8_t ocr2l_r();
+	template<int N> void ocr2l_w(uint8_t data);
+
+	uint8_t m_tcr[2];
+	uint8_t m_tsr;
+	uint8_t m_pending_tsr;
+};
+
+
+class hd6801v0_cpu_device : public m6801_cpu_device
+{
+public:
+	hd6801v0_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 };
 
 
@@ -204,10 +260,35 @@ protected:
 };
 
 
+class mc68120_device : public m6801_cpu_device
+{
+public:
+	mc68120_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
+
+	// dual-ported RAM access
+	uint8_t dpram_r(offs_t offset);
+	void dpram_w(offs_t offset, uint8_t data);
+
+protected:
+	mc68120_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, address_map_constructor internal);
+};
+
+
+class mc68121_device : public mc68120_device
+{
+public:
+	mc68121_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
+};
+
+
 class hd6301_cpu_device : public m6801_cpu_device
 {
 protected:
-	hd6301_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
+	hd6301_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, const m6800_cpu_device::op_func *insn, const uint8_t *cycles, address_map_constructor internal, int nvram_bytes);
+
+	// device_nvram_interface implementation
+	virtual bool nvram_read(util::read_stream &file) override;
+	virtual bool nvram_write(util::write_stream &file) override;
 
 	virtual std::unique_ptr<util::disasm_interface> create_disassembler() override;
 
@@ -251,26 +332,33 @@ public:
 class hd6301x_cpu_device : public hd6301_cpu_device
 {
 public:
+	// port 5-7 I/O, DDR is passed through mem_mask
 	auto in_p5_cb() { return m_in_portx_func[0].bind(); }
 	auto out_p5_cb() { return m_out_portx_func[0].bind(); }
 	auto in_p6_cb() { return m_in_portx_func[1].bind(); }
 	auto out_p6_cb() { return m_out_portx_func[1].bind(); }
 	auto out_p7_cb() { return m_out_portx_func[2].bind(); }
 
-	// TODO: privatize eventually
-	void hd6301x_io(address_map &map);
-
 protected:
-	hd6301x_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
+	hd6301x_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, address_map_constructor internal, int nvram_bytes);
 
-	// device-level overrides
-	virtual void device_resolve_objects() override;
+	// device_nvram_interface implementation
+	virtual bool nvram_read(util::read_stream &file) override;
+	virtual bool nvram_write(util::write_stream &file) override;
+
+	void hd6301x_io(address_map &map);
+	void hd6303x_io(address_map &map);
+	void hd6301x_mem(address_map &map);
+	void hd6303x_mem(address_map &map);
+
+	// device_t implementation
 	virtual void device_start() override;
 	virtual void device_reset() override;
 
 	virtual void write_port2() override;
 
 	void p2_ddr_2bit_w(uint8_t data);
+	void p3_ddr_1bit_w(uint8_t data);
 	virtual uint8_t p3_data_r() override;
 	virtual void p3_data_w(uint8_t data) override;
 	virtual uint8_t p5_data_r();
@@ -279,6 +367,8 @@ protected:
 	virtual void p6_data_w(uint8_t data);
 	uint8_t p7_data_r();
 	void p7_data_w(uint8_t data);
+	virtual uint8_t rcr_r() override;
+	virtual void rcr_w(uint8_t data) override;
 
 	uint8_t tcsr2_r();
 	void tcsr2_w(uint8_t data);
@@ -294,8 +384,8 @@ protected:
 	uint8_t tcsr3_r();
 	void tcsr3_w(uint8_t data);
 
-	virtual void m6800_check_irq2() override;
-	virtual void modified_tcsr() override;
+	virtual bool check_irq1_enabled() override;
+	virtual void check_irq2() override;
 	virtual void set_timer_event() override;
 	virtual void modified_counters() override;
 	virtual void increment_counter(int amount) override;
@@ -311,7 +401,6 @@ protected:
 
 	uint8_t m_tcsr2;
 	uint8_t m_pending_tcsr2;
-	PAIR    m_output_compare2;
 
 	uint8_t m_t2cnt;
 	uint8_t m_tconr;
@@ -329,12 +418,17 @@ class hd6301x0_cpu_device : public hd6301x_cpu_device
 {
 public:
 	hd6301x0_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
+
+protected:
+	hd6301x0_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, address_map_constructor internal, int nvram_bytes);
+
+	virtual void device_reset() override;
 };
 
 
 // DC-64S package: HD63701X0C, HD63A701X0C, HD63B701X0C
 // Not fully emulated yet
-class hd63701x0_cpu_device : public hd6301x_cpu_device
+class hd63701x0_cpu_device : public hd6301x0_cpu_device
 {
 public:
 	hd63701x0_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
@@ -354,12 +448,13 @@ public:
 
 class hd6301y_cpu_device : public hd6301x_cpu_device
 {
-public:
-	// TODO: privatize eventually
-	void hd6301y_io(address_map &map);
-
 protected:
-	hd6301y_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
+	hd6301y_cpu_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock, address_map_constructor internal, int nvram_bytes);
+
+	void hd6301y_io(address_map &map);
+	void hd6303y_io(address_map &map);
+	void hd6301y_mem(address_map &map);
+	void hd6303y_mem(address_map &map);
 
 	// device-level overrides
 	virtual void device_start() override;
@@ -368,6 +463,7 @@ protected:
 	// device_execute_interface overrides
 	virtual void execute_set_input(int inputnum, int state) override;
 
+	void p1_ddr_1bit_w(uint8_t data);
 	void p5_ddr_w(uint8_t data);
 	virtual uint8_t p5_data_r() override;
 	void p5_data_w(uint8_t data);
@@ -375,12 +471,13 @@ protected:
 	virtual void p6_data_w(uint8_t data) override;
 	uint8_t p6_csr_r();
 	void p6_csr_w(uint8_t data);
+	virtual uint8_t rcr_r() override;
+	virtual void rcr_w(uint8_t data) override;
 
-	virtual void m6800_check_irq2() override;
+	virtual void check_irq2() override;
 	void clear_pending_isf();
 
 	uint8_t m_p6csr;
-	bool m_pending_isf_clear;
 };
 
 
@@ -418,8 +515,12 @@ public:
 
 
 DECLARE_DEVICE_TYPE(M6801, m6801_cpu_device)
+DECLARE_DEVICE_TYPE(M6801U4, m6801u4_cpu_device)
+DECLARE_DEVICE_TYPE(HD6801V0, hd6801v0_cpu_device)
 DECLARE_DEVICE_TYPE(M6803, m6803_cpu_device)
 DECLARE_DEVICE_TYPE(M6803E, m6803e_cpu_device)
+DECLARE_DEVICE_TYPE(MC68120, mc68120_device)
+DECLARE_DEVICE_TYPE(MC68121, mc68121_device)
 DECLARE_DEVICE_TYPE(HD6301V1, hd6301v1_cpu_device)
 DECLARE_DEVICE_TYPE(HD6301X0, hd6301x0_cpu_device)
 DECLARE_DEVICE_TYPE(HD6301Y0, hd6301y0_cpu_device)

@@ -21,6 +21,8 @@
 #include "formats/rk_cas.h"
 
 
+namespace {
+
 class mikrosha_state : public radio86_state
 {
 public:
@@ -32,7 +34,7 @@ public:
 
 private:
 	void mikrosha_8255_font_page_w(uint8_t data);
-	DECLARE_WRITE_LINE_MEMBER(mikrosha_pit_out2);
+	void mikrosha_pit_out2(int state);
 	I8275_DRAW_CHARACTER_MEMBER(display_pixels);
 	void machine_reset() override;
 	void machine_start() override;
@@ -167,7 +169,7 @@ void mikrosha_state::mikrosha_8255_font_page_w(uint8_t data)
 	m_mikrosha_font_page = (data >> 7) & 1;
 }
 
-WRITE_LINE_MEMBER(mikrosha_state::mikrosha_pit_out2)
+void mikrosha_state::mikrosha_pit_out2(int state)
 {
 }
 
@@ -290,6 +292,9 @@ ROM_START( m86rk )
 	/* here should probably be different rom */
 	ROM_LOAD ("mikrosha.fnt", 0x0000, 0x0800, CRC(b315da1c) SHA1(b5bf9abc0fff75b1aba709a7f08b23d4a89bb04b))
 ROM_END
+
+} // anonymous namespace
+
 
 /* Driver */
 //    YEAR  NAME      PARENT   COMPAT  MACHINE   INPUT     CLASS           INIT          COMPANY                                FULLNAME         FLAGS

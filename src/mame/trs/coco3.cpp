@@ -231,19 +231,7 @@ static INPUT_PORTS_START( coco3 )
 	PORT_INCLUDE( coco_analog_control )
 	PORT_INCLUDE( coco_rat_mouse )
 	PORT_INCLUDE( coco_lightgun )
-	PORT_INCLUDE( coco_rtc )
 	PORT_INCLUDE( coco_beckerport )
-	PORT_INCLUDE( screen_config )
-INPUT_PORTS_END
-
-static INPUT_PORTS_START( coco3dw )
-	PORT_INCLUDE( coco3_keyboard )
-	PORT_INCLUDE( coco3_joystick )
-	PORT_INCLUDE( coco_analog_control )
-	PORT_INCLUDE( coco_rat_mouse )
-	PORT_INCLUDE( coco_lightgun )
-	PORT_INCLUDE( coco_rtc )
-	PORT_INCLUDE( coco_beckerport_dw )
 	PORT_INCLUDE( screen_config )
 INPUT_PORTS_END
 
@@ -272,7 +260,7 @@ void coco3_state::coco3(machine_config &config)
 	INPUT_MERGER_ANY_HIGH(config, m_irqs).output_handler().set_inputline(m_maincpu, M6809_IRQ_LINE);
 	INPUT_MERGER_ANY_HIGH(config, m_firqs).output_handler().set_inputline(m_maincpu, M6809_FIRQ_LINE);
 
-	pia6821_device &pia0(PIA6821(config, PIA0_TAG, 0));
+	pia6821_device &pia0(PIA6821(config, PIA0_TAG));
 	pia0.writepa_handler().set(FUNC(coco_state::pia0_pa_w));
 	pia0.writepb_handler().set(FUNC(coco_state::pia0_pb_w));
 	pia0.tspb_handler().set_constant(0xff);
@@ -281,7 +269,7 @@ void coco3_state::coco3(machine_config &config)
 	pia0.irqa_handler().set(m_irqs, FUNC(input_merger_device::in_w<0>));
 	pia0.irqb_handler().set(m_irqs, FUNC(input_merger_device::in_w<1>));
 
-	pia6821_device &pia1(PIA6821(config, PIA1_TAG, 0));
+	pia6821_device &pia1(PIA6821(config, PIA1_TAG));
 	pia1.readpa_handler().set(FUNC(coco_state::pia1_pa_r));
 	pia1.readpb_handler().set(FUNC(coco_state::pia1_pb_r));
 	pia1.writepa_handler().set(FUNC(coco_state::pia1_pa_w));
@@ -319,7 +307,7 @@ void coco3_state::coco3(machine_config &config)
 
 	// monitor
 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
-	m_screen->set_raw(28.636363_MHz_XTAL/2, 912, 0, 640-1, 263, 1, 241-1);
+	m_screen->set_raw(28.636363_MHz_XTAL/2, 912, 0, 640-1, 262, 1, 241-1);
 	m_screen->set_screen_update(FUNC(coco3_state::screen_update));
 
 	// internal ram
@@ -329,7 +317,7 @@ void coco3_state::coco3(machine_config &config)
 	coco_floating(config);
 
 	// cartridge
-	cococart_slot_device &cartslot(COCOCART_SLOT(config, CARTRIDGE_TAG, DERIVED_CLOCK(1, 1), coco_cart, "fdcv11"));
+	cococart_slot_device &cartslot(COCOCART_SLOT(config, CARTRIDGE_TAG, DERIVED_CLOCK(1, 1), coco_cart, "fdc"));
 	cartslot.cart_callback().set([this] (int state) { cart_w(state != 0); }); // lambda because name is overloaded
 	cartslot.nmi_callback().set_inputline(m_maincpu, INPUT_LINE_NMI);
 	cartslot.halt_callback().set_inputline(m_maincpu, INPUT_LINE_HALT);
@@ -362,15 +350,6 @@ void coco3_state::coco3h(machine_config &config)
 	m_maincpu->set_addrmap(AS_PROGRAM, &coco3_state::coco3_mem);
 }
 
-void coco3_state::coco3dw1(machine_config &config)
-{
-	coco3(config);
-	cococart_slot_device &cartslot(COCOCART_SLOT(config.replace(), CARTRIDGE_TAG, DERIVED_CLOCK(1, 1), coco_cart, "cc3hdb1"));
-	cartslot.cart_callback().set([this] (int state) { cart_w(state != 0); }); // lambda because name is overloaded
-	cartslot.nmi_callback().set_inputline(m_maincpu, INPUT_LINE_NMI);
-	cartslot.halt_callback().set_inputline(m_maincpu, INPUT_LINE_HALT);
-}
-
 //**************************************************************************
 //  ROMS
 //**************************************************************************
@@ -391,7 +370,6 @@ ROM_START(msm3)
 ROM_END
 
 #define rom_coco3h  rom_coco3
-#define rom_coco3dw1 rom_coco3
 
 //**************************************************************************
 //  SYSTEM DRIVERS
@@ -401,5 +379,4 @@ ROM_END
 COMP( 1986, coco3,    coco,  0,     coco3,    coco3,   coco3_state, empty_init, "Tandy Radio Shack", "Color Computer 3 (NTSC)",          0 )
 COMP( 1986, coco3p,   coco,  0,     coco3p,   coco3,   coco3_state, empty_init, "Tandy Radio Shack", "Color Computer 3 (PAL)",           0 )
 COMP( 19??, coco3h,   coco,  0,     coco3h,   coco3,   coco3_state, empty_init, "Tandy Radio Shack", "Color Computer 3 (NTSC; HD6309)",  MACHINE_UNOFFICIAL )
-COMP( 19??, coco3dw1, coco,  0,     coco3dw1, coco3dw, coco3_state, empty_init, "Tandy Radio Shack", "Color Computer 3 (NTSC; HDB-DOS)", MACHINE_UNOFFICIAL )
 COMP( 1987, msm3,     coco,  0,     coco3,    coco3,   coco3_state, empty_init, "ILCE / SEP",        "Micro-Sep Model 3",                0 )

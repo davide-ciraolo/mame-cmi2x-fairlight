@@ -1,7 +1,10 @@
 // license:BSD-3-Clause
 // copyright-holders:Carl
+
 #include "emu.h"
 #include "osdnet.h"
+
+#include "dinetwork.h"
 
 static class std::vector<std::unique_ptr<osd_netdev::entry_t>> netdev_list;
 
@@ -61,7 +64,7 @@ int osd_netdev::send(uint8_t *buf, int len)
 	return 0;
 }
 
-void osd_netdev::recv(int param)
+void osd_netdev::recv(int32_t param)
 {
 	uint8_t *buf;
 	int len;

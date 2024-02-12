@@ -1,12 +1,13 @@
 // license:BSD-3-Clause
 // copyright-holders:Luca Elia, David Haywood
-#ifndef MAME_INCLUDES_SETA2_H
-#define MAME_INCLUDES_SETA2_H
+#ifndef MAME_SETA_SETA2_H
+#define MAME_SETA_SETA2_H
 
 #pragma once
 
 
-#include "machine/tmp68301.h"
+#include "cpu/m68000/tmp68301.h"
+#include "cpu/h8/h83006.h"
 #include "machine/eepromser.h"
 #include "machine/intelfsh.h"
 #include "machine/ticket.h"
@@ -95,12 +96,9 @@ protected:
 	void draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect);
 
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
+	void screen_vblank(int state);
 
 	void sound_bank_w(offs_t offset, uint8_t data);
-
-	INTERRUPT_GEN_MEMBER(seta2_interrupt);
-	INTERRUPT_GEN_MEMBER(samshoot_interrupt);
 
 	void ablastb_map(address_map &map);
 	void grdians_map(address_map &map);
@@ -118,7 +116,7 @@ protected:
 	void x1_map(address_map &map);
 
 	required_device<cpu_device> m_maincpu;
-	optional_device<cpu_device> m_sub;
+	optional_device<h83007_device> m_sub;
 	required_device<gfxdecode_device> m_gfxdecode;
 	required_device<screen_device> m_screen;
 	required_device<palette_device> m_palette;
@@ -170,8 +168,6 @@ class funcube_state : public seta2_state
 public:
 	funcube_state(const machine_config &mconfig, device_type type, const char *tag)
 		: seta2_state(mconfig, type, tag)
-		, m_outputs(*this, "outputs")
-		, m_funcube_leds(*this, "funcube_leds")
 	{ }
 
 	void funcube(machine_config &config);
@@ -198,15 +194,12 @@ private:
 	TIMER_DEVICE_CALLBACK_MEMBER(funcube_interrupt);
 
 	void funcube2_map(address_map &map);
-	void funcube2_sub_io(address_map &map);
 	void funcube_map(address_map &map);
-	void funcube_sub_io(address_map &map);
 	void funcube_sub_map(address_map &map);
 
 	void funcube_debug_outputs();
 
-	required_shared_ptr<uint16_t> m_outputs;
-	required_shared_ptr<uint16_t> m_funcube_leds;
+	uint16_t m_outputs, m_funcube_leds;
 	uint64_t m_coin_start_cycles = 0;
 	uint8_t m_hopper_motor = 0;
 };
@@ -248,4 +241,4 @@ private:
 	uint8_t m_lamps1 = 0, m_lamps2 = 0, m_cam = 0;
 };
 
-#endif // MAME_INCLUDES_SETA2_H
+#endif // MAME_SETA_SETA2_H

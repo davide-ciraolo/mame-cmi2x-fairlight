@@ -351,7 +351,7 @@ private:
 	void opwolf_colpri_cb(u32 &sprite_colbank, u32 &pri_mask, u16 sprite_ctrl);
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 	void opwolf_msm5205_vck(msm5205_device *device, int chip);
-	template<int N> DECLARE_WRITE_LINE_MEMBER(msm5205_vck_w);
+	template<int N> void msm5205_vck_w(int state);
 
 	void opwolf_map(address_map &map);
 	void opwolf_sound_z80_map(address_map &map);
@@ -719,7 +719,7 @@ GFXDECODE_END
 //7 - N/C
 
 template<int N>
-WRITE_LINE_MEMBER(opwolf_state::msm5205_vck_w)
+void opwolf_state::msm5205_vck_w(int state)
 {
 	if (m_adpcm_data[N] != -1)
 	{
@@ -913,12 +913,9 @@ void opwolf_state::opwolf(machine_config &config)
 	screen.set_screen_update(FUNC(opwolf_state::screen_update));
 	screen.set_palette("palette");
 
-	GFXDECODE(config, "gfxdecode", "palette", gfx_opwolf);
 	PALETTE(config, "palette").set_format(palette_device::xRGBRRRRGGGGBBBB_bit0, 2048);
 
-	PC080SN(config, m_pc080sn, 0);
-	m_pc080sn->set_gfx_region(0);
-	m_pc080sn->set_gfxdecode_tag("gfxdecode");
+	PC080SN(config, m_pc080sn, 0, "palette", gfx_opwolf);
 
 	PC090OJ(config, m_pc090oj, 0);
 	m_pc090oj->set_palette("palette");
@@ -947,8 +944,8 @@ void opwolf_state::opwolf(machine_config &config)
 	m_msm[1]->add_route(ALL_OUTPUTS, "rspeaker", 1.0);
 
 	pc060ha_device &ciu(PC060HA(config, "ciu", 0));
-	ciu.set_master_tag(m_maincpu);
-	ciu.set_slave_tag(m_audiocpu);
+	ciu.nmi_callback().set_inputline(m_audiocpu, INPUT_LINE_NMI);
+	ciu.reset_callback().set_inputline(m_audiocpu, INPUT_LINE_RESET);
 }
 
 void opwolf_state::opwolfp(machine_config &config)
@@ -987,12 +984,9 @@ void opwolf_state::opwolfb(machine_config &config) /* OSC clocks unknown for the
 	screen.set_screen_update(FUNC(opwolf_state::screen_update));
 	screen.set_palette("palette");
 
-	GFXDECODE(config, "gfxdecode", "palette", gfx_opwolf);
 	PALETTE(config, "palette").set_format(palette_device::xRGBRRRRGGGGBBBB_bit0, 2048);
 
-	PC080SN(config, m_pc080sn, 0);
-	m_pc080sn->set_gfx_region(0);
-	m_pc080sn->set_gfxdecode_tag("gfxdecode");
+	PC080SN(config, m_pc080sn, 0, "palette", gfx_opwolf);
 
 	PC090OJ(config, m_pc090oj, 0);
 	m_pc090oj->set_palette("palette");
@@ -1021,8 +1015,8 @@ void opwolf_state::opwolfb(machine_config &config) /* OSC clocks unknown for the
 	m_msm[1]->add_route(ALL_OUTPUTS, "rspeaker", 1.0);
 
 	pc060ha_device &ciu(PC060HA(config, "ciu", 0));
-	ciu.set_master_tag(m_maincpu);
-	ciu.set_slave_tag(m_audiocpu);
+	ciu.nmi_callback().set_inputline(m_audiocpu, INPUT_LINE_NMI);
+	ciu.reset_callback().set_inputline(m_audiocpu, INPUT_LINE_RESET);
 }
 
 

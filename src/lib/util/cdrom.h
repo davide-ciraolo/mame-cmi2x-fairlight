@@ -38,7 +38,7 @@ public:
 		CD_TRACK_MODE2_FORM1,       /* mode 2 2048 bytes/sector */
 		CD_TRACK_MODE2_FORM2,       /* mode 2 2324 bytes/sector */
 		CD_TRACK_MODE2_FORM_MIX,    /* mode 2 2336 bytes/sector */
-		CD_TRACK_MODE2_RAW,         /* mode 2 2352 bytes / sector */
+		CD_TRACK_MODE2_RAW,         /* mode 2 2352 bytes/sector */
 		CD_TRACK_AUDIO,             /* redbook audio track 2352 bytes/sector (588 samples) */
 
 		CD_TRACK_RAW_DONTCARE       /* special flag for cdrom_read_data: just return me whatever is there */
@@ -92,7 +92,7 @@ public:
 	{
 		uint32_t numtrks;     /* number of tracks */
 		uint32_t flags;       /* see FLAG_ above */
-		track_info tracks[MAX_TRACKS];
+		track_info tracks[MAX_TRACKS + 1];
 	};
 
 	struct track_input_entry
@@ -151,6 +151,7 @@ public:
 	static const char *get_subtype_string(uint32_t subtype);
 	static std::error_condition parse_metadata(chd_file *chd, toc &toc);
 	static std::error_condition write_metadata(chd_file *chd, const toc &toc);
+	bool is_gdrom() const { return cdtoc.flags & (CD_FLAG_GDROM|CD_FLAG_GDROMLE); }
 
 	// ECC utilities
 	static bool ecc_verify(const uint8_t *sector);
@@ -249,7 +250,7 @@ private:
 	static void get_info_from_type_string(const char *typestring, uint32_t *trktype, uint32_t *datasize);
 	static uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset);
 	static void ecc_compute_bytes(const uint8_t *sector, const uint16_t *row, int rowlen, uint8_t &val1, uint8_t &val2);
-	std::error_condition read_partial_sector(void *dest, uint32_t lbasector, uint32_t chdsector, uint32_t tracknum, uint32_t startoffs, uint32_t length, bool phys=false);
+	std::error_condition read_partial_sector(void *dest, uint32_t lbasector, uint32_t chdsector, uint32_t tracknum, uint32_t startoffs, uint32_t length, bool phys);
 
 	static std::string get_file_path(std::string &path);
 	static uint64_t get_file_size(std::string_view filename);

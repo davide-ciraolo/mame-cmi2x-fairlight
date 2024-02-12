@@ -34,8 +34,15 @@ lc7582_device::lc7582_device(const machine_config &mconfig, const char *tag, dev
 
 void lc7582_device::device_start()
 {
-	// resolve callbacks
-	m_write_segs.resolve_safe();
+	// zerofill
+	m_data = 0;
+	m_ce = 0;
+	m_clk = 0;
+	m_blank = false;
+	m_duty = 0;
+	m_addsp = 0;
+	m_shift = 0;
+	std::fill_n(m_latch, std::size(m_latch), 0);
 
 	// register for savestates
 	save_item(NAME(m_data));
@@ -59,7 +66,7 @@ void lc7582_device::refresh_output()
 	m_write_segs(1, (m_blank || !m_duty) ? 0 : m_latch[1]);
 }
 
-WRITE_LINE_MEMBER(lc7582_device::clk_w)
+void lc7582_device::clk_w(int state)
 {
 	state = (state) ? 1 : 0;
 
@@ -70,7 +77,7 @@ WRITE_LINE_MEMBER(lc7582_device::clk_w)
 	m_clk = state;
 }
 
-WRITE_LINE_MEMBER(lc7582_device::ce_w)
+void lc7582_device::ce_w(int state)
 {
 	state = (state) ? 1 : 0;
 

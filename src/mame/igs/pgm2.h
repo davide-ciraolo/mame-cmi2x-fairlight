@@ -1,7 +1,7 @@
 // license:BSD-3-Clause
 // copyright-holders:David Haywood
-#ifndef MAME_INCLUDES_PGM2_H
-#define MAME_INCLUDES_PGM2_H
+#ifndef MAME_IGS_PGM2_H
+#define MAME_IGS_PGM2_H
 
 #pragma once
 
@@ -117,8 +117,8 @@ private:
 	TILE_GET_INFO_MEMBER(get_bg_tile_info);
 
 	u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
-	DECLARE_WRITE_LINE_MEMBER(irq);
+	void screen_vblank(int state);
+	void irq(int state);
 
 	TIMER_DEVICE_CALLBACK_MEMBER(mcu_interrupt);
 
@@ -194,4 +194,4 @@ private:
 	required_memory_region m_mainrom;
 };
 
-#endif
+#endif // MAME_IGS_PGM2_H

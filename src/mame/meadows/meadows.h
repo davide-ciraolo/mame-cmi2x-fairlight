@@ -5,8 +5,8 @@
     Meadows S2650 hardware
 
 *************************************************************************/
-#ifndef MAME_INCLUDES_MEADOWS_H
-#define MAME_INCLUDES_MEADOWS_H
+#ifndef MAME_MEADOWS_MEADOWS_H
+#define MAME_MEADOWS_MEADOWS_H
 
 #pragma once
 
@@ -82,8 +82,8 @@ private:
 	void meadows_spriteram_w(offs_t offset, uint8_t data);
 	TILE_GET_INFO_MEMBER(get_tile_info);
 	uint32_t screen_update_meadows(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
-	DECLARE_WRITE_LINE_MEMBER(meadows_vblank_irq);
-	DECLARE_WRITE_LINE_MEMBER(minferno_vblank_irq);
+	void meadows_vblank_irq(int state);
+	void minferno_vblank_irq(int state);
 	INTERRUPT_GEN_MEMBER(audio_interrupt);
 	void draw_sprites(bitmap_ind16 &bitmap, const rectangle &clip);
 	void meadows_sh_update();
@@ -95,4 +95,4 @@ private:
 	void minferno_main_map(address_map &map);
 };
 
-#endif // MAME_INCLUDES_MEADOWS_H
+#endif // MAME_MEADOWS_MEADOWS_H

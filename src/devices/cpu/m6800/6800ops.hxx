@@ -41,6 +41,7 @@ OP_HANDLER( illegl3 )
 OP_HANDLER( trap )
 {
 	logerror("m6800: illegal opcode: address %04X, op %02X\n",PC-1,(int) M_RDOP_ARG(PC-1)&0xFF);
+	PC--;
 	take_trap();
 }
 
@@ -79,7 +80,10 @@ OP_HANDLER( asld )
 OP_HANDLER( tap )
 {
 	CC=A;
-	ONE_MORE_INSN();
+
+	// TAP temporarily sets the I flag and blocks IRQ until the next opcode
+	// (if the next opcode is TAP, IRQ is blocked again)
+	execute_one();
 	check_irq_lines();
 }
 
@@ -130,8 +134,11 @@ OP_HANDLER( sec )
 /* $0e CLI */
 OP_HANDLER( cli )
 {
+	uint8_t i = CC & 0x10;
 	CLI;
-	ONE_MORE_INSN();
+
+	// pending IRQ won't be triggered until next machine cycle
+	if (i) execute_one();
 	check_irq_lines();
 }
 
@@ -139,8 +146,6 @@ OP_HANDLER( cli )
 OP_HANDLER( sei )
 {
 	SEI;
-	ONE_MORE_INSN();
-	check_irq_lines();
 }
 
 /* $10 SBA inherent -**** */
@@ -191,7 +196,7 @@ OP_HANDLER( tba )
 	CLR_NZV; SET_NZ8(A);
 }
 
-/* $18 XGDX inherent ----- */ /* HD63701YO only */
+/* $18 XGDX inherent ----- */ /* HD63701Y0 only */
 OP_HANDLER( xgdx )
 {
 	uint16_t t = X;
@@ -209,19 +214,22 @@ OP_HANDLER( daa )
 	if (msn>0x80 && lsn>0x09) cf |= 0x60;
 	if (msn>0x90 || CC&0x01) cf |= 0x60;
 	t = cf + A;
-	CLR_NZV; /* keep carry from previous operation */
+	CLR_NZV; // keep carry from previous operation
 	SET_NZ8((uint8_t)t); SET_C8(t);
 	A = t;
 }
 
 /* $1a ILLEGAL */
 
-/* $1a SLP */ /* HD63701YO only */
+/* $1a SLP */ /* HD63701Y0 only */
 OP_HANDLER( slp )
 {
-	/* wait for next IRQ (same as waiting of wai) */
+	// wait for next IRQ (same as waiting of WAI)
 	m_wai_state |= M6800_SLP;
-	eat_cycles();
+
+	check_irq_lines();
+	if (m_wai_state & M6800_SLP)
+		eat_cycles();
 }
 
 /* $1b ABA inherent ***** */
@@ -427,6 +435,7 @@ OP_HANDLER( rti )
 	PULLBYTE(A);
 	PULLWORD(pX);
 	PULLWORD(pPC);
+
 	check_irq_lines();
 }
 
@@ -449,18 +458,19 @@ OP_HANDLER( mul )
 /* $3e WAI inherent ----- */
 OP_HANDLER( wai )
 {
-	/*
-	 * WAI stacks the entire machine state on the
-	 * hardware stack, then waits for an interrupt.
-	 */
+	// WAI stacks the entire machine state on the hardware stack,
+	// then waits for an interrupt.
 	m_wai_state |= M6800_WAI;
+
 	PUSHWORD(pPC);
 	PUSHWORD(pX);
 	PUSHBYTE(A);
 	PUSHBYTE(B);
 	PUSHBYTE(CC);
+
 	check_irq_lines();
-	if (m_wai_state & M6800_WAI) eat_cycles();
+	if (m_wai_state & M6800_WAI)
+		eat_cycles();
 }
 
 /* $3f SWI absolute indirect ----- */
@@ -471,6 +481,7 @@ OP_HANDLER( swi )
 	PUSHBYTE(A);
 	PUSHBYTE(B);
 	PUSHBYTE(CC);
+
 	SEI;
 	PCD = RM16(0xfffa);
 }
@@ -682,7 +693,7 @@ OP_HANDLER( neg_ix )
 	WM(EAD,r);
 }
 
-/* $61 AIM --**0- */ /* HD63701YO only */
+/* $61 AIM --**0- */ /* HD63701Y0 only */
 OP_HANDLER( aim_ix )
 {
 	uint8_t t, r;
@@ -693,7 +704,7 @@ OP_HANDLER( aim_ix )
 	WM(EAD,r);
 }
 
-/* $62 OIM --**0- */ /* HD63701YO only */
+/* $62 OIM --**0- */ /* HD63701Y0 only */
 OP_HANDLER( oim_ix )
 {
 	uint8_t t, r;
@@ -723,7 +734,7 @@ OP_HANDLER( lsr_ix )
 	WM(EAD,t);
 }
 
-/* $65 EIM --**0- */ /* HD63701YO only */
+/* $65 EIM --**0- */ /* HD63701Y0 only */
 OP_HANDLER( eim_ix )
 {
 	uint8_t t, r;
@@ -783,7 +794,7 @@ OP_HANDLER( dec_ix )
 	WM(EAD,t);
 }
 
-/* $6b TIM --**0- */ /* HD63701YO only */
+/* $6b TIM --**0- */ /* HD63701Y0 only */
 OP_HANDLER( tim_ix )
 {
 	uint8_t t, r;
@@ -831,7 +842,7 @@ OP_HANDLER( neg_ex )
 	WM(EAD,r);
 }
 
-/* $71 AIM --**0- */ /* HD63701YO only */
+/* $71 AIM --**0- */ /* HD63701Y0 only */
 OP_HANDLER( aim_di )
 {
 	uint8_t t, r;
@@ -842,7 +853,7 @@ OP_HANDLER( aim_di )
 	WM(EAD,r);
 }
 
-/* $72 OIM --**0- */ /* HD63701YO only */
+/* $72 OIM --**0- */ /* HD63701Y0 only */
 OP_HANDLER( oim_di )
 {
 	uint8_t t, r;
@@ -875,7 +886,7 @@ OP_HANDLER( lsr_ex )
 	WM(EAD,t);
 }
 
-/* $75 EIM --**0- */ /* HD63701YO only */
+/* $75 EIM --**0- */ /* HD63701Y0 only */
 OP_HANDLER( eim_di )
 {
 	uint8_t t, r;
@@ -935,7 +946,7 @@ OP_HANDLER( dec_ex )
 	WM(EAD,t);
 }
 
-/* $7b TIM --**0- */ /* HD63701YO only */
+/* $7b TIM --**0- */ /* HD63701Y0 only */
 OP_HANDLER( tim_di )
 {
 	uint8_t t, r;

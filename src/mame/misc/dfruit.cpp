@@ -27,6 +27,9 @@
 #include "screen.h"
 #include "speaker.h"
 
+
+namespace {
+
 class dfruit_state : public driver_device
 {
 public:
@@ -40,7 +43,7 @@ public:
 private:
 	required_device<tc0091lvc_device> m_maincpu;
 
-	DECLARE_WRITE_LINE_MEMBER(screen_vblank);
+	void screen_vblank(int state);
 
 	void output_w(uint8_t data);
 
@@ -49,7 +52,7 @@ private:
 	void tc0091lvc_map(address_map &map);
 };
 
-WRITE_LINE_MEMBER(dfruit_state::screen_vblank)
+void dfruit_state::screen_vblank(int state)
 {
 	if (state)
 	{
@@ -334,6 +337,9 @@ ROM_START( gemcrush )
 	ROM_REGION( 0x80000, "maincpu:gfx", ROMREGION_ERASE00 )
 	ROM_LOAD( "gcj_01.ic10",  0x000000, 0x080000, CRC(5b9e7a6e) SHA1(345357feed8e80e6a06093fcb69f2b38063d057a) ) /* HN27C4096 EPROM */
 ROM_END
+
+} // anonymous namespace
+
 
 GAME( 1993, dfruit,    0,   dfruit,  dfruit,   dfruit_state, empty_init, ROT0,   "Nippon Data Kiki / Star Fish", "Fruit Dream (Japan)", 0 )
 GAME( 1996, gemcrush,  0,   dfruit,  gemcrush, dfruit_state, empty_init, ROT270, "Star Fish", "Gemcrush (Japan, prototype)", MACHINE_NO_COCKTAIL )

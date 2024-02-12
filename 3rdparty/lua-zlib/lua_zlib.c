@@ -353,8 +353,8 @@ static int lz_checksum(lua_State *L) {
 }
 
 static int lz_checksum_new(lua_State *L, checksum_t checksum, checksum_combine_t combine) {
-    lua_pushlightuserdata(L, checksum);
-    lua_pushlightuserdata(L, combine);
+    lua_pushlightuserdata(L, (void *)checksum);
+    lua_pushlightuserdata(L, (void *)combine);
     lua_pushnumber(L, checksum(0L, Z_NULL, 0));
     lua_pushnumber(L, 0);
     lua_pushcclosure(L, lz_checksum, 4);
@@ -392,7 +392,7 @@ LUALIB_API int luaopen_zlib(lua_State * const L) {
 
     SETLITERAL("_COPYRIGHT", "Copyright (c) 2009-2010 Brian Maher");
     SETLITERAL("_DESCRIPTION", "Yet another binding to the zlib library");
-    SETLITERAL("_VERSION", "lua-zlib $Id$  (tag: mame0246)");
+    SETLITERAL("_VERSION", "lua-zlib $Id$  (tag: mame0262)");
 
     /* Expose this to lua so we can do a test: */
     SETINT("_TEST_BUFSIZ", LUAL_BUFFERSIZE);
