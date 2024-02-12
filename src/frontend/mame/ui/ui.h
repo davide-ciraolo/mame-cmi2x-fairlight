@@ -283,7 +283,11 @@ private:
 	void exit();
 	void config_load(config_type cfg_type, config_level cfg_level, util::xml::data_node const *parentnode);
 	void config_save(config_type cfg_type, util::xml::data_node *parentnode);
+	void sliders_load(config_type cfg_type, config_level cfg_level, util::xml::data_node const *parentnode);
+	void sliders_save(config_type cfg_type, util::xml::data_node *parentnode);
+	void sliders_apply(void);
 	template <typename... Params> void slider_alloc(Params &&...args) { m_sliders.push_back(std::make_unique<slider_state>(std::forward<Params>(args)...)); }
+	template <typename... Params> void slider_saved_alloc(Params &&...args) { m_sliders_saved.push_back(std::make_unique<slider_state>(std::forward<Params>(args)...)); }
 
 	// slider controls
 	int32_t slider_volume(std::string *str, int32_t newval);
@@ -315,6 +319,7 @@ private:
 #endif
 
 	std::vector<std::unique_ptr<slider_state>> m_sliders;
+	std::vector<std::unique_ptr<slider_state>> m_sliders_saved;
 };
 
 
