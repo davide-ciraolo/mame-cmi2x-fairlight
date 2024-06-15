@@ -288,6 +288,7 @@ if BASE_TARGETOS=="unix" then
 			if _OPTIONS["USE_LIBSDL"]~="1" then
 				linkoptions {
 					"-F" .. _OPTIONS["SDL_FRAMEWORK_PATH"],
+                                        "-rpath " .. _OPTIONS["SDL_FRAMEWORK_PATH"],
 				}
 				links {
 					"SDL2.framework",

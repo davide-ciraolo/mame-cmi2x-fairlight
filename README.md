@@ -25,6 +25,26 @@ This section will walk through the steps to get the CMI machine running on the M
 4. Launch the emulator with the command: `` .\cmi.exe cmi2x -mouse -flop1 "<path-to-SYSV19.IMD>" -flop2 "<path-to-your-PRESET.IMD>" -midiin1 "<name of MIDI device>" `` (refer to the next section to know how to retrieve MIDI device name).
 5. Enjoy :)
 
+## Compile for MacOS
+Here we explain how to compile the source code for MacOS (keep in mind that we tested the compilation process only on an Intel Mac running MacOS Sonoma):
+
+1. ARM64 builds will not work on Intel Macs, but Intel builds will work on ARM Macs (https://sdlmame.lngn.net);
+
+2. Follow the steps from [MAME documentation](https://docs.mamedev.org/initialsetup/compilingmame.html#apple-macos) and [RetroGamesUltra](https://retrogamesultra.com/2019/02/24/running-the-mame-arcade-emulator-on-mac-os-x/) as a general guideline;
+
+3. You can download SDL [here](https://github.com/libsdl-org/SDL/releases/tag/release-2.30.3);
+
+4. Be careful when installing SDL, as it should be placed in '/Library/Frameworks';
+
+5. Start the compilation process with: ``sudo make SUBTARGET=cmi SOURCES=src/mame/fairlight/cmi.cpp -jX NOWERROR=1 REGENIE=1``, where X is the number of CPU cores you want to use. This command will compile only the files required to run the CMI, instead of all the MAME drivers;
+
+6. After finishing the compilation process, follow the steps 2, 3 and 4 of "Execute the CMI" section;
+
+7. Enjoy :)
+
+## Compiler optimization
+You can use the ``ARCHOPTS="-march=native"`` flag to optimize the code for your CPU. E.g. ``make SUBTARGET=cmi SOURCES=src/mame/fairlight/cmi.cpp -jX ARCHOPTS="-march=native"``
+
 ## MIDI Setup
 
 1. Connect your MIDI device to your computer.
