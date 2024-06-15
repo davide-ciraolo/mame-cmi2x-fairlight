@@ -125,11 +125,11 @@ private:
 	void kbd_acia_w(offs_t offset, u8 data);
 	u8 kbd_acia_r(offs_t offset);
 
-	void cmi10_u20_a_w(u8 data);
-	void cmi10_u20_b_w(u8 data);
+	//void cmi10_u20_a_w(u8 data);
+	//void cmi10_u20_b_w(u8 data);
 	DECLARE_READ_LINE_MEMBER( cmi10_u20_cb1_r );
-	DECLARE_WRITE_LINE_MEMBER( cmi10_u20_cb2_w );
-	DECLARE_WRITE_LINE_MEMBER( cmi10_u21_cb2_w );
+	//DECLARE_WRITE_LINE_MEMBER( cmi10_u20_cb2_w );
+	//DECLARE_WRITE_LINE_MEMBER( cmi10_u21_cb2_w );
 	u8 cmi10_u21_a_r();
 
 	u32 get_key_for_indices(int mux, int module, int key);
@@ -142,7 +142,7 @@ private:
 	DECLARE_WRITE_LINE_MEMBER( kbd_txd_w );
 	DECLARE_WRITE_LINE_MEMBER( kbd_rts_w );
 
-	template <unsigned N> void update_dp(offs_t offset, u16 data);
+	//template <unsigned N> void update_dp(offs_t offset, u16 data);
 
 	void muskeys_map(address_map &map);
 
@@ -156,9 +156,9 @@ private:
 	required_device<acia6850_device> m_acia_cmi;
 	required_device<pia6821_device> m_cmi10_pia_u20;
 	required_device<pia6821_device> m_cmi10_pia_u21;
-	required_device<dl1416_device> m_dp1;
-	required_device<dl1416_device> m_dp2;
-	required_device<dl1416_device> m_dp3;
+	//required_device<dl1416_device> m_dp1;
+	//required_device<dl1416_device> m_dp2;
+	//required_device<dl1416_device> m_dp3;
 
 	required_ioport m_keypad_a_port;
 	required_ioport m_keypad_b_port;

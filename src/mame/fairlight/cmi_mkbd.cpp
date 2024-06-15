@@ -54,9 +54,9 @@ cmi_music_keyboard_device::cmi_music_keyboard_device(const machine_config &mconf
 	, m_acia_cmi(*this, "acia_cmi")
 	, m_cmi10_pia_u20(*this, "cmi10_pia_u20")
 	, m_cmi10_pia_u21(*this, "cmi10_pia_u21")
-	, m_dp1(*this, "dp1")
-	, m_dp2(*this, "dp2")
-	, m_dp3(*this, "dp3")
+	//, m_dp1(*this, "dp1")
+	//, m_dp2(*this, "dp2")
+	//, m_dp3(*this, "dp3")
 	, m_keypad_a_port(*this, "KEYPAD_A")
 	, m_keypad_b_port(*this, "KEYPAD_B")
 	, m_analog(*this, "ANALOG")
@@ -116,12 +116,12 @@ TIMER_CALLBACK_MEMBER(cmi_music_keyboard_device::velkey_down)
     CB2 = /DWS
 */
 
-void cmi_music_keyboard_device::cmi10_u20_a_w(u8 data)
-{
+//void cmi_music_keyboard_device::cmi10_u20_a_w(u8 data)
+//{
 	// low 7 bits connected to alphanumeric display data lines
-	m_dp1->data_w(data & 0x7f);
-	m_dp2->data_w(data & 0x7f);
-	m_dp3->data_w(data & 0x7f);
+	//m_dp1->data_w(data & 0x7f);
+	//m_dp2->data_w(data & 0x7f);
+	//m_dp3->data_w(data & 0x7f);
 
 	/*
 	int bk = data;
@@ -134,11 +134,11 @@ void cmi_music_keyboard_device::cmi10_u20_a_w(u8 data)
 
 	pia6821_cb1_w(m_cmi10_pia_u20, 0, !bit);
 	*/
-}
+//}
 
-void cmi_music_keyboard_device::cmi10_u20_b_w(u8 data)
-{
-}
+//void cmi_music_keyboard_device::cmi10_u20_b_w(u8 data)
+//{
+//}
 
 READ_LINE_MEMBER( cmi_music_keyboard_device::cmi10_u20_cb1_r )
 {
@@ -153,45 +153,45 @@ READ_LINE_MEMBER( cmi_music_keyboard_device::cmi10_u20_cb1_r )
 	return !bit;
 }
 
-WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi10_u20_cb2_w )
-{
-	uint8_t data = m_cmi10_pia_u20->a_output() & 0x7f;
-	uint8_t b_port = m_cmi10_pia_u20->b_output();
-	int addr = (BIT(b_port, 0) << 1) | BIT(b_port, 1);
+//WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi10_u20_cb2_w )
+//{
+	//uint8_t data = m_cmi10_pia_u20->a_output() & 0x7f;
+	//uint8_t b_port = m_cmi10_pia_u20->b_output();
+	//int addr = (BIT(b_port, 0) << 1) | BIT(b_port, 1);
 
 	/* DP1 */
-	m_dp1->ce_w(BIT(b_port, 6));
-	m_dp1->cu_w(BIT(b_port, 7));
-	m_dp1->wr_w(state);
-	m_dp1->addr_w(addr);
-	m_dp1->data_w(data);
+	//m_dp1->ce_w(BIT(b_port, 6));
+	//m_dp1->cu_w(BIT(b_port, 7));
+	//m_dp1->wr_w(state);
+	//m_dp1->addr_w(addr);
+	//m_dp1->data_w(data);
 
 	/* DP2 */
-	m_dp2->ce_w(BIT(b_port, 4));
-	m_dp2->cu_w(BIT(b_port, 5));
-	m_dp2->wr_w(state);
-	m_dp2->addr_w(addr);
-	m_dp2->data_w(data);
+	//m_dp2->ce_w(BIT(b_port, 4));
+	//m_dp2->cu_w(BIT(b_port, 5));
+	//m_dp2->wr_w(state);
+	//m_dp2->addr_w(addr);
+	//m_dp2->data_w(data);
 
 	/* DP3 */
-	m_dp3->ce_w(BIT(b_port, 2));
-	m_dp3->cu_w(BIT(b_port, 3));
-	m_dp3->wr_w(state);
-	m_dp3->addr_w(addr);
-	m_dp3->data_w(data);
-}
+	//m_dp3->ce_w(BIT(b_port, 2));
+	//m_dp3->cu_w(BIT(b_port, 3));
+	//m_dp3->wr_w(state);
+	//m_dp3->addr_w(addr);
+	//m_dp3->data_w(data);
+//}
 
-template <unsigned N> void cmi_music_keyboard_device::update_dp(offs_t offset, u16 data)
-{
-	m_digit[(N << 2) | ((offset ^ 3) & 3)] = data;
-}
+//template <unsigned N> void cmi_music_keyboard_device::update_dp(offs_t offset, u16 data)
+//{
+//	m_digit[(N << 2) | ((offset ^ 3) & 3)] = data;
+//}
 
 /* Begin Conversion */
-WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi10_u21_cb2_w )
-{
+//WRITE_LINE_MEMBER( cmi_music_keyboard_device::cmi10_u21_cb2_w )
+//{
 	// if 0
 //  state = state;
-}
+//}
 
 u32 cmi_music_keyboard_device::get_key_for_indices(int mux, int module, int key)
 {
@@ -533,13 +533,13 @@ void cmi_music_keyboard_device::device_add_mconfig(machine_config &config)
 
 	PIA6821(config, m_cmi10_pia_u20);
 	m_cmi10_pia_u20->readcb1_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_cb1_r));
-	m_cmi10_pia_u20->writepa_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_a_w));
-	m_cmi10_pia_u20->writepb_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_b_w));
-	m_cmi10_pia_u20->cb2_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_cb2_w));
+	//m_cmi10_pia_u20->writepa_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_a_w));
+	//m_cmi10_pia_u20->writepb_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_b_w));
+	//m_cmi10_pia_u20->cb2_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_cb2_w));
 
 	PIA6821(config, m_cmi10_pia_u21);
 	m_cmi10_pia_u21->readpa_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u21_a_r));
-	m_cmi10_pia_u21->cb2_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u21_cb2_w));
+	//m_cmi10_pia_u21->cb2_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u21_cb2_w));
 
 	clock_device &acia_clock(CLOCK(config, "acia_clock", 1.8432_MHz_XTAL / 12));
 	acia_clock.signal_handler().set(m_acia_kbd, FUNC(acia6850_device::write_rxc));
@@ -558,12 +558,12 @@ void cmi_music_keyboard_device::device_add_mconfig(machine_config &config)
 	m_acia_kbd->irq_handler().set(FUNC(cmi_music_keyboard_device::kbd_acia_int));
 
 	/* alpha-numeric display */
-	DL1416T(config, m_dp1, u32(0));
-	m_dp1->update().set(FUNC(cmi_music_keyboard_device::update_dp<0>));
-	DL1416T(config, m_dp2, u32(0));
-	m_dp2->update().set(FUNC(cmi_music_keyboard_device::update_dp<1>));
-	DL1416T(config, m_dp3, u32(0));
-	m_dp3->update().set(FUNC(cmi_music_keyboard_device::update_dp<2>));
+	//DL1416T(config, m_dp1, u32(0));
+	//m_dp1->update().set(FUNC(cmi_music_keyboard_device::update_dp<0>));
+	//DL1416T(config, m_dp2, u32(0));
+	//m_dp2->update().set(FUNC(cmi_music_keyboard_device::update_dp<1>));
+	//DL1416T(config, m_dp3, u32(0));
+	//m_dp3->update().set(FUNC(cmi_music_keyboard_device::update_dp<2>));
 }
 
 ROM_START( cmi_mkbd )

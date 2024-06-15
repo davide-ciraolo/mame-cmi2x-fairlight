@@ -124,6 +124,7 @@ private:
 
 	std::unique_ptr<u8[]>    m_wave_ram;
 	u8          m_current_sample = 0;
+	s16 		sample16 = 0;
 
 	double      m_mosc = 0.0;
 	u16         m_pitch = 0;
@@ -171,6 +172,10 @@ private:
 	u8          m_rp = 0;
 	u8          m_ws = 0;
 	int         m_dir = 0;
+
+	uint8_t   m_ediv_rate = 0;
+	uint8_t   m_ediv_count = 0;
+	static const uint8_t s_7497_rate_table[64][64];
 };
 
 // device type definition
