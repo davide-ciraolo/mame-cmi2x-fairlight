@@ -122,9 +122,9 @@ Currently, this is the default setup for the Alphanumeric Keyboard Key binding:
 | KEYCODE_PLUS_PAD      | +           |             |                 |
 | KEYCODE_MINUS_PAD     | -           |             |                 |
 
-We decided to create this table, because we found the keyboard configuration a little foggy, as a modern keyboard layout is different from the one of the original CMI. In addition, some key bindings were not set by default: Home, Set, Add, Sub and Clear. So we configured them as F1, F2, F3, F4 and F5, respectively. We also, spend some time trying to figure it out how to type the ";". It ended up being another unset key named "WTF" (fair enough...). So we changed the name to "; & +" as it can be used also type "+", and we binded it to the KEYCODE_CLOSEBRACE, which on our keyboard layout was the most "natural" key to type for it.
+We decided to create this table, because we found the keyboard configuration a little foggy, as a modern keyboard layout differs from the one of the original CMI. In addition, some key bindings were not set by default: Home, Set, Add, Sub and Clear. So we configured them as F1, F2, F3, F4 and F5, respectively. We also spent some time trying to understand how to type the ";". It ended up being another unset key named "WTF" (fair enough...). So we changed the name to "; & +" as it can also be used to type "+", and we bound it to the KEYCODE_CLOSEBRACE, which on our keyboard layout was the most "natural" key to type for it.
 
-You can change this bindings, as you prefer, at any time through the [MAME input settings](https://docs.mamedev.org/usingmame/mamemenus.html#input-settings-menu)
+You can change these bindings, as you prefer, at any time through the [MAME input settings](https://docs.mamedev.org/usingmame/mamemenus.html#input-settings-menu)
 
 ## For any questions
 
