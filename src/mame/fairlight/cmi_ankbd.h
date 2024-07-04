@@ -33,6 +33,7 @@ protected:
 
 private:
 	u8 col_r();
+
 	DECLARE_WRITE_LINE_MEMBER( txd_w );
 	DECLARE_WRITE_LINE_MEMBER( rts_w );
 

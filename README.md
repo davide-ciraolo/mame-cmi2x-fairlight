@@ -45,6 +45,8 @@ Here we explain how to compile the source code for MacOS (keep in mind that we t
 ## Compiler optimization
 You can use the ``ARCHOPTS="-march=native"`` flag to optimize the code for your CPU. E.g. ``make SUBTARGET=cmi SOURCES=src/mame/fairlight/cmi.cpp -jX ARCHOPTS="-march=native"``
 
+If you need to compile the code for a different CPU, you can check a list of other x86 options for the GNU C++ compiler [here](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html) (i.e., -march=skylake)
+
 ## MIDI Setup
 
 1. Connect your MIDI device to your computer.
@@ -52,9 +54,81 @@ You can use the ``ARCHOPTS="-march=native"`` flag to optimize the code for your 
   - Windows: `` .\cmi.exe --listmidi `` This will show the list of MIDI devices connected to the computer.
 3. To start the CMI with a specific MIDI device you have to add the flag `` --midiin1 "<name of MIDI device>" `` To the execution command of the CMI.
 
+## Keyboard Configuration
+
+Currently, this is the default setup for the Alphanumeric Keyboard Key binding:
+| Key Code              | Character   | + Shift     | + LShift + Ctrl |
+|-----------------------|-------------|-------------|-----------------|
+| KEYCODE_1             | 1           | !           |                 |
+| KEYCODE_2             | 2           | "           |                 |
+| KEYCODE_3             | 3           | #           |                 |
+| KEYCODE_4             | 4           | $           |                 |
+| KEYCODE_5             | 5           | %           |                 |
+| KEYCODE_6             | 6           | &           |                 |
+| KEYCODE_7             | 7           | '           |                 |
+| KEYCODE_8             | 8           | (           |                 |
+| KEYCODE_9             | 9           | )           |                 |
+| KEYCODE_0             | 0           |             |                 |
+| KEYCODE_A             | A           |             |                 |
+| KEYCODE_B             | B           |             |                 |
+| KEYCODE_C             | C           |             |                 |
+| KEYCODE_D             | D           |             |                 |
+| KEYCODE_E             | E           |             |                 |
+| KEYCODE_F             | F           |             |                 |
+| KEYCODE_G             | G           |             |                 |
+| KEYCODE_H             | H           |             |                 |
+| KEYCODE_I             | I           |             |                 |
+| KEYCODE_J             | J           |             |                 |
+| KEYCODE_K             | K           | [           | {               |
+| KEYCODE_L             | L           | \\          | \|              |
+| KEYCODE_M             | M           | ]           | }               |
+| KEYCODE_N             | N           | ^           | ~               |
+| KEYCODE_O	            | O           |	_           |                 |
+| KEYCODE_P             | P           | @           | '               |
+| KEYCODE_Q             | Q           |             |                 |
+| KEYCODE_R             | R           |             |                 |
+| KEYCODE_S             | S           |             |                 |
+| KEYCODE_T             | T           |             |                 |
+| KEYCODE_U             | U           |             |                 |
+| KEYCODE_V             | V           |             |                 |
+| KEYCODE_W             | W           |             |                 |
+| KEYCODE_X             | X           |             |                 |
+| KEYCODE_Y             | Y           |             |                 |
+| KEYCODE_Z             | Z           |             |                 |
+| KEYCODE_UP            | Up          |             |                 |
+| KEYCODE_DOWN          | Down        |             |                 |
+| KEYCODE_LEFT          | Left        |             |                 |
+| KEYCODE_RIGHT         | Right       |             |                 |
+| KEYCODE_ESC           | ESC         |             |                 |
+| KEYCODE_F1            | Home        |             |                 |
+| KEYCODE_F2            | Set         |             |                 |
+| KEYCODE_F3            | Add         |             |                 |
+| KEYCODE_F4            | Sub         |             |                 |
+| KEYCODE_F5            | Clear       |             |                 |
+| KEYCODE_BACKSPACE     | Backspace   |             |                 |
+| KEYCODE_ENTER         | Return (a)  |             |                 |
+| KEYCODE_ENTER         | Return (b)  |             |                 |
+| KEYCODE_LCONTROL      | Ctrl        |             |                 |
+| KEYCODE_LSHIFT        | LShift      |             |                 |
+| KEYCODE_RSHIFT        | RShift      |             |                 |
+| KEYCODE_SPACE         | Space       |             |                 |
+| KEYCODE_STOP          | .           | >           |                 |
+| KEYCODE_COMMA         | ,           | <           |                 |
+| KEYCODE_COLON         | :           | *           |                 |
+| KEYCODE_SLASH         | /           | ?           |                 |
+| KEYCODE_CLOSEBRACE    | ;           | +           |                 |
+| KEYCODE_EQUALS        | =           |             |                 |
+| KEYCODE_MINUS         | -           |             |                 |
+| KEYCODE_PLUS_PAD      | +           |             |                 |
+| KEYCODE_MINUS_PAD     | -           |             |                 |
+
+We decided to create this table, because we found the keyboard configuration a little foggy, as a modern keyboard layout is different from the one of the original CMI. In addition, some key bindings were not set by default: Home, Set, Add, Sub and Clear. So we configured them as F1, F2, F3, F4 and F5, respectively. We also, spend some time trying to figure it out how to type the ";". It ended up being another unset key named "WTF" (fair enough...). So we changed the name to "; & +" as it can be used also type "+", and we binded it to the KEYCODE_CLOSEBRACE, which on our keyboard layout was the most "natural" key to type for it.
+
+You can change this bindings, as you prefer, at any time through the [MAME input settings](https://docs.mamedev.org/usingmame/mamemenus.html#input-settings-menu)
+
 ## For any questions
 
-For questions about the MAME emulator, how to compile the source code, and how to adjust the settings refer to the MAME documentation (https://docs.mamedev.org/whatis.html).
+For questions about the MAME emulator, how to compile the source code, and how to adjust the settings refer to the [MAME documentation](https://docs.mamedev.org/whatis.html).
 
 Feel free to contact us for any other questions.
 
