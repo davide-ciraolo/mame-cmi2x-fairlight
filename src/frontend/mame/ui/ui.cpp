@@ -1461,7 +1461,7 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 	m_sliders.clear();
 
 	// add overall volume
-	slider_alloc(_("Master Volume"), -32, 0, 9, 1, std::bind(&mame_ui_manager::slider_volume, this, _1, _2));
+	slider_alloc(_("Master Volume"), -32, 0, 0, 1, std::bind(&mame_ui_manager::slider_volume, this, _1, _2));
 
 	// add frame delay
 	//slider_alloc(_("Frame Delay"), 0, machine.options().frame_delay(), 9, 1, std::bind(&mame_ui_manager::slider_framedelay, this, _1, _2));
@@ -1475,7 +1475,7 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 	mixer_input info;
 	for (int item = 0; machine.sound().indexed_mixer_input(item, info); item++)
 	{
-		int32_t maxval = 4000;
+		int32_t maxval = 2000;
 		int32_t defval = 1000;
 
 		std::string str = string_format(_("%1$s Volume"), info.stream->input(info.inputnum).name());
